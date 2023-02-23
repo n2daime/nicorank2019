@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<nicorank status="OK">
+
+	<!--ランキングは何位から紹介するか( Tyouki=1 History.csvで長期動画補正あり  ）-->
+	<!-- 例 週間は20 長期 1 -->
+	<!-- 例 SPは100  長期 0 -->
+	<RANK   Num="20" Tyouki="1"/>
+	
+	<!--rankEDに掲載する動画数 例 週間は120 SPは400 -->
+	<RANKED Num="200" />
+	
+	<!--UserInfo/Iconを取得する動画数。長期は考慮しないので単純指定 -->
+	<UserInfo Num="1000" />
+	
+	<!--ED用アイコンのDL先指定-->
+	<ICONDL_PATH>T:\ニコニコ動画集計\ED</ICONDL_PATH>
+	
+	<!-- ポイント計算用 -->
+	<POINT>
+		<!--マイリストの倍率-->
+		<CALC_MYLIST>25</CALC_MYLIST>
+		<!--再生の倍率-->
+		<CALC_PLAY>1</CALC_PLAY>
+		<!--コメントの倍率-->
+		<CALC_COMMENT>1</CALC_COMMENT>
+	</POINT>
+	
+	<SP>
+		<!-- SPモード専用設定-->
+		<POINT>
+			<!--マイリストの倍率-->
+			<CALC_MYLIST>20</CALC_MYLIST>
+			<!--再生の倍率-->
+			<CALC_PLAY>1</CALC_PLAY>
+			<!--コメントの倍率-->
+			<CALC_COMMENT>1</CALC_COMMENT>
+		</POINT>
+		<RANK   Num="100" Tyouki="0"/>
+		<RANKED Num="400" />
+		<UserInfo Num="1000" />
+		
+		<!-- lastresultSP.csvチェック用。前回SPの”集計日”を指定すること -->
+		<CheckDateOver>20170701</CheckDateOver>
+	</SP>
+	
+	<!-- コメントポイント補正を行うか？ -->
+	<!-- 0-しない -->
+	<!-- 1- 補正＝（再生＋マイリスト＋コメント＊N）／（再生＋マイリスト＋コメント）-->
+	<!-- 2- 補正＝ （再生＋マイリスト＋コメント）／（再生＋マイリスト＋コメント）-->
+	<COMMENT_OFFSET Mode="2"/>
+	
+	<!-- マイリストポイント補正を行うか？ -->
+	<!-- 0-しない -->
+	<!-- 1- 弱い方 補正値＝(再生数+コメント数+上限マイリスト数)÷(再生数+コメント数+マイリスト数)-->
+	<!-- 上限マイリスト数＝再生数÷POINT_CALC_MYLIST -->	
+	<!-- 2- 強い方 補正値＝(再生数+コメント数+上限マイリストポイント)÷(再生数+コメント数+マイリスト数×POINT_CALC_MYLIST)-->
+	<!-- 上限マイリスト数＝再生数 -->
+	<!-- ※1-2共通 再生数+コメント数+マイリスト数×POINT_CALC_MYLIST×補正値 -->	
+	<MYLIST_OFFSET Mode="1"/>
+	
+	<!-- 再生ポイント補正を行うか？ -->
+	<!-- 0-しない -->
+	<!-- 1- 補正値＝マイリスト率が1%未満の作品に適用する。マイリスト率1%以上は1.00 -->
+	<!-- マイリスト率1%の再生数ポイントは、再生数*(マイリスト率)で計算する。-->
+	<!-- 下限は0.01-->
+	<PLAY_OFFSET Mode="1"/>	
+	
+	
+	<SYSTEM><!-- 意味がわからない場合は編集しないこと -->
+		<!-- result.csv系について 0:shift-jisで出力 1:Unicodeで出力 (last～とかSP用のCSVにも影響を受けます)--> 
+		<ResultCsv Code="0" />
+
+		<!-- マルチスレッドが有効な処理での最大のスレッド数 --> 
+		<Thread Max="8" />
+		
+		<!-- ニコチャート設定。Mode：0（取得しない） 1(取得する）--> 
+		<NicoChart Mode="1" />
+		
+		<Download>
+			<NicoAPI Retry="20" /><!-- SPとかに影響-->
+			<UserIcon Retry="1" /><!-- ユーザーアイコンの取得に影響-->
+		</Download>
+	</SYSTEM>
+</nicorank>

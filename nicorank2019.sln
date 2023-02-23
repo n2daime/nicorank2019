@@ -1,0 +1,107 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Blend for Visual Studio Version 16
+VisualStudioVersion = 16.0.31624.102
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "nicorankLib", "nicorankLib\nicorankLib.csproj", "{440DF637-F8EE-4F5C-B841-5CABA97A9F1E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "nicorank_aggregation", "nicorank_aggregation\nicorank_aggregation.csproj", "{51A57FDD-817F-467E-B030-961C784DC85F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{440DF637-F8EE-4F5C-B841-5CABA97A9F1E} = {440DF637-F8EE-4F5C-B841-5CABA97A9F1E}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTest", "UnitTest\UnitTest.csproj", "{E52AE391-59B3-4834-949C-8265553E6289}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "nicorank_SnapShot", "nicorank_SnapShot\nicorank_SnapShot.csproj", "{7B263DCF-BD08-4184-A546-F0C6434154DA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{440DF637-F8EE-4F5C-B841-5CABA97A9F1E} = {440DF637-F8EE-4F5C-B841-5CABA97A9F1E}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "nicorank2019", "nicorank2019\nicorank2019.csproj", "{8C5AF659-2360-40E9-A6B2-A268F8846BD9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{440DF637-F8EE-4F5C-B841-5CABA97A9F1E} = {440DF637-F8EE-4F5C-B841-5CABA97A9F1E}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "依存ファイル", "依存ファイル", "{B5455010-343E-44E8-9192-9F16292BB133}"
+	ProjectSection(SolutionItems) = preProject
+		依存ファイル\nicorank.xml = 依存ファイル\nicorank.xml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "x64", "x64", "{40580DF7-3566-4DD2-B6C9-BFFA65B10B85}"
+	ProjectSection(SolutionItems) = preProject
+		依存ファイル\x64\SQLite.Interop.dll = 依存ファイル\x64\SQLite.Interop.dll
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "x86", "x86", "{C4A024C5-7300-42ED-864A-C8D8C80F95C6}"
+	ProjectSection(SolutionItems) = preProject
+		依存ファイル\x86\SQLite.Interop.dll = 依存ファイル\x86\SQLite.Interop.dll
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DB", "DB", "{6537E536-D4A2-4EF4-AC1D-AC0296DB93CC}"
+	ProjectSection(SolutionItems) = preProject
+		依存ファイル\DB\ApiXML.db = 依存ファイル\DB\ApiXML.db
+		依存ファイル\DB\Dailylog.db = 依存ファイル\DB\Dailylog.db
+		依存ファイル\DB\LogNicoChart.db = 依存ファイル\DB\LogNicoChart.db
+		依存ファイル\DB\LogOfficial.db = 依存ファイル\DB\LogOfficial.db
+		依存ファイル\DB\NicoranHistory.db = 依存ファイル\DB\NicoranHistory.db
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{440DF637-F8EE-4F5C-B841-5CABA97A9F1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{440DF637-F8EE-4F5C-B841-5CABA97A9F1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{440DF637-F8EE-4F5C-B841-5CABA97A9F1E}.Debug|x64.ActiveCfg = Debug|x64
+		{440DF637-F8EE-4F5C-B841-5CABA97A9F1E}.Debug|x64.Build.0 = Debug|x64
+		{440DF637-F8EE-4F5C-B841-5CABA97A9F1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{440DF637-F8EE-4F5C-B841-5CABA97A9F1E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{440DF637-F8EE-4F5C-B841-5CABA97A9F1E}.Release|x64.ActiveCfg = Release|x64
+		{440DF637-F8EE-4F5C-B841-5CABA97A9F1E}.Release|x64.Build.0 = Release|x64
+		{51A57FDD-817F-467E-B030-961C784DC85F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51A57FDD-817F-467E-B030-961C784DC85F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51A57FDD-817F-467E-B030-961C784DC85F}.Debug|x64.ActiveCfg = Debug|x64
+		{51A57FDD-817F-467E-B030-961C784DC85F}.Debug|x64.Build.0 = Debug|x64
+		{51A57FDD-817F-467E-B030-961C784DC85F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51A57FDD-817F-467E-B030-961C784DC85F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51A57FDD-817F-467E-B030-961C784DC85F}.Release|x64.ActiveCfg = Release|x64
+		{51A57FDD-817F-467E-B030-961C784DC85F}.Release|x64.Build.0 = Release|x64
+		{E52AE391-59B3-4834-949C-8265553E6289}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E52AE391-59B3-4834-949C-8265553E6289}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E52AE391-59B3-4834-949C-8265553E6289}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E52AE391-59B3-4834-949C-8265553E6289}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E52AE391-59B3-4834-949C-8265553E6289}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E52AE391-59B3-4834-949C-8265553E6289}.Release|x64.ActiveCfg = Release|Any CPU
+		{7B263DCF-BD08-4184-A546-F0C6434154DA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7B263DCF-BD08-4184-A546-F0C6434154DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7B263DCF-BD08-4184-A546-F0C6434154DA}.Debug|x64.ActiveCfg = Debug|x64
+		{7B263DCF-BD08-4184-A546-F0C6434154DA}.Debug|x64.Build.0 = Debug|x64
+		{7B263DCF-BD08-4184-A546-F0C6434154DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7B263DCF-BD08-4184-A546-F0C6434154DA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7B263DCF-BD08-4184-A546-F0C6434154DA}.Release|x64.ActiveCfg = Release|x64
+		{7B263DCF-BD08-4184-A546-F0C6434154DA}.Release|x64.Build.0 = Release|x64
+		{8C5AF659-2360-40E9-A6B2-A268F8846BD9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C5AF659-2360-40E9-A6B2-A268F8846BD9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C5AF659-2360-40E9-A6B2-A268F8846BD9}.Debug|x64.ActiveCfg = Debug|x64
+		{8C5AF659-2360-40E9-A6B2-A268F8846BD9}.Debug|x64.Build.0 = Debug|x64
+		{8C5AF659-2360-40E9-A6B2-A268F8846BD9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C5AF659-2360-40E9-A6B2-A268F8846BD9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C5AF659-2360-40E9-A6B2-A268F8846BD9}.Release|x64.ActiveCfg = Release|x64
+		{8C5AF659-2360-40E9-A6B2-A268F8846BD9}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{40580DF7-3566-4DD2-B6C9-BFFA65B10B85} = {B5455010-343E-44E8-9192-9F16292BB133}
+		{C4A024C5-7300-42ED-864A-C8D8C80F95C6} = {B5455010-343E-44E8-9192-9F16292BB133}
+		{6537E536-D4A2-4EF4-AC1D-AC0296DB93CC} = {B5455010-343E-44E8-9192-9F16292BB133}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6693B4A5-D1FA-46CB-B85B-CE67AA432746}
+	EndGlobalSection
+EndGlobal
