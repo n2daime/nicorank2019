@@ -37,7 +37,7 @@
 			<!--コメントの倍率-->
 			<CALC_COMMENT>1</CALC_COMMENT>
 			<!--いいね数の倍率-->
-			<CALC_LIKE>200</CALC_LIKE>				
+			<CALC_LIKE>20</CALC_LIKE>				
 		</POINT>
 		<RANK   Num="100" Tyouki="0"/>
 		<RANKED Num="400" />
