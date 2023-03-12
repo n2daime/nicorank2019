@@ -34,6 +34,9 @@ namespace nicorankLib.Common
         public MYLIST_OFFSET MYLIST_OFFSET { get; set; }
         [XmlElement(ElementName = "PLAY_OFFSET")]
         public PLAY_OFFSET PLAY_OFFSET { get; set; }
+        [XmlElement(ElementName = "POINTALL_OFFSET")]
+        public POINTALL_OFFSET POINTALL_OFFSET { get; set; }
+
         [XmlElement(ElementName = "SYSTEM")]
         public SYSTEM SYSTEM { get; set; }
     }
@@ -108,6 +111,14 @@ namespace nicorankLib.Common
 
     [XmlRoot(ElementName = "PLAY_OFFSET")]
     public class PLAY_OFFSET
+    {
+        [XmlAttribute(AttributeName = "Mode")]
+        public int Mode { get; set; }
+    }
+
+    
+    [XmlRoot(ElementName = "POINTALL_OFFSET")]
+    public class POINTALL_OFFSET
     {
         [XmlAttribute(AttributeName = "Mode")]
         public int Mode { get; set; }

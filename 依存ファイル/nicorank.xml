@@ -18,11 +18,13 @@
 	<!-- ポイント計算用 -->
 	<POINT>
 		<!--マイリストの倍率-->
-		<CALC_MYLIST>25</CALC_MYLIST>
+		<CALC_MYLIST>40</CALC_MYLIST>
 		<!--再生の倍率-->
 		<CALC_PLAY>1</CALC_PLAY>
 		<!--コメントの倍率-->
 		<CALC_COMMENT>1</CALC_COMMENT>
+		<!--いいね数の倍率-->
+		<CALC_LIKE>10</CALC_LIKE>		
 	</POINT>
 	
 	<SP>
@@ -34,9 +36,11 @@
 			<CALC_PLAY>1</CALC_PLAY>
 			<!--コメントの倍率-->
 			<CALC_COMMENT>1</CALC_COMMENT>
+			<!--いいね数の倍率-->
+			<CALC_LIKE>200</CALC_LIKE>				
 		</POINT>
-		<RANK   Num="100" Tyouki="0"/>
-		<RANKED Num="400" />
+		<RANK   Num="30" Tyouki="0"/>
+		<RANKED Num="120" />
 		<UserInfo Num="1000" />
 		
 		<!-- lastresultSP.csvチェック用。前回SPの”集計日”を指定すること -->
@@ -47,7 +51,8 @@
 	<!-- 0-しない -->
 	<!-- 1- 補正＝（再生＋マイリスト＋コメント＊N）／（再生＋マイリスト＋コメント）-->
 	<!-- 2- 補正＝ （再生＋マイリスト＋コメント）／（再生＋マイリスト＋コメント）-->
-	<COMMENT_OFFSET Mode="2"/>
+	<!-- 下限は0.1-->
+	<COMMENT_OFFSET Mode="2" UnderLimit="0.01"/>
 	
 	<!-- マイリストポイント補正を行うか？ -->
 	<!-- 0-しない -->
@@ -62,9 +67,14 @@
 	<!-- 0-しない -->
 	<!-- 1- 補正値＝マイリスト率が1%未満の作品に適用する。マイリスト率1%以上は1.00 -->
 	<!-- マイリスト率1%の再生数ポイントは、再生数*(マイリスト率)で計算する。-->
+	<!-- 2- （コメント数＋マイリスト数＋いいね数）/再生数×1000 　下限補正値0.01倍 -->
 	<!-- 下限は0.01-->
-	<PLAY_OFFSET Mode="1"/>	
+	<PLAY_OFFSET Mode="2"/>	
 	
+	<!-- 全体ポイント補正を行うか？ -->
+	<!-- 0-しない -->
+	<!-- 1- 現在の集計ポイント[全体]に補正値Dを掛けたものを新ポイントとする(2023ボカコレ対策) -->
+	<POINTALL_OFFSET Mode="1"/>	
 	
 	<SYSTEM><!-- 意味がわからない場合は編集しないこと -->
 		<!-- result.csv系について 0:shift-jisで出力 1:Unicodeで出力 (last～とかSP用のCSVにも影響を受けます)--> 

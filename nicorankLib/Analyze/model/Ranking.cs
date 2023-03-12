@@ -33,6 +33,15 @@ namespace nicorankLib.Analyze.model
         const int HOSEI_PLAY_ARI_LIKE = 2;//いいね対応
 
         /// <summary>
+        /// ポイント全体補正用
+        /// </summary>
+        enum HOSEI_POINT_ALL
+        {
+            NASHI = 0,
+            VCOLE2023 = 1 //ボカコレ補正用
+        }
+
+        /// <summary>
         /// 投稿日
         /// </summary>        
         [JsonProperty("Date")]
@@ -179,12 +188,17 @@ namespace nicorankLib.Analyze.model
         [JsonProperty("HoseiMylist")]
         public double HoseiMylist = 1;
 
-
         /// <summary>
         /// 再生補正
         /// </summary>
         [JsonProperty("HoseiPlay")]
         public double HoseiPlay = 1;
+
+        /// <summary>
+        /// ポイント全体への補正
+        /// </summary>
+        [JsonProperty("HoseiAllPoint")]
+        public double HoseiAllPoint = 1;
 
         protected long? workPointTotal = null;
 
@@ -292,6 +306,8 @@ namespace nicorankLib.Analyze.model
             PointPlay = 0;
             PointLike = 0;
             isDelete = false;
+
+            HoseiAllPoint = 1;
 
             FavoriteTags = new HashSet<string>();
         }
@@ -408,7 +424,7 @@ namespace nicorankLib.Analyze.model
                         else
                         {
                             //補正率の計算
-                            HoseiPlay = ((double)(CountComment + CountMyList + CountLike) ) / (double)CountPlay * 1000;
+                            HoseiPlay = ((double)(CountComment + CountMyList + CountLike)) / (double)CountPlay * 1000;
 
                             //100%以上には補正しない
                             if (HoseiPlay >= 1.00)
@@ -450,7 +466,7 @@ namespace nicorankLib.Analyze.model
                                 {
                                     HoseiComment = (CountComment * config.CalcComment + CountPlay + CountMyList) / (double)divideComment;
                                 }
-                                PointComment = (long)(CountComment * HoseiComment* config.CalcComment);
+                                PointComment = (long)(CountComment * HoseiComment * config.CalcComment);
                             }
                             workPointTotal += PointComment;
                         }
@@ -494,10 +510,6 @@ namespace nicorankLib.Analyze.model
                                 {
                                     work1 = commentUnderLimit;
                                 }
-                                //if (work1 < 100)
-                                //{
-                                //    work1 = work1;
-                                //}
                                 HoseiComment = work1;
 
                                 PointComment = (long)(CountComment * HoseiComment / 100.0 * config.CalcComment);
@@ -519,15 +531,50 @@ namespace nicorankLib.Analyze.model
                     default:
                         {//補正無し
                             PointComment = (long)(CountComment * config.CalcComment);
-                            workPointTotal +=PointComment;
+                            workPointTotal += PointComment;
                         }
                         break;
                 }
                 //いいねポイント
-                PointLike = (long)( (double)CountLike * config.CalcLike );
+                PointLike = (long)((double)CountLike * config.CalcLike);
                 workPointTotal += PointLike;
+
+                //全体ポイント補正
+                switch ((HOSEI_POINT_ALL)config.CalcPointAllKind)
+                {
+                    case HOSEI_POINT_ALL.VCOLE2023:
+                        {
+                            //現在の集計ポイント[全体]に補正値Dを掛けたものを新ポイントとする
+                            //ただし、0.25≦D≦1.0とする
+                            //D = 2.5 *（コメント数 / 再生数）*100`
+                            double hoseiD = 1;
+                            if (CountPlay <= 0)
+                            {
+                                //再生数0の場合、Dが無限大＝1.0になる
+                                hoseiD = 1;
+                            }
+                            else
+                            {
+                                hoseiD = 2.5 * ((double)CountComment / (double)CountPlay) * 100;
+                                if (hoseiD <= 0.25)
+                                {
+                                    hoseiD = 0.25;
+                                }
+                                else if (hoseiD >= 1.0)
+                                {
+                                    hoseiD = 1;
+                                }
+                                else
+                                {// 有効桁は下二桁(切り捨て）
+                                    hoseiD = Math.Floor(hoseiD * 100) / 100;
+                                }
+                            }
+                            HoseiAllPoint = hoseiD;
+                            workPointTotal = (long)(workPointTotal * hoseiD);
+                        }
+                        break;
+                }
             }
-            
             return (long)workPointTotal;
         }
 

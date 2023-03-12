@@ -66,6 +66,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="nicorankLib\Analyze\model\UnitTestRanking.cs" />
     <Compile Include="nicorankLib\Analyze\Official\UnitTestRankingHistory.cs" />
     <Compile Include="nicorankLib\Common\UnitTestConfig.cs" />
     <Compile Include="nicorankLib\SnapShot\UnitTest1.cs" />
@@ -82,10 +83,6 @@
     <ProjectReference Include="..\nicorankLib\nicorankLib.csproj">
       <Project>{440df637-f8ee-4f5c-b841-5caba97a9f1e}</Project>
       <Name>nicorankLib</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\nicorank_aggregation\nicorank_aggregation.csproj">
-      <Project>{51a57fdd-817f-467e-b030-961c784dc85f}</Project>
-      <Name>nicorank_aggregation</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets" Condition="Exists('$(VSToolsPath)\TeamTest\Microsoft.TestTools.targets')" />

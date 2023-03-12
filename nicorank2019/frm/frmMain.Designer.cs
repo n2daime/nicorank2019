@@ -42,8 +42,10 @@
             this.label9 = new System.Windows.Forms.Label();
             this.label10 = new System.Windows.Forms.Label();
             this.tbCalcMylist = new System.Windows.Forms.TextBox();
+            this.tbHoseiCommentUnderLimit = new System.Windows.Forms.TextBox();
             this.tbCalcLike = new System.Windows.Forms.TextBox();
             this.tbCalcPlay = new System.Windows.Forms.TextBox();
+            this.label17 = new System.Windows.Forms.Label();
             this.label16 = new System.Windows.Forms.Label();
             this.tbCalcComment = new System.Windows.Forms.TextBox();
             this.label11 = new System.Windows.Forms.Label();
@@ -72,8 +74,8 @@
             this.rbTyukan = new System.Windows.Forms.RadioButton();
             this.rbWeekly = new System.Windows.Forms.RadioButton();
             this.tabPageOut = new System.Windows.Forms.TabControl();
-            this.tbHoseiCommentUnderLimit = new System.Windows.Forms.TextBox();
-            this.label17 = new System.Windows.Forms.Label();
+            this.cmbHoseiPointAll = new System.Windows.Forms.ComboBox();
+            this.label18 = new System.Windows.Forms.Label();
             this.tabPage2.SuspendLayout();
             this.tabPageSyukei.SuspendLayout();
             this.panel3.SuspendLayout();
@@ -118,7 +120,7 @@
             // 
             // btnAnalyze
             // 
-            this.btnAnalyze.Location = new System.Drawing.Point(331, 428);
+            this.btnAnalyze.Location = new System.Drawing.Point(329, 467);
             this.btnAnalyze.Name = "btnAnalyze";
             this.btnAnalyze.Size = new System.Drawing.Size(139, 39);
             this.btnAnalyze.TabIndex = 4;
@@ -129,8 +131,10 @@
             // panel3
             // 
             this.panel3.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panel3.Controls.Add(this.label18);
             this.panel3.Controls.Add(this.tbUserInfoNum);
             this.panel3.Controls.Add(this.label15);
+            this.panel3.Controls.Add(this.cmbHoseiPointAll);
             this.panel3.Controls.Add(this.cmbHoseiComment);
             this.panel3.Controls.Add(this.cmbHoseiPlay);
             this.panel3.Controls.Add(this.cmbHoseiMylist);
@@ -150,12 +154,12 @@
             this.panel3.Controls.Add(this.label14);
             this.panel3.Location = new System.Drawing.Point(11, 224);
             this.panel3.Name = "panel3";
-            this.panel3.Size = new System.Drawing.Size(794, 172);
+            this.panel3.Size = new System.Drawing.Size(794, 228);
             this.panel3.TabIndex = 3;
             // 
             // tbUserInfoNum
             // 
-            this.tbUserInfoNum.Location = new System.Drawing.Point(348, 148);
+            this.tbUserInfoNum.Location = new System.Drawing.Point(347, 194);
             this.tbUserInfoNum.Name = "tbUserInfoNum";
             this.tbUserInfoNum.Size = new System.Drawing.Size(92, 19);
             this.tbUserInfoNum.TabIndex = 16;
@@ -164,7 +168,7 @@
             // label15
             // 
             this.label15.AutoSize = true;
-            this.label15.Location = new System.Drawing.Point(14, 151);
+            this.label15.Location = new System.Drawing.Point(9, 194);
             this.label15.Name = "label15";
             this.label15.Size = new System.Drawing.Size(326, 12);
             this.label15.TabIndex = 15;
@@ -178,7 +182,7 @@
             "0: しない",
             "1: 補正 (再生＋マイリスト＋コメント＊N）／（再生＋マイリスト＋コメント",
             "2: 補正 (再生＋マイリスト＋コメント）／（再生＋マイリスト＋コメント"});
-            this.cmbHoseiComment.Location = new System.Drawing.Point(236, 74);
+            this.cmbHoseiComment.Location = new System.Drawing.Point(251, 73);
             this.cmbHoseiComment.Name = "cmbHoseiComment";
             this.cmbHoseiComment.Size = new System.Drawing.Size(450, 20);
             this.cmbHoseiComment.TabIndex = 14;
@@ -191,7 +195,7 @@
             "0: しない",
             "1: 補正値＝マイリスト率が1%未満の作品に適用する",
             "2: 補正値＝(コメント数＋マイリスト数＋いいね数）/ 再生数 ×1000"});
-            this.cmbHoseiPlay.Location = new System.Drawing.Point(236, 50);
+            this.cmbHoseiPlay.Location = new System.Drawing.Point(251, 49);
             this.cmbHoseiPlay.Name = "cmbHoseiPlay";
             this.cmbHoseiPlay.Size = new System.Drawing.Size(450, 20);
             this.cmbHoseiPlay.TabIndex = 13;
@@ -204,7 +208,7 @@
             "0: しない",
             "1: 弱い方",
             "2: 強い方 "});
-            this.cmbHoseiMylist.Location = new System.Drawing.Point(236, 26);
+            this.cmbHoseiMylist.Location = new System.Drawing.Point(251, 23);
             this.cmbHoseiMylist.Name = "cmbHoseiMylist";
             this.cmbHoseiMylist.Size = new System.Drawing.Size(450, 20);
             this.cmbHoseiMylist.TabIndex = 12;
@@ -212,7 +216,7 @@
             // label8
             // 
             this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(158, 77);
+            this.label8.Location = new System.Drawing.Point(180, 76);
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(62, 12);
             this.label8.TabIndex = 11;
@@ -221,7 +225,7 @@
             // label9
             // 
             this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(158, 54);
+            this.label9.Location = new System.Drawing.Point(189, 50);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(53, 12);
             this.label9.TabIndex = 10;
@@ -230,7 +234,7 @@
             // label10
             // 
             this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(158, 31);
+            this.label10.Location = new System.Drawing.Point(170, 26);
             this.label10.Name = "label10";
             this.label10.Size = new System.Drawing.Size(71, 12);
             this.label10.TabIndex = 9;
@@ -243,6 +247,14 @@
             this.tbCalcMylist.Size = new System.Drawing.Size(49, 19);
             this.tbCalcMylist.TabIndex = 8;
             this.tbCalcMylist.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            // 
+            // tbHoseiCommentUnderLimit
+            // 
+            this.tbHoseiCommentUnderLimit.Location = new System.Drawing.Point(251, 99);
+            this.tbHoseiCommentUnderLimit.Name = "tbHoseiCommentUnderLimit";
+            this.tbHoseiCommentUnderLimit.Size = new System.Drawing.Size(49, 19);
+            this.tbHoseiCommentUnderLimit.TabIndex = 6;
+            this.tbHoseiCommentUnderLimit.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // tbCalcLike
             // 
@@ -259,6 +271,15 @@
             this.tbCalcPlay.Size = new System.Drawing.Size(49, 19);
             this.tbCalcPlay.TabIndex = 7;
             this.tbCalcPlay.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            // 
+            // label17
+            // 
+            this.label17.AutoSize = true;
+            this.label17.Location = new System.Drawing.Point(144, 101);
+            this.label17.Name = "label17";
+            this.label17.Size = new System.Drawing.Size(98, 12);
+            this.label17.TabIndex = 3;
+            this.label17.Text = "コメント補正下限値";
             // 
             // label16
             // 
@@ -533,22 +554,26 @@
             this.tabPageOut.Size = new System.Drawing.Size(836, 661);
             this.tabPageOut.TabIndex = 0;
             // 
-            // tbHoseiCommentUnderLimit
+            // cmbHoseiPointAll
             // 
-            this.tbHoseiCommentUnderLimit.Location = new System.Drawing.Point(262, 98);
-            this.tbHoseiCommentUnderLimit.Name = "tbHoseiCommentUnderLimit";
-            this.tbHoseiCommentUnderLimit.Size = new System.Drawing.Size(49, 19);
-            this.tbHoseiCommentUnderLimit.TabIndex = 6;
-            this.tbHoseiCommentUnderLimit.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.cmbHoseiPointAll.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbHoseiPointAll.FormattingEnabled = true;
+            this.cmbHoseiPointAll.Items.AddRange(new object[] {
+            "0: しない",
+            "1: 補正値D = 2.5 * コメント数 ÷ 再生数 * 100 (米率0.4％未満に補正)"});
+            this.cmbHoseiPointAll.Location = new System.Drawing.Point(251, 124);
+            this.cmbHoseiPointAll.Name = "cmbHoseiPointAll";
+            this.cmbHoseiPointAll.Size = new System.Drawing.Size(450, 20);
+            this.cmbHoseiPointAll.TabIndex = 14;
             // 
-            // label17
+            // label18
             // 
-            this.label17.AutoSize = true;
-            this.label17.Location = new System.Drawing.Point(160, 101);
-            this.label17.Name = "label17";
-            this.label17.Size = new System.Drawing.Size(98, 12);
-            this.label17.TabIndex = 3;
-            this.label17.Text = "コメント補正下限値";
+            this.label18.AutoSize = true;
+            this.label18.Location = new System.Drawing.Point(153, 127);
+            this.label18.Name = "label18";
+            this.label18.Size = new System.Drawing.Size(89, 12);
+            this.label18.TabIndex = 17;
+            this.label18.Text = "ポイント全体補正";
             // 
             // frmMain
             // 
@@ -620,6 +645,8 @@
         private System.Windows.Forms.DateTimePicker dtPAnalyzeDay;
         private System.Windows.Forms.TextBox tbHoseiCommentUnderLimit;
         private System.Windows.Forms.Label label17;
+        private System.Windows.Forms.Label label18;
+        private System.Windows.Forms.ComboBox cmbHoseiPointAll;
     }
 }
 

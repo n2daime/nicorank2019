@@ -76,7 +76,7 @@ namespace nicorankLib.output
                     "コメントランク","コメント数","マイリストランク","登録数","いいねランク","いいね数","前回ランク","前回ポイント",
                     "コメント補正","コメントポイント","運営ポイントランク","運営ポイント",
                     "ユーザーID","ユーザー名","ユーザーアイコン","マイリスト補正","マイリストポイント",
-                    "再生補正","再生ポイント","いいねポイント"
+                    "再生補正","再生ポイント","いいねポイント","ポイント全体補正"
                 };
                 //headerData.Add("人気のタグ");
                 csvDataList.Add(headerData);
@@ -184,6 +184,8 @@ namespace nicorankLib.output
                         //"いいねポイント
                         rowData.Add(wRank.PointLike);
 
+                        //ポイント全体補正
+                        rowData.Add($"{wRank.HoseiAllPoint:F2}");
 
                         csvDataList.Add(rowData);
 

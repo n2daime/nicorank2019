@@ -61,7 +61,7 @@ namespace nicorank2019.frm
                 config.CalcPlayKind = cmbHoseiPlay.SelectedIndex;
                 config.CalcCommentKind = cmbHoseiComment.SelectedIndex;
                 config.CalcCommentUnderLimit = double.Parse(tbHoseiCommentUnderLimit.Text);
-
+                config.CalcPointAllKind = cmbHoseiPointAll.SelectedIndex;
 
                 config.UserNum= int.Parse(tbUserInfoNum.Text);
 

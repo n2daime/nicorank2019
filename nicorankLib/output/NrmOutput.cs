@@ -143,6 +143,9 @@ namespace nicorankLib.output
                     }    
                     tsvDataList.Add(rowData);
 
+                    //ポイント全体補正
+                    rowData.Add($"{wRank.HoseiAllPoint:F2}");
+
                 }
                 var tsvPath = Path.Combine(this.OutputDir, this.FileName);
 

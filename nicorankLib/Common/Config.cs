@@ -73,6 +73,11 @@ namespace nicorankLib.Common
         public int CalcCommentKind { get { return xml.COMMENT_OFFSET.Mode; } set { xml.COMMENT_OFFSET.Mode = value; } }
 
         /// <summary>
+        /// ポイント全体補正を行うか？
+        /// </summary>
+        public int CalcPointAllKind { get { return xml.POINTALL_OFFSET.Mode; } set { xml.POINTALL_OFFSET.Mode = value; } }
+
+        /// <summary>
         /// コメントポイント補正の下限値
         /// </summary>
         public double CalcCommentUnderLimit{ get { return xml.COMMENT_OFFSET.UnderLimit ; } set { xml.COMMENT_OFFSET.UnderLimit = value; } }
@@ -171,10 +176,10 @@ namespace nicorankLib.Common
             {//設定がない場合のデフォルトは20
                 this.xml.SYSTEM.Download.UserIcon = new UserIcon() { Retry = 20 };
             }
-            //if (this.xml.COMMENT_OFFSET.UnderLimit == 0)
-            //{//設定がない場合 0になる。下限無効になる
-            //    this.xml.COMMENT_OFFSET.UnderLimit = 0.1;
-            //}
+            if (this.xml.POINTALL_OFFSET == null)
+            {//設定がない場合 補正なしにする
+                this.xml.POINTALL_OFFSET = new POINTALL_OFFSET() { Mode = 0 };
+            }
         }
     }
 }
