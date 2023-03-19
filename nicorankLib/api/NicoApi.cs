@@ -58,6 +58,9 @@ namespace nicorankLib.api
             {
                 try
                 {
+                    // 取得日は0:00相当になるので、更新チェックDateも0:00にする
+                    var targetDateBase = ((DateTime)targetDate).Date;
+
                     //更新するべきデータのリスト
                     var updateList = new List<Ranking>(rankingList.Count);
                     foreach (var wRank in rankingList)
@@ -85,7 +88,7 @@ namespace nicorankLib.api
                                         {
                                             var getDate = DateConvert.String2Time(strGetDate.ToString(), false);
                                             // 取得日が指定日より古ければ更新する
-                                            if (getDate < (DateTime)targetDate)
+                                            if (getDate < targetDateBase)
                                             {
                                                 updateList.Add(wRank);
                                             }
