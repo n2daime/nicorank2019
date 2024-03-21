@@ -24,7 +24,7 @@ namespace nicorankLib.SnapShot
         /// リクエストURL
         /// </summary>
         const string REQUEST_URL =
-            @"https://api.search.nicovideo.jp/api/v2/snapshot/video/contents/search?q=&_sort=-viewCounter&fields=contentId,commentCounter,viewCounter,mylistCounter,likeCounter&filters[startTime][gte]={0}T00:00:00%2B09:00&filters[startTime][lt]={1}T00:00:00%2B09:00&_limit={2}&_offset={3}";
+            @"https://snapshot.search.nicovideo.jp/api/v2/snapshot/video/contents/search?q=&_sort=-viewCounter&fields=contentId,commentCounter,viewCounter,mylistCounter,likeCounter&filters[startTime][gte]={0}T00:00:00%2B09:00&filters[startTime][lt]={1}T00:00:00%2B09:00&_limit={2}&_offset={3}";
 
         string startDay = "";
         string endDay = "";
