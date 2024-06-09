@@ -12,10 +12,10 @@ namespace nicorankLib.Util
     /// </summary>
     public class ErrLog
     {
-        protected static ErrLog m_Instance = new ErrLog();
+        protected static ErrLog m_Instance;
         public bool IsWrite { get; protected set; }
         protected TextUtil textUtil = new TextUtil();
-        object lockobject = new object();
+        private static readonly object lockObject = new object();
 
         /// <summary>
         /// コンストラクタ
@@ -39,7 +39,15 @@ namespace nicorankLib.Util
         /// <returns></returns>
         public static ErrLog GetInstance()
         {
-            return m_Instance;
+            lock (lockObject)
+            {
+                if (m_Instance == null)
+                {
+                    //インスタンス生成
+                    m_Instance = new ErrLog();
+                }
+                return m_Instance;
+            }
         }
 
         /// <summary>

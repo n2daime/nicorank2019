@@ -1,4 +1,5 @@
-﻿using nicorankLib.Analyze.model;
+﻿using Microsoft.VisualBasic;
+using nicorankLib.Analyze.model;
 using nicorankLib.api.model;
 using nicorankLib.Common;
 using nicorankLib.Util;
@@ -111,25 +112,23 @@ namespace nicorankLib.api
                             int GetCounter = 0;
                             Parallel.ForEach(updateList, new ParallelOptions() { MaxDegreeOfParallelism = threadMax }, (wRank) =>
                             {
-                                    //if (idConvertMap.ContainsKey(wRank.ID))
-                                    //{
-                                    //var thmbInfo = GetTumbInfo(wRank, idConvertMap[wRank.ID]);
-                                    var thmbInfo = GetTumbInfo(wRank, wRank.ID);
-                                if (thmbInfo != null)
+                                var thmbInfo = GetTumbInfo(wRank, wRank.ID);
+          
+                                lock (lockObject)
                                 {
-                                    lock (lockObject)
+                                    StatusLog.Write(".");
+                                    if (GetCounter % 10 == 0 && GetCounter != 0)
                                     {
-                                        StatusLog.Write(".");
-                                        if (GetCounter % 10 == 0 && GetCounter != 0)
-                                        {
-                                            StatusLog.Write(GetCounter.ToString());
-                                        }
-                                        GetCounter++;
+                                        StatusLog.Write(GetCounter.ToString());
+                                    }
+                                    GetCounter++;
+                                    if (thmbInfo != null)
+                                    {
                                         thumbinfoList.Add(thmbInfo);
                                     }
                                 }
-                                    //}
-                                });
+                                
+                             });
 
                             // DBに登録する
                             // 一度古いデータを削除する
@@ -184,6 +183,7 @@ namespace nicorankLib.api
         /// <returns></returns>
         protected ThumbinfoBase GetTumbInfo(Ranking ranking, string id, string strXml = "")
         {
+            
             try
             {
                 if (string.IsNullOrEmpty(strXml))
@@ -201,7 +201,7 @@ namespace nicorankLib.api
             }
             catch (Exception ex)
             {
-                ErrLog.GetInstance().Write(ex);
+                ErrLog.GetInstance().Write($@"{APIURL}{id}  の情報を取得できませんでした");
                 return null;
             }
         }

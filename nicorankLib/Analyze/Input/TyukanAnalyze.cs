@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using nicorankLib.Analyze.Json;
 using nicorankLib.Analyze.model;
+using nicorankLib.Analyze.Official;
 using nicorankLib.Analyze.Option;
 using nicorankLib.Util;
 
@@ -150,7 +151,14 @@ namespace nicorankLib.Analyze.Input
             try
             {
                 using (var dbCtrl = new SQLiteCtrl())
+                using( var rankOfficial = new RankingHistory())
                 {
+                    if (!rankOfficial.Open())
+                    {
+                        //失敗
+                        return false; ;
+                    }
+
                     if (!dbCtrl.Open(DATASOURCE))
                     {
                         //失敗
@@ -178,7 +186,13 @@ namespace nicorankLib.Analyze.Input
 
                         //集計していないので、集計する必要がある
                         //集計に必要なオプションを作成する
-                        DateTime BaseDay = targetDate.AddDays(-1);
+                        DateTime BaseDay = targetDate;
+                        do {
+                            BaseDay = BaseDay.AddDays(-1);
+
+                        }//差分対象がメンテナンス日であればさらに一日さかのぼる 
+                        while (rankOfficial.CheckMaintananceDay(BaseDay));
+
                         var options = new List<BasicOptionBase>()
                         {
                             new SabunReader(BaseDay) 
@@ -305,24 +319,38 @@ namespace nicorankLib.Analyze.Input
         {
             targetDateList = new List<DateTime>();
 
-            // 火曜日を見つけるまでループ
-            while (true)
+            using (RankingHistory rankOfficial = new RankingHistory())
             {
-                if (analyzeDay.DayOfWeek == DayOfWeek.Tuesday)
+                rankOfficial.Open();
+
+                // 火曜日を見つけるまでループ
+                while (true)
                 {
-                    if (!JsonReaderBase.CheckAnalyzeTime(analyzeDay))
+                    if (analyzeDay.DayOfWeek == DayOfWeek.Tuesday)
                     {
-                        //当日の0:30 前＝まだ集計されていない可能性がある
+                        if (!JsonReaderBase.CheckAnalyzeTime(analyzeDay))
+                        {
+                            //当日の0:30 前＝まだ集計されていない可能性がある
+                        }
+                        else
+                        {
+                            //集計日確定
+                            if (!rankOfficial.CheckMaintananceDay(analyzeDay))
+                            {
+                                //メンテナンス中以外であれば集計する
+                                targetDateList.Add(analyzeDay.Date);
+                            }
+                            break;
+                        }
                     }
-                    else
+                    //集計日確定
+                    if (!rankOfficial.CheckMaintananceDay(analyzeDay))
                     {
-                        //集計日確定
+                        //メンテナンス中以外であれば集計する
                         targetDateList.Add(analyzeDay.Date);
-                        break;
                     }
+                    analyzeDay = analyzeDay.AddDays(-1);
                 }
-                targetDateList.Add(analyzeDay.Date);
-                analyzeDay = analyzeDay.AddDays(-1);
             }
             targetDateList = targetDateList.OrderBy(date => date.Date).ToList(); ;
         }
