@@ -48,13 +48,19 @@ namespace nicorankLib.Util
                     }
                     catch (WebException ex)
                     {
+                        if (ex.Status == WebExceptionStatus.ProtocolError && ex.Response.ContentType == "application/xml")
+                        {
+                            //真面目にやるのであれば中身をちゃんと解析するべきだが、AccessDeniedと見直して、再試行を抜ける
+                            break;
+                        }
+
                         switch (ex.Status)
                         {
-                            case WebExceptionStatus.ProtocolError:
+                            case WebExceptionStatus.ProtocolError:          
                             case WebExceptionStatus.Timeout:
 
                                 Thread.Sleep(1000);
-                                continue;
+                                continue; 
                         }
                     }
                     break;

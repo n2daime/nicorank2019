@@ -12,6 +12,7 @@ using Microsoft.VisualBasic.FileIO;
 using System.Threading;
 using Newtonsoft.Json;
 using System.Text.RegularExpressions;
+using System.Windows.Forms;
 
 namespace nicorankLib.Analyze.Official
 {
@@ -610,8 +611,12 @@ namespace nicorankLib.Analyze.Official
                 {
                     return false;
                 }
+                //RankingDateテーブルが存在しなければ作成する
+                if (!createRankingDateTable())
+                {
+                    return false;
+                }
 
-                //var needDailyList = new List<DateTime>() { DateTime.Now.Date};
                 ////更新の必要性をチェック
                 if (!checkNeedUpdateOfficialRankingDB(out var needDailyList))
                 {//エラー
@@ -625,17 +630,46 @@ namespace nicorankLib.Analyze.Official
                 }
                 foreach (var targetDate in needDailyList)
                 {
+
                     StatusLog.WriteLine($"{targetDate.ToShortDateString()}の過去ランキングデータを取得しています...");
                     if (!analyzeDailyRanking(targetDate, out var rankings))
                     {
                         StatusLog.WriteLine($"\n{ targetDate.ToShortDateString() } のランキングデータ取得でエラー発生");
                         break;
                     }
-                    StatusLog.Write($"DB登録開始..");
-                    if (!updateOfficialRankingDB_Daily(targetDate, rankings))
+                    if (rankings.Count < 1)
                     {
-                        StatusLog.WriteLine($"\n{ targetDate.ToShortDateString() } のランキングデータ登録でエラー発生");
-                        break;
+                        //1件も取得できなかった場合、対象の日にニコ動がメンテナンスしていた可能性がある
+                        var askResult = MessageBox.Show(
+$@"{targetDate.ToShortDateString()}のランキングデータが取得できませんでした。
+メンテナンス日として登録しますか？
+
+キャンセルした場合は、現在の処理を中断します"
+                            , "確認", MessageBoxButtons.OKCancel, MessageBoxIcon.Asterisk);
+                        if (askResult == DialogResult.OK)
+                        {
+                            //このまま登録処理を続ける
+                            if (!updateOfficialRankingDB_Daily(targetDate, rankings, true))
+                            {
+                                StatusLog.WriteLine($"\n{targetDate.ToShortDateString()} のランキングデータ登録でエラー発生");
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            StatusLog.WriteLine($"\n{targetDate.ToShortDateString()} のランキングデータ取得でエラー発生。集計を中断します");
+                            return false;
+                        }
+
+                    }
+                    else
+                    {
+                        StatusLog.Write($"DB登録開始..");
+                        if (!updateOfficialRankingDB_Daily(targetDate, rankings))
+                        {
+                            StatusLog.WriteLine($"\n{targetDate.ToShortDateString()} のランキングデータ登録でエラー発生");
+                            break;
+                        }
                     }
                     StatusLog.WriteLine($"DB登録終了。");
 
@@ -682,11 +716,7 @@ namespace nicorankLib.Analyze.Official
                     rankListList.Add(workList);
                 }
             }
-            if (rankListList.Count == 0)
-            {
-                return false;
-            }
-            else if (rankListList.Count == 1)
+            if (rankListList.Count == 1)
             {
                 rankings = rankListList[0];
             }
@@ -717,7 +747,7 @@ namespace nicorankLib.Analyze.Official
                     //NULL=集計されていない場合、20190611から集計できるように設定しておく
                     aCmd.CommandText =
                         @"SELECT IFNULL(Max(集計日), 20190610) as '集計日' 
-                          FROM Ranking;";
+                          FROM RankingDate;";
 
                     DateTime today = DateTime.Now.Date;
                     DateTime baseDateTime = today;
@@ -766,7 +796,7 @@ namespace nicorankLib.Analyze.Official
         /// <param name="analyzeTime"></param>
         /// <param name="rankings"></param>
         /// <returns></returns>
-        protected bool updateOfficialRankingDB_Daily(DateTime analyzeTime, List<Ranking> rankings)
+        protected bool updateOfficialRankingDB_Daily(DateTime analyzeTime, List<Ranking> rankings,bool isMaintenance = false)
         {
             if (!this.dbCtrlOfficial.IsOpen)
             {
@@ -780,58 +810,85 @@ namespace nicorankLib.Analyze.Official
                     //トランザクションの開始
                     aCmd.Transaction = dbCtrlOfficial.Connection.BeginTransaction();
 
-                    var strSQL = @"INSERT INTO Ranking
+                    long analyzeDate = long.Parse(DateConvert.Time2String(analyzeTime, false));
+
+                    if (!isMaintenance)
+                    {//←メンテナンス日以外の時実行
+
+      
+
+                        var strSQL = @"INSERT INTO Ranking
                                   ( ID,     集計日,再生数,コメント数,マイリスト数,いいね数,人気のタグ )
                                     VALUES
                                   ( @ID,    @Date,  @Play, @Comment, @MyList ,@いいね数 ,@人気のタグ)";
 
-                    aCmd.CommandText = strSQL;
+                        aCmd.CommandText = strSQL;
 
-                    long analyzeDate = long.Parse(DateConvert.Time2String( analyzeTime , false) );
+                        
+                        Regex regDelete = new Regex(@"/video_deleted");
 
-                    Regex regDelete = new Regex(@"/video_deleted");
-
-                    foreach (var wRank in rankings)
-                    {
-                        if (regDelete.IsMatch(wRank.ThumbnailURL))
-                        {// 削除 or 非表示動画は登録しない
+                        foreach (var wRank in rankings)
+                        {
+                            if (regDelete.IsMatch(wRank.ThumbnailURL))
+                            {// 削除 or 非表示動画は登録しない
+                            }
+                            else
+                            {
+                                aCmd.Parameters.Clear();
+                                aCmd.Parameters.AddWithValue("@ID", wRank.ID);
+                                aCmd.Parameters.AddWithValue("@Date", analyzeDate);
+                                aCmd.Parameters.AddWithValue("@Play", wRank.CountPlay);
+                                aCmd.Parameters.AddWithValue("@Comment", wRank.CountComment);
+                                aCmd.Parameters.AddWithValue("@MyList", wRank.CountMyList);
+                                aCmd.Parameters.AddWithValue("@いいね数", wRank.CountLike);
+                                aCmd.Parameters.AddWithValue("@人気のタグ", JsonConvert.SerializeObject(wRank.FavoriteTags));
+                                //更新の実行
+                                aCmd.ExecuteNonQuery();
+                            }
                         }
-                        else{ 
-                            aCmd.Parameters.Clear();
-                            aCmd.Parameters.AddWithValue("@ID", wRank.ID);
-                            aCmd.Parameters.AddWithValue("@Date", analyzeDate);
-                            aCmd.Parameters.AddWithValue("@Play", wRank.CountPlay);
-                            aCmd.Parameters.AddWithValue("@Comment", wRank.CountComment);
-                            aCmd.Parameters.AddWithValue("@MyList", wRank.CountMyList);
-                            aCmd.Parameters.AddWithValue("@いいね数", wRank.CountLike);
-                            aCmd.Parameters.AddWithValue("@人気のタグ", JsonConvert.SerializeObject(wRank.FavoriteTags));
-                            //更新の実行
-                            aCmd.ExecuteNonQuery();
-                        }
-                    }
 
-                    //動画情報が無いときだけ追加する
-                    strSQL = @"INSERT INTO Movie( ID, '投稿日','タイトル')
+                        //動画情報が無いときだけ追加する
+                        strSQL = @"INSERT INTO Movie( ID, '投稿日','タイトル')
                                SELECT @ID,@Date,@Title
                                WHERE NOT EXISTS (SELECT * FROM Movie WHERE ID=@ID);";
 
-                    aCmd.CommandText = strSQL;
+                        aCmd.CommandText = strSQL;
 
-                    foreach (var wRank in rankings)
-                    {
-                        if (!regDelete.IsMatch(wRank.ThumbnailURL))
-                        {// 削除 or 非表示動画は登録しない
-                        }
-                        else
+                        foreach (var wRank in rankings)
                         {
-                            aCmd.Parameters.Clear();
-                            aCmd.Parameters.AddWithValue("@ID", wRank.ID);
-                            aCmd.Parameters.AddWithValue("@Date", DateConvert.Time2String(wRank.Date, true));
-                            aCmd.Parameters.AddWithValue("@Title", wRank.Title);
-                            //更新の実行
-                            aCmd.ExecuteNonQuery();
+                            if (!regDelete.IsMatch(wRank.ThumbnailURL))
+                            {// 削除 or 非表示動画は登録しない
+                            }
+                            else
+                            {
+                                aCmd.Parameters.Clear();
+                                aCmd.Parameters.AddWithValue("@ID", wRank.ID);
+                                aCmd.Parameters.AddWithValue("@Date", DateConvert.Time2String(wRank.Date, true));
+                                aCmd.Parameters.AddWithValue("@Title", wRank.Title);
+                                //更新の実行
+                                aCmd.ExecuteNonQuery();
+                            }
                         }
+                    }//←メンテナンス日以外の時実行
+
+
+                    {//RankingDateテーブルの更新
+
+                        var strSQL = @"INSERT INTO RankingDate
+                                  ( '集計日','メンテナンス' )
+                                    VALUES
+                                  ( @Date,  @メンテナンス)";
+
+                        aCmd.CommandText = strSQL;
+                        aCmd.Parameters.Clear();
+                        aCmd.Parameters.AddWithValue("@Date", analyzeDate);
+                        aCmd.Parameters.AddWithValue("@メンテナンス", isMaintenance? 1:0 );
+
+                        //更新の実行
+                        aCmd.ExecuteNonQuery();
                     }
+
+
                     aCmd.Transaction.Commit();
                 }
                 catch (Exception ex)
@@ -846,7 +903,130 @@ namespace nicorankLib.Analyze.Official
             }
             return true;
         }
+        /// <summary>
+        /// RankingDateテーブルが存在しなければ追加する
+        /// </summary>
+        /// <param name="needDailyList"></param>
+        /// <returns></returns>
+        protected bool createRankingDateTable()
+        {
+            // メンテナンス日かどうかを判定するための、RankingDateテーブルが存在しなければ追加する
+            if (!this.dbCtrlOfficial.IsOpen)
+            {
+                return false;
+            }
+            try
+            {
+                using (var aCmd = new SQLiteCommand(dbCtrlOfficial.Connection))
+                {
+                    //どこまで集計されているか取得する
+                    //NULL=集計されていない場合、20190611から集計できるように設定しておく
+                    aCmd.CommandText =
+                        @"SELECT * FROM sqlite_master WHERE TYPE='table' AND name='RankingDate';";
 
+
+                    //実行結果の取得
+                    using (var reader = aCmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            //存在しているので作成する必要なし
+                            return true;
+                        }
+
+                    }
+
+                    StatusLog.WriteLine("メンテナンス日を管理するテーブルを作成しています(数分程度かかります。気長にお待ちください)...");
+
+
+                    //存在しないので作成する
+                    //トランザクションの開始
+                    aCmd.Transaction = dbCtrlOfficial.Connection.BeginTransaction();
+
+                    aCmd.CommandText =
+                        @"CREATE TABLE RankingDate (
+                            '集計日'	    INTEGER             ,
+                            'メンテナンス'	INTEGER DEFAULT 0   ,
+                            PRIMARY KEY('集計日')
+                            );";
+
+                    //DEB作成の実行
+                    aCmd.ExecuteNonQuery();
+
+                    //テーブルの中身を、現時点のデータを元に作成する
+                    aCmd.CommandText =
+                        @"INSERT INTO RankingDate ('集計日', 'メンテナンス')
+                            SELECT 集計日,
+                              CASE
+                                WHEN COUNT(集計日) > 0 THEN 0
+                                ELSE 1
+                              END AS 'メンテナンス'
+                          FROM Ranking
+                          Group by 集計日;";
+
+                    //テーブル更新の実行
+                    aCmd.ExecuteNonQuery();
+
+                    aCmd.Transaction.Commit();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                var errLog = ErrLog.GetInstance();
+                errLog.Write($"{ DB.LOG_OFFICEIAL}更新でエラー発生。(RankingHistory::createRankingDateTable)");
+                errLog.Write(ex);
+                return false;
+            }
+            return true;
+        }
+
+        ///メンテナンス日かどうかをチェックする
+        public bool CheckMaintananceDay(DateTime chechDay)
+        {
+            try
+            {
+                if (!this.dbCtrlOfficial.IsOpen)
+                {
+                    return false;
+                }
+
+                using (var aCmd = new SQLiteCommand(this.dbCtrlOfficial.Connection))
+                {
+                    //すでに集計済みか確認する
+                    aCmd.CommandText =
+                        @"SELECT メンテナンス FROM RankingDate
+                                Where 集計日 = @集計日
+                                LIMIT 1";
+                    aCmd.Parameters.Clear();
+                    aCmd.Parameters.AddWithValue("@集計日", DateConvert.Time2String(chechDay, false));
+
+                    //実行結果の取得
+                    using (var reader = aCmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            if (Convert.ToInt64(reader["メンテナンス"].ToString()) > 0)
+                            {
+                                //メンテナンス中
+                                return true;
+                            }
+                            else
+                            {
+                                return false;
+
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrLog.GetInstance().Write(ex);
+            }
+            return false;
+        }
+       
         #region IDisposable Support
         private bool disposedValue = false; // 重複する呼び出しを検出するには
 

@@ -62,7 +62,7 @@ namespace nicorankLib.Analyze
                 //基本となるランキングデータを取得する
                 if (!this.Input.AnalyzeRank(out rankingList))
                 {
-                    return false;
+
                 }
 
                 foreach (var Option in BaseOptionList)
