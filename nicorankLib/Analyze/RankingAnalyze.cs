@@ -62,7 +62,8 @@ namespace nicorankLib.Analyze
                 //基本となるランキングデータを取得する
                 if (!this.Input.AnalyzeRank(out rankingList))
                 {
-
+                    StatusLog.WriteLine($"\n集計中にエラーが発生しました。エラーログを確認してください。");
+                    return false;
                 }
 
                 foreach (var Option in BaseOptionList)

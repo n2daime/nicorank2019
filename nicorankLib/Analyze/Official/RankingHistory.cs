@@ -628,6 +628,7 @@ namespace nicorankLib.Analyze.Official
                     //更新の必要性はない
                     return true;
                 }
+                bool isMaintenanceOK = false;
                 foreach (var targetDate in needDailyList)
                 {
 
@@ -639,14 +640,24 @@ namespace nicorankLib.Analyze.Official
                     }
                     if (rankings.Count < 1)
                     {
-                        //1件も取得できなかった場合、対象の日にニコ動がメンテナンスしていた可能性がある
-                        var askResult = MessageBox.Show(
-$@"{targetDate.ToShortDateString()}のランキングデータが取得できませんでした。
+                        if (!isMaintenanceOK)
+                        {
+                            //1件も取得できなかった場合、対象の日にニコ動がメンテナンスしていた可能性がある
+                            var askResult = MessageBox.Show(
+    $@"{targetDate.ToShortDateString()}のランキングデータが取得できませんでした。
 メンテナンス日として登録しますか？
 
-キャンセルした場合は、現在の処理を中断します"
-                            , "確認", MessageBoxButtons.OKCancel, MessageBoxIcon.Asterisk);
-                        if (askResult == DialogResult.OK)
+OK: この後の取得不可日は全てメンテナンス日として登録します
+キャンセル : 現在の処理を中断します"
+                                , "確認", MessageBoxButtons.OKCancel, MessageBoxIcon.Asterisk);
+
+                            if (askResult == DialogResult.OK)
+                            {
+                                isMaintenanceOK = true;
+                            }
+                        }
+
+                        if (isMaintenanceOK)
                         {
                             //このまま登録処理を続ける
                             if (!updateOfficialRankingDB_Daily(targetDate, rankings, true))

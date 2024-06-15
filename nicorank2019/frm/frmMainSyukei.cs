@@ -20,7 +20,7 @@ namespace nicorank2019.frm
     public partial class frmMain
     {
 
-        private EAnalyzeMode eAnalyzeMode;
+        private EAnalyzeMode eAnalyzeMode = EAnalyzeMode.Weekly;
 
         /// <summary>
         /// 集計モードを選択する
@@ -33,17 +33,20 @@ namespace nicorank2019.frm
             {
                 this.eAnalyzeMode = EAnalyzeMode.Weekly;
                 this.dtPAnalyzeDay.Enabled = true;
+                this.dtPLastweekDay.Enabled = true;
             }
             else if (rbTyukan.Checked)
             {
                 this.eAnalyzeMode = EAnalyzeMode.Tyukan;
                 this.dtPAnalyzeDay.Enabled = false;
+                this.dtPLastweekDay.Enabled = true;
 
             }
             else if (rbSP.Checked)
             {
                 this.eAnalyzeMode = EAnalyzeMode.SP;
                 this.dtPAnalyzeDay.Enabled = false;
+                this.dtPLastweekDay.Enabled = false;
 
                 config.IsSP = true;
             }
@@ -79,11 +82,13 @@ namespace nicorank2019.frm
             {
                 var factory = new ModeFactoryWeekly();
                 factory.SetTargetTime(dtPAnalyzeDay.Value);
+                factory.SeBaseTime(dtPLastweekDay.Value.Date);
                 return factory;
             }
             else if (rbTyukan.Checked)
             {
                 var factory = new ModeFactoryTyukan();
+                factory.SetLastWeekDay(dtPLastweekDay.Value.Date);
                 return factory;
             }
             else if (rbSP.Checked)
@@ -121,17 +126,21 @@ namespace nicorank2019.frm
                     }
                     else
                     {
-                        history.UpdateOfficialRankingDB();
-
-                        this.MainFactory = GetModeFactory();
-                        this.MainFactory.CreateAnalyzer();
-
-                        if (!MainFactory.AnalyzeRank())
+                        if (!history.UpdateOfficialRankingDB())
                         {
                             returnVal = false;
                         }
-                        StatusLog.WriteLine("集計成功");
+                        else
+                        {
+                            this.MainFactory = GetModeFactory();
+                            this.MainFactory.CreateAnalyzer();
 
+                            if (!MainFactory.AnalyzeRank())
+                            {
+                                returnVal = false;
+                            }
+                            StatusLog.WriteLine("集計成功");
+                        }
                     }
                     history.Close();
                 }

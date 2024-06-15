@@ -17,16 +17,24 @@ namespace nicorankLib.Factory
     {
         public const Analyze.model.EAnalyzeMode AnalyzeMode = Analyze.model.EAnalyzeMode.Weekly;
 
+        protected DateTime LastWeekDay;
+
+        public void SetLastWeekDay(DateTime lastweekDay)
+        {
+            this.LastWeekDay = lastweekDay;
+        }
+
         public override bool CreateAnalyzer()
         {
 
             // ランキングのベースは週間JSON
-            var inputBase = new TyukanAnalyze();
+            var inputBase = new TyukanAnalyze(LastWeekDay.AddDays(7).Date);
+
             inputBase.setAnalyzeDay(DateTime.Today);
 
             //集計日を計算する
             this.TargetDay = inputBase.AnalyzeDay;
-            this.BaseDay = inputBase.GetBaseDay();
+            this.BaseDay = LastWeekDay.Date;
 
             //長期判定
             this.TyokiHantei = null;
