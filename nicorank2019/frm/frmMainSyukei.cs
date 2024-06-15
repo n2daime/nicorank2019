@@ -20,7 +20,7 @@ namespace nicorank2019.frm
     public partial class frmMain
     {
 
-        EAnalyzeMode eAnalyzeMode;
+        private EAnalyzeMode eAnalyzeMode;
 
         /// <summary>
         /// 集計モードを選択する

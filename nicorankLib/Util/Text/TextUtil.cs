@@ -166,7 +166,7 @@ namespace nicorankLib.Util.Text
                                             var workStrTime = RegLib.RegExpRep(strRow, @"([:：\s])|(投稿)", "");
                                             wRank.Date = DateTime.ParseExact(workStrTime, "yyyy年MM月dd日HHmmss", null); 
                                         }
-                                        catch (Exception ex)
+                                        catch (Exception )
                                         {
                                         }
                                         break;
