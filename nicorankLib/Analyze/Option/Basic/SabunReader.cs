@@ -82,7 +82,22 @@ namespace nicorankLib.Analyze.Option
                     var needSabunList = rankingList.Where(rank => rank.Date < BaseTime.Date);
                     var sabunNashiDataList = new List<Ranking>();
 
-                    long baseTimeLong2 = long.Parse(DateConvert.Time2String(BaseTime.AddDays(-7), false));
+                    //先週の月曜日にランクインしていない場合も十分ありうるので、より過去の数字を差分として採用する
+                    //・ただし遡るのは最長７日分とする（１年間ランクインしてなくても累積だと無視できない数字になってたりするので）
+                    //・７日分にはメンテナンス日は含まない
+                    DateTime sabunStartDate = BaseTime.Date;
+                    {
+                        uint countDay = 0;
+                        while (countDay < 7)
+                        {
+                            sabunStartDate = sabunStartDate.AddDays(-1);
+                            if (!rankHistory.CheckMaintananceDay(sabunStartDate))
+                            {//メンテナンス日ではない
+                                countDay++;
+                            }
+                        }
+                    }
+                    long baseTimeLong2 = long.Parse(DateConvert.Time2String(sabunStartDate, false));
 
                     foreach (var wRank in needSabunList)
                     {

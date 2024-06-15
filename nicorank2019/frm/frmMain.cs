@@ -194,12 +194,35 @@ namespace nicorank2019.frm
                 }
                 analyzeDay = analyzeDay.AddDays(-1);
             }
-            dtPAnalyzeDay.Value = analyzeDay;
+            dtPAnalyzeDay.Value = analyzeDay.Date;
+            dtPLastweekDay.Value = analyzeDay.AddDays(-7).Date;
         }
 
         private void dtPAnalyzeDay_ValueChanged(object sender, EventArgs e)
         {
             SetEnableAnalyzeDay();
+        }
+
+        private void dtPLastweekDay_ValueChanged(object sender, EventArgs e)
+        {
+            // 有効な集計日になるまでループ
+            var lastweekDay = dtPLastweekDay.Value.Date;
+            var analyzeDay = dtPAnalyzeDay.Value.Date;
+            //未来はNG
+            if ( analyzeDay <= lastweekDay)
+            {
+                lastweekDay = analyzeDay.AddDays(-7).Date;
+            }
+            while (true)
+            {
+                if (lastweekDay.DayOfWeek == DayOfWeek.Monday)
+                {
+                    //集計日確定
+                    break;
+                }
+                lastweekDay = lastweekDay.AddDays(-1);
+            }
+            dtPLastweekDay.Value = lastweekDay;
         }
     }
 }

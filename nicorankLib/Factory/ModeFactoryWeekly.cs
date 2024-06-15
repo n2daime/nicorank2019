@@ -28,6 +28,11 @@ namespace nicorankLib.Factory
         {
             this.TargetDay = AnalyzeDay.AddDays(0);
         }
+        public void SeBaseTime(DateTime BaseDay)
+        {
+            this.BaseDay = BaseDay.AddDays(0).Date;
+        }
+
         public override bool CreateAnalyzer()
         {
             var isMaintananceDay = false;
@@ -39,7 +44,6 @@ namespace nicorankLib.Factory
             }
 
             //集計日を計算する
-            this.BaseDay = TargetDay.AddDays(-7); //7日前
 
             InputBase inputBase;
             List<BasicOptionBase> options;
@@ -50,7 +54,7 @@ namespace nicorankLib.Factory
                 StatusLog.WriteLine($"{this.TargetDay.ToShortDateString()}はメンテナンス日です。代替として中間集計ロジックで計算します\n");
 
                 // ランキングのベースは週間JSON
-                inputBase = new TyukanAnalyze();
+                inputBase = new TyukanAnalyze(this.BaseDay.Date);
                 inputBase.setAnalyzeDay(this.TargetDay);
 
                 options = new List<BasicOptionBase>()

@@ -457,7 +457,7 @@ namespace nicorankLib.Analyze.model
                             }
                             else
                             {
-                                double hosei = 0.01;
+                                //double hosei = 0.01;
                                 if (CountPlay == 0 && CountMyList == 0)
                                 {
                                     HoseiComment = 0.01;

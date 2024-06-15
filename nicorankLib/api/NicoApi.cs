@@ -199,7 +199,7 @@ namespace nicorankLib.api
                 returnObj.Ranking = ranking;
                 return returnObj;
             }
-            catch (Exception ex)
+            catch (Exception )
             {
                 ErrLog.GetInstance().Write($@"{APIURL}{id}  の情報を取得できませんでした");
                 return null;

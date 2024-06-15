@@ -20,6 +20,14 @@ namespace nicorankLib.Analyze.Input
     {
         const string DATASOURCE = "DB/Dailylog.db";
 
+
+        protected DateTime TargetStartDay;
+
+        public TyukanAnalyze(DateTime targetStartDay)
+        {
+            this.TargetStartDay = targetStartDay;
+        }
+
         /// <summary>
         /// 集計するデイリーのリスト
         /// </summary>
@@ -30,14 +38,29 @@ namespace nicorankLib.Analyze.Input
             calcTargetDateList(analyzeDay);
         }
 
+
         public override DateTime getAnalyzeDay()
         {
-            return this.targetDateList.Last();
+            if (this.targetDateList.Count < 1)
+            {
+                return DateTime.Today;
+            }
+            else
+            {
+                return this.targetDateList.Last();
+            }
         }
 
         public DateTime GetBaseDay()
         {
-            return this.targetDateList.First().AddDays(-1).Date; ;
+            if (this.targetDateList.Count < 1)
+            {
+                return DateTime.Today.AddDays(-7);
+            }
+            else
+            {
+                return this.targetDateList.First().AddDays(-1).Date;
+            }            
         }
 
         /// <summary>
@@ -48,6 +71,12 @@ namespace nicorankLib.Analyze.Input
         public override bool AnalyzeRank(out List<Ranking> rakingList)
         {
             rakingList = null;
+            if (targetDateList.Count < 1)
+            {
+                StatusLog.WriteLine("\n集計期間に問題があります。メンテナンス以外の有効な日数が０日間です。集計できません");
+
+                return false;
+            }
 
             foreach (var targetDate in targetDateList)
             {
@@ -323,10 +352,13 @@ namespace nicorankLib.Analyze.Input
             {
                 rankOfficial.Open();
 
+                //月曜日の0:00は実質日曜日のデータなので集計しない（ので+１日）
+                DateTime startDate = this.TargetStartDay.AddDays(1).Date;
+
                 // 火曜日を見つけるまでループ
                 while (true)
                 {
-                    if (analyzeDay.DayOfWeek == DayOfWeek.Tuesday)
+                    if (analyzeDay.Date <= startDate)
                     {
                         if (!JsonReaderBase.CheckAnalyzeTime(analyzeDay))
                         {
