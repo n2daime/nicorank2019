@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace nicorankLib.Util
 {
-    class RegLib
+    public class RegLib
     {
         public static string RegExpRep(string src, string match, string repstr)
         {

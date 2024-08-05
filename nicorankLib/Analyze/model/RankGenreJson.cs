@@ -16,7 +16,7 @@ namespace nicorankLib.Analyze.model
         public string Genre { get; set; }
 
         [JsonProperty("tag")]
-        public string Tag { get; set; }
+        public object Tag { get; set; }
 
         [JsonProperty("file")]
         public string File { get; set; }

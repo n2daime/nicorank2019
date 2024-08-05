@@ -58,10 +58,10 @@ namespace nicorank_SnapShot
             StatusLog.SetLogWriter(new ConsolWriter());
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            //Application.Run(new Form1());
 
-//            var ctrl = new SnapController();
-//            var result = ctrl.GetSnapShotAsync().Result;
+            var ctrl = new SnapController();
+            var result = ctrl.GetSnapShotAsync().Result;
         }
         public class ConsolWriter : IStatusLogWriter
         {
