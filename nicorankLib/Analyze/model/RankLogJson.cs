@@ -23,6 +23,10 @@ namespace nicorankLib.Analyze.model
         [JsonProperty("count")]
         public Count Count { get; set; }
 
+        [JsonProperty("playtime")]
+        public string PlayTime { get; set; }
+
+
         [JsonProperty("thumbnail")]
         public Thumbnail Thumbnail { get; set; }
 
