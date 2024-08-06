@@ -243,7 +243,6 @@
     <Compile Include="Analyze\Input\Json\JsonReaderWeekly.cs" />
     <Compile Include="Analyze\Input\SPAnalyze.cs" />
     <Compile Include="Analyze\model\DB.cs" />
-    <Compile Include="Analyze\model\RankRssXml.cs" />
     <Compile Include="Analyze\Option\Basic\BasicOptionBase.cs" />
     <Compile Include="Analyze\Option\Basic\FavoriteTagReader.cs" />
     <Compile Include="Analyze\Option\Basic\HiddenMovieDelete.cs" />
@@ -264,6 +263,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Include="Settings.cs" />
+    <Compile Include="SnapShot\SnapController.cs" />
     <Compile Include="SnapShot\SnapShotAnalyze.cs" />
     <Compile Include="Analyze\model\EAnalyzeMode.cs" />
     <Compile Include="Analyze\Option\Ext\UserInfoReader.cs" />

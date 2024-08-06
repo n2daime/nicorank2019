@@ -24,7 +24,7 @@ namespace nicorankLib.SnapShot
         /// リクエストURL
         /// </summary>
         const string REQUEST_URL =
-            @"https://snapshot.search.nicovideo.jp/api/v2/snapshot/video/contents/search?q=&_sort=-viewCounter&fields=contentId,commentCounter,viewCounter,mylistCounter,likeCounter&filters[startTime][gte]={0}T00:00:00%2B09:00&filters[startTime][lt]={1}T00:00:00%2B09:00&_limit={2}&_offset={3}";
+            @"https://snapshot.search.nicovideo.jp/api/v2/snapshot/video/contents/search?q=&_sort=-viewCounter&fields=contentId,commentCounter,viewCounter,mylistCounter,likeCounter&filters[startTime][gte]={0}T00:00:00%2B09:00&filters[startTime][lt]={1}T00:00:00%2B09:00&_limit={2}&_offset={3}&filters[viewCounter][gte]=1000";
 
         string startDay = "";
         string endDay = "";
@@ -36,38 +36,56 @@ namespace nicorankLib.SnapShot
         /// </summary>
         /// <param name="rankings"></param>
         /// <returns></returns>
-        public bool AnalyzeRank(DateTime dateTime, ref List<SnapShotJson> dataList)
+        public bool AnalyzeRank(DateTime dateTime,ref TimeSpan addDate ,ref List<SnapShotJson> dataList)
         {
             this.dataList = dataList;
 
+            TimeSpan DATERANGE_MIN = new TimeSpan(1,0,0,0);
+
             startDay = dateTime.Date.ToString("yyyy-MM-dd"); ;
-            endDay = dateTime.Date.AddDays(1).ToString("yyyy-MM-dd");
-
-            // 件数取得用のURLを計算する
-            string fileURL = string.Format(REQUEST_URL, startDay , endDay, 0, 0);
-
             SnapShotJson snapShotInfo = null;
-            for (int retry = 0; retry < 20; retry++)
+            while (true)
             {
 
-                if (!InternetUtil.TxtDownLoad(fileURL, out string fileListJsonText))
+                endDay = dateTime.Date.Add(addDate).ToString("yyyy-MM-dd");
+
+                // 件数取得用のURLを計算する
+                string fileURL = string.Format(REQUEST_URL, startDay, endDay, 0, 0);
+
+                for (int retry = 0; retry < 20; retry++)
                 {
-                    //失敗
+
+                    if (!InternetUtil.TxtDownLoad(fileURL, out string fileListJsonText))
+                    {
+                        //失敗
+                        return false;
+                    }
+
+                    //
+                    snapShotInfo = SnapShotJson.FromJson(fileListJsonText);
+                    if (snapShotInfo.Meta.Status != 200)
+                    {
+                        continue;
+                    }
+                    break;
+                }
+                if (snapShotInfo?.Meta.Status != 200)
+                {
                     return false;
                 }
-
-                //
-                snapShotInfo = SnapShotJson.FromJson(fileListJsonText);
-                if (snapShotInfo.Meta.Status != 200)
+                if (snapShotInfo?.Meta.TotalCount >= 50000 && DATERANGE_MIN < addDate)
                 {
+                    // 10万件を超えたらアウト
+                    // 自主規制で5万制限
+                    addDate = addDate.Add(new TimeSpan(-1, 0, 0, 0));
                     continue;
                 }
-                break;
+                else
+                {
+                    break;
+                }
             }
-            if (snapShotInfo?.Meta.Status != 200)
-            {
-                return false;
-            }
+            Console.WriteLine($"{dateTime.ToShortDateString()} ～{dateTime.Add(addDate).ToShortDateString()} 投稿動画のデータ {snapShotInfo?.Meta.TotalCount} 件を取得しています...");
             // マルチスレッドで取得する
             int threadMax = 4;// config.ThreadMax;
             var snapShotTaskList = new List<TaskOffset>(threadMax);

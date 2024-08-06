@@ -1,4 +1,5 @@
-﻿using nicorankLib.Util;
+﻿using nicorankLib.SnapShot;
+using nicorankLib.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +15,7 @@ namespace nicorank_SnapShot
         /// アプリケーションのメイン エントリ ポイントです。
         /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             var assemblies = new Dictionary<string, Assembly>();
             var executingAssembly = Assembly.GetExecutingAssembly();
@@ -56,12 +57,18 @@ namespace nicorank_SnapShot
 
 
             StatusLog.SetLogWriter(new ConsolWriter());
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            //Application.Run(new Form1());
+            if (args.Length  < 1)
+            {
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+                Application.Run(new Form1());
+            }
+            else
+            {
 
-            var ctrl = new SnapController();
-            var result = ctrl.GetSnapShotAsync().Result;
+                var ctrl = new SnapController();
+                var result = ctrl.GetSnapShotAsync().Result;
+            }
         }
         public class ConsolWriter : IStatusLogWriter
         {

@@ -208,7 +208,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="SnapController.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>

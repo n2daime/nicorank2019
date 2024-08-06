@@ -13,6 +13,14 @@ namespace nicorankLib.SnapShot
 {
     public class SnapShotDB
     {
+        string DataSource;
+        DateTime analyzeDay;
+
+        public SnapShotDB()
+        {
+ 
+        }
+
         public void GetJsonData(string TargetDir, out List<SnapShotJson> dataList)
         {
             dataList = null;
@@ -54,58 +62,75 @@ namespace nicorankLib.SnapShot
 
         }
 
-        public bool RegistDB(List<SnapShotJson> dataList, DateTime dateTime)
+        public bool InitilizeDB()
         {
-            string DataSource = $"{DB.LOG_SNAPSHOT}_{DateConvert.Time2String(dateTime, false)}.db";
-            try
+            analyzeDay = DateTime.Today;
+            DataSource = $"{DB.LOG_SNAPSHOT}_{DateConvert.Time2String(analyzeDay, false)}.db";
+
+
+            if (File.Exists(DataSource))
+            {
+                File.Delete(DataSource);
+            }
+
+            using (var dbCtrl = new SQLiteCtrl())
             {
 
+                SQLiteConnection.CreateFile(DataSource);
+                if (!dbCtrl.Open(DataSource))
+                {
+                    return false;
+                }
+                try
+                {
+                    using (var aCmd = new SQLiteCommand(dbCtrl.Connection))
+                    {
+
+
+                        aCmd.CommandText = @"CREATE TABLE ""Ranking"" (
+                                        ""ID""    TEXT,
+	                                    ""再生数""   INTEGER,
+	                                    ""コメント数"" INTEGER,
+	                                    ""マイリスト数""    INTEGER,
+                                        ""いいね数""    INTEGER,
+	                                    PRIMARY KEY(""ID"")
+                                    )";
+                        aCmd.ExecuteNonQuery();
+
+                        aCmd.CommandText = @"CREATE TABLE ""DBVersion"" (
+	                                    ""集計日""   INTEGER,
+	                                    ""Ver"" TEXT
+                                        )";
+
+                        aCmd.ExecuteNonQuery();
+
+                        aCmd.CommandText = @"INSERT INTO DBVersion(集計日,Ver)
+                                            VALUES (@集計日,@Ver)";
+                        aCmd.Parameters.AddWithValue("@集計日", DateConvert.Time2String(analyzeDay, false));
+                        aCmd.Parameters.AddWithValue("@Ver", "1.0.1.0");
+
+                        aCmd.ExecuteNonQuery();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ErrLog.GetInstance().Write(ex);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public bool RegistDB(List<SnapShotJson> dataList)
+        {
+            try
+            {
                 using (var dbCtrl = new SQLiteCtrl())
                 {
  
-
-                    bool isNew = false;
-                    if (File.Exists(DataSource))
-                    {
-                        File.Delete(DataSource);
-                    }
-                    SQLiteConnection.CreateFile(DataSource);
-                    isNew = true;
                     if (!dbCtrl.Open(DataSource))
                     {
                         return false;
-                    }
-
-                    if (isNew)
-                    {
-                        using (var aCmd = new SQLiteCommand(dbCtrl.Connection))
-                        {
-
-
-                            aCmd.CommandText = @"CREATE TABLE ""Ranking"" (
-                                            ""ID""    TEXT,
-	                                        ""再生数""   INTEGER,
-	                                        ""コメント数"" INTEGER,
-	                                        ""マイリスト数""    INTEGER,
-                                            ""いいね数""    INTEGER,
-	                                        PRIMARY KEY(""ID"")
-                                        )";
-                            aCmd.ExecuteNonQuery();
-
-                            aCmd.CommandText = @"CREATE TABLE ""DBVersion"" (
-	                                        ""集計日""   INTEGER,
-	                                        ""Ver"" TEXT
-                                            )";
-
-                            aCmd.ExecuteNonQuery();
-
-                            aCmd.CommandText = @"INSERT INTO DBVersion(集計日,Ver)
-                                             VALUES (@集計日,@Ver)";
-                            aCmd.Parameters.AddWithValue("@集計日", DateConvert.Time2String(dateTime, false));
-                            aCmd.Parameters.AddWithValue("@Ver", "1.0.1.0");
-
-                            aCmd.ExecuteNonQuery();
-                        }
                     }
 
                     using (var aCmd = new SQLiteCommand(dbCtrl.Connection))
