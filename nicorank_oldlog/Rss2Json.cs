@@ -120,14 +120,16 @@ namespace nicorank_oldlog
                         continue;
                     }
                     uint tagCount = 1;
+
                     foreach (var elememnt in RankingFilterTag)
                     {
                         var tagName = elememnt.TextContent.Trim();
-                        if (tagName == "すべて" || tagName == "話題")
+                        if (tagName == "すべて" || tagName == genreinfo.genre)
                         {
-                            //対象外
+                            //すべてや、ジャンル名と同じタグは２重取得になるので対象外
                             continue;
                         }
+
                         var workGenre = new GenreInfo();
                         workGenre.genre = genreinfo.genre;
                         workGenre.tag = tagName;
