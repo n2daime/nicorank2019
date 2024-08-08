@@ -89,7 +89,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="nicorankLib\Analyze\model\UnitTestRankRssXml.cs" />
     <Compile Include="nicorankLib\Analyze\model\UnitTestRanking.cs" />
     <Compile Include="nicorankLib\Analyze\Official\UnitTestRankingHistory.cs" />
     <Compile Include="nicorankLib\Common\UnitTestConfig.cs" />

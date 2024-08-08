@@ -6,9 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace nicorank_SnapShot
+namespace nicorankLib.SnapShot
 {
-    class SnapController
+    public class SnapController 
     {
         public async Task<bool> GetSnapShotAsync()
         {
@@ -20,25 +20,36 @@ namespace nicorank_SnapShot
                 {
                     var testObj = new SnapShotAnalyze();
                     DateTime dateTime = DateConvert.String2Time("20070306", false);
-                    //DateTime dateTime = DateConvert.String2Time("20090324", false);
+                    //DateTime dateTime = DateConvert.String2Time("20140401", false);
 
                     StatusLog.WriteLine($"Snapshot APIのデータを取得しています...");
 
-                    var dataList = new List<SnapShotJson>(300000);
+                    var snapShotDB = new SnapShotDB();
+                    snapShotDB.InitilizeDB();
+
+                    var dataList = new List<SnapShotJson>(100000);
+                    var addDate = new TimeSpan(15,0,0,0); //15日
                     while (dateTime < DateTime.Now.Date)
                     {
-                        StatusLog.WriteLine($"{dateTime.ToShortDateString()} 投稿動画のデータを取得しています...");
-                        if (!testObj.AnalyzeRank(dateTime, ref dataList))
+                        
+                        if (!testObj.AnalyzeRank(dateTime,ref addDate, ref dataList))
                         {
                             StatusLog.WriteLine($"{dateTime.ToShortDateString()}投稿動画のデータを取得中にエラー発生しました");
                             result = false;
                             break;
                         }
-                        dateTime = dateTime.AddDays(1);
+                        dateTime = dateTime.Add(addDate);
+                        if (dataList.Count > 10000 )
+                        {
+                            snapShotDB.RegistDB(dataList);
+                            dataList.Clear();
+                        }
+                        
                     }
-
-                    var snapShotDB = new SnapShotDB();
-                    result = snapShotDB.RegistDB(dataList, DateTime.Today);
+                    if (dataList.Count > 0)
+                    {
+                        snapShotDB.RegistDB(dataList);
+                    }
                 }
                 catch (Exception ex)
                 {

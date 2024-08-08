@@ -77,11 +77,22 @@ namespace nicorank_oldlog
 
             this.Path_file_name_list = Path.Combine(this.TargetSaveDir, "file_name_list.json");
 
-            
 
+            var workgenreList = new List<GenreInfo>(genreList);
             this.RankInfo = rankInfo;
             this.GenreResultList = new List<GenreRankResult>();
-            foreach (var genreinfo in genreList)
+            if (rankInfo.folder == "daily")
+            {
+                var workGenre = new GenreInfo();
+                workGenre.genre = "話題";
+                workGenre.tag = null;
+                workGenre.file = "hot-topic.json";
+                workGenre.rss = "ranking/hot-topic";
+                workGenre.Page = 10;
+                workgenreList.Add(workGenre);
+            }
+
+            foreach (var genreinfo in workgenreList)
             {
                 this.GenreResultList.Add(new GenreRankResult(genreinfo, this.TargetSaveDir));
 
@@ -109,14 +120,16 @@ namespace nicorank_oldlog
                         continue;
                     }
                     uint tagCount = 1;
+
                     foreach (var elememnt in RankingFilterTag)
                     {
                         var tagName = elememnt.TextContent.Trim();
-                        if (tagName == "すべて")
+                        if (tagName == "すべて" || tagName == genreinfo.genre)
                         {
-                            //対象外
+                            //すべてや、ジャンル名と同じタグは２重取得になるので対象外
                             continue;
                         }
+
                         var workGenre = new GenreInfo();
                         workGenre.genre = genreinfo.genre;
                         workGenre.tag = tagName;
