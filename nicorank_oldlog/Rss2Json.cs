@@ -42,6 +42,10 @@ namespace nicorank_oldlog
 
         public string Path_file_name_list = "";
 
+        protected string CheckString;
+
+        public bool isRetry { get { return CheckString.Length > 0 ; } }
+
         /// <summary>
         ///  ジャンルごとにランキング結果
         /// </summary>
@@ -60,103 +64,37 @@ namespace nicorank_oldlog
             }
         }
 
+
         /// <summary>
-        /// コンストラクタ（集計対象の指定)
+        /// コンストラクタ
         /// </summary>
         /// <param name="rankInfo"></param>
+        public Rss2Json(in Ranking_Info rankInfo, in string checkstring = "")
+        {
+            this.RankInfo = rankInfo;
+            this.GenreResultList = new List<GenreRankResult>();
+            this.CheckString = checkstring;
+        }
+
+        /// <summary>
+        /// 集計対象の指定
+        /// </summary>
         /// <param name="genreList"></param>
-        public Rss2Json(Ranking_Info rankInfo, in List<GenreInfo> genreList, in DateTime today)
+        public virtual bool Initilize(in List<GenreInfo> genreList, in DateTime today)
         {
             // ランキング日付フォルダ名の確定
             string rankfolderDate = Path.Combine(today.ToString("yyyy-MM-dd"));
 
-            this.TargetSaveDir = Path.Combine("old-ranking", rankInfo.folder);
-
-
-            this.TargetSaveDir = Path.Combine(this.TargetSaveDir, rankfolderDate);
+            var workDir = Path.Combine("old-ranking", this.RankInfo.folder);
+            this.TargetSaveDir = Path.Combine(workDir, rankfolderDate);
 
             this.Path_file_name_list = Path.Combine(this.TargetSaveDir, "file_name_list.json");
 
-
-            var workgenreList = new List<GenreInfo>(genreList);
-            this.RankInfo = rankInfo;
-            this.GenreResultList = new List<GenreRankResult>();
-            if (rankInfo.folder == "daily")
-            {
-                var workGenre = new GenreInfo();
-                workGenre.genre = "話題";
-                workGenre.tag = null;
-                workGenre.file = "hot-topic.json";
-                workGenre.rss = "ranking/hot-topic";
-                workGenre.Page = 10;
-                workgenreList.Add(workGenre);
-            }
-
-            foreach (var genreinfo in workgenreList)
+            foreach (var genreinfo in genreList)
             {
                 this.GenreResultList.Add(new GenreRankResult(genreinfo, this.TargetSaveDir));
-
-                if (genreinfo.file == "all.json")
-                {
-                    //全てはジャンルタグなし
-                    continue;
-                }
-                Console.WriteLine($@"{rankInfo.folder}:{genreinfo.genre} のジャンルタグを取得しています...");
-
-                //ジャンルタグの取得
-                if (InternetUtil.TxtDownLoad($@"https://www.nicovideo.jp/{genreinfo.rss}?term={rankInfo.rss}", out string strRankingPage))
-                {
-                    //インスタンス作成
-                    HtmlParser parser = new HtmlParser();
-
-                    //HTMLの文字列を分解します。
-                    IHtmlDocument doc = parser.ParseDocument(strRankingPage);
-
-                    //サムネイルURL
-                    var RankingFilterTag = doc.GetElementsByClassName("RankingFilterTag");
-                    if (RankingFilterTag == null || RankingFilterTag.Length < 1)
-                    {
-                        //ジャンルタグがない
-                        continue;
-                    }
-                    uint tagCount = 1;
-
-                    foreach (var elememnt in RankingFilterTag)
-                    {
-                        var tagName = elememnt.TextContent.Trim();
-                        if (tagName == "すべて" || tagName == genreinfo.genre)
-                        {
-                            //すべてや、ジャンル名と同じタグは２重取得になるので対象外
-                            continue;
-                        }
-
-                        var workGenre = new GenreInfo();
-                        workGenre.genre = genreinfo.genre;
-                        workGenre.tag = tagName;
-                        var strhref = elememnt.GetAttribute("href");
-                        if (strhref == null)
-                        {
-                            continue;
-                        }
-                        workGenre.rss = strhref;
-
-                        //ファイル名を取り出す
-                        var fileInfo = genreinfo.file.Split(".json");
-                        if (fileInfo.Length < 1)
-                        {
-                            continue;
-                        }
-                        workGenre.file = $@"{fileInfo[0]}_{tagCount:00}.json";
-                        tagCount++;
-                        workGenre.Page = 10;
-
-                        this.GenreResultList.Add(new GenreRankResult(workGenre, this.TargetSaveDir));
-                        Console.WriteLine($@"{workGenre.file}:{workGenre.tag}");
-
-                    }
-                }
             }
-
+            return true;
         }
 
         public bool AnalyzeRank()
@@ -172,13 +110,6 @@ namespace nicorank_oldlog
             {
                 // https://www.nicovideo.jp/ranking/genre/{ジャンル名}?tag={タグ名}&term={集計期間}&rss=2.0&lang=ja-jp
 
-
-
-
-            };
-
-            foreach (var genreResult in this.GenreResultList)
-            {
                 string targetURL;
 
                 try
@@ -332,6 +263,59 @@ namespace nicorank_oldlog
                     var errlog = ErrLog.GetInstance();
                     errlog.Write(e);
                 }
+            };
+
+            if (this.CheckString.Length > 0)
+            {
+                // 更新チェックを行う
+                if (File.Exists(CheckString ) && TextUtil.ReadText(CheckString, out string strLastJson))
+                {
+                    var lastResult = JsonConvert.DeserializeObject<RankLogJson[]>(strLastJson);
+
+                    bool isUpdate = false;
+                    while (!isUpdate)
+                    {
+                        var allJson = this.GenreResultList.Where(x => x.genreInfo.file == "all.json").ToList();
+                        if (allJson.Count > 0)
+                        {
+                            analyze(allJson[0]);
+
+                            if (allJson[0].rankLogJsonList.Count() != lastResult?.Length)
+                            {
+                                isUpdate = true;
+                            }
+                            else
+                            {
+                                for (int i = 0; i < lastResult.Length ;i++)
+                                {
+                                    if (allJson[0].rankLogJsonList[i].Id != lastResult[i].Id)
+                                    {//異なるID→動画が更新された
+                                        isUpdate = true; 
+                                        break;
+                                    }
+                                }
+
+                            }
+
+                            allJson[0].rankLogJsonList.Clear();
+
+                            if (isUpdate)
+                            {
+                                Console.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} 更新を検出しました　---- ");
+                                break;
+                            }
+                            Console.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} 更新がありませんでした。5分後にリトライします　---- ");
+                            // 5分間隔でチェックする
+                            Task.Delay(60000 * 5).Wait();
+                        }
+                        else
+                        {
+                            isUpdate = true;
+                            break;
+                        }
+                    }
+
+                }
             }
 
             // 並列処理オプションの設定
@@ -354,53 +338,19 @@ namespace nicorank_oldlog
                 }
                 );
             }
-
-            return true;
+            return SaveOldRankingData();
         }
 
-        /// <summary>
-        /// 取得するランキングの種類を決定する(daily/weekly/monthly/total)
-        /// </summary>
-        /// <param name="today"></param>
-        /// <returns></returns>
-        public static List<Ranking_Info> GetRankingInfo(in DateTime today)
-        {
-            var convConfig = ConvertConfig.GetInstance();
-            
-            var getRankingList = new List<Ranking_Info>(); // 取得するランキングの種類
-
-            if (convConfig != null)
-            {
-                // daily / totalは毎日更新
-                getRankingList.Add(convConfig.ranking_daily);
-                getRankingList.Add(convConfig.ranking_total);
-
-                // 今日の日付を取得
-                // 有効な集計日になるまでループ
-                
-                if (today.DayOfWeek == DayOfWeek.Monday)
-                {
-                    //月曜日はweekly
-                    getRankingList.Add(convConfig.ranking_weekly);
-                }
-                if (today.Day == 1)
-                {
-                    //毎月１日はmonthly
-                    getRankingList.Add(convConfig.ranking_monthly);
-                }
-            }
-            return getRankingList;
-
-        }
+        
         /// <summary>
         /// 
         /// </summary>
         /// <param name="ragetRankingList"></param>
         /// <returns></returns>
-        public static bool SaveOldRankingData(in List<Rss2Json> rss2jsonList)
+        public bool SaveOldRankingData()
         {
             //まずデータが存在するかチェックする
-            var CountData = rss2jsonList.Sum(rank => rank.GenreResultList.Sum( genre => genre.rankLogJsonList.Count )  );
+            var CountData = (this.GenreResultList.Sum( genre => genre.rankLogJsonList.Count )  );
             if (CountData <= 0)
             {// じゃあ１件取れていればいいのか？という問題がある...運用で検討
                 //データ取得なし
@@ -410,20 +360,18 @@ namespace nicorank_oldlog
 
             // ランキング日付フォルダ名の確定
 
-            foreach (var rss2json in rss2jsonList)
-            {
                 // old-ranking/{取得するランキングの種類}/{取得したい日付}
 
 
-                if (rss2json.GenreResultList.Sum(genre => genre.rankLogJsonList.Count) > 0)
+                if (this.GenreResultList.Sum(genre => genre.rankLogJsonList.Count) > 0)
                 {
                     //データがあるのでフォルダを作成する
-                    Directory.CreateDirectory(rss2json.TargetSaveDir);
+                    Directory.CreateDirectory(this.TargetSaveDir);
 
                     {
                         // ++++++++++++++++++++++++++++++ file_name_list.jsonの作成 ++++++++++++++++++++++++++++++++++++++++++++
-                        var genreList = new List<RankGenreJson>(rss2json.GenreResultList.Count);
-                        foreach (var genreInfo in rss2json.GenreResultList)
+                        var genreList = new List<RankGenreJson>(this.GenreResultList.Count);
+                        foreach (var genreInfo in this.GenreResultList)
                         {
                             if (genreInfo.rankLogJsonList.Count > 0)
                             {//値を取得できた
@@ -440,14 +388,14 @@ namespace nicorank_oldlog
                         // ファイル名の計算
                         using (TextUtil textUtil = new TextUtil())
                         {
-                            if (textUtil.WriteOpen(rss2json.Path_file_name_list, true, true))
+                            if (textUtil.WriteOpen(this.Path_file_name_list, true, true))
                             {
                                 textUtil.WriteText(str_file_name_list);
                             }
                             else
                             {
                                 var errLog = ErrLog.GetInstance();
-                                errLog.Write($"{rss2json.Path_file_name_list}の書き込みでエラー発生。(Rss2Json::SaveOldRankingData)");
+                                errLog.Write($"{this.Path_file_name_list}の書き込みでエラー発生。(Rss2Json::SaveOldRankingData)");
                             }
                         }
                         // ----------------------------------- file_name_list.jsonの作成 -----------------------------------------
@@ -456,8 +404,10 @@ namespace nicorank_oldlog
 
                     // 各ジャンル、タグのjsonの作成
                     {
-                        foreach (var genreInfo in rss2json.GenreResultList)
+                        foreach (var genreInfo in this.GenreResultList)
                         {
+    
+
                             if (genreInfo.rankLogJsonList.Count > 0)
                             {//値を取得できた
                                
@@ -475,12 +425,28 @@ namespace nicorank_oldlog
                                         errLog.Write($"{genreInfo.TargetSavePath}の書き込みでエラー発生。(Rss2Json::SaveOldRankingData)");
                                     }
                                 }
-
+                                if (this.CheckString.Length > 0)
+                                {
+                                    if (genreInfo.genreInfo.file == "all.json")
+                                    {
+                                        using (TextUtil textUtil = new TextUtil())
+                                        {
+                                            if (textUtil.WriteOpen(this.CheckString, true, true))
+                                            {
+                                                textUtil.WriteText(str_genre_jon);
+                                            }
+                                            else
+                                            {
+                                                var errLog = ErrLog.GetInstance();
+                                                errLog.Write($"{this.CheckString}の書き込みでエラー発生。(Rss2Json::SaveOldRankingData)");
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
+                    Console.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} の結果を保存しました　----");
                     }
-                }
-
             }
             return true;
         }

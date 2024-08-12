@@ -80,7 +80,7 @@ namespace nicorank_oldlog
     public class GenreInfo
     {
         public string genre { get; set; } = "";
-        public object tag { get; set; } = "";
+        public object? tag { get; set; } = "";
         public string file { get; set; } = "";
         public string rss { get; set; } = "";
         public int Page { get; set; } = 0;
