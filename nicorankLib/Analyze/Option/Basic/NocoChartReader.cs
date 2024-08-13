@@ -1,4 +1,4 @@
-﻿using AngleSharp.Parser.Html;
+﻿using AngleSharp.Html.Parser;
 using nicorankLib.Analyze.model;
 using nicorankLib.Util;
 using nicorankLib.Util.Text;
@@ -63,7 +63,7 @@ namespace nicorankLib.Analyze.Option
                         rankInfo.ID = RegLib.RegExpRep(movieData.Id, @"^.+/watch/", "");
 
                         //Contentの文字列を解析する
-                        var doc = parser.Parse(new MemoryStream(encoding.GetBytes(movieData.Content.Text)));
+                        var doc = parser.ParseDocument(movieData.Content.Text);
 
                         {
                             var thumbnail = doc.QuerySelector("p.nico-thumbnail");

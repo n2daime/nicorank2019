@@ -33,8 +33,10 @@
             this.tabPageSyukei = new System.Windows.Forms.TabPage();
             this.btnAnalyze = new System.Windows.Forms.Button();
             this.panel3 = new System.Windows.Forms.Panel();
+            this.label18 = new System.Windows.Forms.Label();
             this.tbUserInfoNum = new System.Windows.Forms.TextBox();
             this.label15 = new System.Windows.Forms.Label();
+            this.cmbHoseiPointAll = new System.Windows.Forms.ComboBox();
             this.cmbHoseiComment = new System.Windows.Forms.ComboBox();
             this.cmbHoseiPlay = new System.Windows.Forms.ComboBox();
             this.cmbHoseiMylist = new System.Windows.Forms.ComboBox();
@@ -74,8 +76,8 @@
             this.rbTyukan = new System.Windows.Forms.RadioButton();
             this.rbWeekly = new System.Windows.Forms.RadioButton();
             this.tabPageOut = new System.Windows.Forms.TabControl();
-            this.cmbHoseiPointAll = new System.Windows.Forms.ComboBox();
-            this.label18 = new System.Windows.Forms.Label();
+            this.label19 = new System.Windows.Forms.Label();
+            this.dtPLastweekDay = new System.Windows.Forms.DateTimePicker();
             this.tabPage2.SuspendLayout();
             this.tabPageSyukei.SuspendLayout();
             this.panel3.SuspendLayout();
@@ -157,6 +159,15 @@
             this.panel3.Size = new System.Drawing.Size(794, 228);
             this.panel3.TabIndex = 3;
             // 
+            // label18
+            // 
+            this.label18.AutoSize = true;
+            this.label18.Location = new System.Drawing.Point(153, 127);
+            this.label18.Name = "label18";
+            this.label18.Size = new System.Drawing.Size(89, 12);
+            this.label18.TabIndex = 17;
+            this.label18.Text = "ポイント全体補正";
+            // 
             // tbUserInfoNum
             // 
             this.tbUserInfoNum.Location = new System.Drawing.Point(347, 194);
@@ -173,6 +184,18 @@
             this.label15.Size = new System.Drawing.Size(326, 12);
             this.label15.TabIndex = 15;
             this.label15.Text = "UserInfo/Iconを取得する動画数。長期は考慮しないので単純指定";
+            // 
+            // cmbHoseiPointAll
+            // 
+            this.cmbHoseiPointAll.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbHoseiPointAll.FormattingEnabled = true;
+            this.cmbHoseiPointAll.Items.AddRange(new object[] {
+            "0: しない",
+            "1: 補正値D = 2.5 * コメント数 ÷ 再生数 * 100 (米率0.4％未満に補正)"});
+            this.cmbHoseiPointAll.Location = new System.Drawing.Point(251, 124);
+            this.cmbHoseiPointAll.Name = "cmbHoseiPointAll";
+            this.cmbHoseiPointAll.Size = new System.Drawing.Size(450, 20);
+            this.cmbHoseiPointAll.TabIndex = 14;
             // 
             // cmbHoseiComment
             // 
@@ -480,6 +503,8 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.label19);
+            this.groupBox1.Controls.Add(this.dtPLastweekDay);
             this.groupBox1.Controls.Add(this.label7);
             this.groupBox1.Controls.Add(this.rbSP);
             this.groupBox1.Controls.Add(this.dtPAnalyzeDay);
@@ -495,7 +520,7 @@
             // label7
             // 
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(395, 24);
+            this.label7.Location = new System.Drawing.Point(459, 15);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(145, 12);
             this.label7.TabIndex = 7;
@@ -514,7 +539,7 @@
             // 
             // dtPAnalyzeDay
             // 
-            this.dtPAnalyzeDay.Location = new System.Drawing.Point(546, 21);
+            this.dtPAnalyzeDay.Location = new System.Drawing.Point(610, 12);
             this.dtPAnalyzeDay.Name = "dtPAnalyzeDay";
             this.dtPAnalyzeDay.Size = new System.Drawing.Size(189, 19);
             this.dtPAnalyzeDay.TabIndex = 6;
@@ -554,26 +579,22 @@
             this.tabPageOut.Size = new System.Drawing.Size(836, 661);
             this.tabPageOut.TabIndex = 0;
             // 
-            // cmbHoseiPointAll
+            // label19
             // 
-            this.cmbHoseiPointAll.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbHoseiPointAll.FormattingEnabled = true;
-            this.cmbHoseiPointAll.Items.AddRange(new object[] {
-            "0: しない",
-            "1: 補正値D = 2.5 * コメント数 ÷ 再生数 * 100 (米率0.4％未満に補正)"});
-            this.cmbHoseiPointAll.Location = new System.Drawing.Point(251, 124);
-            this.cmbHoseiPointAll.Name = "cmbHoseiPointAll";
-            this.cmbHoseiPointAll.Size = new System.Drawing.Size(450, 20);
-            this.cmbHoseiPointAll.TabIndex = 14;
+            this.label19.AutoSize = true;
+            this.label19.Location = new System.Drawing.Point(429, 37);
+            this.label19.Name = "label19";
+            this.label19.Size = new System.Drawing.Size(175, 12);
+            this.label19.TabIndex = 9;
+            this.label19.Text = "先週基準日指定(週間・中間専用)";
             // 
-            // label18
+            // dtPLastweekDay
             // 
-            this.label18.AutoSize = true;
-            this.label18.Location = new System.Drawing.Point(153, 127);
-            this.label18.Name = "label18";
-            this.label18.Size = new System.Drawing.Size(89, 12);
-            this.label18.TabIndex = 17;
-            this.label18.Text = "ポイント全体補正";
+            this.dtPLastweekDay.Location = new System.Drawing.Point(610, 34);
+            this.dtPLastweekDay.Name = "dtPLastweekDay";
+            this.dtPLastweekDay.Size = new System.Drawing.Size(189, 19);
+            this.dtPLastweekDay.TabIndex = 8;
+            this.dtPLastweekDay.ValueChanged += new System.EventHandler(this.dtPLastweekDay_ValueChanged);
             // 
             // frmMain
             // 
@@ -647,6 +668,8 @@
         private System.Windows.Forms.Label label17;
         private System.Windows.Forms.Label label18;
         private System.Windows.Forms.ComboBox cmbHoseiPointAll;
+        private System.Windows.Forms.Label label19;
+        private System.Windows.Forms.DateTimePicker dtPLastweekDay;
     }
 }
 

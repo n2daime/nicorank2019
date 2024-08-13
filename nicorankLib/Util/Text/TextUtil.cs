@@ -166,7 +166,7 @@ namespace nicorankLib.Util.Text
                                             var workStrTime = RegLib.RegExpRep(strRow, @"([:：\s])|(投稿)", "");
                                             wRank.Date = DateTime.ParseExact(workStrTime, "yyyy年MM月dd日HHmmss", null); 
                                         }
-                                        catch (Exception ex)
+                                        catch (Exception )
                                         {
                                         }
                                         break;
@@ -326,38 +326,41 @@ namespace nicorankLib.Util.Text
         /// <returns></returns>
         public bool WriteOpen(string filepath, bool isUnicode, bool isOverwrite = true)
         {
-            this.WriteClose();
-
-            try
+            lock (rockObject)
             {
-                var writeEncoding = isUnicode ? Encoding.UTF8 : Encoding.GetEncoding("shift_jis");
+                this.WriteClose();
 
-                if (!isOverwrite && File.Exists(filepath))
+                try
                 {
-                    //追記モードの時、最後の文字が改行で無い場合は改行を追加する
-                    using (var fs = new FileStream(filepath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
-                    {
-                        if (fs.Length > 0)
-                        {
-                            //最後の文字にSeek
-                            fs.Seek(-1, SeekOrigin.End);
-                            char lastChar = (char)fs.ReadByte();
-                            if (lastChar != '\n' && lastChar != '\r')
-                            {
-                                var byteData = writeEncoding.GetBytes($"\r\n");
-                                fs.Write(byteData, 0, byteData.Length);
-                            }
-                        }
-                        fs.Close();
-                    }
-                }
+                    var writeEncoding = isUnicode ? Encoding.UTF8 : Encoding.GetEncoding("shift_jis");
 
-                this.streamWriter = new StreamWriter(filepath, !isOverwrite, writeEncoding);
-            }
-            catch (Exception)
-            {
-                StatusLog.Write($"{filepath} を書き込み用に開けませんでした。\n");
-                return false;
+                    if (!isOverwrite && File.Exists(filepath))
+                    {
+                        //追記モードの時、最後の文字が改行で無い場合は改行を追加する
+                        using (var fs = new FileStream(filepath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
+                        {
+                            if (fs.Length > 0)
+                            {
+                                //最後の文字にSeek
+                                fs.Seek(-1, SeekOrigin.End);
+                                char lastChar = (char)fs.ReadByte();
+                                if (lastChar != '\n' && lastChar != '\r')
+                                {
+                                    var byteData = writeEncoding.GetBytes($"\r\n");
+                                    fs.Write(byteData, 0, byteData.Length);
+                                }
+                            }
+                            fs.Close();
+                        }
+                    }
+
+                    this.streamWriter = new StreamWriter(filepath, !isOverwrite, writeEncoding);
+                }
+                catch (Exception)
+                {
+                    StatusLog.Write($"{filepath} を書き込み用に開けませんでした。\n");
+                    return false;
+                }
             }
             return true;
         }

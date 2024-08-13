@@ -457,7 +457,7 @@ namespace nicorankLib.Analyze.model
                             }
                             else
                             {
-                                double hosei = 0.01;
+                                //double hosei = 0.01;
                                 if (CountPlay == 0 && CountMyList == 0)
                                 {
                                     HoseiComment = 0.01;
@@ -598,21 +598,23 @@ namespace nicorankLib.Analyze.model
                 foreach (var rankInfo in rankList)
                 {
                     if (!movieDic.ContainsKey(rankInfo.ID))
-                    {
+                    {// まだ登録されていないID
                         var a = rankInfo.PointTotal;
                         movieDic[rankInfo.ID] = rankInfo;
                     }
                     else
-                    {
+                    {// 既に登録があるID
                         var editInfo = movieDic[rankInfo.ID];
-                        if (editInfo.Category == "全ジャンル")
-                        {
+                        if (editInfo.Category == "全ジャンル" || editInfo.Category == "話題")
+                        {// 全ジャンルや話題カテゴリは優先度が低いので、情報を上書きしない
                             editInfo.Category = rankInfo.Category;
                         }
                         else if (editInfo.FavoriteTags.Count == 0 && rankInfo.FavoriteTags.Count > 0)
                         {
                             editInfo.Category = rankInfo.Category;
+                        
                         }
+
                         if (rankInfo.FavoriteTags.Count > 0)
                         {
                             foreach (var tag in rankInfo.FavoriteTags)

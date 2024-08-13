@@ -1,11 +1,13 @@
 ﻿using nicorankLib.Analyze;
 using nicorankLib.Analyze.Input;
 using nicorankLib.Analyze.Json;
+using nicorankLib.Analyze.Official;
 using nicorankLib.Analyze.Option;
 using nicorankLib.Analyze.Option.Basic;
 using nicorankLib.api;
 using nicorankLib.Common;
 using nicorankLib.output;
+using nicorankLib.Util;
 using System;
 using System.Collections.Generic;
 
@@ -26,26 +28,57 @@ namespace nicorankLib.Factory
         {
             this.TargetDay = AnalyzeDay.AddDays(0);
         }
+        public void SeBaseTime(DateTime BaseDay)
+        {
+            this.BaseDay = BaseDay.AddDays(0).Date;
+        }
+
         public override bool CreateAnalyzer()
         {
-
-            // ランキングのベースは週間JSON
-            InputBase inputBase = new JsonReaderWeekly(this.TargetDay);
+            var isMaintananceDay = false;
+            
+            using (var rankingOfficial = new RankingHistory())
+            {
+                rankingOfficial.Open();
+                isMaintananceDay = rankingOfficial.CheckMaintananceDay(this.TargetDay);
+            }
 
             //集計日を計算する
-            this.BaseDay = TargetDay.AddDays(-7); //7日前
+
+            InputBase inputBase;
+            List<BasicOptionBase> options;
+
+            if (isMaintananceDay)
+            {
+                //メンテナンス日なので集計できない、中間集計で代替
+                StatusLog.WriteLine($"{this.TargetDay.ToShortDateString()}はメンテナンス日です。代替として中間集計ロジックで計算します\n");
+
+                // ランキングのベースは週間JSON
+                inputBase = new TyukanAnalyze(this.BaseDay.Date);
+                inputBase.setAnalyzeDay(this.TargetDay);
+
+                options = new List<BasicOptionBase>()
+                {
+                    new LastRankReader(AnalyzeMode, BaseDay)          //先週の順位
+                };
+            }
+            else
+            {
+                //メンテナンス日ではない場合は、週刊JSON 
+                inputBase = new JsonReaderWeekly(this.TargetDay);
+                
+                options = new List<BasicOptionBase>()
+                {
+                    new HiddenMovieDelete()
+                    ,new SabunReader(BaseDay)                          //差分計算
+                    ,new LastRankReader(AnalyzeMode, BaseDay)          //先週の順位
+                };
+            }
+
 
             //長期判定
             this.TyokiHantei = new TyokiHantei();
             TyokiHantei.Set(OUTPUTDIR, this.TargetDay);
-
-            //集計に必要なオプションを作成する
-            var options = new List<BasicOptionBase>()
-            {
-                new HiddenMovieDelete()
-                ,new SabunReader(BaseDay)                          //差分計算
-                ,new LastRankReader(AnalyzeMode, BaseDay)          //先週の順位
-            };
 
             Config config = Config.GetInstance();
             //集計後に実行する（ランキング順位などを参照する）オプションを作成する

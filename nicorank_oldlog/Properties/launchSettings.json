@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "nicorank_oldlog": {
+      "commandName": "Project",
+      "commandLineArgs": "/term:weekly /folder:weekly_06"
+    }
+  }
+}

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using nicorankLib.Analyze.Json;
 using nicorankLib.Analyze.model;
+using nicorankLib.Analyze.Official;
 using nicorankLib.Analyze.Option;
 using nicorankLib.Util;
 
@@ -19,6 +20,14 @@ namespace nicorankLib.Analyze.Input
     {
         const string DATASOURCE = "DB/Dailylog.db";
 
+
+        protected DateTime TargetStartDay;
+
+        public TyukanAnalyze(DateTime targetStartDay)
+        {
+            this.TargetStartDay = targetStartDay;
+        }
+
         /// <summary>
         /// 集計するデイリーのリスト
         /// </summary>
@@ -29,14 +38,29 @@ namespace nicorankLib.Analyze.Input
             calcTargetDateList(analyzeDay);
         }
 
+
         public override DateTime getAnalyzeDay()
         {
-            return this.targetDateList.Last();
+            if (this.targetDateList.Count < 1)
+            {
+                return DateTime.Today;
+            }
+            else
+            {
+                return this.targetDateList.Last();
+            }
         }
 
         public DateTime GetBaseDay()
         {
-            return this.targetDateList.First().AddDays(-1).Date; ;
+            if (this.targetDateList.Count < 1)
+            {
+                return DateTime.Today.AddDays(-7);
+            }
+            else
+            {
+                return this.targetDateList.First().AddDays(-1).Date;
+            }            
         }
 
         /// <summary>
@@ -47,6 +71,12 @@ namespace nicorankLib.Analyze.Input
         public override bool AnalyzeRank(out List<Ranking> rakingList)
         {
             rakingList = null;
+            if (targetDateList.Count < 1)
+            {
+                StatusLog.WriteLine("\n集計期間に問題があります。メンテナンス以外の有効な日数が０日間です。集計できません");
+
+                return false;
+            }
 
             foreach (var targetDate in targetDateList)
             {
@@ -150,7 +180,14 @@ namespace nicorankLib.Analyze.Input
             try
             {
                 using (var dbCtrl = new SQLiteCtrl())
+                using( var rankOfficial = new RankingHistory())
                 {
+                    if (!rankOfficial.Open())
+                    {
+                        //失敗
+                        return false; ;
+                    }
+
                     if (!dbCtrl.Open(DATASOURCE))
                     {
                         //失敗
@@ -178,7 +215,13 @@ namespace nicorankLib.Analyze.Input
 
                         //集計していないので、集計する必要がある
                         //集計に必要なオプションを作成する
-                        DateTime BaseDay = targetDate.AddDays(-1);
+                        DateTime BaseDay = targetDate;
+                        do {
+                            BaseDay = BaseDay.AddDays(-1);
+
+                        }//差分対象がメンテナンス日であればさらに一日さかのぼる 
+                        while (rankOfficial.CheckMaintananceDay(BaseDay));
+
                         var options = new List<BasicOptionBase>()
                         {
                             new SabunReader(BaseDay) 
@@ -305,24 +348,41 @@ namespace nicorankLib.Analyze.Input
         {
             targetDateList = new List<DateTime>();
 
-            // 火曜日を見つけるまでループ
-            while (true)
+            using (RankingHistory rankOfficial = new RankingHistory())
             {
-                if (analyzeDay.DayOfWeek == DayOfWeek.Tuesday)
+                rankOfficial.Open();
+
+                //月曜日の0:00は実質日曜日のデータなので集計しない（ので+１日）
+                DateTime startDate = this.TargetStartDay.AddDays(1).Date;
+
+                // 火曜日を見つけるまでループ
+                while (true)
                 {
-                    if (!JsonReaderBase.CheckAnalyzeTime(analyzeDay))
+                    if (analyzeDay.Date <= startDate)
                     {
-                        //当日の0:30 前＝まだ集計されていない可能性がある
+                        if (!JsonReaderBase.CheckAnalyzeTime(analyzeDay))
+                        {
+                            //当日の0:30 前＝まだ集計されていない可能性がある
+                        }
+                        else
+                        {
+                            //集計日確定
+                            if (!rankOfficial.CheckMaintananceDay(analyzeDay))
+                            {
+                                //メンテナンス中以外であれば集計する
+                                targetDateList.Add(analyzeDay.Date);
+                            }
+                            break;
+                        }
                     }
-                    else
+                    //集計日確定
+                    if (!rankOfficial.CheckMaintananceDay(analyzeDay))
                     {
-                        //集計日確定
+                        //メンテナンス中以外であれば集計する
                         targetDateList.Add(analyzeDay.Date);
-                        break;
                     }
+                    analyzeDay = analyzeDay.AddDays(-1);
                 }
-                targetDateList.Add(analyzeDay.Date);
-                analyzeDay = analyzeDay.AddDays(-1);
             }
             targetDateList = targetDateList.OrderBy(date => date.Date).ToList(); ;
         }
