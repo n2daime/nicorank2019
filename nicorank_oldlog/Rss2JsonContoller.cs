@@ -115,7 +115,7 @@ namespace nicorank_oldlog
                 }
                 else
                 {
-                    rss2jsonWork = new Rss2Json(rankingInfo, "lasttotal_all.json");
+                    rss2jsonWork = new Rss2Json(rankingInfo);
                 }
 
                 rss2jsonWork.Initilize(genreList, today, optionFolderAppend);
