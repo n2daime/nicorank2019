@@ -25,9 +25,9 @@ namespace nicorank_oldlog
         /// 集計対象の指定
         /// </summary>
         /// <param name="genreList"></param>
-        public override bool Initilize(in List<GenreInfo> genreList, in DateTime today)
+        public override bool Initilize(in List<GenreInfo> genreList, in DateTime today,in string optionFolderAppend)
         {
-            if (!base.Initilize(genreList, today))
+            if (!base.Initilize(genreList, today, optionFolderAppend))
             {
                 return false;
             }

@@ -9,6 +9,7 @@ namespace nicorank_oldlog
     public class Rss2JsonContoller
     {
         DateTime today;
+        string optionFolderAppend = "";
 
         public Rss2JsonContoller()
         {
@@ -52,7 +53,7 @@ namespace nicorank_oldlog
                 else
                 {
                     Ranking_Info? temp = null;
-                    string? foloderOption = null;
+                    
                     foreach (var arg in args)
                     {
                         if (arg.StartsWith("/term:"))
@@ -75,14 +76,13 @@ namespace nicorank_oldlog
                                     break;
                             }
                         }
-                        if (arg.StartsWith("/folder:"))
+                        if (arg.StartsWith("/folderappend:"))
                         {
-                            foloderOption = arg.Substring("/folder:".Length);
+                            optionFolderAppend = arg.Substring("/folderappend:".Length);
                         }
                     }
                     if (temp != null)
                     {
-                        temp.folder = foloderOption ?? temp.folder;
                         getRankingList.Add(temp);
                     }
 
@@ -118,7 +118,7 @@ namespace nicorank_oldlog
                     rss2jsonWork = new Rss2Json(rankingInfo, "lasttotal_all.json");
                 }
 
-                rss2jsonWork.Initilize(genreList, today);
+                rss2jsonWork.Initilize(genreList, today, optionFolderAppend);
 
                 taskList.Add(Task.Run(() => rss2jsonWork.AnalyzeRank())); 
                 /*

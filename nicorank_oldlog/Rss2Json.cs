@@ -80,10 +80,10 @@ namespace nicorank_oldlog
         /// 集計対象の指定
         /// </summary>
         /// <param name="genreList"></param>
-        public virtual bool Initilize(in List<GenreInfo> genreList, in DateTime today)
+        public virtual bool Initilize(in List<GenreInfo> genreList, in DateTime today,in string optionFolderAppend)
         {
             // ランキング日付フォルダ名の確定
-            string rankfolderDate = Path.Combine(today.ToString("yyyy-MM-dd"));
+            string rankfolderDate = Path.Combine($"{today.ToString("yyyy-MM-dd")}{optionFolderAppend}");
 
             var workDir = Path.Combine("old-ranking", this.RankInfo.folder);
             this.TargetSaveDir = Path.Combine(workDir, rankfolderDate);

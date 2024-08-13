@@ -40,6 +40,7 @@ namespace nicorank2019.frm
                 this.eAnalyzeMode = EAnalyzeMode.Tyukan;
                 this.dtPAnalyzeDay.Enabled = false;
                 this.dtPLastweekDay.Enabled = true;
+                this.dtPLastweekDay.Value = DateTime.Today;
 
             }
             else if (rbSP.Checked)
@@ -69,6 +70,8 @@ namespace nicorank2019.frm
             tbUserInfoNum.Text = config.UserNum.ToString();
 
             panelSP.Enabled = config.IsSP;
+
+            SetEnableAnalyzeDay();
 
         }
 

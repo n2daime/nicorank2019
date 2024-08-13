@@ -1,4 +1,5 @@
 ﻿using nicorank2019.frm;
+using nicorankLib.Analyze.model;
 using nicorankLib.Analyze.Official;
 using nicorankLib.Common;
 using nicorankLib.Factory;
@@ -33,7 +34,6 @@ namespace nicorank2019.frm
             try
             {
                 SelectMode();
-                SetEnableAnalyzeDay();
             }
             catch (Exception ex)
             {
@@ -170,32 +170,69 @@ namespace nicorank2019.frm
 
         public void SetEnableAnalyzeDay()
         {
-            // 有効な集計日になるまでループ
-            var analyzeDay = dtPAnalyzeDay.Value;
+            {
+                // 有効な集計日になるまでループ
+                var analyzeDay = dtPAnalyzeDay.Value;
 
-            //未来はNG
-            if (DateTime.Now <= analyzeDay)
-            {
-                analyzeDay = DateTime.Now;
-            }
-            while (true)
-            {
-                if (analyzeDay.DayOfWeek == DayOfWeek.Monday)
+                //未来はNG
+                if (DateTime.Now <= analyzeDay)
                 {
-                    if (!nicorankLib.Analyze.Json.JsonReaderBase.CheckAnalyzeTime(analyzeDay))
+                    analyzeDay = DateTime.Now;
+                }
+                while (true)
+                {
+                    if (analyzeDay.DayOfWeek == DayOfWeek.Monday)
                     {
-                        //当日の0:30 前＝まだ集計されていない可能性がある
+                        if (!nicorankLib.Analyze.Json.JsonReaderBase.CheckAnalyzeTime(analyzeDay))
+                        {
+                            //当日の0:30 前＝まだ集計されていない可能性がある
+                        }
+                        else
+                        {
+                            //集計日確定
+                            break;
+                        }
                     }
-                    else
+                    analyzeDay = analyzeDay.AddDays(-1);
+                }
+                dtPAnalyzeDay.Value = analyzeDay.Date;
+                //dtPLastweekDay.Value = analyzeDay.AddDays(-7).Date;
+            }
+            {
+                // 有効な集計日になるまでループ
+                var lastweekDay = dtPLastweekDay.Value.Date;
+
+                DateTime analyzeDay;
+                if (rbWeekly.Checked)
+                {
+                    analyzeDay = dtPAnalyzeDay.Value.Date;
+                }
+                else if (rbTyukan.Checked)
+                {
+                    analyzeDay = DateTime.Now;
+
+                }
+                else
+                {
+                    return;
+                }
+
+                //未来はNG
+                if (analyzeDay <= lastweekDay)
+                {
+                    lastweekDay = analyzeDay.AddDays(-7).Date;
+                }
+                while (true)
+                {
+                    if (lastweekDay.DayOfWeek == DayOfWeek.Monday)
                     {
                         //集計日確定
                         break;
                     }
+                    lastweekDay = lastweekDay.AddDays(-1);
                 }
-                analyzeDay = analyzeDay.AddDays(-1);
+                dtPLastweekDay.Value = lastweekDay;
             }
-            dtPAnalyzeDay.Value = analyzeDay.Date;
-            dtPLastweekDay.Value = analyzeDay.AddDays(-7).Date;
         }
 
         private void dtPAnalyzeDay_ValueChanged(object sender, EventArgs e)
@@ -205,24 +242,7 @@ namespace nicorank2019.frm
 
         private void dtPLastweekDay_ValueChanged(object sender, EventArgs e)
         {
-            // 有効な集計日になるまでループ
-            var lastweekDay = dtPLastweekDay.Value.Date;
-            var analyzeDay = dtPAnalyzeDay.Value.Date;
-            //未来はNG
-            if ( analyzeDay <= lastweekDay)
-            {
-                lastweekDay = analyzeDay.AddDays(-7).Date;
-            }
-            while (true)
-            {
-                if (lastweekDay.DayOfWeek == DayOfWeek.Monday)
-                {
-                    //集計日確定
-                    break;
-                }
-                lastweekDay = lastweekDay.AddDays(-1);
-            }
-            dtPLastweekDay.Value = lastweekDay;
+            SetEnableAnalyzeDay();
         }
     }
 }
