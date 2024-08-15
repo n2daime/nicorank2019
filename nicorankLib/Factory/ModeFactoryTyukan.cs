@@ -27,9 +27,8 @@ namespace nicorankLib.Factory
         public override bool CreateAnalyzer()
         {
 
-            // ランキングのベースは週間JSON
-            var inputBase = new TyukanAnalyze(LastWeekDay.AddDays(7).Date);
-
+            // 前回の週間集計日～今日までを集計する
+            var inputBase = new TyukanAnalyze(LastWeekDay.Date);
             inputBase.setAnalyzeDay(DateTime.Today);
 
             //集計日を計算する
