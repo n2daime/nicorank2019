@@ -20,7 +20,7 @@ namespace nicorankLib.SnapShot
                 {
                     var testObj = new SnapShotAnalyze();
                     DateTime dateTime = DateConvert.String2Time("20070306", false);
-                    //DateTime dateTime = DateConvert.String2Time("20140401", false);
+                    //DateTime dateTime = DateConvert.String2Time("20240801", false);
 
                     StatusLog.WriteLine($"Snapshot APIのデータを取得しています...");
 
@@ -31,8 +31,19 @@ namespace nicorankLib.SnapShot
                     var addDate = new TimeSpan(15,0,0,0); //15日
                     while (dateTime < DateTime.Now.Date)
                     {
+                        bool flgLimit1000 = false;
+                        if ((DateTime.Now.Date - dateTime.Date).Days <= 365)
+                        {
+                            //直近１年前
+                            flgLimit1000 = false; //1000制限なし
+                        }
+                        else
+                        {
+                            //１年よりさらに前
+                            flgLimit1000 = true; //1000制限あり
+                        }
                         
-                        if (!testObj.AnalyzeRank(dateTime,ref addDate, ref dataList))
+                        if (!testObj.AnalyzeRank(dateTime,ref addDate, ref dataList, flgLimit1000))
                         {
                             StatusLog.WriteLine($"{dateTime.ToShortDateString()}投稿動画のデータを取得中にエラー発生しました");
                             result = false;

@@ -26,6 +26,9 @@ namespace nicorankLib.SnapShot
         const string REQUEST_URL =
             @"https://snapshot.search.nicovideo.jp/api/v2/snapshot/video/contents/search?q=&_sort=-viewCounter&fields=contentId,commentCounter,viewCounter,mylistCounter,likeCounter&filters[startTime][gte]={0}T00:00:00%2B09:00&filters[startTime][lt]={1}T00:00:00%2B09:00&_limit={2}&_offset={3}&filters[viewCounter][gte]=1000";
 
+        const string REQUEST_URL_LAST_1YEAR =
+            @"https://snapshot.search.nicovideo.jp/api/v2/snapshot/video/contents/search?q=&_sort=-viewCounter&fields=contentId,commentCounter,viewCounter,mylistCounter,likeCounter&filters[startTime][gte]={0}T00:00:00%2B09:00&filters[startTime][lt]={1}T00:00:00%2B09:00&_limit={2}&_offset={3}";
+
         string startDay = "";
         string endDay = "";
 
@@ -36,7 +39,7 @@ namespace nicorankLib.SnapShot
         /// </summary>
         /// <param name="rankings"></param>
         /// <returns></returns>
-        public bool AnalyzeRank(DateTime dateTime,ref TimeSpan addDate ,ref List<SnapShotJson> dataList)
+        public bool AnalyzeRank(DateTime dateTime,ref TimeSpan addDate ,ref List<SnapShotJson> dataList,bool flgLimit1000)
         {
             this.dataList = dataList;
 
@@ -50,7 +53,16 @@ namespace nicorankLib.SnapShot
                 endDay = dateTime.Date.Add(addDate).ToString("yyyy-MM-dd");
 
                 // 件数取得用のURLを計算する
-                string fileURL = string.Format(REQUEST_URL, startDay, endDay, 0, 0);
+                string fileURL;
+                if (flgLimit1000)
+                {
+                    fileURL = string.Format(REQUEST_URL, startDay, endDay, 0, 0);
+                }
+                else
+                {
+                    fileURL = string.Format(REQUEST_URL_LAST_1YEAR, startDay, endDay, 0, 0);
+                }
+                
 
                 for (int retry = 0; retry < 20; retry++)
                 {
