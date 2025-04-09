@@ -25,7 +25,6 @@ namespace nicorank_oldlog
         public Ranking_Info ranking_weekly { get; set; } = new Ranking_Info();
         public Ranking_Info ranking_monthly { get; set; } = new Ranking_Info();
         public Ranking_Info ranking_total { get; set; } = new Ranking_Info();
-        public List<GenreInfo> genreList { get; set; } = new List<GenreInfo>();
 
         protected static ConvertConfig? Instance = null;
 
@@ -74,16 +73,27 @@ namespace nicorank_oldlog
     public class Ranking_Info
     {
         public string folder { get; set; } = "";
-        public string rss { get; set; } = "";
+        public string term { get; set; } = "";
     }
 
     public class GenreInfo
     {
         public string genre { get; set; } = "";
+        public string genrekey { get; set; } = "";
+        public string featuredKey { get; set; } = "";
         public object? tag { get; set; } = "";
         public string file { get; set; } = "";
-        public string rss { get; set; } = "";
-        public int Page { get; set; } = 0;
+
+        public bool isEnabledTrendTag { get; set; } = false;
+
+        // genreはジャンルランキングに存在するものかどうか
+        public bool isGenre { get; set; } = false;
+
+        // genreランキングから取得するかどうか
+        public bool isGenreRank { get; set; } = false;
+
+        // 定番ランキングから取得するかどうか
+        public bool isTeibanRank { get; set; } = false;
     }
 
 

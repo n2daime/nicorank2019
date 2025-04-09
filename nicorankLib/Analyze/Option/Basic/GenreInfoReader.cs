@@ -7,43 +7,37 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using nicorankLib.Analyze.Option;
+using nicorankLib.api;
 
-namespace nicorankLib.api
+namespace nicorankLib.Analyze.Option
 {
-    public class UserInfoReader : IExtOptionBase
+    public class GenreInfoReader : BasicOptionBase
     {
-        /// <summary>
-        /// 取得数
-        /// </summary>
-        public int UserEnd = 0;
         DateTime? TargetTime = null;
 
-        public UserInfoReader(int userEnd, DateTime? targetTime = null)
+        public GenreInfoReader(DateTime? targetTime = null)
         {
-            UserEnd = userEnd;
             TargetTime = targetTime;
         }
 
-
-        public bool AnalyzeRank(List<Ranking> rankingList)
+        public override bool AnalyzeRank(ref List<Ranking> rankingList)
         {
 
             try
             {
 
-                StatusLog.WriteLine("ユーザー情報を取得します");
+                
 
                 //取得対象の抽出
                 // 指定順位内か、カテゴリ一位の場合は取得する
                 List<Ranking> targetList = rankingList;
-                if (UserEnd > 0)
-                {
-                    targetList =
-                       rankingList.Where(wRank =>
-                           (wRank.RankTotal <= this.UserEnd || wRank.RankCategory == 1)
-                           && string.IsNullOrEmpty(wRank.UserName) //未取得の動画のみ対象
-                        ).ToList();
-                }
+
+                targetList =
+                    rankingList.Where(wRank =>
+                        string.IsNullOrEmpty(wRank.Category) //カテゴリ不明のものが対象
+                    ).ToList();
+
+                StatusLog.WriteLine($"ジャンル不明の動画 {targetList.Count} 件について情報を取得します");
 
                 using (var api = new NicoApi())
                 {
@@ -54,20 +48,20 @@ namespace nicorankLib.api
                     // DBを更新する
                     if (!api.UpdateTumbInfo(targetList, TargetTime))
                     {
-                        StatusLog.WriteLine("ユーザー情報を取得中にエラーが発生しました:UpdateTumbInfo");
+                        StatusLog.WriteLine("ジャンルを取得中にエラーが発生しました:UpdateTumbInfo");
                         return false;
                     }
 
                     // DBから値を取得する
                     if (!api.GetUserInfo(targetList))
                     {
-                        StatusLog.WriteLine("ユーザー情報を取得中にエラーが発生しました:GetUserInfo");
+                        StatusLog.WriteLine("ジャンルを取得中にエラーが発生しました:GetUserInfo");
                         return false;
                     }
                     api.CloseDB();
                 }
                 StatusLog.WriteLine("");
-                StatusLog.WriteLine("ユーザー情報を取得終了。アイコンは別途ダウンロードしてください");
+                StatusLog.WriteLine("ジャンルを取得終了");
 
             }
             catch (Exception ex)
@@ -77,5 +71,6 @@ namespace nicorankLib.api
             }
             return true;
         }
+
     }
 }

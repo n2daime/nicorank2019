@@ -111,12 +111,30 @@ namespace nicorankLib.Analyze.Json
                                 CountCommentTotal = movieInfo.Count.Comment,
                                 CountLikeTotal = movieInfo.Count.Like,
                                 ThumbnailURL = movieInfo.Thumbnail.GetBestUrl(),
-                                PlayTime = movieInfo.PlayTime,
-                                Category = rankGenre.Genre
+                                
+                                
                             };
+                            if (!string.IsNullOrEmpty(movieInfo.PlayTime))
+                            {
+                                rank.SetPlayTime(movieInfo.PlayTime);
+                            }
+
+                            if (rankGenre.isGenre)
+                            {
+                                rank.Category = rankGenre.Genre;
+                            }
+                            else if(rankGenre.Genre != "全ジャンル")
+                            {
+                                rank.FavoriteTags.Add(rankGenre.Genre);
+                            }
+
                             if (rankGenre.Tag != null)
                             {
-                                rank.FavoriteTags.Add(rankGenre.Tag.ToString());
+                                var workTag = rankGenre.Tag.ToString().Trim();
+                                if (!string.IsNullOrEmpty(workTag))
+                                {
+                                    rank.FavoriteTags.Add(workTag);
+                                }
                             }
 
                             rankings.Add(rank);

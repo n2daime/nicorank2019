@@ -115,14 +115,15 @@ namespace nicorankLib.Analyze.Option
                             wRank.PointCalcReset();
                         }
                     }
-                    var taioumaeDate = DateConvert.String2Time("20190610", false);
 
                     //差分が取れない場合
                     //投稿日が過去ログ対応前の場合はあきらめる。
                     //対応後の動画は、差分じゃなくてそのまま採用する
                     var taisyougaiList = sabunNashiDataList
-                        .Where(rank => rank.Date < taioumaeDate)
+                        .Where(rank => rank.Date < sabunStartDate)
                         .ToList();
+
+                    //差分が取れない場合は、差分集計対象外にする
 
                     //対象外設定にしてしまう
                     taisyougaiList.ForEach(rank => rank.isDelete = true);
