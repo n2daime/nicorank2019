@@ -1,13 +1,4 @@
-﻿using AngleSharp.Html.Dom;
-using AngleSharp.Html.Parser;
-using nicorank_oldlog.RankAPI;
-using nicorankLib.Analyze.model;
-using nicorankLib.Util;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using nicorank_oldlog.RankAPI;
 
 namespace nicorank_oldlog
 {

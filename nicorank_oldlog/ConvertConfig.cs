@@ -12,9 +12,8 @@ using nicorankLib.Util.Text;
 
 namespace nicorank_oldlog
 {
-
     /// <summary>
-    /// 
+    /// コンフィグ設定を管理するクラス
     /// </summary>
     public class ConvertConfig
     {
@@ -28,6 +27,10 @@ namespace nicorank_oldlog
 
         protected static ConvertConfig? Instance = null;
 
+        /// <summary>
+        /// ConvertConfigのインスタンスを取得します。
+        /// </summary>
+        /// <returns>ConvertConfigのインスタンス</returns>
         public static ConvertConfig? GetInstance()
         {
             if (ConvertConfig.Instance == null)
@@ -37,6 +40,10 @@ namespace nicorank_oldlog
             return ConvertConfig.Instance;
         }
 
+        /// <summary>
+        /// ConvertConfigのインスタンスを初期化します。
+        /// </summary>
+        /// <returns>初期化されたConvertConfigのインスタンス</returns>
         protected static ConvertConfig? Initilize()
         {
             try
@@ -55,10 +62,12 @@ namespace nicorank_oldlog
             {
                 ErrLog.GetInstance().Write(ex);
             }
-            return null; 
+            return null;
         }
 
-
+        /// <summary>
+        /// JSONシリアライザーの設定
+        /// </summary>
         public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings
         {
             MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
@@ -70,31 +79,70 @@ namespace nicorank_oldlog
         };
     }
 
+    /// <summary>
+    /// ランキング情報を管理するクラス
+    /// </summary>
     public class Ranking_Info
     {
+        /// <summary>
+        /// フォルダ名
+        /// </summary>
         public string folder { get; set; } = "";
+
+        /// <summary>
+        /// 期間
+        /// </summary>
         public string term { get; set; } = "";
     }
 
+    /// <summary>
+    /// ジャンル情報を管理するクラス
+    /// </summary>
     public class GenreInfo
     {
+        /// <summary>
+        /// ジャンル名
+        /// </summary>
         public string genre { get; set; } = "";
+
+        /// <summary>
+        /// ジャンルキー
+        /// </summary>
         public string genrekey { get; set; } = "";
+
+        /// <summary>
+        /// 特徴キー
+        /// </summary>
         public string featuredKey { get; set; } = "";
+
+        /// <summary>
+        /// タグ
+        /// </summary>
         public object? tag { get; set; } = "";
+
+        /// <summary>
+        /// ファイル名
+        /// </summary>
         public string file { get; set; } = "";
 
+        /// <summary>
+        /// トレンドタグが有効かどうか
+        /// </summary>
         public bool isEnabledTrendTag { get; set; } = false;
 
-        // genreはジャンルランキングに存在するものかどうか
+        /// <summary>
+        /// ジャンルランキングに存在するものかどうか
+        /// </summary>
         public bool isGenre { get; set; } = false;
 
-        // genreランキングから取得するかどうか
+        /// <summary>
+        /// ジャンルランキングから取得するかどうか
+        /// </summary>
         public bool isGenreRank { get; set; } = false;
 
-        // 定番ランキングから取得するかどうか
+        /// <summary>
+        /// 定番ランキングから取得するかどうか
+        /// </summary>
         public bool isTeibanRank { get; set; } = false;
     }
-
-
 }

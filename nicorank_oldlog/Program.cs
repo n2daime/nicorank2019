@@ -1,11 +1,6 @@
-﻿
-
-
-using nicorank_oldlog;
+﻿using nicorank_oldlog;
 using nicorank_oldlog.RankAPI;
 using nicorankLib.Util;
-using System.Collections.Generic;
-using System.Reflection;
 
 try
 {

@@ -1,10 +1,5 @@
 ﻿using nicorank_oldlog.RankAPI;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace nicorank_oldlog
 {
@@ -14,11 +9,13 @@ namespace nicorank_oldlog
         string optionFolderAppend = "";
 
         NicoRankiApi nicoApi;
-        
-        //var result = nicoApi.GetGenreList();
+
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
         public RankApi2JsonContoller()
         {
-            //日付は一回の実行で共通のものを使用する（途中で日付が変わることを考慮）
+            // 日付は一回の実行で共通のものを使用する（途中で日付が変わることを考慮）
             this.today = DateTime.Now;
 
             nicoApi = NicoRankiApi.GetInstance() ?? throw new InvalidOperationException("NicoRankiApi instance is null");
@@ -27,19 +24,19 @@ namespace nicorank_oldlog
         /// <summary>
         /// 取得するジャンルランキングの一覧を取得する
         /// </summary>
-        /// <param name="genreInfoList"></param>
-        /// <returns></returns>
+        /// <param name="genreInfoList">取得したジャンル情報リスト</param>
+        /// <returns>取得成功かどうか</returns>
         public bool GetGenreInfoList(out List<GenreInfo> genreInfoList)
         {
             var genreInfoMap = new Dictionary<string, GenreInfo>();
 
-            //allを追加
+            // allを追加
             {
                 var workGenre = new GenreInfo();
                 workGenre.genre = "全ジャンル";
                 workGenre.genrekey = "all";
                 workGenre.file = "all.json";
-                workGenre.isGenre = false; //ジャンルではない
+                workGenre.isGenre = false; // ジャンルではない
                 workGenre.isGenreRank = true;
                 genreInfoMap.Add(workGenre.genre, workGenre);
             }
@@ -56,7 +53,7 @@ namespace nicorank_oldlog
             {
                 var workGenre = new GenreInfo();
                 workGenre.genre = genreInfo.label;
-                workGenre.genrekey  = genreInfo.key;
+                workGenre.genrekey = genreInfo.key;
                 workGenre.file = genreInfo.key + ".json";
                 workGenre.isGenre = true;
                 workGenre.isGenreRank = true;
@@ -75,7 +72,7 @@ namespace nicorank_oldlog
             {
                 if (!genreInfo.isEnabled)
                 {
-                    //無効なジャンルは登録しない
+                    // 無効なジャンルは登録しない
                     continue;
                 }
 
@@ -89,7 +86,7 @@ namespace nicorank_oldlog
                 }
                 else
                 {
-                    //未登録の定番区分
+                    // 未登録の定番区分
                     workGenre = new GenreInfo
                     {
                         genre = genreInfo.label,
@@ -105,12 +102,11 @@ namespace nicorank_oldlog
             return true;
         }
 
-
         /// <summary>
         /// 取得するランキングの種類を決定する(daily/weekly/monthly/total)
         /// </summary>
-        /// <param name="today"></param>
-        /// <returns></returns>
+        /// <param name="args">コマンドライン引数</param>
+        /// <returns>取得するランキング情報のリスト</returns>
         public List<Ranking_Info> GetRankingInfo(in string[] args)
         {
             var convConfig = ConvertConfig.GetInstance();
@@ -130,19 +126,19 @@ namespace nicorank_oldlog
 
                     if (today.DayOfWeek == DayOfWeek.Monday)
                     {
-                        //月曜日はweekly
+                        // 月曜日はweekly
                         getRankingList.Add(convConfig.ranking_weekly);
                     }
                     if (today.Day == 1)
                     {
-                        //毎月１日はmonthly
+                        // 毎月１日はmonthly
                         getRankingList.Add(convConfig.ranking_monthly);
                     }
                 }
                 else
                 {
                     Ranking_Info? temp = null;
-                    
+
                     foreach (var arg in args)
                     {
                         if (arg.StartsWith("/term:"))
@@ -174,14 +170,18 @@ namespace nicorank_oldlog
                     {
                         getRankingList.Add(temp);
                     }
-
                 }
             }
             return getRankingList;
-
         }
 
-        public async Task< List<RankApi2Json>> AsyncExecuteAnalyzeRank(List<Ranking_Info> apigetRankingList, List<GenreInfo> genreList)
+        /// <summary>
+        /// ランキングの分析を非同期で実行する
+        /// </summary>
+        /// <param name="apigetRankingList">取得するランキング情報のリスト</param>
+        /// <param name="genreList">ジャンル情報のリスト</param>
+        /// <returns>分析結果のリスト</returns>
+        public async Task<List<RankApi2Json>> AsyncExecuteAnalyzeRank(List<Ranking_Info> apigetRankingList, List<GenreInfo> genreList)
         {
             var api2jsonList = new List<RankApi2Json>(apigetRankingList.Count);
 
@@ -194,8 +194,8 @@ namespace nicorank_oldlog
                 {
                     rss2jsonWork = new RankApi2JsonDaily(rankingInfo, "");
                 }
-                else if (rankingInfo.term == "week" )
-                { 
+                else if (rankingInfo.term == "week")
+                {
                     rss2jsonWork = new RankApi2Json(rankingInfo, "lastweekly_all.json");
                 }
                 else if (rankingInfo.term == "month")
@@ -209,7 +209,7 @@ namespace nicorank_oldlog
 
                 rss2jsonWork.Initilize(genreList, today, optionFolderAppend);
 
-                taskList.Add(Task.Run(() => rss2jsonWork.AnalyzeRank())); 
+                taskList.Add(Task.Run(() => rss2jsonWork.AnalyzeRank()));
                 /*
                 if (rss2jsonWork.isRetry)
                 {
@@ -225,11 +225,10 @@ namespace nicorank_oldlog
                 api2jsonList.Add(rss2jsonWork);
             }
 
-            //各タスクが終わるまで待つ
+            // 各タスクが終わるまで待つ
             await Task.WhenAll(taskList);
 
             return api2jsonList;
         }
-
     }
 }

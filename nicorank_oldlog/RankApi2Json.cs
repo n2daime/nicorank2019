@@ -1,34 +1,15 @@
 ﻿using nicorankLib.Analyze.model;
 using nicorankLib.Util;
 using nicorankLib.Util.Text;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-
-using AngleSharp.Html.Dom;
-using AngleSharp.Html.Parser;
 using Newtonsoft.Json;
-using nicorankLib.Common;
-using System;
-using System.Collections.Generic;
-
-/// <remarks/>
-using System.Linq;
 using nicorank_oldlog.RankAPI;
-using AngleSharp.Dom;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-
 
 namespace nicorank_oldlog
 {
     public class RankApi2Json
     {
-
         /// <summary>
         /// どのランキングを集計するか(daily/weekly/monthly/total)
         /// </summary>
@@ -56,7 +37,7 @@ namespace nicorank_oldlog
         public bool isRetry { get { return CheckString.Length > 0; } }
 
         /// <summary>
-        ///  ジャンルごとにランキング結果
+        /// ジャンルごとにランキング結果を保持するクラス
         /// </summary>
         public class GenreRankResult
         {
@@ -66,32 +47,32 @@ namespace nicorank_oldlog
 
             public GenreRankResult(in GenreInfo genreInfo, in string TargetSaveDir)
             {
-
                 this.genreInfo = genreInfo;
                 this.TargetSavePath = Path.Combine(TargetSaveDir, genreInfo.file);
                 rankLogJsonList = new List<RankLogJson>();
             }
         }
 
-
+        /// <summary>
+        /// 前回のランキング結果を保持するクラス
+        /// </summary>
         public class LastRankResult
         {
-
             public Result[] results { get; set; }
 
             public class Result
             {
                 public string label { get; set; }
-                public RankLogJson[] genreItems{ get; set; }
+                public RankLogJson[] genreItems { get; set; }
                 public RankLogJson[] teibanItems { get; set; }
-
             }
         }
 
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        /// <param name="rankInfo"></param>
+        /// <param name="rankInfo">ランキング情報</param>
+        /// <param name="checkstring">チェック用文字列</param>
         public RankApi2Json(in Ranking_Info rankInfo, in string checkstring = "")
         {
             this.RankInfo = rankInfo;
@@ -103,7 +84,10 @@ namespace nicorank_oldlog
         /// <summary>
         /// 集計対象の指定
         /// </summary>
-        /// <param name="genreList"></param>
+        /// <param name="genreList">ジャンルリスト</param>
+        /// <param name="today">今日の日付</param>
+        /// <param name="optionFolderAppend">フォルダ名のオプション</param>
+        /// <returns>初期化成功かどうか</returns>
         public virtual bool Initilize(in List<GenreInfo> genreList, in DateTime today, in string optionFolderAppend)
         {
             // ランキング日付フォルダ名の確定
@@ -121,26 +105,26 @@ namespace nicorank_oldlog
             return true;
         }
 
+        /// <summary>
+        /// ランキングを分析する
+        /// </summary>
+        /// <returns>分析成功かどうか</returns>
         public bool AnalyzeRank()
         {
             this.lastRankResult = new LastRankResult();
-            
 
             // 更新チェック用は全てのみで行う（数が多すぎて大変なので）
             {
                 this.lastRankResult.results = new LastRankResult.Result[1];
-
                 this.lastRankResult.results[0] = new LastRankResult.Result();
                 this.lastRankResult.results[0].label = "全ジャンル";
             }
-
-
 
             var analyze = (GenreRankResult genreResult) =>
             {
                 var nicoApi = NicoRankiApi.GetInstance() ?? throw new InvalidOperationException("NicoRankiApi instance is null");
 
-                //マージ
+                // マージ用のMap
                 var workAllResultMap = new Dictionary<string, RankLogJson>(2000);
 
                 try
@@ -159,8 +143,8 @@ namespace nicorank_oldlog
                             }
                             else
                             {
-                                var ConvertRankObj = (RankAPI.ResGenreRanking.Item item) => {
-
+                                var ConvertRankObj = (RankAPI.ResGenreRanking.Item item) =>
+                                {
                                     var workRank = new RankLogJson
                                     {
                                         title = item.title,
@@ -188,12 +172,11 @@ namespace nicorank_oldlog
                                 foreach (var item in genreRankingItemsList)
                                 {
                                     var workRank = ConvertRankObj(item);
-
                                     genreLogJsonList.Add(workRank);
                                 }
 
                                 // 更新チェック用の結果を保存する
-                                var targetResult = this.lastRankResult.results.Where(predicate: x => x.label == genreResult.genreInfo.genre).FirstOrDefault();
+                                var targetResult = this.lastRankResult.results.Where(x => x.label == genreResult.genreInfo.genre).FirstOrDefault();
                                 if (targetResult != null)
                                 {
                                     targetResult.genreItems = genreLogJsonList.ToArray();
@@ -203,10 +186,10 @@ namespace nicorank_oldlog
                                 {
                                     if (workAllResultMap.ContainsKey(item.Id))
                                     {
-                                        //すでに存在するのでスキップ
+                                        // すでに存在するのでスキップ
                                         continue;
                                     }
-                                    workAllResultMap.Add(item.Id,item);
+                                    workAllResultMap.Add(item.Id, item);
                                 }
                             }
                         }
@@ -232,8 +215,8 @@ namespace nicorank_oldlog
                             }
                             else
                             {
-                                var ConvertRankObj = (RankAPI.ResTeibanRanking.Item item) => {
-
+                                var ConvertRankObj = (RankAPI.ResTeibanRanking.Item item) =>
+                                {
                                     var workRank = new RankLogJson
                                     {
                                         title = item.title,
@@ -265,19 +248,19 @@ namespace nicorank_oldlog
                                 }
 
                                 // 更新チェック用の結果を保存する
-                                var targetResult = this.lastRankResult.results.Where(predicate: x => x.label == genreResult.genreInfo.genre).FirstOrDefault();
+                                var targetResult = this.lastRankResult.results.Where(x => x.label == genreResult.genreInfo.genre).FirstOrDefault();
                                 if (targetResult != null)
                                 {
                                     targetResult.teibanItems = teibanLogJsonList.ToArray();
                                 }
 
-                                //マージ
+                                // マージ
                                 var checkMap = genreResult.rankLogJsonList.ToDictionary(x => x.Id);
                                 foreach (var item in teibanLogJsonList)
                                 {
                                     if (workAllResultMap.ContainsKey(item.Id))
                                     {
-                                        //すでに存在するのでスキップ
+                                        // すでに存在するのでスキップ
                                         continue;
                                     }
                                     workAllResultMap.Add(item.Id, item);
@@ -286,31 +269,30 @@ namespace nicorank_oldlog
                             }
                         }
                     }
-
                 }
                 catch (Exception e)
                 {
-                    //throw e;
                     var errlog = ErrLog.GetInstance();
                     errlog.Write(e);
                 }
                 genreResult.rankLogJsonList = workAllResultMap.Values.ToList();
             };
+
             if (this.CheckString.Length > 0)
             {
                 // 更新チェックを行う
                 if (File.Exists(CheckString) && TextUtil.ReadText(CheckString, out string strLastJson))
                 {
                     var lastResult = JsonConvert.DeserializeObject<LastRankResult>(strLastJson);
-                    if (lastResult == null )
+                    if (lastResult == null)
                     {
                         Console.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} lastResultの書式が不正です　---- ");
                         return false;
                     }
 
-                    //　全ジャンルでチェックする
+                    // 全ジャンルでチェックする
                     var workGenreList = this.GenreResultList.Where(x => x.genreInfo.genre == "全ジャンル");
-                    if (workGenreList.Count() != 1 )
+                    if (workGenreList.Count() != 1)
                     {
                         Console.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} 全ジャンルの情報取得でエラー　---- ");
                         return false;
@@ -331,7 +313,7 @@ namespace nicorank_oldlog
                         var lastCheckMap = lastAllGenre?.genreItems.ToDictionary(x => x.Id);
                         if (lastCheckMap == null)
                         {
-                            //前回の結果がない→更新あり
+                            // 前回の結果がない→更新あり
                             isUpdate = true;
                         }
                         else
@@ -355,7 +337,7 @@ namespace nicorank_oldlog
                                             {
                                                 if (!lastCheckMap.ContainsKey(rankItem.id))
                                                 {
-                                                    //前回の結果にない動画が増えている
+                                                    // 前回の結果にない動画が増えている
                                                     // →更新あり
                                                     isUpdate = true;
                                                     break;
@@ -381,10 +363,8 @@ namespace nicorank_oldlog
                                     // 5分間隔でチェックする
                                     Task.Delay(60000 * 5).Wait();
                                 }
-
                             }
                         }
-
                     }
                     {
                         // 定番の更新チェック
@@ -392,14 +372,13 @@ namespace nicorank_oldlog
                         bool isUpdate = false;
                         if (lastCheckMap == null)
                         {
-                            //前回の結果がない→更新あり
+                            // 前回の結果がない→更新あり
                             isUpdate = true;
                         }
                         else
                         {
                             while (true)
                             {
-
                                 bool result = false;
                                 // 実際にジャンルランキングを取得する
                                 for (uint retry = 0; retry <= 3; retry++)
@@ -417,7 +396,7 @@ namespace nicorank_oldlog
                                             {
                                                 if (!lastCheckMap.ContainsKey(rankItem.id))
                                                 {
-                                                    //前回の結果にない動画が増えている
+                                                    // 前回の結果にない動画が増えている
                                                     // →更新あり
                                                     isUpdate = true;
                                                     break;
@@ -443,7 +422,6 @@ namespace nicorank_oldlog
                                     // 5分間隔でチェックする
                                     Task.Delay(60000 * 5).Wait();
                                 }
-
                             }
                         }
                     }
@@ -455,8 +433,8 @@ namespace nicorank_oldlog
             parallelOptions.MaxDegreeOfParallelism = 5;
 
             if (false)
-            {//デバッグ
-                var debugTarget = this.GenreResultList.Where(predicate: x => (string?)x.genreInfo.genre == "全ジャンル").ToList();
+            {// デバッグ
+                var debugTarget = this.GenreResultList.Where(x => (string?)x.genreInfo.genre == "全ジャンル").ToList();
                 foreach (var genreResult in debugTarget)
                 {
                     analyze(genreResult);
@@ -464,41 +442,32 @@ namespace nicorank_oldlog
             }
             else
             {
-
                 Parallel.ForEach(this.GenreResultList, parallelOptions, genreResult =>
                 {
                     analyze(genreResult);
-                }
-                );
+                });
             }
             return SaveOldRankingData();
         }
 
-
         /// <summary>
-        /// 
+        /// ランキングデータを保存する
         /// </summary>
-        /// <param name="ragetRankingList"></param>
-        /// <returns></returns>
+        /// <returns>保存成功かどうか</returns>
         public bool SaveOldRankingData()
         {
-            //まずデータが存在するかチェックする
+            // まずデータが存在するかチェックする
             var CountData = (this.GenreResultList.Sum(genre => genre.rankLogJsonList.Count));
             if (CountData <= 0)
-            {// じゃあ１件取れていればいいのか？という問題がある...運用で検討
-             //データ取得なし
+            {
+                // データ取得なし
                 return false;
             }
 
-
             // ランキング日付フォルダ名の確定
-
-            // old-ranking/{取得するランキングの種類}/{取得したい日付}
-
-
             if (this.GenreResultList.Sum(genre => genre.rankLogJsonList.Count) > 0)
             {
-                //データがあるのでフォルダを作成する
+                // データがあるのでフォルダを作成する
                 Directory.CreateDirectory(this.TargetSaveDir);
 
                 {
@@ -507,7 +476,8 @@ namespace nicorank_oldlog
                     foreach (var genreInfo in this.GenreResultList)
                     {
                         if (genreInfo.rankLogJsonList.Count > 0)
-                        {//値を取得できた
+                        {
+                            // 値を取得できた
                             var wjsongenre = new RankGenreJson();
                             wjsongenre.Genre = genreInfo.genreInfo.genre;
                             wjsongenre.Tag = genreInfo.genreInfo.tag;
@@ -532,7 +502,7 @@ namespace nicorank_oldlog
                             errLog.Write($"{this.Path_file_name_list}の書き込みでエラー発生。(RankApi2Json::SaveOldRankingData)");
                         }
                     }
-                    // ----------------------------------- file_name_list.jsonの作成 -----------------------------------------
+                    // ----------------------------------- file_name_list.json
 
                 }
 
@@ -563,30 +533,6 @@ namespace nicorank_oldlog
                     }
                     if (this.CheckString.Length > 0)
                     {
-                        //LastRankResult lastRankResult = new LastRankResult.Rootobject();
-
-                        //lastRankResult.genres = new LastRankResult.Genre[this.GenreResultList.Count];
-
-                        //foreach (var genreInfo in this.GenreResultList)
-                        //{
-                           
-                        //    for (int genreCount = 0; genreCount < this.GenreResultList.Count; genreCount++)
-                        //    {
-
-                        //        var workGenre = new LastRankResult.Genre
-                        //        {
-                        //            label = this.GenreResultList[genreCount].genreInfo.genre,
-                        //            items = this.GenreResultList[genreCount].rankLogJsonList.ToArray()
-                        //        };
-
-                        //        //for (int itemCount = 0; itemCount < genreInfo.rankLogJsonList.Count; itemCount++)
-                        //        //{
-                        //        //    workGenre.items[itemCount] = genreInfo.rankLogJsonList[itemCount];
-                        //        //}
-                        //        lastRankResult.genres[genreCount] = workGenre;
-                        //    }
-                        //}
-
                         string str_genre_jon = JsonConvert.SerializeObject(this.lastRankResult, Newtonsoft.Json.Formatting.None);
 
                         using (TextUtil textUtil = new TextUtil())

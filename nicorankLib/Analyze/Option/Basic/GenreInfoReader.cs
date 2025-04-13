@@ -15,26 +15,31 @@ namespace nicorankLib.Analyze.Option
     {
         DateTime? TargetTime = null;
 
+        /// <summary>
+        /// コンストラクタ
+        /// </summary>
+        /// <param name="targetTime">ターゲット時間</param>
         public GenreInfoReader(DateTime? targetTime = null)
         {
             TargetTime = targetTime;
         }
 
+        /// <summary>
+        /// ランキングリストを分析し、ジャンル情報を取得する
+        /// </summary>
+        /// <param name="rankingList">ランキングリスト</param>
+        /// <returns>分析成功かどうか</returns>
         public override bool AnalyzeRank(ref List<Ranking> rankingList)
         {
-
             try
             {
-
-                
-
-                //取得対象の抽出
+                // 取得対象の抽出
                 // 指定順位内か、カテゴリ一位の場合は取得する
                 List<Ranking> targetList = rankingList;
 
                 targetList =
                     rankingList.Where(wRank =>
-                        string.IsNullOrEmpty(wRank.Category) //カテゴリ不明のものが対象
+                        string.IsNullOrEmpty(wRank.Category) // カテゴリ不明のものが対象
                     ).ToList();
 
                 StatusLog.WriteLine($"ジャンル不明の動画 {targetList.Count} 件について情報を取得します");
@@ -62,7 +67,6 @@ namespace nicorankLib.Analyze.Option
                 }
                 StatusLog.WriteLine("");
                 StatusLog.WriteLine("ジャンルを取得終了");
-
             }
             catch (Exception ex)
             {
@@ -71,6 +75,5 @@ namespace nicorankLib.Analyze.Option
             }
             return true;
         }
-
     }
 }
