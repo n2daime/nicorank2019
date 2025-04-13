@@ -117,6 +117,11 @@ namespace nicorankLib.Common
         /// </summary>
         public int RetryUserIcon { get { return xml.SYSTEM.Download.UserIcon.Retry; } set { } }
 
+        /// <summary>
+        /// ランキング取得用のURL
+        /// </summary>
+        public string URL_JSON_TARGET { get { return xml.SYSTEM.URL_JSON_TARGET.Url; } set { } }
+
         #endregion
 
         /// <summary>
@@ -179,6 +184,10 @@ namespace nicorankLib.Common
             if (this.xml.POINTALL_OFFSET == null)
             {//設定がない場合 補正なしにする
                 this.xml.POINTALL_OFFSET = new POINTALL_OFFSET() { Mode = 0 };
+            }
+            if (this.xml.SYSTEM.URL_JSON_TARGET == null)
+            {//設定がない場合
+                this.xml.SYSTEM.URL_JSON_TARGET = new URL_JSON_TARGET() { Url = @"https://2daime.myds.me/old-ranking/{0}/{1}/" };
             }
         }
     }
