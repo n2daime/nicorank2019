@@ -19,12 +19,6 @@ namespace nicorankLib.Analyze.Json
     /// </summary>
     public abstract class JsonReaderBase : InputBase
     {
-
-        protected const string URL_JSON_TARGET = @"https://dcdn.cdn.nimg.jp/nicovideo/old-ranking/{0}/{1}/";
-
-        protected DateTime  URL_CheckDate1 = DateTime.Parse("2024/08/06 00:00:00");
-        protected const string URL_JSON_TARGET_20240806 = @"https://2daime.myds.me/old-ranking/{0}/{1}/";
-
         protected const string URL_FILENAME = @"file_name_list.json";
 
         /// <summary>
@@ -93,6 +87,8 @@ namespace nicorankLib.Analyze.Json
                     }
                     try
                     {
+                        bool isAllGenre = rankGenre.Genre == "全ジャンル";
+                        string workTag = rankGenre.Tag?.ToString().Trim();
 
                         RankLogJson[] movieList = RankLogJson.FromJson(logListJsonText);
                         foreach (RankLogJson movieInfo in movieList)
@@ -111,12 +107,25 @@ namespace nicorankLib.Analyze.Json
                                 CountCommentTotal = movieInfo.Count.Comment,
                                 CountLikeTotal = movieInfo.Count.Like,
                                 ThumbnailURL = movieInfo.Thumbnail.GetBestUrl(),
-                                PlayTime = movieInfo.PlayTime,
-                                Category = rankGenre.Genre
+                                  
                             };
-                            if (rankGenre.Tag != null)
+                            if (!string.IsNullOrEmpty(movieInfo.PlayTime))
                             {
-                                rank.FavoriteTags.Add(rankGenre.Tag.ToString());
+                                rank.SetPlayTime(movieInfo.PlayTime);
+                            }
+                            if (!isAllGenre)
+                            {
+                                if (rankGenre.isGenre)
+                                {
+                                    rank.Category = rankGenre.Genre;
+                                }
+                                else 
+                                {
+                                    if (!string.IsNullOrEmpty(workTag))
+                                    {
+                                        rank.FavoriteTags.Add(workTag);
+                                    }
+                                }
                             }
 
                             rankings.Add(rank);

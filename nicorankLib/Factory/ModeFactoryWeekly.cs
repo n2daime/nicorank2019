@@ -72,6 +72,7 @@ namespace nicorankLib.Factory
                     new HiddenMovieDelete()
                     ,new SabunReader(BaseDay)                          //差分計算
                     ,new LastRankReader(AnalyzeMode, BaseDay)          //先週の順位
+                    ,new GenreInfoReader(TargetDay)                    //不足ジャンル取得
                 };
             }
 

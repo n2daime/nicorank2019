@@ -284,12 +284,13 @@ namespace nicorankLib.Analyze.Official
                     {//取得できなかった場合
                         aCmd.CommandText =
                             @"select * from NicoChart.Ranking 
-                        Where ID = @ID and 集計日 <= @Date 
+                        Where ID = @ID and BETWEEN @Date2 AND @Date1 
                         order by 集計日 desc 
                         Limit 1 ";
 
                         aCmd.Parameters.AddWithValue("@ID", id);
-                        aCmd.Parameters.AddWithValue("@Date", baseTime);
+                        aCmd.Parameters.AddWithValue("@Date1", baseTime);
+                        aCmd.Parameters.AddWithValue("@Date2", baseTime2);
 
                         //実行結果の取得
                         using (var reader = aCmd.ExecuteReader())

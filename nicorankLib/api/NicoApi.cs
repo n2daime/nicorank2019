@@ -106,7 +106,7 @@ namespace nicorankLib.api
                         try
                         {
                             aCmd.Transaction = aCmd.Connection.BeginTransaction();
-                            StatusLog.WriteLine($"NicoAPIから情報を取得開始します。 取得対象{updateList.Count}件");
+                            StatusLog.WriteLine($"未取得・古いデータをNicoAPIから取得・更新します。 取得対象{updateList.Count}件");
                             var lockObject = new object();
                             var thumbinfoList = new List<ThumbinfoBase>();
                             int GetCounter = 0;
@@ -274,6 +274,11 @@ namespace nicorankLib.api
                                         ranking.UserName = thumbinfo.Thumb.GetUserName();
                                         ranking.UserImageURL = thumbinfo.Thumb.GetUserIconUrl();
                                         ranking.SetPlayTime(thumbinfo.Thumb.Length);
+
+                                        if (string.IsNullOrEmpty(ranking.Category))
+                                        {
+                                            ranking.Category = thumbinfo.Thumb.Genre;
+                                        }
                                     }
                                 }
                                 else

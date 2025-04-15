@@ -605,21 +605,35 @@ namespace nicorankLib.Analyze.model
                     else
                     {// 既に登録があるID
                         var editInfo = movieDic[rankInfo.ID];
-                        if (editInfo.Category == "全ジャンル" || editInfo.Category == "話題")
-                        {// 全ジャンルや話題カテゴリは優先度が低いので、情報を上書きしない
-                            editInfo.Category = rankInfo.Category;
-                        }
-                        else if (editInfo.FavoriteTags.Count == 0 && rankInfo.FavoriteTags.Count > 0)
+
+                        // カテゴリ判定
+                        if (string.IsNullOrEmpty(rankInfo.Category))
                         {
-                            editInfo.Category = rankInfo.Category;
-                        
+                            //ジャンルではないので上書きしない(できない）
                         }
+                        else if (string.IsNullOrEmpty(editInfo.Category))
+                        {// 現時点でカテゴリがなければ上書きする
+                            editInfo.Category = rankInfo.Category;
+                        }
+                        else if (editInfo.Category == "全ジャンル" || editInfo.Category == "話題" )
+                        {// 全ジャンルや話題カテゴリは優先度が低いので、情報を上書きする
+                            editInfo.Category = rankInfo.Category;
+                        }
+                        //else if (editInfo.FavoriteTags.Count == 0 && rankInfo.FavoriteTags.Count > 0)
+                        //{// トレンドタグ登録がない場合、トレンドタグがあるカテゴリを優先する
+                        //    editInfo.Category = rankInfo.Category;
+                        
+                        //}
 
                         if (rankInfo.FavoriteTags.Count > 0)
                         {
                             foreach (var tag in rankInfo.FavoriteTags)
                             {
-                                editInfo.FavoriteTags.Add(tag);
+                                var workTag = tag.Trim();
+                                if (!string.IsNullOrEmpty(workTag))
+                                {
+                                    editInfo.FavoriteTags.Add(workTag);
+                                }
                             }
 
                         }

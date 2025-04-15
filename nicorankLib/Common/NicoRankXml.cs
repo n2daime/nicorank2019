@@ -168,6 +168,12 @@ namespace nicorankLib.Common
         public UserIcon UserIcon { get; set; }
     }
 
+    public class URL_JSON_TARGET
+    {
+        [XmlAttribute(AttributeName = "Url")]
+        public string Url { get; set; }
+    }
+
     [XmlRoot(ElementName = "SYSTEM")]
     public class SYSTEM
     {
@@ -179,6 +185,8 @@ namespace nicorankLib.Common
         public NicoChart NicoChart { get; set; }
         [XmlElement(ElementName = "Download")]
         public Download Download { get; set; }
+        [XmlElement(ElementName = "URL_JSON_TARGET")]
+        public URL_JSON_TARGET URL_JSON_TARGET { get; set; }
     }
 
 }

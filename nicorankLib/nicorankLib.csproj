@@ -244,7 +244,7 @@
     <Compile Include="Analyze\Input\SPAnalyze.cs" />
     <Compile Include="Analyze\model\DB.cs" />
     <Compile Include="Analyze\Option\Basic\BasicOptionBase.cs" />
-    <Compile Include="Analyze\Option\Basic\FavoriteTagReader.cs" />
+    <Compile Include="Analyze\Option\Ext\FavoriteTagReader.cs" />
     <Compile Include="Analyze\Option\Basic\HiddenMovieDelete.cs" />
     <Compile Include="Analyze\Option\Basic\LastRankReader.cs" />
     <Compile Include="Analyze\Option\Basic\MovieInfoReader.cs" />
@@ -252,6 +252,7 @@
     <Compile Include="Analyze\Option\Basic\SnapShotSabunReader.cs" />
     <Compile Include="Analyze\Option\Ext\IExtOptionBase.cs" />
     <Compile Include="Analyze\Option\Basic\LastRankCsvReader.cs" />
+    <Compile Include="Analyze\Option\Basic\GenreInfoReader.cs" />
     <Compile Include="api\model\VideoResponse.cs" />
     <Compile Include="Factory\ModeFactoryTyukan.cs" />
     <Compile Include="Factory\ModeFactoryWeekly.cs" />

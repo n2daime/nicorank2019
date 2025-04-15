@@ -21,6 +21,8 @@ namespace nicorankLib.Analyze.model
         [JsonProperty("file")]
         public string File { get; set; }
 
+        [JsonProperty("isGenre")]
+        public bool isGenre { get; set; } = true;
 
         public static RankGenreJson[] FromJson(string json)
         {
