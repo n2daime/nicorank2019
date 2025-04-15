@@ -74,14 +74,14 @@
 	<!-- 全体ポイント補正を行うか？ -->
 	<!-- 0-しない -->
 	<!-- 1- 現在の集計ポイント[全体]に補正値Dを掛けたものを新ポイントとする(2023ボカコレ対策) -->
-	<POINTALL_OFFSET Mode="1"/>	
+	<POINTALL_OFFSET Mode="0"/>	
 	
 	<SYSTEM><!-- 意味がわからない場合は編集しないこと -->
 		<!-- result.csv系について 0:shift-jisで出力 1:Unicodeで出力 (last～とかSP用のCSVにも影響を受けます)--> 
 		<ResultCsv Code="0" />
 
 		<!-- マルチスレッドが有効な処理での最大のスレッド数 --> 
-		<Thread Max="8" />
+		<Thread Max="16" />
 		
 		<!-- ニコチャート設定。Mode：0（取得しない） 1(取得する）--> 
 		<NicoChart Mode="1" />
@@ -90,5 +90,8 @@
 			<NicoAPI Retry="20" /><!-- SPとかに影響-->
 			<UserIcon Retry="1" /><!-- ユーザーアイコンの取得に影響-->
 		</Download>
+				
+		<URL_JSON_TARGET Url="https://2daime.myds.me/old-ranking/{0}/{1}/"/>
+		
 	</SYSTEM>
 </nicorank>
