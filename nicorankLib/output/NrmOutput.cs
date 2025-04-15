@@ -97,7 +97,7 @@ namespace nicorankLib.output
 
                     rowData.Add(wRank.UserID);
                     rowData.Add(wRank.UserName);
-                    if (wRank.UserID.Length < 3)
+                    if (string.IsNullOrEmpty( wRank.UserID) || wRank.UserID.Length < 3)
                     {
                         rowData.Add("NoImage.jpg");
                     }
