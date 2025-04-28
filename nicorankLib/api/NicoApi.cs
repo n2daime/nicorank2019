@@ -110,25 +110,36 @@ namespace nicorankLib.api
                             var lockObject = new object();
                             var thumbinfoList = new List<ThumbinfoBase>();
                             int GetCounter = 0;
+                            int beforeLen = 1;
                             Parallel.ForEach(updateList, new ParallelOptions() { MaxDegreeOfParallelism = threadMax }, (wRank) =>
                             {
                                 var thmbInfo = GetTumbInfo(wRank, wRank.ID);
           
                                 lock (lockObject)
                                 {
-                                    StatusLog.Write(".");
-                                    if (GetCounter % 10 == 0 && GetCounter != 0)
+                                    //StatusLog.Write(".");
+                                    if (GetCounter % 5 == 0 && GetCounter != 0)
                                     {
-                                        StatusLog.Write(GetCounter.ToString());
+                                        var outNum = $"{GetCounter}";
+                                        StatusLog.Write(new string('\b', beforeLen));
+                                        StatusLog.Write(outNum);
+                                        beforeLen = outNum.Length;
+
                                     }
-                                    GetCounter++;
                                     if (thmbInfo != null)
                                     {
                                         thumbinfoList.Add(thmbInfo);
                                     }
+                                    GetCounter++;
                                 }
                                 
                              });
+                            if(GetCounter > 0)
+                            {
+                                var outNum = $"{GetCounter}";
+                                StatusLog.Write(new string('\b', beforeLen));
+                                StatusLog.Write(outNum);
+                            }
 
                             // DBに登録する
                             // 一度古いデータを削除する
@@ -201,7 +212,7 @@ namespace nicorankLib.api
             }
             catch (Exception )
             {
-                ErrLog.GetInstance().Write($@"{APIURL}{id}  の情報を取得できませんでした");
+                //ErrLog.GetInstance().Write($@"{APIURL}{id}  の情報を取得できませんでした");
                 return null;
             }
         }
