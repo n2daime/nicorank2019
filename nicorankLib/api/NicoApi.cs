@@ -105,12 +105,15 @@ namespace nicorankLib.api
                         int threadMax = Config.GetInstance().ThreadMax;
                         try
                         {
+
                             aCmd.Transaction = aCmd.Connection.BeginTransaction();
                             StatusLog.WriteLine($"未取得・古いデータをNicoAPIから取得・更新します。 取得対象{updateList.Count}件");
                             var lockObject = new object();
                             var thumbinfoList = new List<ThumbinfoBase>();
                             int GetCounter = 0;
                             int beforeLen = 1;
+
+                            System.Console.CursorVisible = false;
                             Parallel.ForEach(updateList, new ParallelOptions() { MaxDegreeOfParallelism = threadMax }, (wRank) =>
                             {
                                 var thmbInfo = GetTumbInfo(wRank, wRank.ID);
@@ -175,6 +178,8 @@ namespace nicorankLib.api
                             ErrLog.GetInstance().Write(ex);
                             return false;
                         }
+                        System.Console.CursorVisible = true;
+
                     }
                 }
                 catch (Exception ex)
@@ -194,27 +199,37 @@ namespace nicorankLib.api
         /// <returns></returns>
         protected ThumbinfoBase GetTumbInfo(Ranking ranking, string id, string strXml = "")
         {
-            
-            try
+            const int MaxRetryCount = 3;
+            int retryCount = 0;
+            while (retryCount < MaxRetryCount)
             {
-                if (string.IsNullOrEmpty(strXml))
+                try
                 {
-                    string url = $"{APIURL}{id}";
-                    if (!InternetUtil.TxtDownLoad(url, out strXml))
+                    if (string.IsNullOrEmpty(strXml))
                     {
+                        string url = $"{APIURL}{id}";
+                        if (!InternetUtil.TxtDownLoad(url, out strXml))
+                        {
+                            retryCount++;
+                            continue;
+                        }
+                    }
+                    var returnObj = XmlSerializerUtil.Deserialize<ThumbinfoBase>(strXml);
+                    returnObj.XML = strXml;
+                    returnObj.Ranking = ranking;
+                    return returnObj;
+                }
+                catch (Exception)
+                {
+                    retryCount++;
+                    if (retryCount >= MaxRetryCount)
+                    {
+                        //ErrLog.GetInstance().Write($@"{APIURL}{id} の情報を取得できませんでした");  
                         return null;
                     }
                 }
-                var returnObj = XmlSerializerUtil.Deserialize<ThumbinfoBase>(strXml);
-                returnObj.XML = strXml;
-                returnObj.Ranking = ranking;
-                return returnObj;
             }
-            catch (Exception )
-            {
-                //ErrLog.GetInstance().Write($@"{APIURL}{id}  の情報を取得できませんでした");
-                return null;
-            }
+            return null;
         }
 
 
