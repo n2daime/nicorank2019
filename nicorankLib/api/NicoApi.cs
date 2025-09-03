@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace nicorankLib.api
@@ -114,10 +115,60 @@ namespace nicorankLib.api
                             int beforeLen = 1;
 
                             System.Console.CursorVisible = false;
+                            Random rnd = new Random();
+                            ManualResetEventSlim resumeEvent = new ManualResetEventSlim(true);
+
+                            Func<int, int> calculateDelayMax = (int retryCount) =>
+                            {
+                                // 1 → 1.5 → 2.25 → 3.38 → 5.06 → 7.59...とリトライ間隔が変更
+                                return (int)( Math.Pow(1.5, retryCount) * 1000.0 );
+                            };
+                            Random random = new Random();
+
                             Parallel.ForEach(updateList, new ParallelOptions() { MaxDegreeOfParallelism = threadMax }, (wRank) =>
                             {
+                                System.Threading.Thread.Sleep(rnd.Next(50,200));
                                 var thmbInfo = GetTumbInfo(wRank, wRank.ID);
-          
+                                if (thmbInfo == null)
+                                {
+                                    //取得失敗
+                                    lock (lockObject)
+                                    {// ここからシングルスレッド
+                                        do
+                                        {
+                                            thmbInfo = GetTumbInfo(wRank, wRank.ID);
+                                            if (thmbInfo != null)
+                                            {
+                                                //他スレッドで回復済みなら↓回復待ちをやらずにそのまま止める
+                                                break;
+                                            }
+                                            else
+                                            {
+                                                resumeEvent.Reset(); // 全スレッドを止める
+
+                                                StatusLog.WriteLine($"\nNicoAPIに連続アクセスでエラー発生しているため回復を待ちます");
+                                                const int MaxRetryCount = 100;
+                                                for (int retry = 0; retry < MaxRetryCount; retry++)
+                                                {
+                                                    int delay = calculateDelayMax(retry);
+                                                    System.Threading.Thread.Sleep(delay);
+                                                    thmbInfo = GetTumbInfo(wRank, wRank.ID);
+                                                    if (thmbInfo == null)
+                                                    {
+                                                        StatusLog.WriteLine($"接続失敗。 {delay / 1000.0:F1} 秒後にRetry..");
+                                                        continue;
+                                                    }
+                                                    else
+                                                    {
+                                                        StatusLog.WriteLine($"接続成功。再開します");
+                                                        break;
+                                                    }
+                                                }
+                                                resumeEvent.Set(); // 全スレッド再開
+                                            }
+                                        } while (false) ;
+                                    }
+                                }
                                 lock (lockObject)
                                 {
                                     //StatusLog.Write(".");
@@ -199,37 +250,25 @@ namespace nicorankLib.api
         /// <returns></returns>
         protected ThumbinfoBase GetTumbInfo(Ranking ranking, string id, string strXml = "")
         {
-            const int MaxRetryCount = 3;
-            int retryCount = 0;
-            while (retryCount < MaxRetryCount)
+            try
             {
-                try
+                if (string.IsNullOrEmpty(strXml))
                 {
-                    if (string.IsNullOrEmpty(strXml))
+                    string url = $"{APIURL}{id}";
+                    if (!InternetUtil.TxtDownLoad(url, out strXml))
                     {
-                        string url = $"{APIURL}{id}";
-                        if (!InternetUtil.TxtDownLoad(url, out strXml))
-                        {
-                            retryCount++;
-                            continue;
-                        }
-                    }
-                    var returnObj = XmlSerializerUtil.Deserialize<ThumbinfoBase>(strXml);
-                    returnObj.XML = strXml;
-                    returnObj.Ranking = ranking;
-                    return returnObj;
-                }
-                catch (Exception)
-                {
-                    retryCount++;
-                    if (retryCount >= MaxRetryCount)
-                    {
-                        //ErrLog.GetInstance().Write($@"{APIURL}{id} の情報を取得できませんでした");  
                         return null;
                     }
                 }
+                var returnObj = XmlSerializerUtil.Deserialize<ThumbinfoBase>(strXml);
+                returnObj.XML = strXml;
+                returnObj.Ranking = ranking;
+                return returnObj;
             }
-            return null;
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
 

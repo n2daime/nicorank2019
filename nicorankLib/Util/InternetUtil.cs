@@ -36,6 +36,13 @@ namespace nicorankLib.Util
             using (var web = new WebClient())
             {
                 web.Headers.Add("User-Agent", "WeeklyNicoranProgram");
+
+                Func<int, int> calculateDelayMax = (int retryCount) => 
+                {
+                    return (int)(Math.Pow(2, retryCount) * 100);
+                };
+                Random random = new Random();
+
                 for (int count = 0; count < 20; count++)
                 {
                     try
@@ -53,19 +60,26 @@ namespace nicorankLib.Util
                             //真面目にやるのであれば中身をちゃんと解析するべきだが、AccessDeniedと見直して、再試行を抜ける
                             break;
                         }
-
-                        switch (ex.Status)
-                        {
-                            case WebExceptionStatus.ProtocolError:
-                            case WebExceptionStatus.Timeout:
-
-                                Thread.Sleep(1000);
-                                continue;
-                        }
+                        //Console.WriteLine($"\nWebException:{ex.Message} retry:{count}");
+                        int delayMax = calculateDelayMax(count);
+                        int delay = random.Next(1000, delayMax);
+                        Thread.Sleep(delay);
+                        continue;
                     }
                     catch (System.IO.IOException ex)
                     {
-                        Thread.Sleep(1000);
+                        //Console.WriteLine($"\nIOException:{ex.Message} retry:{count}");
+                        int delayMax = calculateDelayMax(count);
+                        int delay = random.Next(1000, delayMax);
+                        Thread.Sleep(delay);
+                        continue;
+                    }
+                    catch (Exception ex)
+                    {
+                        //Console.WriteLine($"\nException:{ex.Message} retry:{count}");
+                        int delayMax = calculateDelayMax(count);
+                        int delay = random.Next(1000, delayMax);
+                        Thread.Sleep(delay);
                         continue;
                     }
                     break;
