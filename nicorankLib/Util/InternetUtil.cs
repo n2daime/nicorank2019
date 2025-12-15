@@ -37,9 +37,22 @@ namespace nicorankLib.Util
             {
                 web.Headers.Add("User-Agent", "WeeklyNicoranProgram");
 
-                Func<int, int> calculateDelayMax = (int retryCount) => 
+
+
+                Func<int, int> calculateDelayMax = (int retryCount) =>
                 {
-                    return (int)(Math.Pow(2, retryCount) * 100);
+                    // TxtDownLoad メソッド内の該当箇所
+                    const int baseMin = 1000; // random.Next の第1引数に合わせる
+                    const int capMs = 30_000; // 過度なスリープを防ぐ上限
+
+                    // 2^retryCount * 100 を計算（負やオーバーフローを避ける）
+                    double raw = Math.Pow(2.0, Math.Max(0, retryCount)) * 100.0;
+                    if (double.IsInfinity(raw) || raw > capMs) raw = capMs;
+
+                    // 必ず baseMin より大きくする（random.Next(min, max) は min < max が必要）
+                    int delayMax = (int)Math.Max(raw, baseMin + 1);
+
+                    return delayMax;
                 };
                 Random random = new Random();
 
