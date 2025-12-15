@@ -122,5 +122,10 @@ namespace nicorankLib.Factory
             //未実装
             return null;
         }
+        public override OutputBase CreateOutputJson_rankDB()
+        {
+            //未実装
+            return null;
+        }
     }
 }

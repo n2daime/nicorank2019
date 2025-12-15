@@ -162,7 +162,8 @@ namespace nicorank2019.frm
                         MainFactory.CreateOutputHTML(),
                         MainFactory.CreateOutputMovieIconGet(),
                         MainFactory.CreateOutputUserIconGet(),
-                        MainFactory.CreateOutputWORK()
+                        MainFactory.CreateOutputWORK(),
+                        MainFactory.CreateOutputJson_rankDB()
                      };
 
                     foreach (var output in outputList)

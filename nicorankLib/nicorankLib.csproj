@@ -258,6 +258,7 @@
     <Compile Include="Factory\ModeFactoryWeekly.cs" />
     <Compile Include="Analyze\Option\Ext\TyokiHantei.cs" />
     <Compile Include="Factory\ModeFactroySP.cs" />
+    <Compile Include="output\ResultJsonRankDB.cs" />
     <Compile Include="Properties\Settings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>

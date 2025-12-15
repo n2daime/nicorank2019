@@ -173,5 +173,11 @@ namespace nicorankLib.Factory
             //未実装
             return null;
         }
+        public override OutputBase CreateOutputJson_rankDB()
+        {
+            var output = new ResultJsonRankDB();
+            output.SetOutput(OUTPUTDIR, "result_DB登録用(UTF8).json");
+            return output;
+        }
     }
 }
