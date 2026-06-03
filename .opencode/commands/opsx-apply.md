@@ -2,6 +2,8 @@
 description: Implement tasks from an OpenSpec change (Experimental)
 ---
 
+**言語**: すべての応答・出力は日本語で行うこと。生成・編集するアーティファクト（proposal.md, design.md, spec.md, tasks.md）は日本語で記述すること。
+
 Implement tasks from an OpenSpec change.
 
 **Input**: Optionally specify a change name (e.g., `/opsx-apply add-auth`). If omitted, check if it can be inferred from conversation context. If vague or ambiguous you MUST prompt for available changes.

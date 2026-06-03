@@ -2,6 +2,8 @@
 description: Propose a new change - create it and generate all artifacts in one step
 ---
 
+**言語**: すべての応答・出力は日本語で行うこと。生成するアーティファクト（proposal.md, design.md, spec.md, tasks.md）は日本語で記述すること。
+
 Propose a new change - create the change and generate all artifacts in one step.
 
 I'll create a change with artifacts:
