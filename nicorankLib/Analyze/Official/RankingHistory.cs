@@ -280,13 +280,13 @@ namespace nicorankLib.Analyze.Official
                             }
                         }
                     }
-                    if (ranking == null)
-                    {//取得できなかった場合
-                        aCmd.CommandText =
-                            @"select * from NicoChart.Ranking 
-                        Where ID = @ID and BETWEEN @Date2 AND @Date1 
-                        order by 集計日 desc 
-                        Limit 1 ";
+                     if (ranking == null)
+                     {//取得できなかった場合
+                         aCmd.CommandText =
+                             @"select * from NicoChart.Ranking 
+                         Where ID = @ID and 集計日 BETWEEN @Date2 AND @Date1 
+                         order by 集計日 desc 
+                         Limit 1 ";
 
                         aCmd.Parameters.AddWithValue("@ID", id);
                         aCmd.Parameters.AddWithValue("@Date1", baseTime);
