@@ -42,13 +42,20 @@ namespace nicorankLib.Analyze.Option
         /// </summary>
         public DateTime SyukeiBi;
 
+        protected ISQLiteCtrl _dbCtrlOverride;
+
+        public TyokiHantei(ISQLiteCtrl dbCtrl = null)
+        {
+            _dbCtrlOverride = dbCtrl;
+        }
+
         public bool AnalyzeRank(List<Ranking> rankingList)
         {
 
             var config = Config.GetInstance();
             try
             {
-                using (var dbCtrl = new SQLiteCtrl())
+                using (ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl())
                 {
                     if (!dbCtrl.Open(DATASOURCE))
                     {

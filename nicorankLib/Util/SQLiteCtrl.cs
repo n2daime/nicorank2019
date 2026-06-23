@@ -7,7 +7,7 @@ using System.Data.SQLite;
 
 namespace nicorankLib.Util
 {
-    public class SQLiteCtrl : IDisposable
+    public class SQLiteCtrl : ISQLiteCtrl, IDisposable
     {
         /// <summary>
         /// 実際のDB操作を行うクラス
@@ -96,6 +96,31 @@ namespace nicorankLib.Util
                 }
                 catch { }
             }
+            return true;
+        }
+
+        /// <summary>
+        /// インメモリDBに接続する（テスト用）
+        /// </summary>
+        /// <returns></returns>
+        public bool OpenInMemory()
+        {
+            if (IsOpen)
+            {
+                Close();
+            }
+
+            this.DataSource = ":memory:";
+
+            var builder = new SQLiteConnectionStringBuilder()
+            {
+                DataSource = this.DataSource
+            };
+            this.Connection = new SQLiteConnection(builder.ToString());
+            Connection.Open();
+
+            this.IsOpen = true;
+
             return true;
         }
 

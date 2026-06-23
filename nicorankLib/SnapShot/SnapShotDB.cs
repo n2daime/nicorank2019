@@ -16,9 +16,11 @@ namespace nicorankLib.SnapShot
         string DataSource;
         DateTime analyzeDay;
 
-        public SnapShotDB()
+        protected ISQLiteCtrl _dbCtrlOverride;
+
+        public SnapShotDB(ISQLiteCtrl dbCtrl = null)
         {
- 
+            _dbCtrlOverride = dbCtrl;
         }
 
         public void GetJsonData(string TargetDir, out List<SnapShotJson> dataList)
@@ -73,7 +75,7 @@ namespace nicorankLib.SnapShot
                 File.Delete(DataSource);
             }
 
-            using (var dbCtrl = new SQLiteCtrl())
+            using (ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl())
             {
 
                 SQLiteConnection.CreateFile(DataSource);
@@ -125,7 +127,7 @@ namespace nicorankLib.SnapShot
         {
             try
             {
-                using (var dbCtrl = new SQLiteCtrl())
+                using (ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl())
                 {
  
                     if (!dbCtrl.Open(DataSource))

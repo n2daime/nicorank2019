@@ -20,14 +20,17 @@ namespace nicorankLib.Analyze.Official
     {
         protected const string DBFILE_NAME = DB.LOG_OFFICEIAL;
 
-        protected SQLiteCtrl dbCtrlOfficial = null;
+        protected ISQLiteCtrl dbCtrlOfficial = null;
 
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        public RankingHistory()
+        public RankingHistory(ISQLiteCtrl dbCtrl = null)
         {
+            _dbCtrlOverride = dbCtrl;
         }
+
+        protected ISQLiteCtrl _dbCtrlOverride;
 
         /// <summary>
         /// LogOfficial.dbを開く
@@ -36,7 +39,7 @@ namespace nicorankLib.Analyze.Official
         public bool Open()
         {
             Close();
-            dbCtrlOfficial = new SQLiteCtrl();
+            dbCtrlOfficial = _dbCtrlOverride ?? new SQLiteCtrl();
 
             var dbFile = Path.Combine(Directory.GetCurrentDirectory(), DBFILE_NAME);
 

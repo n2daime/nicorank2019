@@ -23,9 +23,12 @@ namespace nicorankLib.Analyze.Input
 
         protected DateTime TargetStartDay;
 
-        public TyukanAnalyze(DateTime targetStartDay)
+        protected ISQLiteCtrl _dbCtrlOverride;
+
+        public TyukanAnalyze(DateTime targetStartDay, ISQLiteCtrl dbCtrl = null)
         {
             this.TargetStartDay = targetStartDay;
+            _dbCtrlOverride = dbCtrl;
         }
 
         /// <summary>
@@ -111,7 +114,7 @@ namespace nicorankLib.Analyze.Input
             rakingList = new List<Ranking>();
             try
             {
-                using (var dbCtrl = new SQLiteCtrl())
+                using (ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl())
                 {
                     if (!dbCtrl.Open(DATASOURCE))
                     {
@@ -179,8 +182,8 @@ namespace nicorankLib.Analyze.Input
         {
             try
             {
-                using (var dbCtrl = new SQLiteCtrl())
-                using( var rankOfficial = new RankingHistory())
+                using (ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl())
+                using ( var rankOfficial = new RankingHistory())
                 {
                     if (!rankOfficial.Open())
                     {

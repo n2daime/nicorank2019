@@ -19,16 +19,16 @@ namespace nicorankLib.Analyze.Option.Basic
         public String AnalyzeDB;
         public String BaseDB;
 
-        SQLiteCtrl dbCtrlAnalyze;
-        SQLiteCtrl dbCtrlBase;
+        ISQLiteCtrl dbCtrlAnalyze;
+        ISQLiteCtrl dbCtrlBase;
 
-        public SnapShotSabunReader(string analyzeDB, string baseDB)
+        public SnapShotSabunReader(string analyzeDB, string baseDB, ISQLiteCtrl dbCtrl = null)
         {
             AnalyzeDB = analyzeDB;
             BaseDB = baseDB;
 
-            dbCtrlAnalyze = new SQLiteCtrl();
-            dbCtrlBase = new SQLiteCtrl();
+            dbCtrlAnalyze = dbCtrl ?? new SQLiteCtrl();
+            dbCtrlBase = dbCtrl ?? new SQLiteCtrl();
         }
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace nicorankLib.Analyze.Option.Basic
         /// </summary>
         /// <param name="dbCtrl"></param>
         /// <returns></returns>
-        protected DateTime GetTargetTime(SQLiteCtrl dbCtrl)
+        protected DateTime GetTargetTime(ISQLiteCtrl dbCtrl)
         {
             using (var aCmd = new SQLiteCommand(dbCtrl.Connection))
             {

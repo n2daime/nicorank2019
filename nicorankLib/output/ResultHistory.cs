@@ -33,9 +33,12 @@ namespace nicorankLib.output
         /// </summary>
         public EAnalyzeMode Mode { get; protected set; }
 
-        public ResultHistory(EAnalyzeMode mode)
+        protected ISQLiteCtrl _dbCtrlOverride;
+
+        public ResultHistory(EAnalyzeMode mode, ISQLiteCtrl dbCtrl = null)
         {
             this.Mode = mode;
+            _dbCtrlOverride = dbCtrl;
         }
 
         /// <summary>
@@ -56,7 +59,7 @@ namespace nicorankLib.output
         {
             try
             {
-                using (var dbCtrl = new SQLiteCtrl())
+                using (ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl())
                 {
                     if (!dbCtrl.Open(DATASOURCE))
                     {
