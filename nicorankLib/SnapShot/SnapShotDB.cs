@@ -139,46 +139,69 @@ namespace nicorankLib.SnapShot
                     {
                         try
                         {
-                            //トランザクションの開始
-                            aCmd.Transaction = dbCtrl.Connection.BeginTransaction();
+                            // トランザクションの開始
+                            int commitBatch = 5000; // バッチ毎にコミットして巨大トランザクションを避ける
+                            int rowCounter = 0;
 
-
-                            //動画情報が無いときだけ追加する
+                            // 動画情報が無いときだけ追加する (INSERT OR IGNORE を使用)
                             var strSQL =
-                                @"  INSERT INTO Ranking( ID, '再生数','コメント数','マイリスト数','いいね数')
-                                    SELECT @ID,@再生数,@コメント数,@マイリスト数,@いいね数
-                                    WHERE NOT EXISTS (SELECT * FROM Ranking WHERE ID=@ID)";
+                                @"INSERT OR IGNORE INTO Ranking (""ID"", ""再生数"", ""コメント数"", ""マイリスト数"", ""いいね数"") 
+                                  VALUES (@ID,@再生数,@コメント数,@マイリスト数,@いいね数);";
 
                             aCmd.CommandText = strSQL;
+
+                            // パラメータを一度作成して再利用する
+                            aCmd.Parameters.Add(new SQLiteParameter("@ID", System.Data.DbType.String));
+                            aCmd.Parameters.Add(new SQLiteParameter("@再生数", System.Data.DbType.Int64));
+                            aCmd.Parameters.Add(new SQLiteParameter("@コメント数", System.Data.DbType.Int64));
+                            aCmd.Parameters.Add(new SQLiteParameter("@マイリスト数", System.Data.DbType.Int64));
+                            aCmd.Parameters.Add(new SQLiteParameter("@いいね数", System.Data.DbType.Int64));
 
                             StatusLog.WriteLine($"約{dataList.Count } * 100 件のデータを登録しています");
 
                             int GetCounter = 0;
                             int CountShow = Math.Max(dataList.Count / 10, 10);
 
-                            foreach (var jsonList in dataList)
+                            using (var transaction = dbCtrl.Connection.BeginTransaction())
                             {
-                                foreach (var jsonData in jsonList.Data)
+                                aCmd.Transaction = transaction;
+
+                                foreach (var jsonList in dataList)
                                 {
-                                    aCmd.Parameters.AddWithValue("@ID", jsonData.ID);
-                                    aCmd.Parameters.AddWithValue("@再生数", jsonData.CountPlay);
-                                    aCmd.Parameters.AddWithValue("@コメント数", jsonData.CountComment);
-                                    aCmd.Parameters.AddWithValue("@マイリスト数", jsonData.CountMylist);
-                                    aCmd.Parameters.AddWithValue("@いいね数", jsonData.CountLike);
-                                    aCmd.ExecuteNonQuery();
+                                    foreach (var jsonData in jsonList.Data)
+                                    {
+                                        aCmd.Parameters["@ID"].Value = jsonData.ID;
+                                        aCmd.Parameters["@再生数"].Value = jsonData.CountPlay;
+                                        aCmd.Parameters["@コメント数"].Value = jsonData.CountComment;
+                                        aCmd.Parameters["@マイリスト数"].Value = jsonData.CountMylist;
+                                        aCmd.Parameters["@いいね数"].Value = jsonData.CountLike;
+                                        aCmd.ExecuteNonQuery();
+
+                                        rowCounter++;
+
+                                        // 定期コミットして巨大トランザクションを避ける
+                                        if ((rowCounter % commitBatch) == 0)
+                                        {
+                                            aCmd.Transaction.Commit();
+                                            aCmd.Transaction = dbCtrl.Connection.BeginTransaction();
+                                        }
+                                    }
+                                    if (GetCounter % CountShow == 0 && GetCounter != 0)
+                                    {
+                                        StatusLog.WriteLine($"{GetCounter / (double)dataList.Count * 100:F0}%");
+                                    }
+                                    GetCounter++;
                                 }
-                                if (GetCounter % CountShow == 0 && GetCounter != 0)
-                                {
-                                    StatusLog.WriteLine($"{GetCounter / (double)dataList.Count * 100:F0}%");
-                                }
-                                GetCounter++;
+
+                                // 最終コミット
+                                aCmd.Transaction.Commit();
                             }
-                            aCmd.Transaction.Commit();
+
                             StatusLog.WriteLine($"データ登録終了");
                         }
                         catch (Exception ex)
                         {
-                            aCmd.Transaction.Rollback();
+                            try { aCmd.Transaction?.Rollback(); } catch { }
                             var errLog = ErrLog.GetInstance();
                             errLog.Write($"NicoChartTSV登録でエラー。(RankingHistory::getRankingDataLogNicoChart)");
                             errLog.Write(ex);

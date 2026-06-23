@@ -99,6 +99,9 @@ UnitTest\
   Fixtures\
     nicorank.xml            # Config テスト用設定ファイル
     test_ranking.csv        # CSV読み取りテスト用データ
+  Helpers\
+    TestDbHelper.cs         # DB操作テストの基底ヘルパー
+    UnitTestTestDbHelper.cs # テーブル作成テスト
   nicorankLib\
     Util\
       UnitTestSQLiteCtrl.cs # SQLiteCtrl テスト

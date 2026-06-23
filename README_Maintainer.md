@@ -10,6 +10,7 @@
 - `nicorank2019` - WinForms UI（`frmMain` など）。実行フローの入り口。
 - `nicorank_SnapShot` - スナップショット取得・差分処理に関連するプロジェクト。
 - `nicorank_oldlog` - 廃止されてしまった公式Dailylogの代わりを作成するツール。
+- `UnitTest` - MSTest ベースの単体テストプロジェクト（全69件）。`nicorankLib` の全レイヤをカバー。
 
 ---
 
@@ -46,7 +47,8 @@
 6. ユーティリティ / 共通設定
    - `Config`（シングルトン）: 各種設定（重み、補正、出力フォルダ、ユーザ数など）。
    - `StatusLog`, `ErrLog`：ログ出力の抽象化。
-   - `TextUtil`, `SQLiteCtrl`, `DateConvert` 等のヘルパークラス。
+   - `ISQLiteCtrl`（インターフェース） / `SQLiteCtrl`（実装）: SQLite 操作を抽象化。コンストラクタ注入によりテスト時にインメモリDBと差し替え可能。
+   - `TextUtil`, `DateConvert` 等のヘルパークラス。
 
 7. ドメインモデル
    - `Ranking`（集計結果の1件を表すモデル）
@@ -71,6 +73,8 @@
 - モード追加や入力仕様変更は `ModeFactory*` に影響する。
 - 出力形式追加は `OutputBase` 派生クラスを追加して `ModeFactory*` の出力列挙部に登録。
 - 設定の変更は `Config` を通して一元管理する。
+- SQLite 操作のテスト・差し替えは `ISQLiteCtrl` インターフェース経由。実装追加時は `SQLiteCtrl` に変更を加え、単体テストでは `TestDbHelper` を継承してインメモリDBで検証する。
+- `nicorank_SnapShot/SnapShotDB.cs` は `btreeInitPage() returns error code 11` 対策済み（`snapshotBugFix` ブランチよりマージ）。
 
 ---
 
@@ -82,4 +86,8 @@
 - 過去の集計結果管理: `nicorankLib/Analyze/RankingHistory.cs`
 - 出力基底: `nicorankLib/output/OutputBase.cs`
 - オプション例: `nicorankLib/Analyze/Option/TyokiHantei.cs`
+- DB抽象化: `nicorankLib/Util/ISQLiteCtrl.cs`, `nicorankLib/Util/SQLiteCtrl.cs`
+- スナップショットDB: `nicorankLib/SnapShot/SnapShotDB.cs`
 - ユーティリティ: `nicorankLib/Util`, `nicorankLib/Common`
+- 単体テスト: `UnitTest/Helpers/TestDbHelper.cs`, `UnitTest/Helpers/UnitTestTestDbHelper.cs`, `UnitTest/nicorankLib/Util/UnitTestSQLiteCtrl.cs`, `UnitTest/nicorankLib/Util/UnitTestDbSchema.cs`, `UnitTest/nicorankLib/Util/UnitTestDbQuery.cs`, `UnitTest/nicorankLib/Util/UnitTestDbWrite.cs`, `UnitTest/nicorankLib/Util/UnitTestDbError.cs`, `UnitTest/nicorankLib/Util/UnitTestTextUtil.cs`, `UnitTest/nicorankLib/Util/UnitTestStatusLog.cs`, `UnitTest/nicorankLib/Common/UnitTestConfig.cs`, `UnitTest/nicorankLib/Analyze/model/UnitTestRanking.cs`, `UnitTest/nicorankLib/output/UnitTestOutput.cs`
+- 変更管理: `openspec/changes/archive/`（完了済み変更のアーカイブ）, `openspec/specs/`（仕様書）
