@@ -72,6 +72,26 @@
 
 ---
 
+### ニコ動APIのリクエスト組み立てを型付きリクエストへ変更
+
+> GitHub issue #19 対応。詳細は `docs/specs.md`「API 仕様」と issue を参照。
+
+#### 1. スナップショット検索 API（優先度高・nicorankLib/SnapShot/SnapShotAnalyze.cs）
+
+- [ ] 1.1 型付きリクエストクラス（q / targets / fields / filters / _sort / _limit / _offset / _context）を新設
+- [ ] 1.2 `REQUEST_URL` / `REQUEST_URL_LAST_1YEAR` の `string.Format` を廃止し UriBuilder + 正しいエンコードで URL 生成
+- [ ] 1.3 必須パラメータ `_context` を追加
+- [ ] 1.4 レスポンスの `Replace(":null", ":0")` ハックをシリアライズ設定側で解消（検討）
+- [ ] 1.5 URL 生成の単体テストを追加（パラメータ・エンコード・`_context` 有無）
+
+#### 2. nvapi ランキング API（優先度低・nicorank_oldlog/RankAPI/NicoRankiApi.cs）
+
+- [ ] 2.1 `requestAPI` をクエリパラメータ（辞書型）受け取りに変更し文字列連結を廃止
+- [ ] 2.2 `_frontendId=6` を定数化
+- [ ] 2.3 `GetGenreRanking` / `GetTeibanRanking` を型付きで呼び出し
+
+---
+
 ## 完了済みタスク（履歴）
 
 | タスク | 完了日 | 主な成果物 |
