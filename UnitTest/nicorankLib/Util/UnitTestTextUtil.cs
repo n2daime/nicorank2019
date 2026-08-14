@@ -1,9 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using nicorankLib.Analyze.model;
 using nicorankLib.Util;
 using nicorankLib.Util.Text;
+using System;
+using System.Collections.Generic;
+using System.IO;
 
 namespace UnitTest.nicorankLib.Util
 {
@@ -11,27 +12,35 @@ namespace UnitTest.nicorankLib.Util
     public class UnitTestTextUtil
     {
         [TestMethod]
-        public void TestMethodRead()
+        public void TestReadCsv_List()
         {
-            {
-                bool result = TextUtil.ReadCsv(@"T:\ニコニコ動画集計\ニコニコ動画集計プログラム\nicorank_x64\nicorank_x64\nicorank_x64\OutPut\result_DB登録用(SJIS).csv",
-                    out List<Ranking> rankingList);
-            }
-            {
-                bool result = TextUtil.ReadCsv(@"T:\ニコニコ動画集計\ニコニコ動画集計プログラム\nicorank_x64\nicorank_x64\nicorank_x64\OutPut\result_DB登録用(UTF8).csv",
-                    out List<Ranking> rankingList);
-            }
-            {
-                bool result = TextUtil.ReadCsv(@"T:\ニコニコ動画集計\ニコニコ動画集計プログラム\nicorank_x64\nicorank_x64\nicorank_x64\OutPut\result_DB登録用(UTF8).csv",
-                    out Dictionary<string , Ranking> rankingMap);
-            }
-        }
-        [TestMethod]
-        public void TestMethodWrite()
-        {
-            var err = ErrLog.GetInstance();
-            err.Write("aaaaa");
+            var fixturePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Fixtures", "test_ranking.csv");
+            var result = TextUtil.ReadCsv(fixturePath, out List<Ranking> rankingList);
 
+            Assert.IsTrue(result);
+            Assert.IsNotNull(rankingList);
+            Assert.IsTrue(rankingList.Count > 0);
+        }
+
+        [TestMethod]
+        public void TestReadCsv_Dictionary()
+        {
+            var fixturePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Fixtures", "test_ranking.csv");
+            var result = TextUtil.ReadCsv(fixturePath, out Dictionary<string, Ranking> rankingMap);
+
+            Assert.IsTrue(result);
+            Assert.IsNotNull(rankingMap);
+            Assert.IsTrue(rankingMap.ContainsKey("sm40422969"));
+        }
+
+        [TestMethod]
+        public void TestReadCsv_FileNotFound()
+        {
+            var result = TextUtil.ReadCsv("nonexistent_file.csv", out List<Ranking> rankingList);
+
+            Assert.IsFalse(result);
+            Assert.IsNotNull(rankingList);
+            Assert.AreEqual(0, rankingList.Count);
         }
     }
 }

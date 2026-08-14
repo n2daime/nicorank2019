@@ -20,17 +20,20 @@ namespace nicorankLib.Analyze.Option
         protected DateTime EndTime;
         public int UserEnd = 0;
 
+        protected ISQLiteCtrl _dbCtrlOverride;
+
         /// <summary>
         /// コンストラクタ
         /// </summary>
         /// <param name="BaseTime">集計開始日</param>
         /// <param name="EndTime">集計終了日</param>
         /// <param name="otherOption"></param>
-        public FavoriteTagReader(int userEnd, DateTime BaseTime, DateTime EndTime)
+        public FavoriteTagReader(int userEnd, DateTime BaseTime, DateTime EndTime, ISQLiteCtrl dbCtrl = null)
         {
             UserEnd = userEnd;
             this.BaseTime = BaseTime;
             this.EndTime = EndTime;
+            _dbCtrlOverride = dbCtrl;
         }
 
 
@@ -55,7 +58,7 @@ namespace nicorankLib.Analyze.Option
                        .ToList();
                 }
 
-                using (var dbCtrl = new SQLiteCtrl())
+                using (ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl())
                 {
                     if (!dbCtrl.Open(DB.LOG_OFFICEIAL))
                     {

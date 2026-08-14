@@ -161,7 +161,7 @@ namespace nicorankLib.Common
         /// <summary>
         /// XMLの読み込み
         /// </summary>
-        protected void Initilize()
+        protected virtual void Initilize()
         {
             bool isOpened = TextUtil.ReadText("nicorank.xml", out string strXml);
             if (!isOpened)

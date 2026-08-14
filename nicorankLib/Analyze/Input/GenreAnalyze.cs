@@ -14,10 +14,13 @@ namespace nicorankLib.Analyze.Input
 
         public string GenreSQL = @"人気のタグ LIKE '%""演奏してみた""%'";
 
-        public GenreAnalyze(DateTime analyzeTime, DateTime baseTime)
+        protected ISQLiteCtrl _dbCtrlOverride;
+
+        public GenreAnalyze(DateTime analyzeTime, DateTime baseTime, ISQLiteCtrl dbCtrl = null)
         {
             AnalyzeTime = analyzeTime;
             BaseTime = baseTime;
+            _dbCtrlOverride = dbCtrl;
         }
 
 
@@ -25,7 +28,7 @@ namespace nicorankLib.Analyze.Input
         {
             rakingList = new List<Ranking>();
 
-            using (var dbCtrl = new SQLiteCtrl())
+            using (ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl())
             {
                 if(!dbCtrl.Open(DB.LOG_OFFICEIAL))
                 {

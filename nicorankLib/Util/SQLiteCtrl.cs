@@ -7,7 +7,7 @@ using System.Data.SQLite;
 
 namespace nicorankLib.Util
 {
-    public class SQLiteCtrl : IDisposable
+    public class SQLiteCtrl : ISQLiteCtrl, IDisposable
     {
         /// <summary>
         /// 実際のDB操作を行うクラス
@@ -66,10 +66,43 @@ namespace nicorankLib.Util
             //DBの接続処理
             var builder = new SQLiteConnectionStringBuilder()
             {
-                DataSource = this.DataSource
+                DataSource = this.DataSource,
+                // プーリングは環境によって問題を起こすことがあるため無効にする
+                Pooling = false,
+                // デフォルトで WAL を使用する
+                JournalMode = SQLiteJournalModeEnum.Wal,
+                // タイムアウトを少し長めに設定
+                DefaultTimeout = 30
             };
             this.Connection = new SQLiteConnection(builder.ToString());
             Connection.Open();
+
+            // PRAGMA を明示的に設定して書き込み中の破損リスクを低減する
+            try
+            {
+                using (var cmd = new SQLiteCommand(Connection))
+                {
+                    // WAL モードと同期設定
+                    cmd.CommandText = "PRAGMA journal_mode = WAL;";
+                    cmd.ExecuteNonQuery();
+
+                    // WAL と組み合わせてパフォーマンス/安全性を調整
+                    cmd.CommandText = "PRAGMA synchronous = NORMAL;";
+                    cmd.ExecuteNonQuery();
+
+                    // 一時データはメモリ上に保持（必要に応じて変更）
+                    cmd.CommandText = "PRAGMA temp_store = MEMORY;";
+                    cmd.ExecuteNonQuery();
+
+                    // 適度なキャッシュサイズを設定（負の値は KB 単位）
+                    cmd.CommandText = "PRAGMA cache_size = -8000;";
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            catch
+            {
+                // PRAGMA 設定に失敗しても接続自体は開いているため継続する。呼び出し側でログを出す。
+            }
 
             this.IsOpen = true;
 
@@ -96,6 +129,31 @@ namespace nicorankLib.Util
                 }
                 catch { }
             }
+            return true;
+        }
+
+        /// <summary>
+        /// インメモリDBに接続する（テスト用）
+        /// </summary>
+        /// <returns></returns>
+        public bool OpenInMemory()
+        {
+            if (IsOpen)
+            {
+                Close();
+            }
+
+            this.DataSource = ":memory:";
+
+            var builder = new SQLiteConnectionStringBuilder()
+            {
+                DataSource = this.DataSource
+            };
+            this.Connection = new SQLiteConnection(builder.ToString());
+            Connection.Open();
+
+            this.IsOpen = true;
+
             return true;
         }
 

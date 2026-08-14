@@ -23,16 +23,19 @@ namespace nicorankLib.Analyze.Option
         /// </summary>
         DateTime lastRankDay;
 
+        protected ISQLiteCtrl _dbCtrlOverride;
+
         /// <summary>
         /// コンストラクタ
         /// </summary>
         /// <param name="analyzeMode">集計モード</param>
         /// <param name="lastDay">前回集計日</param>
         /// <param name="otherOption"></param>
-        public LastRankReader(EAnalyzeMode analyzeMode, DateTime lastDay)
+        public LastRankReader(EAnalyzeMode analyzeMode, DateTime lastDay, ISQLiteCtrl dbCtrl = null)
         {
             this.analyzeMode = analyzeMode;
             this.lastRankDay = lastDay;
+            _dbCtrlOverride = dbCtrl;
         }
 
         /// <summary>
@@ -47,7 +50,7 @@ namespace nicorankLib.Analyze.Option
                 //先週のランキングを集計する
                 StatusLog.WriteLine($"{ analyzeMode.ToString() }:{this.lastRankDay.ToShortDateString()}の集計データから前回順位を取得しています...");
 
-                using (var dbCtrl = new SQLiteCtrl())
+                using (ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl())
                 {
                     if (!dbCtrl.Open(DB.NiCORAN_HISTORY))
                     {

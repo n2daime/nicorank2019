@@ -17,22 +17,25 @@ namespace nicorankLib.api
     public class NicoApi : IDisposable
     {
         protected bool LocalXml;
-        protected SQLiteCtrl dbCtrl;
+        protected ISQLiteCtrl dbCtrl;
 
         const string APIURL = @"https://ext.nicovideo.jp/api/getthumbinfo/";
         const string CONVERTID_API_URL = @"https://api.ce.nicovideo.jp/nicoapi/v1/video.info?v=";
 
         const string DATA_SROURCE = @"DB/ApiXML.db";
 
-        public NicoApi()
+        public NicoApi(ISQLiteCtrl dbCtrl = null)
         {
             LocalXml = UIConfig.GetInstance().LocalXml;
-            dbCtrl = null;
+            _dbCtrlOverride = dbCtrl;
+            this.dbCtrl = null;
         }
+
+        protected ISQLiteCtrl _dbCtrlOverride;
 
         public bool OpenDB()
         {
-            dbCtrl = new SQLiteCtrl();
+            dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl();
             return dbCtrl.Open(DATA_SROURCE);
         }
 
