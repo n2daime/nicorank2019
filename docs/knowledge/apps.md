@@ -27,7 +27,7 @@
 **役割**: ニコニコ公式 API（nvapi.nicovideo.jp）から過去のランキング（ジャンル/定番/トレンドタグ）を JSON 化して `old-ranking/<folder>/<yyyy-MM-dd>/` に保存する。**net8.0 コンソールアプリ（top-level statements）**。
 
 - コマンドラインオプション:
-  - `/checklogin` — ログイン状態チェック（OK=0 / NG=2）
+  - `/checklogin` — ログイン状態チェック（OK=0 / NG=2）。**NAS（Linux）の定期タスクから1時間ごとに実行され、セッション切れ（NG）を検知したら NAS 側の機能でメール通知する運用**（定期タスク・メール送信は NAS 側の機能）
   - 引数なし — daily + total を毎回、月曜なら weekly、1日なら monthly を自動追加
   - `/term:daily|weekly|monthly|total` — 特定ランキングのみ取得
   - `/folderappend:<文字列>` — 保存フォルダ名にサフィックス追加
