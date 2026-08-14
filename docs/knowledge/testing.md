@@ -1,0 +1,94 @@
+# テスト構成（testing.md）
+
+## 実行コマンド
+
+```powershell
+dotnet restore
+dotnet test UnitTest/UnitTest.csproj
+```
+
+- 環境: **.NET Framework 4.8 ターゲットだが .NET 10 SDK でビルド・実行**（Windows）
+- テストフレームワーク: MSTest 3.5.2 / モック: Moq 4.20.72
+- 全 **69 件** のテストが PASS
+
+## 構成
+
+```
+UnitTest/
+├── UnitTest.csproj          # SDK-style csproj（重要・下記参照）
+├── Fixtures/
+│   ├── nicorank.xml          # Config テスト用設定ファイル（出力直下にコピー）
+│   └── test_ranking.csv      # CSV読み取りテスト用データ
+├── Helpers/
+│   ├── TestDbHelper.cs       # DB操作テストの基底ヘルパー（インメモリSQLite）
+│   ├── TestConfigBuilder.cs  # Config の非公開フィールドをリフレクションで書き換えるテスト用ビルダー
+│   └── UnitTestTestDbHelper.cs
+└── nicorankLib/
+    ├── Util/       UnitTestSQLiteCtrl(12) / DbQuery(10) / DbWrite(9) / DbSchema(8) / DbError(4) / StatusLog(3) / TextUtil(3)
+    ├── Common/     UnitTestConfig(4)
+    ├── output/     UnitTestOutput(2)
+    └── Analyze/model/ UnitTestRanking(6)
+```
+
+### テスト一覧（観点）
+
+| ファイル | 件数 | 対象・観点 |
+|---|---|---|
+| `UnitTestSQLiteCtrl` | 12 | SQLiteCtrl の Open/OpenInMemory/Close/Dispose ライフサイクル、二重呼び出し安全性 |
+| `UnitTestDbQuery` | 10 | SELECT パターン（PK取得、存在しないID、過去/未来方向、BETWEEN、MAX、COUNT、IFNULL、JOIN、ORDER BY DESC LIMIT 1） |
+| `UnitTestDbWrite` | 9 | INSERT（単行/重複防止/ループ）、DELETE、トランザクション（Commit/Rollback/例外時）、パラメータ再利用 |
+| `UnitTestDbSchema` | 8 | CREATE TABLE、PRAGMA table_info、ALTER TABLE、sqlite_master、ATTACH/DETACH |
+| `UnitTestDbError` | 4 | ファイル不在、未接続/多重 Dispose、複数インスタンス同時接続 |
+| `UnitTestStatusLog` | 3 | StatusLog の Write/WriteLine/null writer（モック IStatusLogWriter） |
+| `UnitTestTextUtil` | 3 | TextUtil.ReadCsv（List版/Dictionary版/ファイル不在） |
+| `UnitTestConfig` | 4 | Config シングルトン、デフォルト値、SP モード、XML 文字列出力 |
+| `UnitTestOutput` | 2 | ResultCsv と NrmOutput の一時ディレクトリへの実出力検証 |
+| `UnitTestRanking` | 6 | PointTotal/HoseiAllPoint の補正計算（VOCACOLE2023実測、補正なし、sqrt、削除動画、ゼロ、境界値 0.25〜1.0） |
+
+## テストパターン
+
+- **DB操作テスト**: `TestDbHelper` を継承し、`OpenInMemory()` でインメモリ SQLite を生成。`ISQLiteCtrl` 経由でコンストラクタ注入して差し替え
+- **設定テスト**: `TestConfigBuilder` で `Config` の非公開フィールド（`xml` / `Instance`）を差し替え
+- **ログテスト**: `IStatusLogWriter` の Moq を `StatusLog.SetLogWriter()` に注入
+
+## 重要: csproj は SDK-style を使用すること
+
+### 背景
+
+旧 `UnitTest.csproj` は old-style csproj（packages.config + Reference）で、.NET 10 SDK 上の MSTest.TestAdapter 3.5.2 と組み合わせると testhost 起動時に **StackOverflow** が発生する。
+
+### 解決策
+
+SDK-style csproj に変換済み。ポイント:
+
+- `TargetFramework` は `net48`
+- `<IsTestProject>true</IsTestProject>` を設定
+- パッケージは `PackageReference` 形式（packages.config は使わない）
+- `MSTest.TestAdapter.ExternalAssemblies` が必要な場合がある（.NET Framework ターゲット時）
+
+### 注意点
+
+- SDK-style csproj の出力先は `bin\Debug\net48\`（old-style は `bin\Debug\`）。フィクスチャのコピー設定は出力先のパスに合わせる
+- `app.config` は残してよい（binding redirect 用）
+
+## フィクスチャファイル
+
+テスト用データは `UnitTest/Fixtures/` に配置し、csproj の `<None Update="Fixtures\*">` + `CopyToOutputDirectory=PreserveNewest` で出力先にコピー。
+
+- `Fixtures\nicorank.xml` → 出力直下の `nicorank.xml` としてもコピー（`Config.GetInstance().Initilize()` がカレントディレクトリから読むため）
+- `Fixtures\*.csv` → `Fixtures\` サブフォルダにコピー
+
+## 既知の制約・落とし穴
+
+1. **テスト実行時に StackOverflow** — old-style csproj + .NET 10 SDK の MSTest 互換性問題。対処: SDK-style csproj に書き換え（済み）
+2. **Config テストが失敗する（nicorank.xml が見つからない）** — `Config.GetInstance().Initilize()` がカレントディレクトリの `nicorank.xml` を読む。対処: 出力直下に配置
+3. **TextUtil.ReadCsv の戻り値** — ファイル不在時、戻り値は `false` で out 引数は**空の List**（null ではない）。テストは `Assert.IsNotNull` + `Count == 0`
+4. **nicorankLib の Costura.Fody は削除しない** — StackOverflow とは無関係
+5. **絶対パスの使用禁止** — `T:\...` 等のハードコードは NG。Fixtures は相対パスで参照
+
+## 新規テスト追加の作法
+
+1. `UnitTest/nicorankLib/` 以下に対象クラスと同じ名前空間パスでファイルを作成
+2. 既存テストを参考にクラス・メソッドを記述
+3. SQLite を使用するテストは `OpenInMemory()` でインメモリ DB を作成
+4. `dotnet test UnitTest/UnitTest.csproj` で全件 PASS を確認
