@@ -110,7 +110,7 @@
 | `SYSTEM.NicoChart` | `Mode` | 1 | ニコチャート取得（0=しない / 1=する） |
 | `SYSTEM.Download.NicoAPI` | `Retry` | 20 | NicoApi 取得のリトライ回数（SP に影響） |
 | `SYSTEM.Download.UserIcon` | `Retry` | 1 | ユーザーアイコン取得のリトライ回数 |
-| `SYSTEM.URL_JSON_TARGET` | `Url` | `https://2daime.myds.me/old-ranking/{0}/{1}/` | 過去ランキング JSON の取得元（`{0}`=種別、`{1}`=日付） |
+| `SYSTEM.URL_JSON_TARGET` | `Url` | （自前運用の互換サイト） | 過去ランキング JSON の取得元（`{0}`=種別、`{1}`=日付）。**URL は公開しない** |
 
 ---
 
@@ -200,9 +200,10 @@
 - `nvapi.nicovideo.jp` — ジャンル/定番/トレンドタグのランキング取得。user_session クッキー + UA 付与
 - ページングは hasNext まで最大 20 ページ
 
-### 過去ランキング JSON（2daime.myds.me/old-ranking/）
+### 過去ランキング JSON（自前運用の互換サイト）
 
-- `{0}/{1}/file_name_list.json` でジャンル一覧を取得し、ジャンル別 JSON を並列ダウンロード（`Config.URL_JSON_TARGET` で切替可能）
+- `Config.URL_JSON_TARGET` で指定したベース URL の `{0}/{1}/file_name_list.json`（`{0}`=種別、`{1}`=日付）でジャンル一覧を取得し、ジャンル別 JSON を並列ダウンロード
+- 取得元は自前運用の互換サイト（個人 NAS 上。URL は公開しない）
 - 種別: daily / weekly / monthly / total
 
 ---
