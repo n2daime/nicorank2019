@@ -33,7 +33,7 @@ git push origin v20260603_nicorank
 - [ ] `docs/knowledge/` 配下の全ファイルを最新化（新しいクラス・依存関係・変更点）
 - [ ] `docs/specs.md` の仕様を最新化（挙動の定義が変わった場合）
 - [ ] `docs/tasks.md` の該当タスクに完了マーク
-- [ ] `docs/proposal.md` の提案に完了記録（該当する場合）
+- [ ] 関連する GitHub Issue をクローズ
 - [ ] `dotnet restore` + `dotnet test UnitTest/UnitTest.csproj` が全件 PASS
 - [ ] 実機で集計（週刊/中間/SP）が通ることの確認
 

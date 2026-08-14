@@ -155,7 +155,7 @@ dotnet test UnitTest/UnitTest.csproj
 
 | ドキュメント | 内容 |
 |---|---|
-| `docs/proposal.md` | 変更提案と開発背景（プロジェクトの成り立ち・運用フロー） |
+| `docs/proposal.md` | 開発背景（プロジェクトの成り立ち・運用フロー・変更提案のフロー） |
 | `docs/specs.md` | 仕様（ポイント計算・出力形式・DB テーブル・API 仕様） |
 | `docs/design.md` | 設計判断の記録 |
 | `docs/tasks.md` | タスク管理（未完了・完了履歴） |

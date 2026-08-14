@@ -12,13 +12,13 @@
 
 ## ドキュメント方針
 
-- 変更提案は `docs/proposal.md`、仕様は `docs/specs.md`、設計は `docs/design.md`、タスク管理は `docs/tasks.md` に反映する。
+- 変更提案は **GitHub Issue**（フローは `docs/proposal.md` の「変更提案のフロー」を参照）、仕様は `docs/specs.md`、設計は `docs/design.md`、タスク管理は `docs/tasks.md` に反映する。
 - **コード構造のナレッジは `docs/knowledge/` 配下に Markdown で記録し、作業のたびに最新化する。**
   - 作業開始時は必ず `docs/knowledge/README.md` を読み、コード構造・依存関係を把握してから着手する。
   - コードの構造・依存・設計判断が変わったら、その場でナレッジを更新する（後回しにしない）。
   - ナレッジは「実装コードの速読を不要にするための要点」に絞る。詳細は実ファイルを読む。
   - 仕様（挙動の定義）の変更は `docs/specs.md` に反映する。
-- 完了したタスクは必ず `docs/tasks.md` に完了マークを付ける。
+- 完了したタスクは必ず `docs/tasks.md` に完了マークを付け、関連する GitHub Issue を Close する。
 
 ## ビルド/テスト
 
