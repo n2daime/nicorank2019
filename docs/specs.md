@@ -191,9 +191,38 @@
 
 ### スナップショット API（nicorankLib/SnapShot/SnapShotAnalyze.cs）
 
-- `https://snapshot.search.nicovideo.jp/api/v2/snapshot/video/contents/search`
+- 公式ガイド: https://site.nicovideo.jp/search-api-docs/snapshot（2026-08 時点の仕様を反映）
+- エンドポイント: `https://snapshot.search.nicovideo.jp/api/v2/snapshot/video/contents/search`
+- **リクエスト形式は GET クエリパラメータのみ**（JSON ボディの POST は公式仕様に存在しない）
+- データ更新は毎日 AM5:00（JST）。切り替え日時は `https://snapshot.search.nicovideo.jp/api/v2/snapshot/version` で取得可能
+
+**クエリパラメータ**
+
+| パラメータ | 必須 | 説明 |
+|---|---|---|
+| `q` | 必須 | 検索キーワード。**空文字でも可**（キーワード無し検索。`q=` 自体の省略は不可） |
+| `targets` | 条件付き | キーワード検索対象フィールド（カンマ区切り）。キーワード無し検索では省略可 |
+| `fields` | 任意 | レスポンスに含めるフィールド（カンマ区切り）。例: `contentId,title,viewCounter` |
+| `filters` | 任意 | 絞り込み条件。ブラケット記法: `filters[field][gte]=val` / `filters[field][lt]=val` / `filters[field][0]=val`（一致） |
+| `jsonFilter` | 任意 | OR/AND/NOT の入れ子など複雑な条件に使用。**URL エンコードした JSON 文字列**を渡す（JSON 構造は `{type: equal/range/or/and/not, ...}`） |
+| `_sort` | 必須 | ソート順。`-viewCounter` など方向記号 + フィールド名 |
+| `_offset` | 任意 | 取得オフセット。**最大 100,000** |
+| `_limit` | 任意 | 取得件数。**最大 100** |
+| `_context` | 必須 | サービス/アプリケーション名（最大 40 文字） |
+
+**レスポンス**: `meta.status`（200 成功）・`meta.totalCount`（ヒット件数）・`data[]`。`status: 400` はパラメータ不正、`503` は高負荷/メンテ（5 分以上間隔を空けてリトライ）
+
+**利用上の注意**
+
+- **User-Agent にサービス名/アプリケーション名の指定が必須**
+- 同時接続数の制限あり。繰り返しリクエスト時は前回レスポンス時間と同等の待機を推奨
+- 検索に 1 秒以上かかる場合はフィルタで分割して取得する
+
+**本プログラムの実装（現在の実装と既知の課題）**
+
 - 1000再生以上フィルタ（直近1年以外）。5万件を超える期間は 1日ずつ狭めて再取得
 - 100件ページングを 4 並列で取得。`":null"` は `":0"` に置換してからデシリアライズ
+- **課題（Issue #19）**: URL を `string.Format` で手組みしておりエスケープ未実施・必須の `_context` 未送信。型付きリクエストクラス化 + 正しいエンコードへ変更予定
 
 ### ニコ動 nvapi（nicorank_oldlog/RankAPI/NicoRankiApi.cs）
 
