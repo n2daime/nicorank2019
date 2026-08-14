@@ -16,7 +16,6 @@
 # Mono auto generated files
 mono_crash.*
 
-openspec/
 opencode.json*
 
 # Build results
