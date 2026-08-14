@@ -38,7 +38,7 @@ nuget restore nicorankLib\nicorankLib.csproj  # 4.8 用プロジェクト
 | ツール | 用途 |
 |--------|------|
 | Visual Studio 2026 Community | ビルド・デバッグ |
-| OpenCode (+ OpenSpec) | 変更管理・タスク管理・設計書管理 |
+| OpenCode | docs/ による変更管理・タスク管理・設計書管理 |
 
 ---
 
@@ -146,6 +146,20 @@ dotnet test UnitTest/UnitTest.csproj
 | `config.json` の書式 | JSON の構文エラーにより実行失敗するので必ず `JSON Lint` 等で確認 |
 | `RankApi2Json.SaveOldRankingData` の呼び出し | コメンタードアウトされているため、保存機能は手動で `Program.cs` 内のコメントを外す必要があります |
 | `nuget restore` の失敗 | `packages` ディレクトリが古い場合、`nuget restore -verbosity detailed` で原因を特定してください |
+
+---
+
+## ドキュメント
+
+開発・保守用のドキュメントは `docs/` にまとまっています。
+
+| ドキュメント | 内容 |
+|---|---|
+| `docs/proposal.md` | 変更提案と開発背景（プロジェクトの成り立ち・運用フロー） |
+| `docs/specs.md` | 仕様（ポイント計算・出力形式・DB テーブル・API 仕様） |
+| `docs/design.md` | 設計判断の記録 |
+| `docs/tasks.md` | タスク管理（未完了・完了履歴） |
+| `docs/knowledge/` | コード構造ナレッジ（作業開始時は `knowledge/README.md` から読むこと） |
 
 ---
 
