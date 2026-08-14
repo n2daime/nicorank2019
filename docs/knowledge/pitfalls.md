@@ -99,3 +99,11 @@
 - `nicorankLib` の Costura.Fody は削除しない（単一 EXE 化のため）
 - nicorank_oldlog は net8.0 から net48 ライブラリを参照するハイブリッド構成
 - 設定ファイル（`config.json` / `cookie.txt`）はリポジトリに含めない（手動配置）
+
+### 14. gh コマンドが見つからない（PATH 未反映）
+
+- **症状**: opencode の bash ツールから `gh` を実行すると「認識されない」エラー
+- **原因**: `gh.exe` は `C:\Program Files\GitHub CLI\gh.exe` にあり、Machine/User PATH にも登録済みだが、**opencode デスクトップアプリが起動時点の古い環境変数を保持**しており、そのプロセスツリー全体（bash ツール含む）に PATH が反映されていない
+- **対処**: opencode アプリを**再起動**すればレジストリの PATH が反映される（gh の再インストール・PATH 再設定は不要）
+- **注意**: opencode のシェルは PowerShell プロファイルを読まないため、プロファイルへの PATH 追記は無効
+- **代替**: 再起動前はフルパス `& "C:\Program Files\GitHub CLI\gh.exe"` で実行可能
