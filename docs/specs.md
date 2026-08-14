@@ -199,6 +199,9 @@
 
 - `nvapi.nicovideo.jp` — ジャンル/定番/トレンドタグのランキング取得。user_session クッキー + UA 付与
 - ページングは hasNext まで最大 20 ページ
+- **API 仕様は koizuka 氏の公開メモを参照**（ニコニコ動画 ランキングAPI仕様）:
+  - https://gist.github.com/koizuka/2c927c36504cde2f70685e361f9a4678
+  - 共通仕様の要点: User-Agent（自身のツール名を識別可能な形で指定）・`user_session` クッキー・クエリパラメータ `_frontendId=6` が必須
 
 ### 過去ランキング JSON（自前運用の互換サイト）
 
