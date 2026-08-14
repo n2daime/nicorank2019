@@ -17,7 +17,7 @@
 
 ### SQLite ライブラリ移行（System.Data.SQLite → Microsoft.Data.Sqlite）
 
-> 背景・設計判断は `docs/design.md` の「SQLite 移行設計」を参照。
+> GitHub issue #20 対応。背景・設計判断は `docs/design.md` の「SQLite 移行設計」、移行仕様は `docs/specs.md`「6. 移行仕様」を参照。
 
 #### 1. プロジェクト設定ファイルの変更
 
