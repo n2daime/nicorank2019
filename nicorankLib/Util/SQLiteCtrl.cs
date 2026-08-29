@@ -26,8 +26,8 @@ namespace nicorankLib.Util
                 var batteryLocation = typeof(SQLitePCL.Batteries_V2).Assembly.Location;
                 throw new InvalidOperationException(
                     $"SQLitePCLRaw の初期化に失敗しました: {ex.Message}\n" +
-                    $"batteries_v2.dll の場所: {(string.IsNullOrEmpty(batteryLocation) ? "(埋め込み: FodyWeavers.xml の Costura 除外と Private=False を確認してください)" : batteryLocation)}\n" +
-                    $"lib\\SQLitePCLRaw.batteries_v2.dll と同じ lib\\runtimes\\win-x64\\native\\e_sqlite3.dll が配置されている必要があります（probing privatePath=\"lib\"）。",
+                    $"batteries_v2.dll の場所: {(string.IsNullOrEmpty(batteryLocation) ? "(埋め込み: FodyWeavers.xml の ExcludeAssemblies と AfterResolveReferences の除外、RemoveDuplicateSQLiteFiles を確認してください)" : batteryLocation)}\n" +
+                    $"lib\\SQLitePCLRaw.batteries_v2.dll と同じ lib\\runtimes\\win-x64\\native\\e_sqlite3.dll が配置されている必要があります（probing privatePath=\"lib\" + AssemblyResolve）。",
                     ex);
             }
         }

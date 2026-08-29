@@ -56,7 +56,7 @@
 
 - `3.53.3` は `build/net471/SQLitePCLRaw.lib.e_sqlite3.props` で `Platform==AnyCPU && RuntimeIdentifier==""` の場合に `error : This package does not support Any CPU builds` を出す。`net48` の `AnyCPU` ビルドが必ず失敗する。
 - **対策**: `csproj` 末尾に空ターゲット `<Target Name="CheckForAnyCPU" />` を後勝ち定義して上書き無効化。`x64` 必須/`ARM` 任意のため `AnyCPU` でも手動で `lib\runtimes` を配置して動的ロードで対応する。
-- `AnyCPU Prefer32Bit=true`（既定）の `exe` は `32bit` で起動し `win-x86` を探す。`x64` 必須化のため `nicorank2019.csproj:19` の `Debug|AnyCPU` に `<Prefer32Bit>false</Prefer32Bit>` を追加し `64bit` 起動で `win-x64` を使用。`win-x86` は削除せず `win-x64/x86/arm` の3種を同梱して互換性を維持（`x86` 不要だが `32bit` フォールバック用）。
+- `AnyCPU` で `Prefer32Bit` 未指定は `64bit` 起動だが、VS テンプレート既定は `true` のため `32bit` で起動し `win-x86` を探す。`x64` 必須化のため `nicorank2019.csproj:19` の `Debug|AnyCPU` に `<Prefer32Bit>false</Prefer32Bit>` を明示し `64bit` 起動で `win-x64` を使用。`win-x86` は削除せず `win-x64/x86/arm` の3種を同梱して互換性を維持（`x86` 不要だが `32bit` フォールバック用）。
 
 ### 4e. `System.ValueTuple` / `bindingRedirect` の落とし穴（2026-08）
 
@@ -154,3 +154,4 @@
 - **EF6 削除時**: `App.config` / `nicorankLib/app.config` の `<entityFramework>` / `<DbProviderFactories>` から `SQLite.EF6` のみ削除し、`System.Data.SQLite.EF6` の `Reference` も同時に削除。`System.Data.SQLite` 本体が残っていると `Costura` が再び `e_sqlite3` を `runtimes` 直下にコピーしようとして `lib` 集約と競合する。
 - **.NET Core 移行時**: `Costura.Fody` は `net8.0` では不要（単一ファイル発行は `PublishSingleFile`）。`SQLitePCLRaw` の `AnyCPU` 禁止は `3.53` 以降で顕在化するため `CheckForAnyCPU` 空ターゲットや `RuntimeIdentifier` の扱いを再確認。`Microsoft.Data.Sqlite` の `net48` 依存は `2.1.12` だが `net8.0` では `3.0.5/3.53.3` のため `TargetFramework` ごとに `Condition` 分岐が必要。`System.ValueTuple` は `net8.0` では `Inbox` のため `HintPath` 追加は不要。
 - **DB パス変更時**: `DB.cs` の定数と `PostBuildEvent` の `xcopy` 元を同時更新。`lib` 集約と同様に `Probing` や `AssemblyResolve` の対象パスが変わるため `SQLiteCtrl` の診断メッセージ（`batteries_v2.dll の場所`）も更新すること。
+- **接続文字列の見送り**: `SQLiteCtrl.Open()` の接続文字列は `SqliteConnectionStringBuilder` 未使用の生連結のため `;` を含むパスは不可。現行 `DB.cs` のパスに `;` は含まれずリスク低のため今回は見送り。`DB` パス変更時に `SqliteConnectionStringBuilder` 化を検討すること。

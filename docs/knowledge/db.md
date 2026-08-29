@@ -79,4 +79,4 @@
 - `LogSnapshot*.db` は日次作成されるため、バッチ途中でクラッシュしても再実行で最初から取得できる
 - WAL モードでは `.db-wal` / `.db-shm` ファイルが別途作られる（自動管理。不要時は `PRAGMA wal_checkpoint(TRUNCATE)`）
 - 実データベースの「依存ファイル/DB/」はビルド時に PostBuild でコピーされる
-- ネイティブ `e_sqlite3.dll` と `SQLitePCLRaw` 5 DLL は `bin/{Debug,Release}/lib` に集約（`probing privatePath="lib"` + `AssemblyResolve` フォールバック）。`batteries_v2.dll` の `Location` 基準で `lib\runtimes/{rid}/native/e_sqlite3.dll` を探索するため `lib` 配下に同一親で配置する必要がある。詳細は `pitfalls.md 4c` を参照
+- ネイティブ `e_sqlite3.dll`（`win-x64/x86/arm` 3種）と `SQLitePCLRaw` 4 DLL（`Microsoft.Data.Sqlite`/`core`/`batteries_v2`/`provider.dynamic_cdecl`）は `bin/{Debug,Release}/lib` に集約（`probing privatePath="lib"` + `AssemblyResolve` フォールバック）。`batteries_v2.dll` の `Location` 基準で `lib\runtimes/{rid}/native/e_sqlite3.dll` を探索するため `lib` 配下に同一親で配置する必要がある。詳細は `pitfalls.md 4c` を参照（`3.x` では `provider.e_sqlite3` を加え5 DLL）

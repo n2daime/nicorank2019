@@ -9,7 +9,7 @@
 
 ## SQLite 移行設計（実施済み 2026-08-29）
 
-> タスクは `docs/tasks.md` の「SQLite ライブラリ移行」を参照。Issue #20 対応で `Microsoft.Data.Sqlite 8.0.7` + `SQLitePCLRaw 2.1.6` に移行済み。
+> タスクは `docs/tasks.md` の「SQLite ライブラリ移行」を参照。Issue #20 対応で `Microsoft.Data.Sqlite 10.0.11` + `SQLitePCLRaw 2.1.12` に移行し、`bin` 直下の散乱を避けるため `lib` サブフォルダに集約済み（`FodyWeavers.xml` で `ExcludeAssemblies`）。
 
 ### Context
 
@@ -48,9 +48,9 @@
 - **理由**: 名前空間とクラス名の変更のみで、API シグネチャはほぼ互換。機械的な置き換えで対応可能。
 
 #### Decision: packages.config のバージョン指定
-- **選択**: Microsoft.Data.Sqlite 8.0.7 + SQLitePCLRaw 2.1.6（.NET Framework 4.8 対応の最新安定版）
-- **理由**: `packages` フォルダに既存キャッシュが存在し、net48 で動作確認済み。9.x も netstandard2.0 で動作するが、本環境では 8.0.7 が最短でビルドが通る。将来 9.x への上げ替えは容易。
-- **補足**: `Microsoft.Data.Sqlite` 本体はメタパッケージで実体は `Microsoft.Data.Sqlite.Core` の `lib/netstandard2.0/Microsoft.Data.Sqlite.dll`。`packages.config` には `Microsoft.Data.Sqlite` / `Core` / `SQLitePCLRaw.bundle_e_sqlite3` / `core` / `lib.e_sqlite3` / `provider.dynamic_cdecl` の 6 パッケージを列挙。
+- **選択**: Microsoft.Data.Sqlite 10.0.11 + SQLitePCLRaw 2.1.12（.NET Framework 4.8 対応の安定版。`10.0.11` の `net48` 依存は `2.1.12`）
+- **理由**: `10.0.11` は `net48` でも動作確認済み（`dotnet test` 69件 PASS）。`3.0.5/3.53` は `AnyCPU` 禁止のため `2.1.12` を採用。`lib` 集約は `win-x64/x86/arm` の3種を同梱し `x64` 必須/`ARM` 任意に対応。
+- **補足**: `Microsoft.Data.Sqlite` 本体はメタパッケージで実体は `Microsoft.Data.Sqlite.Core` の `lib/netstandard2.0/Microsoft.Data.Sqlite.dll`。`packages.config` には `Microsoft.Data.Sqlite` / `Core` / `SQLitePCLRaw.bundle_e_sqlite3` / `core` / `lib.e_sqlite3` / `provider.dynamic_cdecl` の 6 パッケージを列挙。`System.ValueTuple 4.6.2` / `System.Buffers 4.6.1` 等も同時更新。
 
 #### Decision: 非互換 API の対応
 - **SqliteCommand 単引数コンストラクタ**: `new SqliteCommand(conn)` は `conn.CreateCommand()` に置換（Microsoft.Data.Sqlite には単引数コンストラクタが存在しない）
@@ -60,9 +60,9 @@
 
 ### Risks / Trade-offs
 
-- **[Risk] Microsoft.Data.Sqlite の .NET Framework 4.8 サポートバージョンに制限がある可能性** → 8.0.7 でビルド・テストが PASS したため解消
+- **[Risk] Microsoft.Data.Sqlite の .NET Framework 4.8 サポートバージョンに制限がある可能性** → `10.0.11` + `2.1.12` でビルド・テストが `PASS` したため解消（`3.0.5` は `AnyCPU` 禁止のため `2.1.12` を採用）
 - **[Risk] 22 ファイルにおよぶ書き換えで typo や置き忘れが発生する可能性** → using 文の一括置換後、ビルドエラーで残存箇所（`CreateFile` / 単引数コンストラクタ / `DbType`）を検出し対応
-- **[Risk] e_sqlite3.dll ネイティブ DLL の実行時解決** → `SQLitePCLRaw.lib.e_sqlite3` の `runtimes/win-{x64,x86,arm}/native/e_sqlite3.dll` を `Content` + `CopyToOutputDirectory` および `buildTransitive` Import で `bin/runtimes` にコピーし、テスト（69件 PASS）および `nicorankLib.dll` の `GetManifestResourceNames`（`costura.sqlitepclraw.*` 3件 + `costura.microsoft.data.sqlite`）で Costura 埋め込みを確認。packages.config 形式では `packages.config` への列挙だけでは CopyLocal されず、`csproj` への `Reference` 追加が必須であることを検証（pitfalls 4b 追記）
+- **[Risk] e_sqlite3.dll ネイティブ DLL の実行時解決** → `SQLitePCLRaw.lib.e_sqlite3` の `runtimes/win-{x64,x86,arm}/native/e_sqlite3.dll` を `None/Content` + `CopyToOutputDirectory` で `bin/lib/runtimes` に集約し、`FodyWeavers.xml` の `ExcludeAssemblies` + `AfterResolveReferences` 除外 + `probing privatePath="lib"` + `AssemblyResolve` で解決。`GetManifestResourceNames` で `SQLitePCLRaw/Microsoft.Data.Sqlite` の埋め込みが無いことを確認（`lib` 物理配置）。詳細は `pitfalls 4c` を参照
 - **[Trade-off] 機械的置き換えで対応できるが、コードレビュー時の差分が大きくなる** → 1回のコミットで行い、差分の把握を容易にする
 
 ---

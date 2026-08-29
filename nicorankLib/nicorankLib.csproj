@@ -103,10 +103,10 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Core" />
-    <!-- SQLitePCLRaw 系と Microsoft.Data.Sqlite は Costura 埋め込みから除外する(Private=False)。
+    <!-- SQLitePCLRaw 系と Microsoft.Data.Sqlite は Costura 埋め込みから除外する(FodyWeavers.xml ExcludeAssemblies + AfterResolveReferences)。
          batteries_v2.dll は自アセンブリの Location を基準に runtimes/{rid}/native/e_sqlite3.dll を
          LoadLibrary するため、埋め込むと Location が空になりネイティブ探索が必ず失敗する。
-         bin への配置は ItemGroup(None CopyToOutputDirectory)で行う。 -->
+         bin への配置は ItemGroup(None/Content CopyToOutputDirectory)で lib サブフォルダへ行い、RemoveDuplicateSQLiteFiles で重複を削除。 -->
     <Reference Include="System.Diagnostics.DiagnosticSource, Version=10.0.0.11, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Diagnostics.DiagnosticSource.10.0.11\lib\net462\System.Diagnostics.DiagnosticSource.dll</HintPath>
     </Reference>
@@ -327,8 +327,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <!-- SQLitePCLRaw 系・Microsoft.Data.Sqlite の物理配置(Costura 埋め込み除外のため自動コピーされない分を手動で配置)
-         x64必須 / ARM任意 / x86不要。batteries_v2.dll は自DLLの Location を基準に runtimes/{rid}/native/e_sqlite3.dll を探索するため、
+    <!-- SQLitePCLRaw 系・Microsoft.Data.Sqlite の物理配置(FodyWeavers.xml ExcludeAssemblies + AfterResolveReferences + RemoveDuplicateSQLiteFiles で埋め込み抑止)
+         x64必須 / ARM任意で x86 は3種同梱で互換維持。batteries_v2.dll は自DLLの Location を基準に runtimes/{rid}/native/e_sqlite3.dll を探索するため、
          4 DLL と runtimes は同一親フォルダ(lib)配下に置く。 -->
     <None Include="..\packages\Microsoft.Data.Sqlite.Core.10.0.11\lib\netstandard2.0\Microsoft.Data.Sqlite.dll">
       <Link>lib\Microsoft.Data.Sqlite.dll</Link>
@@ -400,12 +400,12 @@
     <Delete Files="@(_OldRuntimes)" Condition="Exists('%(_OldRuntimes.Identity)')" />
     <RemoveDir Directories="$(OutDir)runtimes" Condition="Exists('$(OutDir)runtimes')" />
   </Target>
-  <!-- 2.1.12 は AnyCPU チェックが無いが、将来の 3.x 向けに無効化を残す。x64必須/ARM任意で x86 は不要。 -->
-  <Target Name="CheckForAnyCPU" />
   <Import Project="..\packages\SQLitePCLRaw.lib.e_sqlite3.2.1.12\buildTransitive\net461\SQLitePCLRaw.lib.e_sqlite3.targets" Condition="Exists('..\packages\SQLitePCLRaw.lib.e_sqlite3.2.1.12\buildTransitive\net461\SQLitePCLRaw.lib.e_sqlite3.targets')" />
   <Import Project="..\packages\EntityFramework.6.5.2\build\EntityFramework.targets" Condition="Exists('..\packages\EntityFramework.6.5.2\build\EntityFramework.targets')" />
   <Import Project="..\packages\Fody.6.9.3\build\Fody.targets" Condition="Exists('..\packages\Fody.6.9.3\build\Fody.targets')" />
   <Import Project="..\packages\Costura.Fody.6.2.0\build\Costura.Fody.targets" Condition="Exists('..\packages\Costura.Fody.6.2.0\build\Costura.Fody.targets')" />
   <Import Project="..\packages\NETStandard.Library.2.0.3\build\netstandard2.0\NETStandard.Library.targets" Condition="Exists('..\packages\NETStandard.Library.2.0.3\build\netstandard2.0\NETStandard.Library.targets')" />
   <Import Project="..\packages\System.ValueTuple.4.6.2\build\net471\System.ValueTuple.targets" Condition="Exists('..\packages\System.ValueTuple.4.6.2\build\net471\System.ValueTuple.targets')" />
+  <!-- 2.1.12 は AnyCPU チェックが無いため現在は no-op。将来 3.x 導入時は Import 後に定義することで上書き無効化する。x64必須/ARM任意で x86 は3種同梱で互換維持。 -->
+  <Target Name="CheckForAnyCPU" />
 </Project>

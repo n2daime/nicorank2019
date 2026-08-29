@@ -21,10 +21,10 @@
 
 #### 1. プロジェクト設定ファイルの変更
 
-- [x] ✅ 1.1 nicorankLib.csproj の Reference を System.Data.SQLite 関連から Microsoft.Data.Sqlite に変更（`Microsoft.Data.Sqlite.Core.8.0.7` の `lib/netstandard2.0/Microsoft.Data.Sqlite.dll` を参照。Stub targets 削除）
-- [x] ✅ 1.2 packages.config の System.Data.SQLite 関連パッケージを削除し Microsoft.Data.Sqlite を追加（`Microsoft.Data.Sqlite 8.0.7` / `Microsoft.Data.Sqlite.Core 8.0.7` / `SQLitePCLRaw.bundle_e_sqlite3 2.1.6` / `core 2.1.6` / `lib.e_sqlite3 2.1.6` / `provider.dynamic_cdecl 2.1.6`）
-- [x] ✅ 1.3 app.config の DbProviderFactories セクションを削除 + entityFramework/providers の `System.Data.SQLite.EF6` 行を削除
-- [x] ✅ 1.4 UnitTest.csproj の `System.Data.SQLite.Core 1.0.118` → `Microsoft.Data.Sqlite 8.0.7`（PackageReference）
+- [x] ✅ 1.1 nicorankLib.csproj の Reference を System.Data.SQLite 関連から Microsoft.Data.Sqlite に変更（`Microsoft.Data.Sqlite.Core.10.0.11` の `lib/netstandard2.0/Microsoft.Data.Sqlite.dll` を参照。`lib` 集約で `ExcludeAssemblies`）
+- [x] ✅ 1.2 packages.config の System.Data.SQLite 関連パッケージを削除し Microsoft.Data.Sqlite を追加（`Microsoft.Data.Sqlite 10.0.11` / `Core 10.0.11` / `SQLitePCLRaw.bundle_e_sqlite3 2.1.12` / `core 2.1.12` / `lib.e_sqlite3 2.1.12` / `provider.dynamic_cdecl 2.1.12` + `System.*` 更新）
+- [x] ✅ 1.3 app.config の DbProviderFactories セクションを削除 + `System.ValueTuple` の `CopyLocal` 化と `bindingRedirect` 修正（`AutoGenerateBindingRedirects=false`）
+- [x] ✅ 1.4 UnitTest.csproj の `System.Data.SQLite.Core 1.0.118` → `Microsoft.Data.Sqlite 10.0.11`（PackageReference）
 
 #### 2. SQLiteCtrl.cs の接続コード再実装
 
@@ -51,10 +51,10 @@
 
 #### 5. ビルド検証と動作確認
 
-- [x] ✅ 5.1 nicorankLib プロジェクトのビルドが成功することを確認（`dotnet build nicorankLib/nicorankLib.csproj -c Release` および `dotnet build UnitTest` 経由で確認。`GetManifestResourceNames` で `costura.sqlitepclraw.*` が埋め込まれ、`bin/runtimes/win-{x64,x86,arm}/native/e_sqlite3.dll` が出力されることを検証）
-- [x] ✅ 5.2 nicorank2019 全体のビルドが成功することを確認（`dotnet build` で nicorankLib の Costura 埋め込みが `costura.sqlitepclraw.*` を含むことを確認。packages.config 形式では `Reference` 追加が必須であることを検証）
-- [x] ✅ 5.3 基本的な動作（DB接続・読み取り）が従来通り動作することを確認（`ISQLiteCtrl` 経由のインメモリ DB + `PRAGMA journal_mode=WAL` で検証。`SQLitePCLRaw.batteries_v2` の `runtimes` 配置によりネイティブ解決が成功）
-- [x] ✅ 5.4 `dotnet test UnitTest/UnitTest.csproj -c Release` が全件 PASS（69件 PASS。移行前後の挙動一致を検証。Release 構成で実行）
+- [x] ✅ 5.1 nicorankLib プロジェクトのビルドが成功することを確認（`MSBuild` で `GetManifestResourceNames` に `SQLitePCLRaw/Microsoft.Data.Sqlite` の埋め込みが無いこと、`bin/lib/runtimes/win-{x64,x86,arm}/native/e_sqlite3.dll` が `lib` 配下に出力されることを検証）
+- [x] ✅ 5.2 nicorank2019 全体のビルドが成功することを確認（`MSBuild` で `AnyCPU` の `CheckForAnyCPU` 制約を `空Target` で回避、`Prefer32Bit=false` で `64bit` 起動を保証）
+- [x] ✅ 5.3 基本的な動作（DB接続・読み取り）が従来通り動作することを確認（`ISQLiteCtrl` 経由のインメモリ DB + `PRAGMA journal_mode=WAL` で検証。`Batteries_V2.Init()` の `e_sqlite3` 解決と `System.ValueTuple` の `CopyLocal` を検証）
+- [x] ✅ 5.4 `dotnet test UnitTest/UnitTest.csproj -c Release` が全件 PASS（69件 PASS。移行前後の挙動一致を検証。Debug/Release とも）
 
 ---
 

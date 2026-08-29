@@ -243,7 +243,7 @@
 
 ## 6. 移行仕様（実施済み 2026-08-29）
 
-> タスクは `docs/tasks.md` の「SQLite ライブラリ移行」を参照。Microsoft.Data.Sqlite 8.0.7 への移行で本仕様を満たすことを検証済み（`dotnet test` 69件 PASS）。
+> タスクは `docs/tasks.md` の「SQLite ライブラリ移行」を参照。Microsoft.Data.Sqlite 10.0.11 + SQLitePCLRaw 2.1.12 への移行で本仕様を満たすことを検証済み（`dotnet test` 69件 PASS、`lib` 集約で `e_sqlite3` は `bin/lib/runtimes` に配置）。
 
 ### System.Data.SQLite → Microsoft.Data.Sqlite 移行
 

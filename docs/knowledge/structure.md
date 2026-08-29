@@ -10,9 +10,9 @@ nicorank2019.sln
 ├── nicorank_oldlog/      .NET 8 コンソールアプリ（公式過去ランキング回収ツール、SDK-style）
 ├── UnitTest/             .NET Framework 4.8 MSTest テストプロジェクト（SDK-style、69件）
 ├── 依存ファイル/           nicorank.xml・DB/*.db（ソリューションフォルダ）
-├── lib/                 SQLite マネージド DLL 4件 + runtimes/win-{x64,x86,arm}/native/e_sqlite3.dll（ビルド時に packages から lib\ へ配置。Costura 埋め込み除外）
 ├── docs/                 ドキュメント（proposal / specs / design / tasks / knowledge）
 └── packages/             NuGet パッケージ（packages.config 用）
+※ SQLite マネージド DLL 4件（Microsoft.Data.Sqlite/SQLitePCLRaw.core/batteries_v2/provider.dynamic_cdecl）+ ネイティブ e_sqlite3.dll 3種（win-x64/x86/arm）はビルド時に `bin/{Debug,Release}/lib` へ配置（`lib` は出力物、ソリューション直下には存在しない。Costura 埋め込み除外）
 ```
 
 ## プロジェクト間の依存

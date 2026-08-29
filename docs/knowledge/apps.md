@@ -10,7 +10,7 @@
 - `frm/frmMainSyukei.cs`: `frmMain` の partial。モード選択（Weekly/Tyukan/SP）→ `GetModeFactory()` → 集計フロー実行
 - `frm/frmMesseageDialog.cs`: `RunFunction` デリゲートを `BackgroundWorker` で実行するモーダルダイアログ。`StatusLog` の出力先を TextBox に差し替え
 
-**ビルド**: .NET Framework 4.8。Costura.Fody 5.7.0（単一 EXE 化）。packages.config 方式。PostBuild で「依存ファイル」を xcopy。
+**ビルド**: .NET Framework 4.8。Costura.Fody 6.2.0（単一 EXE 化）。packages.config 方式。PostBuild で「依存ファイル」を xcopy。`AnyCPU Prefer32Bit=false` で `64bit` 起動。
 
 ## nicorank_SnapShot（スナップショット取得ツール）
 
@@ -20,7 +20,7 @@
   - `nicorank_SnapShot.csproj /get` のように任意の引数1つ以上でコンソールモード（引数の中身は解釈されない）
 - コンソールモード: `new SnapController().GetSnapShotAsync().Result` を実行
 - UI モード（`Form1.cs`）: 「OK」ボタンで `SnapController.GetSnapShotAsync()` を await。完了後、チェックボックス ON なら TaskDialog で 30 秒カウントダウン後に `Application.SetSuspendState`（PC サスペンド）、OFF なら即終了
-- **ビルド**: .NET Framework 4.8。WindowsAPICodePack-Core 1.1.2。Costura.Fody
+- **ビルド**: .NET Framework 4.8。WindowsAPICodePack-Core 1.1.2。Costura.Fody 6.2.0
 
 ## nicorank_oldlog（公式過去ランキング回収ツール）
 
