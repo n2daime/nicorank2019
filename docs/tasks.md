@@ -7,7 +7,7 @@
 
 - 実装前に `docs/proposal.md`（開発背景）`docs/design.md` `docs/specs.md` `docs/knowledge/` を必ず読むこと。
 - 各タスクは対応する **GitHub Issue 番号と関連付ける**（提案は Issue で管理。フローは `docs/proposal.md` 参照）。
-- 完了したタスクには `✅` を付け、`docs/knowledge/` を最新化し、関連する GitHub Issue を Close する。
+- 完了したタスクには `✅` を付け、`docs/knowledge/` を最新化し、関連する GitHub Issue を Close する。経緯・検証履歴は `docs/tasks/archive.md` に追記する。
 - ビルド: `dotnet restore` → `dotnet test UnitTest/UnitTest.csproj` が通ること。
 - ブランチ: main から作業用ブランチを切り、完了後 main にマージ。
 
