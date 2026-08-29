@@ -328,7 +328,7 @@ del EntityFramework*
 del Microsoft.Win32.Primitives*
 del netstandard*
 del Newtonsoft.Json*
-xcopy "$(SolutionDir)依存ファイル\*.*" "$(TargetDir)" /D /Y /S</PostBuildEvent>
+echo xcopy "$(SolutionDir)依存ファイル\*.*" "$(TargetDir)" /D /Y /S</PostBuildEvent>
   </PropertyGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
