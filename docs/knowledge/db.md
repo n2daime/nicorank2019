@@ -50,7 +50,7 @@
 
 ## SQLiteCtrl 接続設計
 
-`nicorankLib/Util/SQLiteCtrl.cs`（`Microsoft.Data.Sqlite 8.0.7` + `SQLitePCLRaw 2.1.6`）
+`nicorankLib/Util/SQLiteCtrl.cs`（`Microsoft.Data.Sqlite 10.0.11` + `SQLitePCLRaw 2.1.12`、2026-08 更新。`lib` サブフォルダ集約）
 
 - `Open(path)`: ファイル存在チェック → 接続文字列 `Data Source="<path>";Pooling=False;Default Timeout=30`（`SQLiteConnectionStringBuilder` / `JournalMode` は廃止。WAL は `PRAGMA journal_mode=WAL` で設定）→ `SqliteConnection` を `Open()` → PRAGMA 4種 → IsOpen=true
   - PRAGMA: `journal_mode=WAL` / `synchronous=NORMAL` / `temp_store=MEMORY` / `cache_size=-8000`（`Connection.CreateCommand()` で実行）
@@ -79,3 +79,4 @@
 - `LogSnapshot*.db` は日次作成されるため、バッチ途中でクラッシュしても再実行で最初から取得できる
 - WAL モードでは `.db-wal` / `.db-shm` ファイルが別途作られる（自動管理。不要時は `PRAGMA wal_checkpoint(TRUNCATE)`）
 - 実データベースの「依存ファイル/DB/」はビルド時に PostBuild でコピーされる
+- ネイティブ `e_sqlite3.dll` と `SQLitePCLRaw` 5 DLL は `bin/{Debug,Release}/lib` に集約（`probing privatePath="lib"` + `AssemblyResolve` フォールバック）。`batteries_v2.dll` の `Location` 基準で `lib\runtimes/{rid}/native/e_sqlite3.dll` を探索するため `lib` 配下に同一親で配置する必要がある。詳細は `pitfalls.md 4c` を参照
