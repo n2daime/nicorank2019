@@ -1,0 +1,146 @@
+{
+	"ranking_daily": {
+		"folder": "daily",
+		"rss": "24h"
+	},
+	"ranking_weekly": {
+		"folder": "weekly",
+		"rss": "week"
+	},
+	"ranking_monthly": {
+		"folder": "monthly",
+		"rss": "month"
+	},
+	"ranking_total": {
+		"folder": "total",
+		"rss": "total"
+	},
+	"genreList": [
+		{
+			"genre": "全ジャンル",
+			"tag": null,
+			"file": "all.json",
+			"rss": "ranking/genre/all",
+			"Page": 10
+		},
+		{
+			"genre": "エンターテイメント",
+			"tag": null,
+			"file": "entertainment.json",
+			"rss": "ranking/genre/entertainment",
+			"Page": 10
+		},
+		{
+			"genre": "ラジオ",
+			"tag": null,
+			"file": "radio.json",
+			"rss": "ranking/genre/radio",
+			"Page": 10
+		},
+		{
+			"genre": "音楽・サウンド",
+			"tag": null,
+			"file": "music_sound.json",
+			"rss": "ranking/genre/music_sound",
+			"Page": 10
+		},
+		{
+			"genre": "ダンス",
+			"tag": null,
+			"file": "dance.json",
+			"rss": "ranking/genre/dance",
+			"Page": 10
+		},
+		{
+			"genre": "動物",
+			"tag": null,
+			"file": "animal.json",
+			"rss": "ranking/genre/animal",
+			"Page": 10
+		},
+		{
+			"genre": "自然",
+			"tag": null,
+			"file": "nature.json",
+			"rss": "ranking/genre/nature",
+			"Page": 10
+		},
+		{
+			"genre": "料理",
+			"tag": null,
+			"file": "cooking.json",
+			"rss": "ranking/genre/cooking",
+			"Page": 10
+		},
+		{
+			"genre": "旅行・アウトドア",
+			"tag": null,
+			"file": "traveling_outdoor.json",
+			"rss": "ranking/genre/traveling_outdoor",
+			"Page": 10
+		},
+		{
+			"genre": "乗り物",
+			"tag": null,
+			"file": "vehicle.json",
+			"rss": "ranking/genre/vehicle",
+			"Page": 10
+		},
+		{
+			"genre": "スポーツ",
+			"tag": null,
+			"file": "sports.json",
+			"rss": "ranking/genre/sports",
+			"Page": 10
+		},
+		{
+			"genre": "社会・政治・時事",
+			"tag": null,
+			"file": "society_politics_news.json",
+			"rss": "ranking/genre/society_politics_news",
+			"Page": 10
+		},
+		{
+			"genre": "技術・工作",
+			"tag": null,
+			"file": "technology_craft.json",
+			"rss": "ranking/genre/technology_craft",
+			"Page": 10
+		},
+		{
+			"genre": "解説・講座",
+			"tag": null,
+			"file": "commentary_lecture.json",
+			"rss": "ranking/genre/commentary_lecture",
+			"Page": 10
+		},
+		{
+			"genre": "アニメ",
+			"tag": null,
+			"file": "anime.json",
+			"rss": "ranking/genre/anime",
+			"Page": 10
+		},
+		{
+			"genre": "ゲーム",
+			"tag": null,
+			"file": "game.json",
+			"rss": "ranking/genre/game",
+			"Page": 10
+		},
+		{
+			"genre": "その他",
+			"tag": null,
+			"file": "other.json",
+			"rss": "ranking/genre/other",
+			"Page": 10
+		},
+		{
+			"genre": "R-18",
+			"tag": null,
+			"file": "r18.json",
+			"rss": "ranking/genre/r18",
+			"Page": 10
+		}
+	]
+}

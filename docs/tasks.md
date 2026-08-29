@@ -9,7 +9,7 @@
 - 各タスクは対応する **GitHub Issue 番号と関連付ける**（提案は Issue で管理。フローは `docs/proposal.md` 参照）。
 - 完了したタスクには `✅` を付け、`docs/knowledge/` を最新化し、関連する GitHub Issue を Close する。経緯・検証履歴は `docs/tasks/archive.md` に追記する。
 - ビルド: `dotnet restore` → `dotnet test UnitTest/UnitTest.csproj` が通ること。
-- ブランチ: main から作業用ブランチを切り、完了後 main にマージ。
+- ブランチ: `develop` から `feature/tXXX-*` を切り、完了後 `develop` にマージ（`--no-ff`）。`develop → main` はユーザーの明示指示時のみ（`docs/knowledge/release.md` 参照）。`main` は保護ブランチ。
 
 ---
 

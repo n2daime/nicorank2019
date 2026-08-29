@@ -4,12 +4,12 @@
 
 ## §0 絶対ルール(MUST)
 
-以下は省略禁止。例外は「docs・調査(main 直可)」「ユーザーの明示許可」「release.md のリリース手順(ユーザーのリリース指示時)」のみ。例外が免除するのはブランチ・Issue・レビューの要否に関する項目のみで、MUST 5〜7 の検証義務は免除しない。
+以下は省略禁止。例外は「docs・調査(develop 直可)」「ユーザーの明示許可」「release.md のリリース手順(ユーザーのリリース指示時)」のみ。例外が免除するのはブランチ・Issue・レビューの要否に関する項目のみで、MUST 5〜7 の検証義務は免除しない。`main` は保護ブランチであり、例外時を除き直接コミット禁止。
 
 ### 着手前
 
 1. コード変更タスクでは、最初に `git branch --show-current` を実行して結果を報告する。**この出力の前に実装ファイルを編集しない。**
-2. feature ブランチ上でなければ、`git checkout main` → `git pull` の後に `git checkout -b feature/tXXX-kebab-case-description` を作成してから着手する。main への直接コミット禁止。
+2. feature ブランチ上でなければ、`git checkout develop` → `git pull` の後に `git checkout -b feature/tXXX-kebab-case-description` を作成してから着手する。`main` / `develop` への直接コミットは禁止(例外時のみ)。
 3. 機能追加・改善では、新規 GitHub Issue を作成して番号を取得する。
 4. `docs/tasks.md` の「未完了タスク」にタスクを追記する(対応する Issue 番号を関連付ける)。
 
@@ -28,14 +28,14 @@
    - [深刻度] ファイル:行 — 実施内容(修正した差分の要約 / 見送った理由)
    ```
 7. UI / 集計結果・出力内容などユーザーに見える挙動の変更は、ユーザーの実行確認を得る。
-8. `git checkout main` → `git merge --no-ff feature/tXXX-...` でマージし、feature ブランチを削除する。コンフリクトは解消してからマージし、解消不能ならユーザーに報告する。プッシュはユーザーの指示があるときだけ行う。
-9. マージ後、main 上で tasks.md の完了更新・archive.md へのノウハウ追記・Issue クローズ・knowledge 最新化を行う。
+8. `git checkout develop` → `git merge --no-ff feature/tXXX-...` でマージし、feature ブランチを削除する。コンフリクトは解消してからマージし、解消不能ならユーザーに報告する。`develop` → `main` へのマージはユーザーの明示指示があるときのみ行う(リリース手順は `docs/knowledge/release.md` に従う)。プッシュはユーザーの指示があるときだけ行う。
+9. マージ後、`develop` 上で tasks.md の完了更新・archive.md へのノウハウ追記・Issue クローズ・knowledge 最新化を行う。リリース時は `main` 上でも同様の更新を行う。
 
 ### 運用原則
 
 10. 本ワークフローに従うコミット・ブランチ操作・マージは、ユーザーの事前承認済みとみなす。個別の許可を求めず、ワークフローに従って判断・実行してよい。
 11. プロセス義務(Issue/tasks.md/knowledge/archive.md の読み書き、ゲートの出力)はコンテキスト節約の対象外。削ってよい作業ではない。
-12. 判定基準: C# ソース(.cs / .csproj / .config 等)の変更 = コード変更(Issue+feature ブランチ必須)。README/AGENTS.md/docs のみ = 直作業可。判定やスコープに迷ったら、勝手に省略せずユーザーに確認する。
+12. 判定基準: C# ソース(.cs / .csproj / .config 等)の変更 = コード変更(Issue+feature ブランチ必須)。README/AGENTS.md/docs のみは `develop` 直可(ブランチ不要)。ただし `main` 直は禁止(リリース時のみ)。判定やスコープに迷ったら、勝手に省略せずユーザーに確認する。
 13. クローズ済み Issue の範囲内のバグはその Issue を ReOpen する。範囲外の新規不具合は新規 Issue を作る。判断に迷ったらユーザーに確認する。
 14. プロセス規則が必要な作業(Issue 作成・ブランチ操作・レビュー依頼・マージ・docs 更新)はサブエージェントへ委譲しない(サブエージェントには AGENTS.md が渡らないため)。
 
@@ -52,9 +52,9 @@ Issue: #xxx(docs・調査は「なし」。バグ修正は対応 Issue。機能�
 
 | 種別 | 必要なアクション |
 |------|------------------|
-| 機能追加・改善 | 新規 Issue → tasks.md 追記 → feature ブランチ → 実装 |
-| バグ修正 | 対応 Issue を特定(クローズ済みなら ReOpen)→ feature ブランチ → 実装 |
-| docs・調査 | ブランチ不要(main 直可)。ソース変更を含む場合はコード変更扱い |
+| 機能追加・改善 | 新規 Issue → tasks.md 追記 → feature ブランチ(develop起点) → 実装 → developへマージ |
+| バグ修正 | 対応 Issue を特定(クローズ済みなら ReOpen)→ feature ブランチ(develop起点) → 実装 → developへマージ |
+| docs・調査 | ブランチ不要(develop 直可)。ソース変更を含む場合はコード変更扱い |
 
 - 作業開始時に必ず `docs/knowledge/README.md` を読み、コード構造・依存関係を把握してから着手する。
 - ブランチ名は小文字 + タスク ID + kebab-case の説明(例: `feature/t101-weekly-log-validation`)。大文字混在(`feature/T77-...`)は使わない。
@@ -77,11 +77,16 @@ Issue: #xxx(docs・調査は「なし」。バグ修正は対応 Issue。機能�
 - [ ] reviewer 指摘への対応結果サマリーを報告済み(MUST 6 のフォーマット)
 - [ ] UI / 集計結果・出力内容などユーザーに見える変更はユーザーが実行確認済み
 
-### マージ後(main 上で)
+### マージ後(develop 上で)
 
 - [ ] tasks.md を完了扱いに更新、関連 Issue に検証結果を追記してクローズ
 - [ ] knowledge を最新化(コード構造・依存・設計判断が変わった場合)
 - [ ] archive.md に検証履歴・実装ノウハウを追記
+
+### リリース後(main 上で、ユーザー指示による develop→main 後)
+
+- [ ] tasks.md / knowledge / archive.md が develop と同期されていることを確認
+- [ ] タグ `vYYYYMMDD_<名前>` が main に付与されていることを確認
 
 ### レビュー依頼(テンプレート)
 
@@ -140,4 +145,4 @@ Issue: #xxx(docs・調査は「なし」。バグ修正は対応 Issue。機能�
 
 ## §7 リリース
 
-リリース(main へのタグ作成 `vYYYYMMDD_<名前>` → GitHub Release)の手順とリリース直前チェックリストは `docs/knowledge/release.md` に従う。リリース手順での main への直接コミット・タグ操作は MUST 2 の例外とする(ユーザーのリリース指示時のみ)。
+`main` は保護ブランチ。`develop → main` へのマージおよびタグ作成 `vYYYYMMDD_<名前>` → GitHub Release は、ユーザーの明示指示があるときのみ `docs/knowledge/release.md` の手順に従って行う。この場合に限り `main` への直接操作は MUST 2 の例外とする。日常の開発は `develop` までで完結させる。
