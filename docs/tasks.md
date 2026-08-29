@@ -15,49 +15,6 @@
 
 ## 未完了タスク
 
-### SQLite ライブラリ移行（System.Data.SQLite → Microsoft.Data.Sqlite）
-
-> GitHub issue #20 対応。背景・設計判断は `docs/design.md` の「SQLite 移行設計」、移行仕様は `docs/specs.md`「6. 移行仕様」を参照。✅ 完了（2026-08-29 実装）
-
-#### 1. プロジェクト設定ファイルの変更
-
-- [x] ✅ 1.1 nicorankLib.csproj の Reference を System.Data.SQLite 関連から Microsoft.Data.Sqlite に変更（`Microsoft.Data.Sqlite.Core.10.0.11` の `lib/netstandard2.0/Microsoft.Data.Sqlite.dll` を参照。`lib` 集約で `ExcludeAssemblies`）
-- [x] ✅ 1.2 packages.config の System.Data.SQLite 関連パッケージを削除し Microsoft.Data.Sqlite を追加（`Microsoft.Data.Sqlite 10.0.11` / `Core 10.0.11` / `SQLitePCLRaw.bundle_e_sqlite3 2.1.12` / `core 2.1.12` / `lib.e_sqlite3 2.1.12` / `provider.dynamic_cdecl 2.1.12` + `System.*` 更新）
-- [x] ✅ 1.3 app.config の DbProviderFactories セクションを削除 + `System.ValueTuple` の `CopyLocal` 化と `bindingRedirect` 修正（`AutoGenerateBindingRedirects=false`）
-- [x] ✅ 1.4 UnitTest.csproj の `System.Data.SQLite.Core 1.0.118` → `Microsoft.Data.Sqlite 10.0.11`（PackageReference）
-
-#### 2. SQLiteCtrl.cs の接続コード再実装
-
-- [x] ✅ 2.1 接続文字列を `SQLiteConnectionStringBuilder` から `Data Source="<path>";Pooling=False;Default Timeout=30` 形式に変更（`JournalMode=Wal` は廃止し `PRAGMA journal_mode=WAL` で代替。パスは二重引用符で囲む）
-- [x] ✅ 2.2 `SQLiteConnection` → `SqliteConnection`、`SQLiteCommand` → `SqliteCommand` に置き換え（`SQLiteTransaction` は明示的使用なしだが `BeginTransaction()` 戻り値のキャストで対応）
-- [x] ✅ 2.3 `using System.Data.SQLite` → `using Microsoft.Data.Sqlite` に変更（`ISQLiteCtrl`/`SQLiteCtrl`）
-- [x] ✅ 2.4 OpenInMemory を `Data Source=:memory:` 形式に変更。PRAGMA は `Connection.CreateCommand()` で実行
-- [x] ✅ 2.5 ビルドが通ることを確認
-
-#### 3. 全ファイルの using 文一括置換
-
-- [x] ✅ 3.1 22 ファイルの `using System.Data.SQLite` を `using Microsoft.Data.Sqlite` に置換（nicorankLib 15 + UnitTest 7。Issue 記載の 31 は実態と不一致のため修正）
-- [x] ✅ 3.2 ビルドエラーがないことを確認
-
-#### 4. API 呼び出しの機械的置換（残存箇所の対応）
-
-- [x] ✅ 4.1 `SQLiteConnection` → `SqliteConnection` の置換（`ISQLiteCtrl.Connection` 公開型含む）
-- [x] ✅ 4.2 `SQLiteCommand` → `SqliteCommand` の置換（`new SqliteCommand(conn)` は `conn.CreateCommand()` に置換。2引数コンストラクタはそのまま）
-- [x] ✅ 4.3 `SQLiteTransaction` → `SqliteTransaction` の置換 + `BeginTransaction()` 戻り値（`DbTransaction`）を `SqliteTransaction` にキャスト（TyukanAnalyze / RankingHistory / NicoApi / ResultHistory / SnapShotDB / UnitTestDbWrite）
-- [x] ✅ 4.4 `SQLiteParameter` → `SqliteParameter` の置換 + `System.Data.DbType` → `SqliteType`（`String`→`Text`、`Int64`→`Integer`）に変更（SnapShotDB 5件）
-- [x] ✅ 4.5 `SQLiteConnection.CreateFile(path)` → `System.IO.File.Create(path).Dispose()` に置換（SnapShotDB / UnitTest 3ファイル）
-- [x] ✅ 4.6 `SQLiteDataReader` / `SQLiteException` は明示的使用なし（`var reader = cmd.ExecuteReader()` のため置換不要。確認済み）
-- [x] ✅ 4.7 `CommandType` や `IsDBNull` など上記以外の非互換 API がないか確認し対応（`CommandType` 使用なし、非互換なし）
-
-#### 5. ビルド検証と動作確認
-
-- [x] ✅ 5.1 nicorankLib プロジェクトのビルドが成功することを確認（`MSBuild` で `GetManifestResourceNames` に `SQLitePCLRaw/Microsoft.Data.Sqlite` の埋め込みが無いこと、`bin/lib/runtimes/win-{x64,x86,arm}/native/e_sqlite3.dll` が `lib` 配下に出力されることを検証）
-- [x] ✅ 5.2 nicorank2019 全体のビルドが成功することを確認（`MSBuild` で `AnyCPU` の `CheckForAnyCPU` 制約を `空Target` で回避、`Prefer32Bit=false` で `64bit` 起動を保証）
-- [x] ✅ 5.3 基本的な動作（DB接続・読み取り）が従来通り動作することを確認（`ISQLiteCtrl` 経由のインメモリ DB + `PRAGMA journal_mode=WAL` で検証。`Batteries_V2.Init()` の `e_sqlite3` 解決と `System.ValueTuple` の `CopyLocal` を検証）
-- [x] ✅ 5.4 `dotnet test UnitTest/UnitTest.csproj -c Release` が全件 PASS（69件 PASS。移行前後の挙動一致を検証。Debug/Release とも）
-
----
-
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。
