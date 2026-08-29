@@ -1,3 +1,6 @@
 ﻿<Weavers xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="FodyWeavers.xsd">
-  <Costura />
+  <!-- DisableCleanup: SQLitePCLRaw 系・Microsoft.Data.Sqlite は埋め込み除外できず bin に物理 DLL が
+       必要(batteries_v2.dll が自アセンブリの Location を基準に runtimes/{rid}/native/e_sqlite3.dll を
+       LoadLibrary するため)。Costura の cleanup が物理 DLL を bin から削除しないようにする。 -->
+  <Costura DisableCleanup="true" />
 </Weavers>

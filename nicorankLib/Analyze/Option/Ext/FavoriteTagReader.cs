@@ -1,9 +1,9 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using nicorankLib.Analyze.model;
 using nicorankLib.Util;
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.Linq;
 namespace nicorankLib.Analyze.Option
 {
@@ -66,7 +66,7 @@ namespace nicorankLib.Analyze.Option
                         return false;
                     }
 
-                    using (var aCmd = new SQLiteCommand(dbCtrl.Connection))
+                    using (var aCmd = dbCtrl.Connection.CreateCommand())
                     {
                         // 過去ランキングデータから人気のタグを取得する
                         aCmd.CommandText =
@@ -85,6 +85,10 @@ namespace nicorankLib.Analyze.Option
 
                         foreach (var wRank in targetList)
                         {
+                            // Microsoft.Data.Sqlite は同名パラメータの重複追加を許さないため、ループ内でクリアして再設定する
+                            aCmd.Parameters.Clear();
+                            aCmd.Parameters.AddWithValue("@集計開始日", DateConvert.Time2String(this.BaseTime, false));
+                            aCmd.Parameters.AddWithValue("@集計終了日", DateConvert.Time2String(this.EndTime, false));
                             aCmd.Parameters.AddWithValue("@ID", wRank.ID);
                             using (var reader = aCmd.ExecuteReader())
                             {

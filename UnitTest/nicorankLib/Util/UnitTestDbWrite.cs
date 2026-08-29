@@ -1,5 +1,5 @@
 using System;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using nicorankLib.Util;
 using UnitTest.Helpers;
@@ -17,7 +17,7 @@ namespace UnitTest.nicorankLib.Util
                 db.OpenInMemory();
                 TestDbHelper.CreateRankingTable(db);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "INSERT INTO Ranking(ID, 集計日, 再生数, コメント数, マイリスト数, いいね数, 人気のタグ) VALUES(@ID, @集計日, @再生数, @コメント数, @マイリスト数, @いいね数, @人気のタグ)";
                     cmd.Parameters.AddWithValue("@ID", "sm1");
@@ -31,7 +31,7 @@ namespace UnitTest.nicorankLib.Util
                     Assert.AreEqual(1, count);
                 }
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT COUNT(*) FROM Ranking";
                     Assert.AreEqual(1L, cmd.ExecuteScalar());
@@ -47,7 +47,7 @@ namespace UnitTest.nicorankLib.Util
                 db.OpenInMemory();
                 TestDbHelper.CreateSnapshotRankingTable(db);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = @"INSERT INTO Ranking(ID, 再生数, コメント数, マイリスト数, いいね数)
                                         SELECT @ID, @再生数, @コメント数, @マイリスト数, @いいね数
@@ -68,7 +68,7 @@ namespace UnitTest.nicorankLib.Util
                     Assert.AreEqual(0, cmd.ExecuteNonQuery());
                 }
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT 再生数 FROM Ranking WHERE ID='sm1'";
                     Assert.AreEqual(100L, cmd.ExecuteScalar());
@@ -84,7 +84,7 @@ namespace UnitTest.nicorankLib.Util
                 db.OpenInMemory();
                 TestDbHelper.CreateRankingTable(db);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "INSERT INTO Ranking(ID, 集計日, 再生数, コメント数, マイリスト数, いいね数, 人気のタグ) VALUES(@ID, @集計日, @再生数, @コメント数, @マイリスト数, @いいね数, @人気のタグ)";
                     for (int i = 1; i <= 100; i++)
@@ -101,7 +101,7 @@ namespace UnitTest.nicorankLib.Util
                     }
                 }
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT COUNT(*) FROM Ranking";
                     Assert.AreEqual(100L, cmd.ExecuteScalar());
@@ -119,14 +119,14 @@ namespace UnitTest.nicorankLib.Util
                 TestDbHelper.InsertNicovideoThumbData(db, 20200101, "sm1", 1, "<xml/>");
                 TestDbHelper.InsertNicovideoThumbData(db, 20200101, "sm2", 1, "<xml/>");
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "DELETE FROM NicovideoThumb WHERE ID = @ID";
                     cmd.Parameters.AddWithValue("@ID", "sm1");
                     Assert.AreEqual(1, cmd.ExecuteNonQuery());
                 }
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT COUNT(*) FROM NicovideoThumb";
                     Assert.AreEqual(1L, cmd.ExecuteScalar());
@@ -142,7 +142,7 @@ namespace UnitTest.nicorankLib.Util
                 db.OpenInMemory();
                 TestDbHelper.CreateLastResultTable(db);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "INSERT INTO LastResult(種別, 集計日, ID, タイトル, 総合ランク, ポイント, 再生数, コメント数, マイリスト数, 累計再生数, 累計コメント数, 累計マイリスト数, JSON) VALUES('Weekly',20200101,'sm1','T1',1,100,10,5,2,10,5,2,'{}')";
                     cmd.ExecuteNonQuery();
@@ -150,7 +150,7 @@ namespace UnitTest.nicorankLib.Util
                     cmd.ExecuteNonQuery();
                 }
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "DELETE FROM LastResult WHERE 集計日=@日付 AND 種別=@種別";
                     cmd.Parameters.AddWithValue("@日付", 20200101);
@@ -158,7 +158,7 @@ namespace UnitTest.nicorankLib.Util
                     Assert.AreEqual(1, cmd.ExecuteNonQuery());
                 }
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT COUNT(*) FROM LastResult";
                     Assert.AreEqual(1L, cmd.ExecuteScalar());
@@ -174,15 +174,15 @@ namespace UnitTest.nicorankLib.Util
                 db.OpenInMemory();
                 TestDbHelper.CreateRankingTable(db);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
-                    cmd.Transaction = db.Connection.BeginTransaction();
+                    cmd.Transaction = (SqliteTransaction)db.Connection.BeginTransaction();
                     cmd.CommandText = "INSERT INTO Ranking(ID, 集計日, 再生数, コメント数, マイリスト数, いいね数, 人気のタグ) VALUES('sm1',20200101,100,10,5,2,'[]')";
                     cmd.ExecuteNonQuery();
                     cmd.Transaction.Commit();
                 }
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT COUNT(*) FROM Ranking";
                     Assert.AreEqual(1L, cmd.ExecuteScalar());
@@ -198,15 +198,15 @@ namespace UnitTest.nicorankLib.Util
                 db.OpenInMemory();
                 TestDbHelper.CreateRankingTable(db);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
-                    cmd.Transaction = db.Connection.BeginTransaction();
+                    cmd.Transaction = (SqliteTransaction)db.Connection.BeginTransaction();
                     cmd.CommandText = "INSERT INTO Ranking(ID, 集計日, 再生数, コメント数, マイリスト数, いいね数, 人気のタグ) VALUES('sm1',20200101,100,10,5,2,'[]')";
                     cmd.ExecuteNonQuery();
                     cmd.Transaction.Rollback();
                 }
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT COUNT(*) FROM Ranking";
                     Assert.AreEqual(0L, cmd.ExecuteScalar());
@@ -222,11 +222,11 @@ namespace UnitTest.nicorankLib.Util
                 db.OpenInMemory();
                 TestDbHelper.CreateRankingTable(db);
 
-                using (var transaction = db.Connection.BeginTransaction())
+                using (var transaction = (SqliteTransaction)db.Connection.BeginTransaction())
                 {
                     try
                     {
-                        using (var cmd = new SQLiteCommand(db.Connection))
+                        using (var cmd = db.Connection.CreateCommand())
                         {
                             cmd.Transaction = transaction;
                             cmd.CommandText = "INSERT INTO Ranking(ID, 集計日, 再生数, コメント数, マイリスト数, いいね数, 人気のタグ) VALUES('sm1',20200101,100,10,5,2,'[]')";
@@ -239,7 +239,7 @@ namespace UnitTest.nicorankLib.Util
                     }
                 }
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT COUNT(*) FROM Ranking";
                     Assert.AreEqual(0L, cmd.ExecuteScalar());
@@ -255,7 +255,7 @@ namespace UnitTest.nicorankLib.Util
                 db.OpenInMemory();
                 TestDbHelper.CreateRankingTable(db);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "INSERT INTO Ranking(ID, 集計日, 再生数, コメント数, マイリスト数, いいね数, 人気のタグ) VALUES(@ID, @集計日, @再生数, @コメント数, @マイリスト数, @いいね数, @人気のタグ)";
 
@@ -280,7 +280,7 @@ namespace UnitTest.nicorankLib.Util
                     cmd.ExecuteNonQuery();
                 }
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT COUNT(*) FROM Ranking";
                     Assert.AreEqual(2L, cmd.ExecuteScalar());

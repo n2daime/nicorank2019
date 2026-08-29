@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -121,7 +121,7 @@ namespace nicorankLib.Analyze.Input
                         //失敗
                         return false;
                     }
-                    using (var aCmd = new SQLiteCommand(dbCtrl.Connection))
+                    using (var aCmd = dbCtrl.Connection.CreateCommand())
                     {
 
 
@@ -196,7 +196,7 @@ namespace nicorankLib.Analyze.Input
                         //失敗
                         return false; ;
                     }
-                    using (var aCmd = new SQLiteCommand(dbCtrl.Connection))
+                    using (var aCmd = dbCtrl.Connection.CreateCommand())
                     {
                         //すでに集計済みか確認する
                         aCmd.CommandText =
@@ -238,7 +238,7 @@ namespace nicorankLib.Analyze.Input
                         try
                         {
                             //集計結果をDBに登録する
-                            aCmd.Transaction = dbCtrl.Connection.BeginTransaction();
+                            aCmd.Transaction = (SqliteTransaction)dbCtrl.Connection.BeginTransaction();
 
                             {//DBの更新確認
                                 bool isLikeFieldExist = false;
@@ -295,6 +295,9 @@ namespace nicorankLib.Analyze.Input
 
                             foreach (var rank in rakingDailyList)
                             {
+                                // Microsoft.Data.Sqlite は同名パラメータの重複追加を許さないため、ループ内でクリアして再設定する
+                                aCmd.Parameters.Clear();
+                                aCmd.Parameters.AddWithValue("@集計日", DateConvert.Time2String(targetDate, false));
                                 aCmd.Parameters.AddWithValue("@ID", rank.ID);
                                 aCmd.Parameters.AddWithValue("@タイトル", rank.Title);
                                 aCmd.Parameters.AddWithValue("@投稿日", DateConvert.Time2String(rank.Date, true));

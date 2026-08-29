@@ -1,8 +1,8 @@
-﻿using nicorankLib.Analyze.model;
+using nicorankLib.Analyze.model;
 using nicorankLib.Util;
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.Linq;
 
 
@@ -57,7 +57,7 @@ namespace nicorankLib.Analyze.Option.Basic
         /// <returns></returns>
         protected DateTime GetTargetTime(ISQLiteCtrl dbCtrl)
         {
-            using (var aCmd = new SQLiteCommand(dbCtrl.Connection))
+            using (var aCmd = dbCtrl.Connection.CreateCommand())
             {
                 aCmd.CommandText = @"SELECT 集計日 FROM DBVersion";
                 using (var reader = aCmd.ExecuteReader())
@@ -77,8 +77,11 @@ namespace nicorankLib.Analyze.Option.Basic
         /// </summary>
         /// <param name="dbCtrl"></param>
         /// <returns></returns>
-        protected bool GetMovieData(SQLiteCommand aCmd, string ID, out long countPlay, out long countComment, out long countMylist,out long countLike)
+        protected bool GetMovieData(SqliteCommand aCmd, string ID, out long countPlay, out long countComment, out long countMylist,out long countLike)
         {
+            // Microsoft.Data.Sqlite は同名パラメータの重複追加を許さないため、再利用前にクリアする
+            aCmd.Parameters.Clear();
+
             aCmd.CommandText = @"SELECT ID,再生数,コメント数,マイリスト数,いいね数 FROM Ranking Where ID = @ID";
             aCmd.Parameters.AddWithValue("@ID", ID);
             using (var reader = aCmd.ExecuteReader())
@@ -114,7 +117,7 @@ namespace nicorankLib.Analyze.Option.Basic
             {
 
                 //基準値のデータを取得する
-                using (var aCmd = new SQLiteCommand(this.dbCtrlAnalyze.Connection))
+                using (var aCmd = this.dbCtrlAnalyze.Connection.CreateCommand())
                 {
                     foreach (var wRank in rankingList)
                     {
@@ -141,7 +144,7 @@ namespace nicorankLib.Analyze.Option.Basic
                 DateTime targetDate = BaseTime.Date.AddDays(-7);//基準が7/1の場合、6/30投稿のデータは7/1のランキングに乗っていない可能性があるため
 
 
-                using (var aCmd = new SQLiteCommand(this.dbCtrlBase.Connection))
+                using (var aCmd = this.dbCtrlBase.Connection.CreateCommand())
                 {
                     foreach (var wRank in rankingList)
                     {

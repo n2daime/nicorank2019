@@ -1,11 +1,11 @@
 using System;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 
 namespace nicorankLib.Util
 {
     public interface ISQLiteCtrl : IDisposable
     {
-        SQLiteConnection Connection { get; }
+        SqliteConnection Connection { get; }
         bool IsOpen { get; }
         bool Open(string sDataSource);
         bool OpenInMemory();

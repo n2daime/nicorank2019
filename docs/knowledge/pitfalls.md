@@ -32,6 +32,17 @@
 
 - プーリングは**環境によって問題を起こすことがある**ため無効化（`Pooling=False`）
 
+### 4b. Microsoft.Data.Sqlite 移行時の非互換
+
+- `new SQLiteCommand(connection)` → `connection.CreateCommand()`（単引数コンストラクタが存在しない）
+- `SQLiteConnection.CreateFile(path)` → `System.IO.File.Create(path).Dispose()`（同等の静的メソッドが存在しない）
+- `SQLiteParameter` の型指定は `System.Data.DbType` ではなく `SqliteType`（`String`→`Text`、`Int64`→`Integer`）
+- `Connection.BeginTransaction()` の戻り値は `DbTransaction` のため `SqliteCommand.Transaction` への代入時に `(SqliteTransaction)` キャストが必要
+- 接続文字列は `SQLiteConnectionStringBuilder` ではなく `Data Source="<path>";Pooling=False;Default Timeout=30` の文字列連結で構築
+- ライブラリ本体は `Microsoft.Data.Sqlite.Core` の `lib/netstandard2.0/Microsoft.Data.Sqlite.dll` に存在（`Microsoft.Data.Sqlite` パッケージは空のメタパッケージ）
+- `packages.config` 形式では `packages.config` への列挙だけでは `CopyLocal` されず、`csproj` への `Reference` 追加が必須（`SQLitePCLRaw.core` / `batteries_v2` / `provider.dynamic_cdecl` の 3件を `HintPath` + `Private=True` で追加。`Version`/`PublicKeyToken` は `AssemblyName.GetAssemblyName` の実値と一致させる。例: `batteries_v2` は `8226ea5df37bcae9`、`provider.dynamic_cdecl` は `b68184102cba0b3b`）
+- `e_sqlite3.dll` ネイティブは `runtimes/win-{x64,x86,arm}/native/e_sqlite3.dll` を `Content` + `CopyToOutputDirectory` と `buildTransitive/net461/SQLitePCLRaw.lib.e_sqlite3.targets` の明示 Import で `bin/runtimes` にコピー（`SQLitePCLRaw.lib.e_sqlite3` は `build/` がなく `buildTransitive` のみのため `packages.config` では自動 Import されない。両方併用で確実にコピー）
+
 ---
 
 ## ニコニコ API 関連

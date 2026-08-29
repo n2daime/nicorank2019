@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -68,7 +68,7 @@ namespace nicorankLib.Analyze.Option
                     //長期リスト
                     this.tyokiRankList = new List<Ranking>(syokaiList.Count);
                     this.tyokiRankMap = new Dictionary<string, long>(syokaiList.Count);
-                    using (var aCmd = new SQLiteCommand(dbCtrl.Connection))
+                    using (var aCmd = dbCtrl.Connection.CreateCommand())
                     {
                         aCmd.CommandText =
                             @"SELECT COUNT(*) as 件数 FROM History
@@ -78,6 +78,9 @@ namespace nicorankLib.Analyze.Option
                         aCmd.Parameters.AddWithValue("@集計日", DateConvert.Time2String(this.SyukeiBi, false));
                         foreach (var wRank in syokaiList)
                         {
+                            // Microsoft.Data.Sqlite は同名パラメータの重複追加を許さないため、ループ内でクリアして再設定する
+                            aCmd.Parameters.Clear();
+                            aCmd.Parameters.AddWithValue("@集計日", DateConvert.Time2String(this.SyukeiBi, false));
                             aCmd.Parameters.AddWithValue("@ID", wRank.ID);
                             using (var reader = aCmd.ExecuteReader())
                             {

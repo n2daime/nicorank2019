@@ -35,6 +35,7 @@ git push origin v20260603_nicorank
 - [ ] `docs/tasks.md` の該当タスクに完了マーク
 - [ ] 関連する GitHub Issue をクローズ
 - [ ] `dotnet restore` + `dotnet test UnitTest/UnitTest.csproj` が全件 PASS
+- [ ] `bin\Release\lib\` に `Microsoft.Data.Sqlite.dll` 等 4件 + `lib\runtimes\win-{x64,x86,arm}\native\e_sqlite3.dll` が配置されていること
 - [ ] 実機で集計（週刊/中間/SP）が通ることの確認
 
 ## リリース手順

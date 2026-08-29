@@ -1,11 +1,11 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using nicorankLib.Analyze.model;
 using nicorankLib.Common;
 using nicorankLib.Util;
 using nicorankLib.Util.Text;
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.Linq;
 using System.Threading.Tasks;
 

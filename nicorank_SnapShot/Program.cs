@@ -2,6 +2,7 @@
 using nicorankLib.Util;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -50,6 +51,13 @@ namespace nicorank_SnapShot
                 if (assemblies.ContainsKey(path))
                 {
                     return assemblies[path];
+                }
+
+                // lib サブフォルダへの集約に対応（probing privatePath のフォールバック）
+                var libPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "lib", assemblyName.Name + ".dll");
+                if (File.Exists(libPath))
+                {
+                    try { return Assembly.LoadFrom(libPath); } catch { }
                 }
 
                 return null;

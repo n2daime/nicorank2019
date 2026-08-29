@@ -1,9 +1,9 @@
-﻿using nicorankLib.Analyze.model;
+using nicorankLib.Analyze.model;
 using nicorankLib.Analyze.Json;
 using nicorankLib.Util;
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -48,7 +48,7 @@ namespace nicorankLib.Analyze.Official
                 return false;
             }
 
-            using (var aCmd = new SQLiteCommand(dbCtrlOfficial.Connection))
+            using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
             {
                 try
                 {
@@ -77,7 +77,7 @@ namespace nicorankLib.Analyze.Official
             {
                 try
                 {
-                    using (var aCmd = new SQLiteCommand(dbCtrlOfficial.Connection))
+                    using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
                     {
                         var strSQL = @"detach NicoChart;";
                         aCmd.CommandText = strSQL;
@@ -108,7 +108,7 @@ namespace nicorankLib.Analyze.Official
             }
             try
             {
-                using (var aCmd = new SQLiteCommand(dbCtrlOfficial.Connection))
+                using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
                 {
                     aCmd.CommandText =
                         @"select * from Ranking 
@@ -138,6 +138,10 @@ namespace nicorankLib.Analyze.Official
                     {//取得できなかった場合、ニコチャートの方で確認する
                         for (int reTryCnt = 0; reTryCnt < 2; reTryCnt++)
                         {
+                            // Microsoft.Data.Sqlite は CommandText 差し替え時に Parameters をクリアしないため、
+                            // 再利用前にクリアする(残ったパラメータは Must add values エラーの原因になる)
+                            aCmd.Parameters.Clear();
+
                             aCmd.CommandText =
                                 @"Select min(集計日) as 集計日 from NicoChart.Ranking 
                               Where ID = @ID";
@@ -171,6 +175,8 @@ namespace nicorankLib.Analyze.Official
                             }
                             break;
                         }
+
+                        aCmd.Parameters.Clear();
 
                         aCmd.CommandText =
                             @"select * from NicoChart.Ranking 
@@ -226,7 +232,7 @@ namespace nicorankLib.Analyze.Official
             }
             try
             {
-                using (var aCmd = new SQLiteCommand(dbCtrlOfficial.Connection))
+                using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
                 {
                     aCmd.CommandText =
                         @"select * from Ranking 
@@ -258,6 +264,8 @@ namespace nicorankLib.Analyze.Official
 
                     if (ranking == null)
                     {//取得できなかった場合
+                        aCmd.Parameters.Clear();
+
                         aCmd.CommandText =
                         @"select * from Ranking 
                         Where ID = @ID and 集計日 >= @Date
@@ -285,6 +293,8 @@ namespace nicorankLib.Analyze.Official
                     }
                      if (ranking == null)
                      {//取得できなかった場合
+                         aCmd.Parameters.Clear();
+
                          aCmd.CommandText =
                              @"select * from NicoChart.Ranking 
                          Where ID = @ID and 集計日 BETWEEN @Date2 AND @Date1 
@@ -340,7 +350,7 @@ namespace nicorankLib.Analyze.Official
             }
             try
             {
-                using (var aCmd = new SQLiteCommand(dbCtrlOfficial.Connection))
+                using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
                 {
                     //集計日より新しいデータが無い場合はNicoChartに取りに行く
                     aCmd.CommandText =
@@ -543,12 +553,12 @@ namespace nicorankLib.Analyze.Official
                 }
 
 
-                using (var aCmd = new SQLiteCommand(dbCtrlOfficial.Connection))
+                using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
                 {
                     try
                     {
                         //トランザクションの開始
-                        aCmd.Transaction = dbCtrlOfficial.Connection.BeginTransaction();
+                        aCmd.Transaction = (SqliteTransaction)dbCtrlOfficial.Connection.BeginTransaction();
 
 
                         //動画情報が無いときだけ追加する
@@ -756,7 +766,7 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
             }
             try
             {
-                using (var aCmd = new SQLiteCommand(dbCtrlOfficial.Connection))
+                using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
                 {
                     //どこまで集計されているか取得する
                     //NULL=集計されていない場合、20190611から集計できるように設定しておく
@@ -818,12 +828,12 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
                 return false;
             }
 
-            using (var aCmd = new SQLiteCommand(dbCtrlOfficial.Connection))
+            using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
             {
                 try
                 {
                     //トランザクションの開始
-                    aCmd.Transaction = dbCtrlOfficial.Connection.BeginTransaction();
+                    aCmd.Transaction = (SqliteTransaction)dbCtrlOfficial.Connection.BeginTransaction();
 
                     long analyzeDate = long.Parse(DateConvert.Time2String(analyzeTime, false));
 
@@ -932,7 +942,7 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
             }
             try
             {
-                using (var aCmd = new SQLiteCommand(dbCtrlOfficial.Connection))
+                using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
                 {
                     //どこまで集計されているか取得する
                     //NULL=集計されていない場合、20190611から集計できるように設定しておく
@@ -956,7 +966,7 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
 
                     //存在しないので作成する
                     //トランザクションの開始
-                    aCmd.Transaction = dbCtrlOfficial.Connection.BeginTransaction();
+                    aCmd.Transaction = (SqliteTransaction)dbCtrlOfficial.Connection.BeginTransaction();
 
                     aCmd.CommandText =
                         @"CREATE TABLE RankingDate (
@@ -1006,7 +1016,7 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
                     return false;
                 }
 
-                using (var aCmd = new SQLiteCommand(this.dbCtrlOfficial.Connection))
+                using (var aCmd = this.dbCtrlOfficial.Connection.CreateCommand())
                 {
                     //すでに集計済みか確認する
                     aCmd.CommandText =

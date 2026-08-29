@@ -1,9 +1,9 @@
-﻿using nicorankLib.Analyze.model;
+using nicorankLib.Analyze.model;
 using nicorankLib.Util;
 using nicorankLib.Util.Text;
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -78,14 +78,14 @@ namespace nicorankLib.SnapShot
             using (ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl())
             {
 
-                SQLiteConnection.CreateFile(DataSource);
+                System.IO.File.Create(DataSource).Dispose();
                 if (!dbCtrl.Open(DataSource))
                 {
                     return false;
                 }
                 try
                 {
-                    using (var aCmd = new SQLiteCommand(dbCtrl.Connection))
+                    using (var aCmd = dbCtrl.Connection.CreateCommand())
                     {
 
 
@@ -135,7 +135,7 @@ namespace nicorankLib.SnapShot
                         return false;
                     }
 
-                    using (var aCmd = new SQLiteCommand(dbCtrl.Connection))
+                    using (var aCmd = dbCtrl.Connection.CreateCommand())
                     {
                         try
                         {
@@ -151,18 +151,18 @@ namespace nicorankLib.SnapShot
                             aCmd.CommandText = strSQL;
 
                             // パラメータを一度作成して再利用する
-                            aCmd.Parameters.Add(new SQLiteParameter("@ID", System.Data.DbType.String));
-                            aCmd.Parameters.Add(new SQLiteParameter("@再生数", System.Data.DbType.Int64));
-                            aCmd.Parameters.Add(new SQLiteParameter("@コメント数", System.Data.DbType.Int64));
-                            aCmd.Parameters.Add(new SQLiteParameter("@マイリスト数", System.Data.DbType.Int64));
-                            aCmd.Parameters.Add(new SQLiteParameter("@いいね数", System.Data.DbType.Int64));
+                            aCmd.Parameters.Add(new SqliteParameter("@ID", SqliteType.Text));
+                            aCmd.Parameters.Add(new SqliteParameter("@再生数", SqliteType.Integer));
+                            aCmd.Parameters.Add(new SqliteParameter("@コメント数", SqliteType.Integer));
+                            aCmd.Parameters.Add(new SqliteParameter("@マイリスト数", SqliteType.Integer));
+                            aCmd.Parameters.Add(new SqliteParameter("@いいね数", SqliteType.Integer));
 
                             StatusLog.WriteLine($"約{dataList.Count } * 100 件のデータを登録しています");
 
                             int GetCounter = 0;
                             int CountShow = Math.Max(dataList.Count / 10, 10);
 
-                            using (var transaction = dbCtrl.Connection.BeginTransaction())
+                            using (var transaction = (SqliteTransaction)dbCtrl.Connection.BeginTransaction())
                             {
                                 aCmd.Transaction = transaction;
 
@@ -183,7 +183,7 @@ namespace nicorankLib.SnapShot
                                         if ((rowCounter % commitBatch) == 0)
                                         {
                                             aCmd.Transaction.Commit();
-                                            aCmd.Transaction = dbCtrl.Connection.BeginTransaction();
+                                            aCmd.Transaction = (SqliteTransaction)dbCtrl.Connection.BeginTransaction();
                                         }
                                     }
                                     if (GetCounter % CountShow == 0 && GetCounter != 0)

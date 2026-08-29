@@ -9,7 +9,8 @@ nicorank2019.sln
 ├── nicorank_SnapShot/    .NET Framework 4.8 WinForms アプリ（スナップショット取得ツール）
 ├── nicorank_oldlog/      .NET 8 コンソールアプリ（公式過去ランキング回収ツール、SDK-style）
 ├── UnitTest/             .NET Framework 4.8 MSTest テストプロジェクト（SDK-style、69件）
-├── 依存ファイル/           nicorank.xml・SQLite.Interop.dll・DB/*.db（ソリューションフォルダ）
+├── 依存ファイル/           nicorank.xml・DB/*.db（ソリューションフォルダ）
+├── lib/                 SQLite マネージド DLL 4件 + runtimes/win-{x64,x86,arm}/native/e_sqlite3.dll（ビルド時に packages から lib\ へ配置。Costura 埋め込み除外）
 ├── docs/                 ドキュメント（proposal / specs / design / tasks / knowledge）
 └── packages/             NuGet パッケージ（packages.config 用）
 ```

@@ -1,4 +1,4 @@
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using nicorankLib.Util;
@@ -47,14 +47,14 @@ namespace UnitTest.nicorankLib.Util
             var tempFile = Path.GetTempFileName();
             try
             {
-                SQLiteConnection.CreateFile(tempFile);
+                System.IO.File.Create(tempFile).Dispose();
                 using (var db1 = new SQLiteCtrl())
                 using (var db2 = new SQLiteCtrl())
                 {
                     Assert.IsTrue(db1.Open(tempFile));
                     Assert.IsTrue(db2.Open(tempFile));
 
-                    using (var cmd = new SQLiteCommand(db1.Connection))
+                    using (var cmd = db1.Connection.CreateCommand())
                     {
                         cmd.CommandText = "CREATE TABLE IF NOT EXISTS SharedTbl (ID TEXT PRIMARY KEY, 値 TEXT)";
                         cmd.ExecuteNonQuery();
@@ -62,19 +62,19 @@ namespace UnitTest.nicorankLib.Util
                         cmd.ExecuteNonQuery();
                     }
 
-                    using (var cmd = new SQLiteCommand(db2.Connection))
+                    using (var cmd = db2.Connection.CreateCommand())
                     {
                         cmd.CommandText = "INSERT INTO SharedTbl VALUES('k2', 'from_db2')";
                         cmd.ExecuteNonQuery();
                     }
 
-                    using (var cmd = new SQLiteCommand(db1.Connection))
+                    using (var cmd = db1.Connection.CreateCommand())
                     {
                         cmd.CommandText = "SELECT COUNT(*) FROM SharedTbl";
                         Assert.AreEqual(2L, cmd.ExecuteScalar());
                     }
 
-                    using (var cmd = new SQLiteCommand(db2.Connection))
+                    using (var cmd = db2.Connection.CreateCommand())
                     {
                         cmd.CommandText = "SELECT 値 FROM SharedTbl WHERE ID='k1'";
                         Assert.AreEqual("from_db1", cmd.ExecuteScalar().ToString());

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using nicorankLib.Util;
 using UnitTest.Helpers;
@@ -19,7 +19,7 @@ namespace UnitTest.nicorankLib.Util
                 TestDbHelper.CreateRankingTable(db);
                 TestDbHelper.InsertRankingData(db, "sm1", 20200101, 100, 10, 5, 2);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT * FROM Ranking WHERE ID = @ID LIMIT 1";
                     cmd.Parameters.AddWithValue("@ID", "sm1");
@@ -45,7 +45,7 @@ namespace UnitTest.nicorankLib.Util
                 TestDbHelper.CreateRankingTable(db);
                 TestDbHelper.InsertRankingData(db, "sm1", 20200101, 100, 10, 5, 2);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT * FROM Ranking WHERE ID = @ID LIMIT 1";
                     cmd.Parameters.AddWithValue("@ID", "sm999");
@@ -68,7 +68,7 @@ namespace UnitTest.nicorankLib.Util
                 TestDbHelper.InsertRankingData(db, "sm1", 20200102, 200, 20, 10, 4);
                 TestDbHelper.InsertRankingData(db, "sm1", 20200101, 100, 10, 5, 2);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT * FROM Ranking WHERE ID=@ID AND 集計日<=@Date ORDER BY 集計日 DESC LIMIT 1";
                     cmd.Parameters.AddWithValue("@ID", "sm1");
@@ -94,7 +94,7 @@ namespace UnitTest.nicorankLib.Util
                 TestDbHelper.InsertRankingData(db, "sm1", 20200102, 200, 20, 10, 4);
                 TestDbHelper.InsertRankingData(db, "sm1", 20200103, 300, 30, 15, 6);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT * FROM Ranking WHERE ID=@ID AND 集計日>=@Date ORDER BY 集計日 LIMIT 1";
                     cmd.Parameters.AddWithValue("@ID", "sm1");
@@ -119,7 +119,7 @@ namespace UnitTest.nicorankLib.Util
                 TestDbHelper.InsertRankingData(db, "sm1", 20200103, 300, 30, 15, 6);
                 TestDbHelper.InsertRankingData(db, "sm1", 20200105, 500, 50, 20, 10);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT * FROM Ranking WHERE ID=@ID AND 集計日 BETWEEN @Date2 AND @Date1 ORDER BY 集計日 DESC LIMIT 1";
                     cmd.Parameters.AddWithValue("@ID", "sm1");
@@ -144,7 +144,7 @@ namespace UnitTest.nicorankLib.Util
                 TestDbHelper.InsertNicovideoThumbData(db, 20200101, "sm1", 1, "<thumb><status>ok</status></thumb>");
                 TestDbHelper.InsertNicovideoThumbData(db, 20200103, "sm1", 1, "<thumb><status>ok</status></thumb>");
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT MAX(取得日) as 取得日 FROM NicovideoThumb WHERE ID = @ID";
                     cmd.Parameters.AddWithValue("@ID", "sm1");
@@ -164,7 +164,7 @@ namespace UnitTest.nicorankLib.Util
             {
                 db.OpenInMemory();
                 TestDbHelper.CreateHistoryTable(db);
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "INSERT INTO History(集計日, ID, 総合ランク, ポイント, 再生数, コメント数, マイリスト数) VALUES(20200101,'sm1',1,100,10,5,2)";
                     cmd.ExecuteNonQuery();
@@ -172,7 +172,7 @@ namespace UnitTest.nicorankLib.Util
                     cmd.ExecuteNonQuery();
                 }
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT COUNT(*) as 件数 FROM History WHERE ID = @ID AND 集計日 < @集計日";
                     cmd.Parameters.AddWithValue("@ID", "sm1");
@@ -194,7 +194,7 @@ namespace UnitTest.nicorankLib.Util
                 db.OpenInMemory();
                 TestDbHelper.CreateRankingDateTable(db);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT IFNULL(Max(集計日), 20190610) as 集計日 FROM RankingDate";
                     using (var reader = cmd.ExecuteReader())
@@ -219,7 +219,7 @@ namespace UnitTest.nicorankLib.Util
                 TestDbHelper.InsertMovieData(db, "sm1", 20191201000000, "TestMovie");
                 TestDbHelper.InsertMovieData(db, "sm2", 20191202000000, "OtherMovie");
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = @"
                         SELECT Movie.ID as ID, Movie.タイトル, Movie.投稿日 FROM Movie
@@ -246,7 +246,7 @@ namespace UnitTest.nicorankLib.Util
                 TestDbHelper.InsertRankingData(db, "sm1", 20200101, 100, 10, 5, 2);
                 TestDbHelper.InsertRankingData(db, "sm1", 20200102, 200, 20, 10, 4);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT * FROM Ranking WHERE ID=@ID ORDER BY 集計日 DESC LIMIT 1";
                     cmd.Parameters.AddWithValue("@ID", "sm1");

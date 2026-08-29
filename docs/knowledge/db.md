@@ -50,15 +50,15 @@
 
 ## SQLiteCtrl 接続設計
 
-`nicorankLib/Util/SQLiteCtrl.cs`
+`nicorankLib/Util/SQLiteCtrl.cs`（`Microsoft.Data.Sqlite 8.0.7` + `SQLitePCLRaw 2.1.6`）
 
-- `Open(path)`: ファイル存在チェック → 接続文字列（`Pooling=False` / `JournalMode=Wal` / `DefaultTimeout=30`）→ PRAGMA 4種 → IsOpen=true
-  - PRAGMA: `journal_mode=WAL` / `synchronous=NORMAL` / `temp_store=MEMORY` / `cache_size=-8000`
+- `Open(path)`: ファイル存在チェック → 接続文字列 `Data Source="<path>";Pooling=False;Default Timeout=30`（`SQLiteConnectionStringBuilder` / `JournalMode` は廃止。WAL は `PRAGMA journal_mode=WAL` で設定）→ `SqliteConnection` を `Open()` → PRAGMA 4種 → IsOpen=true
+  - PRAGMA: `journal_mode=WAL` / `synchronous=NORMAL` / `temp_store=MEMORY` / `cache_size=-8000`（`Connection.CreateCommand()` で実行）
   - **PRAGMA 設定失敗時も接続は継続**（catch で無視。呼び出し側でログ）
   - 同一 DataSource なら再オープンしない。別 DataSource なら先に Close
-- `OpenInMemory()`: テスト用（`:memory:`、File.Exists スキップ）
+- `OpenInMemory()`: テスト用（`Data Source=:memory:`、File.Exists スキップ。`SqliteConnection` で `Open()`）
 - `Close()` / `Dispose()`: 二重呼び出し安全
-- テストは `ISQLiteCtrl` 経由でインメモリ実装に差し替え可能
+- テストは `ISQLiteCtrl`（`SqliteConnection` 公開）経由でインメモリ実装に差し替え可能。`ISQLiteCtrl` / `SQLiteCtrl` は `Microsoft.Data.Sqlite` に依存
 
 ## SnapShotDB の大量登録設計（btreeInitPage 対策）
 
@@ -66,7 +66,9 @@
 
 - **5000件ごとのバッチコミット**: 単一巨大トランザクションによる WAL 肥大化を回避（約200Byte/行 → 約1MB/バッチ）
 - **INSERT OR IGNORE**: 重複 ID はスキップ（`INSERT ... WHERE NOT EXISTS` から変更、SQLite の最適化パスを利用）
-- **パラメータ事前生成・再利用**: ループ外で `Add()`、ループ内で `.Value` 代入（GC 圧力削減）
+- **パラメータ事前生成・再利用**: ループ外で `SqliteParameter` を `SqliteType.Text` / `Integer` で `Add()`、ループ内で `.Value` 代入（GC 圧力削減。`System.Data.DbType` は `SqliteType` に置換）
+- **トランザクション**: `Connection.BeginTransaction()` は `DbTransaction` を返すため `SqliteCommand.Transaction` への代入時に `(SqliteTransaction)` キャスト。`Connection.CreateCommand()` でコマンド生成
+- **DB ファイル作成**: `SqliteConnection.CreateFile` は存在しないため `System.IO.File.Create(path).Dispose()` で代替（`InitilizeDB`）
 - **最終コミット**: ループ終了後に残りをコミット
 - **Rollback の例外処理**: `try { aCmd.Transaction?.Rollback(); } catch { }` で元の例外を上位に伝播
 

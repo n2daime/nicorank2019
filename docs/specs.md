@@ -241,9 +241,9 @@
 
 ---
 
-## 6. 移行仕様（未実施・実装対象）
+## 6. 移行仕様（実施済み 2026-08-29）
 
-> タスクは `docs/tasks.md` の「SQLite ライブラリ移行」を参照。
+> タスクは `docs/tasks.md` の「SQLite ライブラリ移行」を参照。Microsoft.Data.Sqlite 8.0.7 への移行で本仕様を満たすことを検証済み（`dotnet test` 69件 PASS）。
 
 ### System.Data.SQLite → Microsoft.Data.Sqlite 移行
 

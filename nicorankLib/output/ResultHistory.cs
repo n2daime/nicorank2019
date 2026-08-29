@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -66,12 +66,12 @@ namespace nicorankLib.output
                         StatusLog.WriteLine($"{ DATASOURCE }が参照できません。");
                         return false;
                     }
-                    using (var aCmd = new SQLiteCommand(dbCtrl.Connection))
+                    using (var aCmd = dbCtrl.Connection.CreateCommand())
                     {
                         try
                         {
                             // トランザクションの開始
-                            aCmd.Transaction = dbCtrl.Connection.BeginTransaction();
+                            aCmd.Transaction = (SqliteTransaction)dbCtrl.Connection.BeginTransaction();
 
                             {//DBの更新確認
                                 bool isLikeFieldExist = false;
@@ -148,7 +148,7 @@ namespace nicorankLib.output
         /// <param name="dbCtrl"></param>
         /// <param name="rankingList"></param>
         /// <returns></returns>
-        protected async Task<bool> updateLastResult(SQLiteCommand sqlCmd, IReadOnlyList<Ranking> rankingList)
+        protected async Task<bool> updateLastResult(SqliteCommand sqlCmd, IReadOnlyList<Ranking> rankingList)
         {
             try
             {
@@ -218,6 +218,10 @@ namespace nicorankLib.output
 
                 foreach (var rank in rankingList)
                 {
+                    // Microsoft.Data.Sqlite は同名パラメータの重複追加を許さないため、ループ内でクリアして再設定する
+                    sqlCmd.Parameters.Clear();
+                    sqlCmd.Parameters.AddWithValue("@集計日", DateConvert.Time2String(this.syuukeiBi, false));
+                    sqlCmd.Parameters.AddWithValue("@種別", this.Mode.ToString());
                     sqlCmd.Parameters.AddWithValue("@ID", rank.ID);
                     sqlCmd.Parameters.AddWithValue("@タイトル", rank.Title);
                     sqlCmd.Parameters.AddWithValue("@総合ランク", rank.RankTotal);
@@ -259,7 +263,7 @@ namespace nicorankLib.output
         /// <param name="dbCtrl"></param>
         /// <param name="rankingList"></param>
         /// <returns></returns>
-        protected async Task<bool> updateHistory(SQLiteCommand sqlCmd, IReadOnlyList<Ranking> rankingList)
+        protected async Task<bool> updateHistory(SqliteCommand sqlCmd, IReadOnlyList<Ranking> rankingList)
         {
             var config = Config.GetInstance();
             try
@@ -298,6 +302,9 @@ namespace nicorankLib.output
 
                 foreach (var rank in rankingList)
                 {
+                    // Microsoft.Data.Sqlite は同名パラメータの重複追加を許さないため、ループ内でクリアして再設定する
+                    sqlCmd.Parameters.Clear();
+                    sqlCmd.Parameters.AddWithValue("@集計日", DateConvert.Time2String(this.syuukeiBi, false));
                     sqlCmd.Parameters.AddWithValue("@ID", rank.ID);
                     sqlCmd.Parameters.AddWithValue("@総合ランク", rank.RankTotal);
                     sqlCmd.Parameters.AddWithValue("@ポイント", rank.PointTotal);

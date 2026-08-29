@@ -136,8 +136,8 @@ AnalyzeRank():
 
 | クラス | 責務 |
 |---|---|
-| `SQLiteCtrl : ISQLiteCtrl, IDisposable` | SQLite 接続管理。`Open()`（Pooling=False / WAL / DefaultTimeout=30 + PRAGMA 4種・失敗時継続）/ `OpenInMemory()`（テスト用）/ `Close()` / `Dispose()`。同一 DataSource は再オープンしない |
-| `ISQLiteCtrl` | SQLite 操作の抽象化（テストでインメモリ実装に差し替え） |
+| `SQLiteCtrl : ISQLiteCtrl, IDisposable` | SQLite 接続管理（`Microsoft.Data.Sqlite 8.0.7`）。`Open()`（`Data Source="<path>";Pooling=False;Default Timeout=30` 文字列構築 + PRAGMA 4種・失敗時継続）/ `OpenInMemory()`（`Data Source=:memory:`）/ `Close()` / `Dispose()`。`Connection` は `SqliteConnection` 型 |
+| `ISQLiteCtrl` | SQLite 操作の抽象化（`SqliteConnection` 公開。テストでインメモリ実装に差し替え） |
 | `StatusLog` | 静的。`IStatusLogWriter` を注入するプラグイン方式（UI 側が実装を注入。未設定なら何も出さない） |
 | `ErrLog` | シングルトン。`nicorankerr.log` に追記（UTF8）。`Close()` で非 SilentMode ならキー入力待ち |
 | `DateConvert` | 日付 ↔ 文字列（yyyyMMdd / yyyyMMddHHmmss）変換 |

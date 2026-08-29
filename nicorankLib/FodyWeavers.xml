@@ -1,3 +1,6 @@
 ﻿<Weavers xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="FodyWeavers.xsd">
+  <!-- SQLitePCLRaw 系・Microsoft.Data.Sqlite の埋め込み除外は csproj 側で Reference の Private=False により実施。
+       batteries_v2.dll は自アセンブリの Location を基準に runtimes/{rid}/native/e_sqlite3.dll を
+       LoadLibrary するため、埋め込むと Location が空になりネイティブ探索が必ず失敗する。 -->
   <Costura />
 </Weavers>

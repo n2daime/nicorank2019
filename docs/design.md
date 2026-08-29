@@ -7,13 +7,13 @@
 
 ---
 
-## SQLite 移行設計（未実施・計画中）
+## SQLite 移行設計（実施済み 2026-08-29）
 
-> タスクは `docs/tasks.md` の「SQLite ライブラリ移行」を参照。
+> タスクは `docs/tasks.md` の「SQLite ライブラリ移行」を参照。Issue #20 対応で `Microsoft.Data.Sqlite 8.0.7` + `SQLitePCLRaw 2.1.6` に移行済み。
 
 ### Context
 
-- nicorankLib は .NET Framework 4.8 環境で System.Data.SQLite 1.0.118.0 を使用。31 ファイルにわたって `using System.Data.SQLite` が存在し、SQLiteCtrl.cs で `SQLiteConnectionStringBuilder` による接続文字列構築を行っている。
+- nicorankLib は .NET Framework 4.8 環境で System.Data.SQLite 1.0.118.0 を使用。22 ファイル（nicorankLib 15 + UnitTest 7）にわたって `using System.Data.SQLite` が存在し、SQLiteCtrl.cs で `SQLiteConnectionStringBuilder` による接続文字列構築を行っていた。
 - EntityFramework6 パッケージは存在するがコード上は未使用。
 - packages.config を保持し続ける方針。
 
@@ -48,13 +48,21 @@
 - **理由**: 名前空間とクラス名の変更のみで、API シグネチャはほぼ互換。機械的な置き換えで対応可能。
 
 #### Decision: packages.config のバージョン指定
-- **選択**: Microsoft.Data.Sqlite の最新安定版を指定
-- **理由**: .NET Framework 4.8 をサポートする最新バージョンを選択する。2026年時点で Microsoft.Data.Sqlite 9.x を想定。
+- **選択**: Microsoft.Data.Sqlite 8.0.7 + SQLitePCLRaw 2.1.6（.NET Framework 4.8 対応の最新安定版）
+- **理由**: `packages` フォルダに既存キャッシュが存在し、net48 で動作確認済み。9.x も netstandard2.0 で動作するが、本環境では 8.0.7 が最短でビルドが通る。将来 9.x への上げ替えは容易。
+- **補足**: `Microsoft.Data.Sqlite` 本体はメタパッケージで実体は `Microsoft.Data.Sqlite.Core` の `lib/netstandard2.0/Microsoft.Data.Sqlite.dll`。`packages.config` には `Microsoft.Data.Sqlite` / `Core` / `SQLitePCLRaw.bundle_e_sqlite3` / `core` / `lib.e_sqlite3` / `provider.dynamic_cdecl` の 6 パッケージを列挙。
+
+#### Decision: 非互換 API の対応
+- **SqliteCommand 単引数コンストラクタ**: `new SqliteCommand(conn)` は `conn.CreateCommand()` に置換（Microsoft.Data.Sqlite には単引数コンストラクタが存在しない）
+- **SqliteConnection.CreateFile**: `System.IO.File.Create(path).Dispose()` に置換（Microsoft.Data.Sqlite には同等の静的メソッドが存在しない）
+- **SQLiteParameter 型指定**: `System.Data.DbType` → `SqliteType`（`String`→`Text`、`Int64`→`Integer`）に変更（Microsoft.Data.Sqlite のコンストラクタは `SqliteType` を要求）
+- **BeginTransaction 戻り値**: `SqliteConnection.BeginTransaction()` は `DbTransaction` を返すため `SqliteCommand.Transaction`（`SqliteTransaction` 型）への代入時に `(SqliteTransaction)` キャストが必要
 
 ### Risks / Trade-offs
 
-- **[Risk] Microsoft.Data.Sqlite の .NET Framework 4.8 サポートバージョンに制限がある可能性** → ビルド確認後、必要に応じてバージョンを調整
-- **[Risk] 31 ファイルにおよぶ書き換えで typo や置き忘れが発生する可能性** → using 文の一括置換後、ビルドエラーで残存箇所を検出する
+- **[Risk] Microsoft.Data.Sqlite の .NET Framework 4.8 サポートバージョンに制限がある可能性** → 8.0.7 でビルド・テストが PASS したため解消
+- **[Risk] 22 ファイルにおよぶ書き換えで typo や置き忘れが発生する可能性** → using 文の一括置換後、ビルドエラーで残存箇所（`CreateFile` / 単引数コンストラクタ / `DbType`）を検出し対応
+- **[Risk] e_sqlite3.dll ネイティブ DLL の実行時解決** → `SQLitePCLRaw.lib.e_sqlite3` の `runtimes/win-{x64,x86,arm}/native/e_sqlite3.dll` を `Content` + `CopyToOutputDirectory` および `buildTransitive` Import で `bin/runtimes` にコピーし、テスト（69件 PASS）および `nicorankLib.dll` の `GetManifestResourceNames`（`costura.sqlitepclraw.*` 3件 + `costura.microsoft.data.sqlite`）で Costura 埋め込みを確認。packages.config 形式では `packages.config` への列挙だけでは CopyLocal されず、`csproj` への `Reference` 追加が必須であることを検証（pitfalls 4b 追記）
 - **[Trade-off] 機械的置き換えで対応できるが、コードレビュー時の差分が大きくなる** → 1回のコミットで行い、差分の把握を容易にする
 
 ---
