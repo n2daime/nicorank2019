@@ -64,3 +64,17 @@
   - `dotnet test UnitTest/UnitTest.csproj` 69 件 PASS（EXIT CODE 0）＋ `dotnet build nicorank2019/nicorank2019.csproj` 成功（PostBuildEvent 変更の検証を含む）
   - reviewer レビュー: 必須指摘なし（低2点は対応不要と判断、見送り）
 - **備考**: ユーザーに見える挙動の変更なし（呼び出されていない機能の削除のみ）
+
+---
+
+## 2026-08-31 リリース v20260831_nicorank
+
+- **タグ**: `v20260831_nicorank`（main `d8af711`。annotated tag でコミット位置を確認済み）
+- **GitHub Release**: https://github.com/n2daime/nicorank2019/releases/tag/v20260831_nicorank
+- **成果物**: `nicorank2019_20260831.zip`（パターンA ホワイトリストのみ: exe / exe.config / nicorank.xml.org / lib 4件 + runtimes 3種）
+- **含まれる変更**: #20（SQLite移行）/ #23（nicochart TSV廃止・新着偽造判定代替）/ #24（デッドコード削除）。リリース対象は nicorank2019 のみ
+- **検証**: main 上で Release ビルド EXIT=0、`dotnet test` 69件 PASS、lib 配置確認（4件 + runtimes 3種）、zip ホワイトリスト照合（ユーザー確認済み）、実機確認済み（ユーザー）
+- **release.md 初実施で判明した問題**（後続の release.md 改善で反映）:
+  - `bin/Release/nicorank.xml` が PostBuildEvent xcopy のタイミングで更新されず、廃止済み設定（`<NicoChart>`）が残った古い版が zip に入った（ユーザー指摘で発覚）。zip 作成前に bin/Release と依存ファイルの一致確認が必要
+  - PowerShell から `gh --notes` に日本語 + バッククォート入り本文を直接渡すと `` `n `` が改行に置換され文字欠けが発生 → `--notes-file` を使うべき
+  - develop の未プッシュコミット push が手順の明示ステップに無かった
