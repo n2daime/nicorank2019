@@ -44,4 +44,23 @@
   - `dotnet test UnitTest/UnitTest.csproj` 69 件 PASS（feature / develop とも EXIT CODE 0）。
   - ユーザーが実データでの集計実行確認済み（新着偽造動画の除外挙動）。
   - reviewer レビュー: 高・中深刻度の指摘なし。低深刻度 6 点はすべて対応済み。
-- **残課題**: `NocoChartReader` は `now.nicochart.jp` の today フィードに依存しており、nicochart.jp 全体の利用停止状況次第で動作しない可能性（reviewer 推奨。別 Issue での調査を提案）。
+- **残課題**: `NocoChartReader` は `now.nicochart.jp` の today フィードに依存しており、nicochart.jp 全体の利用停止状況次第で動作しない可能性（reviewer 推奨。→ #24 でデッドコードとして削除し解消）
+
+---
+
+## 2026-08-31 デッドロジック削除: NocoChartReader / NicoChartModel / AngleSharp (#24)
+
+- **Issue**: #24
+- **ブランチ**: `feature/t024-remove-dead-nocochart` → `develop` (`186ad1c` Merge)
+- **背景**: `NocoChartReader`（now.nicochart.jp の today フィードから当日ランキングを取得）が `ModeFactory` 等どこからも呼ばれていないデッドロジックだった。同ドメインの別機能は #23 で廃止済みで、フィードの存続保証もない。
+- **実施内容**:
+  - `NocoChartReader.cs` / `NicoChartModel.cs`（Atom feed モデル6クラス）を削除
+  - `nicorankLib.csproj` から Compile Include と AngleSharp 1.7.2 の Reference を削除、`packages.config` から AngleSharp を削除
+  - `nicorank2019.csproj` の PostBuildEvent から不要になった `del AngleSharp*` を削除
+- **設計判断**:
+  - `RankGenreJson` / `RankLogJson` は `JsonReaderBase` / `RankApi2Json` で現役使用のため残す
+  - `nicorank_oldlog` の AngleSharp 1.1.2 PackageReference は別プロジェクト依存のため触らない（.cs での使用なしは確認済み、スコープ外）
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 69 件 PASS（EXIT CODE 0）＋ `dotnet build nicorank2019/nicorank2019.csproj` 成功（PostBuildEvent 変更の検証を含む）
+  - reviewer レビュー: 必須指摘なし（低2点は対応不要と判断、見送り）
+- **備考**: ユーザーに見える挙動の変更なし（呼び出されていない機能の削除のみ）

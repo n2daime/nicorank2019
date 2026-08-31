@@ -81,7 +81,6 @@ AnalyzeRank():
 | `GenreInfoReader` | カテゴリ不明の動画を NicoApi で補完 |
 | `MovieInfoReader` | NicoApi で動画情報（タイトル・投稿日）を取得 |
 | `SnapShotSabunReader` | SP 集計の中核。スナップショット DB 2本（AnalyzeDB/BaseDB）の累積値差分を計算。`IDisposable` |
-| `NocoChartReader` | now.nicochart.jp の today フィード 3 URL（mylist/res/view）から当日ランキング取得 |
 
 ### Ext（順位計算後に実行、`bool AnalyzeRank(List<Ranking>)`）
 
@@ -96,7 +95,7 @@ AnalyzeRank():
 - `Ranking` — 集計結果1件。`CalcPoint()`（ポイント計算、キャッシュ付き）・`PointCalcReset()`・`MergeRankingList`・`IsChannel`（`so` 始まり）。計算式の詳細は `../specs.md` セクション2
 - `EAnalyzeMode` — Weekly / SP / Tyukan / Daily / Mothly（タイポ）/ Unknown
 - `DB` — DB ファイルパス定数（`LOG_OFFICEIAL` / `NiCORAN_HISTORY` / `LOG_SNAPSHOT`）
-- `NicoChartModel` / `RankGenreJson` / `RankLogJson` — デシリアライズ用モデル
+- `RankGenreJson` / `RankLogJson` — 公式ランキング JSON のデシリアライズ用モデル（`JsonReaderBase` / `RankApi2Json` で使用）
 
 ## output
 
