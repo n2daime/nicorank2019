@@ -116,7 +116,7 @@ namespace nicorankLib.Analyze.Official
             catch (Exception ex)
             {
                 var errLog = ErrLog.GetInstance();
-                errLog.Write($"{DB.LOG_OFFICEIAL}更新でエラー発生。ID={id}(RankingHistory::GetRankingSabunData)");
+                errLog.Write($"{DB.LOG_OFFICEIAL}更新でエラー発生。ID={id}(RankingHistory::CheckSoMovieNeedSabun)");
                 errLog.Write(ex);
                 return false;
             }

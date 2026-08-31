@@ -56,15 +56,14 @@ namespace nicorankLib.Analyze.Option
                     var needSoSabunList = rankingList.Where(rank =>
                             rank.Date > BaseTime.Date &&
                             rank.IsChannel &&
-                            rank.CountPlay >= 1000 //1000再生もない奴は差分集計する必要なし（Nicochart節約）
+                            rank.CountPlay >= 1000 //1000再生もない奴は差分集計する必要なし
                             ).ToList();
 
 
                     StatusLog.WriteLine($"{needSoSabunList.Count}件の新着公式動画が本当に新着なのか確認しています");
                     foreach (var wRank in needSoSabunList)
                     {
-                        Ranking sabunRank = null;
-                        if (rankHistory.CheckSoMovieNeedSabun(wRank.ID, baseTimeLong, out sabunRank))
+                        if (rankHistory.CheckSoMovieNeedSabun(wRank.ID, baseTimeLong, out var sabunRank))
                         {
                             // 差分取得判定が正常終了
                             if (sabunRank != null)
@@ -78,7 +77,7 @@ namespace nicorankLib.Analyze.Option
                             else
                             {// 差分なし
                                 bool isNew = true;
-                                
+
                                 // 新着 or 新着偽造を判断する必要がある（過去の動画が再公開＝数字がそのまま投稿日だけアップデート）
                                 // so40000000以前の公式動画は、新着偽造の可能性があるので、除外する
                                 if (wRank.ID.StartsWith("so"))
@@ -105,7 +104,7 @@ namespace nicorankLib.Analyze.Option
                                         isNew = false;
                                     }
                                 }
-                                if(isNew == false)
+                                if (!isNew)
                                 {
                                     // 新着偽造なので、差分集計対象外にする
                                     wRank.isDelete = true;
@@ -114,9 +113,8 @@ namespace nicorankLib.Analyze.Option
 
                         }
                         else
-                        {// 過去ログがないので差分集計できない
+                        {// DBエラー等で差分判定できなかったため、差分集計できない対象として除外する
                             wRank.isDelete = true;
-
                         }
                         StatusLog.Write(".");
                     }
