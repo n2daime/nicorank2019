@@ -53,11 +53,10 @@ namespace nicorankLib.Analyze.Option
 
 
                     // 公式動画の場合、投稿日時だけでは判断できないので過去ログ確認する
-                    // soの番号で
                     var needSoSabunList = rankingList.Where(rank =>
                             rank.Date > BaseTime.Date &&
                             rank.IsChannel &&
-                            rank.CountPlay >= 1000 //1000再生もない奴は差分集計する必要なし（Nicochart節約）
+                            rank.CountPlay >= 1000 //1000再生もない奴は差分集計する必要なし
                             ).ToList();
 
 
@@ -66,14 +65,56 @@ namespace nicorankLib.Analyze.Option
                     {
                         if (rankHistory.CheckSoMovieNeedSabun(wRank.ID, baseTimeLong, out var sabunRank))
                         {
+                            // 差分取得判定が正常終了
                             if (sabunRank != null)
-                            {
+                            { // 差分あり→差分計算し、ポイントを再計算
                                 wRank.CountPlay -= sabunRank.CountPlay;
                                 wRank.CountComment -= sabunRank.CountComment;
                                 wRank.CountMyList -= sabunRank.CountMyList;
                                 wRank.CountLike -= sabunRank.CountLike;
                                 wRank.PointCalcReset();
                             }
+                            else
+                            {// 差分なし
+                                bool isNew = true;
+
+                                // 新着 or 新着偽造を判断する必要がある（過去の動画が再公開＝数字がそのまま投稿日だけアップデート）
+                                // so40000000以前の公式動画は、新着偽造の可能性があるので、除外する
+                                if (wRank.ID.StartsWith("so"))
+                                {
+                                    // 数字部分だけを取り出して、数字にする
+                                    string soNumStr = wRank.ID.Substring(2);
+                                    if (long.TryParse(soNumStr, out long soNum))
+                                    {
+                                        if (soNum < 40000000)
+                                        {
+                                            // 新着偽造
+                                            isNew = false;
+                                        }
+                                        else
+                                        {
+                                            // 新着
+                                            isNew = true;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // 数字に変換できないケースはありえないので、新着偽造同様に除外する
+                                        // (IDの割り当てルールが変わったときに見直す必要あり）
+                                        isNew = false;
+                                    }
+                                }
+                                if (!isNew)
+                                {
+                                    // 新着偽造なので、差分集計対象外にする
+                                    wRank.isDelete = true;
+                                }
+                            }
+
+                        }
+                        else
+                        {// DBエラー等で差分判定できなかったため、差分集計できない対象として除外する
+                            wRank.isDelete = true;
                         }
                         StatusLog.Write(".");
                     }

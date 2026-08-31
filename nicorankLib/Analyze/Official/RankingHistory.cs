@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.VisualBasic.FileIO;
 using System.Threading;
 using Newtonsoft.Json;
 using System.Text.RegularExpressions;
@@ -48,22 +47,6 @@ namespace nicorankLib.Analyze.Official
                 return false;
             }
 
-            using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
-            {
-                try
-                {
-                    var strSQL = @"attach 'DB/LogNicoChart.db' as NicoChart;";
-                    aCmd.CommandText = strSQL;
-                    aCmd.ExecuteNonQuery();
-                }
-                catch (Exception ex)
-                {
-                    var errLog = ErrLog.GetInstance();
-                    errLog.Write($"LogNicoChart.dbアタッチでエラー発生。(RankingHistory::Open)");
-                    errLog.Write(ex);
-                    return false;
-                }
-            }
             return true;
 
         }
@@ -75,19 +58,7 @@ namespace nicorankLib.Analyze.Official
         {
             if (dbCtrlOfficial != null && dbCtrlOfficial.IsOpen)
             {
-                try
-                {
-                    using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
-                    {
-                        var strSQL = @"detach NicoChart;";
-                        aCmd.CommandText = strSQL;
-                        aCmd.ExecuteNonQuery();
-                    }
-                }
-                finally
-                {
-                    dbCtrlOfficial.Close();
-                }
+                dbCtrlOfficial.Close();
             }
             dbCtrlOfficial = null;
         }
@@ -97,8 +68,8 @@ namespace nicorankLib.Analyze.Official
         /// </summary>
         /// <param name="id"></param>
         /// <param name="baseTime"></param>
-        /// <param name="ranking"></param>
-        /// <returns></returns>
+        /// <param name="ranking">差分データ。nullは差分なし。</param>
+        /// <returns>正常終了時true、エラー時false </returns>
         public bool CheckSoMovieNeedSabun(string id, long baseTime, out Ranking ranking)
         {
             ranking = null;
@@ -133,74 +104,11 @@ namespace nicorankLib.Analyze.Official
                                 CountLike = System.Convert.ToInt64(reader["いいね数"])
                             };
                         }
-                    }
-                    if (ranking == null)
-                    {//取得できなかった場合、ニコチャートの方で確認する
-                        for (int reTryCnt = 0; reTryCnt < 2; reTryCnt++)
+                        else
                         {
-                            // Microsoft.Data.Sqlite は CommandText 差し替え時に Parameters をクリアしないため、
-                            // 再利用前にクリアする(残ったパラメータは Must add values エラーの原因になる)
-                            aCmd.Parameters.Clear();
-
-                            aCmd.CommandText =
-                                @"Select min(集計日) as 集計日 from NicoChart.Ranking 
-                              Where ID = @ID";
-
-                            aCmd.Parameters.AddWithValue("@ID", id);
-
-                            //実行結果の取得
-                            using (var reader = aCmd.ExecuteReader())
-                            {
-                                if (reader.Read())
-                                {
-                                    object syuukeiBi = reader["集計日"];
-                                    if (syuukeiBi == DBNull.Value)
-                                    {// ニコチャートから取得したことがない
-                                        if (this.GetRankingDataLogNicoChart(id,baseTime))
-                                        {
-                                            //DB更新してもう一回
-                                            continue;
-                                        }
-                                    }
-                                    else
-                                    {//
-                                        var syukeibi = System.Convert.ToInt64(reader["集計日"]);
-                                        if (syukeibi > baseTime)
-                                        {
-                                            ranking = null;
-                                            return true;
-                                        }
-                                    }
-                                }
-                            }
-                            break;
-                        }
-
-                        aCmd.Parameters.Clear();
-
-                        aCmd.CommandText =
-                            @"select * from NicoChart.Ranking 
-                        Where ID = @ID and 集計日 <= @Date 
-                        order by 集計日 desc 
-                        Limit 1 ";
-
-                        aCmd.Parameters.AddWithValue("@ID", id);
-                        aCmd.Parameters.AddWithValue("@Date", baseTime);
-
-                        //実行結果の取得
-                        using (var reader = aCmd.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                ranking = new Ranking()
-                                {
-                                    ID = id,
-                                    CountPlay = System.Convert.ToInt64(reader["再生数"]),
-                                    CountComment = System.Convert.ToInt64(reader["コメント数"]),
-                                    CountMyList = System.Convert.ToInt64(reader["マイリスト数"]),
-                                    CountLike = 0 //ニコチャートからは取得できない
-                                };
-                            }
+                            // 新着 or 新着偽造（過去のランキングだけでは判断できない）
+                            // 差分データなし
+                            ranking = null;
                         }
                     }
                 }
@@ -208,7 +116,7 @@ namespace nicorankLib.Analyze.Official
             catch (Exception ex)
             {
                 var errLog = ErrLog.GetInstance();
-                errLog.Write($"{DB.LOG_OFFICEIAL}更新でエラー発生。ID={id}(RankingHistory::GetRankingSabunData)");
+                errLog.Write($"{DB.LOG_OFFICEIAL}更新でエラー発生。ID={id}(RankingHistory::CheckSoMovieNeedSabun)");
                 errLog.Write(ex);
                 return false;
             }
@@ -291,129 +199,6 @@ namespace nicorankLib.Analyze.Official
                             }
                         }
                     }
-                     if (ranking == null)
-                     {//取得できなかった場合
-                         aCmd.Parameters.Clear();
-
-                         aCmd.CommandText =
-                             @"select * from NicoChart.Ranking 
-                         Where ID = @ID and 集計日 BETWEEN @Date2 AND @Date1 
-                         order by 集計日 desc 
-                         Limit 1 ";
-
-                        aCmd.Parameters.AddWithValue("@ID", id);
-                        aCmd.Parameters.AddWithValue("@Date1", baseTime);
-                        aCmd.Parameters.AddWithValue("@Date2", baseTime2);
-
-                        //実行結果の取得
-                        using (var reader = aCmd.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                ranking = new Ranking()
-                                {
-                                    ID = id,
-                                    CountPlay = System.Convert.ToInt64(reader["再生数"]),
-                                    CountComment = System.Convert.ToInt64(reader["コメント数"]),
-                                    CountMyList = System.Convert.ToInt64(reader["マイリスト数"]),
-                                    CountLike = 0
-                                };
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                var errLog = ErrLog.GetInstance();
-                errLog.Write($"{DB.LOG_OFFICEIAL}更新でエラー発生。ID={id}(RankingHistory::GetRankingSabunData)");
-                errLog.Write(ex);
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        ///  ニコチャートの過去ログから差分を取得する
-        /// </summary>
-        /// <param name="id"></param>
-        /// <param name="baseTime"></param>
-        /// <param name="ranking"></param>
-        /// <returns></returns>
-        public bool GetRankingSabunDataLogNicoChart(string id, long baseTime, out Ranking ranking)
-        {
-            ranking = null;
-            if (!this.dbCtrlOfficial.IsOpen)
-            {
-                return false;
-            }
-            try
-            {
-                using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
-                {
-                    //集計日より新しいデータが無い場合はNicoChartに取りに行く
-                    aCmd.CommandText =
-                        @"select * from NicoChart.Ranking 
-                        Where ID = @ID
-                        Limit 1 ";
-
-                    aCmd.Parameters.AddWithValue("@ID", id);
-                    aCmd.Parameters.AddWithValue("@Date", baseTime);
-
-                    //ニコチャートからデータを取得する必要があるか
-                    bool isGetNicoChart = true;
-
-                    //実行結果の取得
-                    using (var reader = aCmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            //すでにデータがある場合
-                            isGetNicoChart = false; //ニコチャートからデータを取得しない
-                        }
-                    }
-                    if (isGetNicoChart)
-                    { //ニコチャートからデータを取得する
-                        if (!this.GetRankingDataLogNicoChart(id , baseTime))
-                        {
-                            return false;
-                        }
-                    }
-                    aCmd.CommandText =
-                        @"select * from NicoChart.Ranking 
-                        Where ID = @ID and 集計日 <= @Date 
-                        order by 集計日 desc 
-                        Limit 1 ";
-
-                    aCmd.Parameters.Clear();
-                    aCmd.Parameters.AddWithValue("@ID", id);
-                    aCmd.Parameters.AddWithValue("@Date", baseTime);
-
-                    //実行結果の取得
-                    using (var reader = aCmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            ranking = new Ranking()
-                            {
-                                ID = id,
-                                CountPlay = System.Convert.ToInt64(reader["再生数"]),
-                                CountComment = System.Convert.ToInt64(reader["コメント数"]),
-                                CountMyList = System.Convert.ToInt64(reader["マイリスト数"])
-                            };
-                        }
-                        else if(!isGetNicoChart)
-                        {
-                            ranking = new Ranking()
-                            {
-                                ID = id,
-                                CountPlay = 0,
-                                CountComment = 0,
-                                CountMyList = 0
-                            };
-                        }
-                    }
                 }
             }
             catch (Exception ex)
@@ -428,190 +213,7 @@ namespace nicorankLib.Analyze.Official
         }
 
 
-        /// <summary>
-        /// NicoChartTsv一時保管用
-        /// </summary>
-        class NicoChartTsv
-        {
-            public DateTime Date;
-            public long? CountPlay = null;
-            public long? CountComment = null;
-            public long? CountMyList = null;
-        };
 
-        /// <summary>
-        /// NicoChartが公開しているTSVファイルを取得してDB更新する
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public bool GetRankingDataLogNicoChart(string id , long baseTime)
-        {
-            if (!this.dbCtrlOfficial.IsOpen)
-            {
-                return false;
-            }
-            //const int COL_KIND = 0;
-            const int COL_DATE = 1;
-            const int COL_PLAY = 7;
-            const int COL_COMMENT = 8;
-            const int COL_MYLIST = 9;
-            try
-            {
-                //http://www.nicochart.jp/point/sm10555564.tsv
-                var tsvUrl = $"http://www.nicochart.jp/point/{id}.tsv";
-                if (!InternetUtil.TxtDownLoad(tsvUrl, out string tsvText))
-                {
-                    //失敗
-                    return false;
-                }
-
-                // 改行毎に分割する
-                string[] lines = tsvText.Split(new string[] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
-
-                var tsvMap = new Dictionary<DateTime, NicoChartTsv>(lines.Length);
-                foreach (var strLine in lines)
-                {
-                    using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(strLine)))
-                    {
-                        var parser = new TextFieldParser(stream, Encoding.UTF8);
-                        parser.TextFieldType = FieldType.Delimited;
-                        parser.SetDelimiters("\t");
-                        // カラム毎に分割する
-                        string[] cols = parser.ReadFields();
-                        if (cols.Length > COL_MYLIST)
-                        {//有効なデイリー
-                            var wRank = new NicoChartTsv()
-                            {
-                                Date = DateTime.ParseExact(cols[COL_DATE], "yyyy-MM-dd", null)
-                            };
-                            if (!tsvMap.ContainsKey(wRank.Date))
-                            {
-                                if (long.TryParse(cols[COL_PLAY], out long parseWork))
-                                {
-                                    wRank.CountPlay = parseWork;
-                                }
-                                if (long.TryParse(cols[COL_COMMENT], out parseWork))
-                                {
-                                    wRank.CountComment = parseWork;
-                                }
-                                if (long.TryParse(cols[COL_MYLIST], out parseWork))
-                                {
-                                    wRank.CountMyList = parseWork;
-                                }
-
-                                if (wRank.CountPlay == null && wRank.CountComment == null && wRank.CountMyList == null)
-                                {//有効なデータが1個も無い
-                                    continue;
-                                }
-                                tsvMap[wRank.Date] = wRank;
-                            }
-                        }
-                    }
-                }
-                //Listに変換
-                //集計日が古い→新しい順にソートする( 空白のデータを埋めるため )
-                List<NicoChartTsv> tsvList = tsvMap.Values.OrderBy(rank => rank.Date).ToList();
-                long CountPlay = 0;
-                long CountComment = 0;
-                long CountMyList = 0;
-                foreach (var wRank in tsvList)
-                {
-                    //空白のデータは古い日付のデータを採用し、データがあれば更新する
-                    if (wRank.CountPlay != null)
-                    {
-                        CountPlay = (long)wRank.CountPlay;
-                    }
-                    if (wRank.CountComment != null)
-                    {
-                        CountComment = (long)wRank.CountComment;
-                    }
-                    if (wRank.CountMyList != null)
-                    {
-                        CountMyList = (long)wRank.CountMyList;
-                    }
-                    wRank.CountPlay = CountPlay;
-                    wRank.CountComment = CountComment;
-                    wRank.CountMyList = CountMyList;
-                }
-
-                //データの節約のため、2019-01-01未満のデータは1つあれば良い
-                if (tsvList.Any(rank => rank.Date.Year < 2019))
-                {
-                    //新→古いリストに変換
-                    var workList = tsvList.OrderByDescending(rank => rank.Date);
-                    var newList = new List<NicoChartTsv>(tsvList.Count);
-                    foreach (var wRank in workList)
-                    {
-                        newList.Add(wRank);
-                        if (wRank.Date.Year < 2019)
-                        {
-                            break;
-                        }
-                    }
-                    //集計日が古い→新しい順にソートする
-                    tsvList = newList.OrderBy(rank => rank.Date).ToList();
-                }
-
-
-                using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
-                {
-                    try
-                    {
-                        //トランザクションの開始
-                        aCmd.Transaction = (SqliteTransaction)dbCtrlOfficial.Connection.BeginTransaction();
-
-
-                        //動画情報が無いときだけ追加する
-                        var strSQL = @"INSERT INTO NicoChart.Ranking( ID, '集計日','再生数','コメント数','マイリスト数')
-                               SELECT @ID,@Date,@Play,@Comment,@MyList
-                               WHERE NOT EXISTS (SELECT * FROM NicoChart.Ranking WHERE ID=@ID AND 集計日 = @Date);";
-
-                        aCmd.CommandText = strSQL;
-
-                        if (tsvList.Count < 1)
-                        {
-                            tsvList.Add(new NicoChartTsv()
-                            {
-                                Date = DateConvert.String2Time(baseTime.ToString(), false),
-                                CountPlay = 0,
-                                CountComment = 0,
-                                CountMyList = 0
-                            });
-                        }
-
-                        foreach (var wRank in tsvList)
-                        {
-
-                            aCmd.Parameters.Clear();
-                            aCmd.Parameters.AddWithValue("@ID", id);
-                            aCmd.Parameters.AddWithValue("@Date", DateConvert.Time2String( wRank.Date , false) );
-                            aCmd.Parameters.AddWithValue("@Play", (long)wRank.CountPlay);
-                            aCmd.Parameters.AddWithValue("@Comment", (long)wRank.CountComment);
-                            aCmd.Parameters.AddWithValue("@MyList", (long)wRank.CountMyList);
-                            aCmd.ExecuteNonQuery();
-                        }
-                        aCmd.Transaction.Commit();
-                    }
-                    catch (Exception ex)
-                    {
-                        aCmd.Transaction.Rollback();
-                        var errLog = ErrLog.GetInstance();
-                        errLog.Write($"NicoChartTSV登録でエラー。(RankingHistory::getRankingDataLogNicoChart)");
-                        errLog.Write(ex);
-                        return false;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                var errLog = ErrLog.GetInstance();
-                errLog.Write("NicoChartTSV取得でエラー RankingHistory::getRankingDataLogNicoChart");
-                errLog.Write(ex);
-                return false;
-            }
-
-            return true;
-        }
 
         /// <summary>
         /// LogOfficial.dbの過去ログを更新する
