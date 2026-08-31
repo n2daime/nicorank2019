@@ -15,6 +15,10 @@
 
 ## 未完了タスク
 
+### ビルド警告の対処と未使用 AngleSharp の削除
+
+> GitHub issue #25 対応。Release ビルドの警告 5 件（MSB3276 / CS0414 / CS0168×3）の対処と、`nicorank_oldlog` から未使用の AngleSharp PackageReference を削除（Dependabot #10）。詳細は issue を参照。
+
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。
