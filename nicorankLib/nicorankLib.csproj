@@ -53,9 +53,6 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="AngleSharp, Version=1.7.2.0, Culture=neutral, PublicKeyToken=e83494dcdc6d31ea, processorArchitecture=MSIL">
-      <HintPath>..\packages\AngleSharp.1.7.2\lib\net472\AngleSharp.dll</HintPath>
-    </Reference>
     <Reference Include="Costura, Version=6.2.0.0, Culture=neutral, PublicKeyToken=9919ef960d84173d, processorArchitecture=MSIL">
       <HintPath>..\packages\Costura.Fody.6.2.0\lib\netstandard2.0\Costura.dll</HintPath>
     </Reference>
@@ -287,9 +284,7 @@
     <Compile Include="output\ResultImagegetUserIcon.cs" />
     <Compile Include="SnapShot\SnapShotDB.cs" />
     <Compile Include="SnapShot\SnapShotJson.cs" />
-    <Compile Include="Analyze\Option\Basic\NocoChartReader.cs" />
     <Compile Include="Analyze\Input\InputBase.cs" />
-    <Compile Include="Analyze\model\NicoChartModel.cs" />
     <Compile Include="Analyze\model\RankGenreJson.cs" />
     <Compile Include="Analyze\model\Ranking.cs" />
     <Compile Include="Analyze\model\RankLogJson.cs" />
