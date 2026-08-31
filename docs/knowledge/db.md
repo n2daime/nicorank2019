@@ -5,7 +5,6 @@
 | DB ファイル | 定数（DB.cs） | 用途 | 作成・更新元 |
 |---|---|---|---|
 | `DB/LogOfficial.db` | `LOG_OFFICEIAL` | 公式過去ランキング（Ranking / Movie / RankingDate） | RankingHistory（nicorank2019 起動時） |
-| `DB/LogNicoChart.db` | `LOG_NICOCHART` | ニコチャート取得データ（Ranking）。`attach 'NicoChart'` で併用 | RankingHistory.GetRankingDataLogNicoChart |
 | `DB/NicoranHistory.db` | `NiCORAN_HISTORY` | 集計履歴（History / LastResult / LastResultInfo） | ResultHistory / LastRankReader / TyokiHantei |
 | `DB/ApiXML.db` | — | NicoApi 動画情報キャッシュ（NicovideoThumb） | NicoApi |
 | `DB/Dailylog.db` | — | 中間集計の日別キャッシュ（Dailylog） | TyukanAnalyze |
@@ -20,11 +19,6 @@
 - **Movie**: 動画の基本情報（Ranking と JOIN して使用）
 - **RankingDate**: 集計日とメンテナンスフラグ。`CheckMaintananceDay` でメンテ日判定。初期値 20190610
 - 更新フロー: `UpdateOfficialRankingDB()` が RankingDate の `Max(集計日)+1` から今日までを日別取得。データ 0 件の日はメンテナンス日として登録（UI で確認）
-
-### LogNicoChart.db
-
-- **Ranking**: `NicoChart.Ranking` として ATTACH 参照。`GetRankingDataLogNicoChart(id, baseTime)` が `http://www.nicochart.jp/point/{id}.tsv` から取得・登録
-- so 動画（公式チャンネル）の再公開による投稿日時更新への対応（2019年以前の情報補完、`CheckSoMovieNeedSabun` から参照）
 
 ### NicoranHistory.db
 
@@ -76,6 +70,7 @@
 
 ## 注意点
 
+- 旧 `DB/LogNicoChart.db` は #23（2026-08）で参照廃止。ファイルが残っていても読み書きされない（消してもよい）
 - `LogSnapshot*.db` は日次作成されるため、バッチ途中でクラッシュしても再実行で最初から取得できる
 - WAL モードでは `.db-wal` / `.db-shm` ファイルが別途作られる（自動管理。不要時は `PRAGMA wal_checkpoint(TRUNCATE)`）
 - 実データベースの「依存ファイル/DB/」はビルド時に PostBuild でコピーされる

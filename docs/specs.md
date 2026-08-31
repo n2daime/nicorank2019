@@ -22,6 +22,15 @@
 - 通常時: `JsonReaderWeekly` → 差分（`SabunReader`、基準日は設定で変更可・月曜日のみ）→ 先週順位（`LastRankReader`）→ ジャンル補完（`GenreInfoReader`）。
 - 順位計算後: お気に入りタグ（`FavoriteTagReader`）→ ユーザー情報（`UserInfoReader`）→ 長期判定（`TyokiHantei`）。
 
+### 差分集計と so 新着偽造判定（SabunReader）
+
+- 差分は LogOfficial.db の過去ランキングから取得する（`CheckSoMovieNeedSabun` / `GetRankingSabunDataLogOfficial`）。過去ログにデータがなければ差分なし
+- 過去ログに差分が取れない so 動画（公式チャンネル）は ID 番号で新着判定する:
+  - so + 数値が **40000000 未満 → 新着偽造**（非公開→再公開で過去にランクイン済みとみなし、`isDelete` で集計対象外）
+  - **40000000 以上 → 新着**として通常集計
+  - 数値に変換できない ID も新着偽造扱いで対象外（ID 採番ルール変更時は閾値とともに見直し）
+- DB エラー等で差分判定できなかった場合も対象外にする（全除外が発生した時点で問題に気づけるようにする意図）
+
 ### 順位計算の種類
 
 - 総合順位（PointTotal 降順）/ 再生順位 / コメント順位 / マイリスト順位 / いいね順位 / カテゴリ順位
@@ -107,10 +116,11 @@
 | `POINTALL_OFFSET` | `Mode` | 0 | 全体補正モード（1=VCOLE2023） |
 | `SYSTEM.ResultCsv` | `Code` | 0 | result.csv の文字コード（0=shift-jis / 1=Unicode） |
 | `SYSTEM.Thread` | `Max` | 16 | マルチスレッドの最大スレッド数 |
-| `SYSTEM.NicoChart` | `Mode` | 1 | ニコチャート取得（0=しない / 1=する） |
 | `SYSTEM.Download.NicoAPI` | `Retry` | 20 | NicoApi 取得のリトライ回数（SP に影響） |
 | `SYSTEM.Download.UserIcon` | `Retry` | 1 | ユーザーアイコン取得のリトライ回数 |
 | `SYSTEM.URL_JSON_TARGET` | `Url` | （自前運用の互換サイト） | 過去ランキング JSON の取得元（`{0}`=種別、`{1}`=日付）。**URL は公開しない** |
+
+- 旧設定 `<NicoChart Mode="..." />`（ニコチャート取得）は廃止済み（#23）。nicorank.xml に残っていてもデシリアライズ時に無視される
 
 ---
 
@@ -138,7 +148,6 @@
 | DB ファイル | 定数 | 用途 |
 |---|---|---|
 | `DB/LogOfficial.db` | `LOG_OFFICEIAL` | 公式過去ランキング（Ranking / Movie / RankingDate） |
-| `DB/LogNicoChart.db` | `LOG_NICOCHART` | ニコチャート取得データ（Ranking）。`attach 'NicoChart'` で併用 |
 | `DB/NicoranHistory.db` | `NiCORAN_HISTORY` | 集計履歴（History / LastResult / LastResultInfo） |
 | `DB/ApiXML.db` | — | NicoApi キャッシュ（NicovideoThumb） |
 | `DB/Dailylog.db` | — | 中間集計の日別キャッシュ（Dailylog） |

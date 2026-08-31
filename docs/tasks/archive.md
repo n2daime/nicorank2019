@@ -24,3 +24,24 @@
   - `MSBuild Release/AnyCPU` ソリューション `EXIT=0`（`MSB3245` 無し）、`dotnet test` `69` 件 `PASS`（`Debug/Release` とも）、`GetManifestResourceNames` で `SQLitePCLRaw/Microsoft.Data.Sqlite` の埋め込み無しを確認、ユーザー実行で `Debug` の `Batteries_V2.Init()` が `win-x64` で成功。
   - `reviewer` 再レビューで `7` 点指摘 → `5` 点指摘とも解消し `問題なし` 判定。
 - **残課題**: Issue #22（単体テストでコマンド再利用パターン検出不可）を別途対応予定。
+
+---
+
+## 2026-08-31 Nicochart TSV 取得の完全廃止と ID 番号による新着偽造判定への代替 (#23)
+
+- **Issue**: #23
+- **ブランチ**: `feature/Removal_Logic_NicoChart` → `develop` (`0aab8f0` Merge)
+- **背景**: nicochart.jp のポイント TSV（`http://www.nicochart.jp/point/{id}.tsv`）が利用できなくなった。従来は so 動画（公式チャンネル）の「新着偽造」（非公開→再公開で投稿日時だけ更新され、過去の数字が新着のように集計される問題）判定を TSV 補完で対応していた。
+- **実施内容**:
+  - ユーザー実装（`7ccd4b1`）: `CheckSoMovieNeedSabun` から TSV 取得フォールバックを削除。`SabunReader` で差分が取れない so 動画を ID 番号（so40000000 未満）で新着偽造判定し `isDelete`。
+  - 追加実装（`a427129`）: `LogNicoChart.db` の attach/detach・`NicoChart.Ranking` 参照・`SYSTEM.NicoChart` 設定・`LOG_NICOCHART` 定数を完全削除。`依存ファイル/nicorank.xml` と `UnitTest/Fixtures/nicorank.xml` から `<NicoChart>` を削除。
+  - reviewer 指摘対応（`77425d9`）: コメント整合性（「Nicochart節約」削除・DB エラー時除外のコメント修正）・`CheckSoMovieNeedSabun` のエラーメッセージ旧メソッド名修正・`!isNew` / `out var` へのスタイル修正。
+- **設計判断**:
+  - DB エラー時も `isDelete`（全除外）とする: 意図的な仕様。全除外が発生した時点でユーザーが問題に気づきやすい。
+  - `40000000` の定数化は見送り: 当該箇所でしか使わないため。
+  - `LogNicoChart.db` は参照ごと完全削除（ユーザー判断）。既存ユーザーの nicorank.xml に `<NicoChart>` が残っていても XmlSerializer が未知要素を無視するため互換性は維持される。
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 69 件 PASS（feature / develop とも EXIT CODE 0）。
+  - ユーザーが実データでの集計実行確認済み（新着偽造動画の除外挙動）。
+  - reviewer レビュー: 高・中深刻度の指摘なし。低深刻度 6 点はすべて対応済み。
+- **残課題**: `NocoChartReader` は `now.nicochart.jp` の today フィードに依存しており、nicochart.jp 全体の利用停止状況次第で動作しない可能性（reviewer 推奨。別 Issue での調査を提案）。
