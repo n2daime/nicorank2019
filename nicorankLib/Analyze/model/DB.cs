@@ -17,11 +17,6 @@ namespace nicorankLib.Analyze.model
         public const string LOG_OFFICEIAL = "DB/LogOfficial.db";
 
         /// <summary>
-        /// ニコチャートのデータを格納したDB
-        /// </summary>
-        public const string LOG_NICOCHART = "DB/LogNicoChart.db";
-
-        /// <summary>
         /// ニコランのランキングデータを格納したDB
         /// </summary>
         public const string NiCORAN_HISTORY = "DB/NicoranHistory.db";

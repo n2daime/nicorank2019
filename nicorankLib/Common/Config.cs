@@ -103,11 +103,6 @@ namespace nicorankLib.Common
         public int ThreadMax { get { return xml.SYSTEM.Thread.Max; } set { } }
 
         /// <summary>
-        /// ニコチャート設定。Mode：0（取得しない） 1(取得する）
-        /// </summary>
-        public bool IsGetNicoChart { get { return xml.SYSTEM.NicoChart.Mode; } set { } }
-
-        /// <summary>
         /// NicoAPIに対しての最大リトライ回数
         /// </summary>
         public int RetryNicoAPI { get { return xml.SYSTEM.Download.NicoAPI.Retry; } set { } }
@@ -169,10 +164,6 @@ namespace nicorankLib.Common
                 return;
             }
             this.xml = XmlSerializerUtil.Deserialize<NicoRankXml>(strXml);
-            if( this.xml.SYSTEM.NicoChart == null )
-            {//設定がない場合のデフォルトは取得する
-                this.xml.SYSTEM.NicoChart = new NicoChart() { Mode = true };
-            }
             if (this.xml.SYSTEM.Download.NicoAPI == null)
             {//設定がない場合のデフォルトは20
                 this.xml.SYSTEM.Download.NicoAPI = new NicoAPIXML() { Retry = 20 };

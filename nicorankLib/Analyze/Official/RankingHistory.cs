@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.VisualBasic.FileIO;
 using System.Threading;
 using Newtonsoft.Json;
 using System.Text.RegularExpressions;
@@ -48,22 +47,6 @@ namespace nicorankLib.Analyze.Official
                 return false;
             }
 
-            using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
-            {
-                try
-                {
-                    var strSQL = @"attach 'DB/LogNicoChart.db' as NicoChart;";
-                    aCmd.CommandText = strSQL;
-                    aCmd.ExecuteNonQuery();
-                }
-                catch (Exception ex)
-                {
-                    var errLog = ErrLog.GetInstance();
-                    errLog.Write($"LogNicoChart.dbアタッチでエラー発生。(RankingHistory::Open)");
-                    errLog.Write(ex);
-                    return false;
-                }
-            }
             return true;
 
         }
@@ -75,19 +58,7 @@ namespace nicorankLib.Analyze.Official
         {
             if (dbCtrlOfficial != null && dbCtrlOfficial.IsOpen)
             {
-                try
-                {
-                    using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
-                    {
-                        var strSQL = @"detach NicoChart;";
-                        aCmd.CommandText = strSQL;
-                        aCmd.ExecuteNonQuery();
-                    }
-                }
-                finally
-                {
-                    dbCtrlOfficial.Close();
-                }
+                dbCtrlOfficial.Close();
             }
             dbCtrlOfficial = null;
         }
@@ -224,36 +195,6 @@ namespace nicorankLib.Analyze.Official
                                     CountComment = System.Convert.ToInt64(reader["コメント数"]),
                                     CountMyList = System.Convert.ToInt64(reader["マイリスト数"]),
                                     CountLike = System.Convert.ToInt64(reader["いいね数"])
-                                };
-                            }
-                        }
-                    }
-                     if (ranking == null)
-                     {//取得できなかった場合
-                         aCmd.Parameters.Clear();
-
-                         aCmd.CommandText =
-                             @"select * from NicoChart.Ranking 
-                         Where ID = @ID and 集計日 BETWEEN @Date2 AND @Date1 
-                         order by 集計日 desc 
-                         Limit 1 ";
-
-                        aCmd.Parameters.AddWithValue("@ID", id);
-                        aCmd.Parameters.AddWithValue("@Date1", baseTime);
-                        aCmd.Parameters.AddWithValue("@Date2", baseTime2);
-
-                        //実行結果の取得
-                        using (var reader = aCmd.ExecuteReader())
-                        {
-                            if (reader.Read())
-                            {
-                                ranking = new Ranking()
-                                {
-                                    ID = id,
-                                    CountPlay = System.Convert.ToInt64(reader["再生数"]),
-                                    CountComment = System.Convert.ToInt64(reader["コメント数"]),
-                                    CountMyList = System.Convert.ToInt64(reader["マイリスト数"]),
-                                    CountLike = 0
                                 };
                             }
                         }

@@ -138,13 +138,6 @@ namespace nicorankLib.Common
         public int Max { get; set; }
     }
 
-    [XmlRoot(ElementName = "NicoChart")]
-    public class NicoChart
-    {
-        [XmlAttribute(AttributeName = "Mode")]
-        public bool Mode { get; set; }
-    }
-
     [XmlRoot(ElementName = "NicoAPI")]
     public class NicoAPIXML
     {
@@ -181,8 +174,6 @@ namespace nicorankLib.Common
         public ResultCsvXml ResultCsv { get; set; }
         [XmlElement(ElementName = "Thread")]
         public Thread Thread { get; set; }
-        [XmlElement(ElementName = "NicoChart")]
-        public NicoChart NicoChart { get; set; }
         [XmlElement(ElementName = "Download")]
         public Download Download { get; set; }
         [XmlElement(ElementName = "URL_JSON_TARGET")]
