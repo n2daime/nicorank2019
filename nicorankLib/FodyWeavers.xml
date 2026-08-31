@@ -1,3 +1,7 @@
 ﻿<Weavers xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="FodyWeavers.xsd">
-  <Costura />
+  <!-- SQLitePCLRaw 系・Microsoft.Data.Sqlite は Costura 埋め込みから除外する。
+       batteries_v2.dll は自アセンブリの Location を基準に runtimes/{rid}/native/e_sqlite3.dll を
+       LoadLibrary するため、埋め込むと Location が空になり必ず失敗する。
+       Private=False でも ProjectReference 経由で transitive に埋め込まれるため、ExcludeAssemblies で確実に除外。 -->
+  <Costura ExcludeAssemblies="SQLitePCLRaw.core|SQLitePCLRaw.batteries_v2|SQLitePCLRaw.provider.dynamic_cdecl|SQLitePCLRaw.provider.e_sqlite3|Microsoft.Data.Sqlite" />
 </Weavers>

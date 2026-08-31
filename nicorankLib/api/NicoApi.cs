@@ -1,4 +1,4 @@
-﻿using Microsoft.VisualBasic;
+using Microsoft.VisualBasic;
 using nicorankLib.Analyze.model;
 using nicorankLib.api.model;
 using nicorankLib.Common;
@@ -6,7 +6,7 @@ using nicorankLib.Util;
 using nicorankLib.Util.Text;
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -59,7 +59,7 @@ namespace nicorankLib.api
             {
                 return false;
             }
-            using (var aCmd = new SQLiteCommand(dbCtrl.Connection))
+            using (var aCmd = dbCtrl.Connection.CreateCommand())
             {
                 try
                 {
@@ -110,7 +110,7 @@ namespace nicorankLib.api
                         try
                         {
 
-                            aCmd.Transaction = aCmd.Connection.BeginTransaction();
+                            aCmd.Transaction = (SqliteTransaction)aCmd.Connection.BeginTransaction();
                             StatusLog.WriteLine($"未取得・古いデータをNicoAPIから取得・更新します。 取得対象{updateList.Count}件");
                             var lockObject = new object();
                             var thumbinfoList = new List<ThumbinfoBase>();
@@ -318,7 +318,7 @@ namespace nicorankLib.api
                         {
                             return false;
                         }
-                        using (var aCmd = new SQLiteCommand(dbCtrl.Connection))
+                        using (var aCmd = dbCtrl.Connection.CreateCommand())
                         {
                             //ローカルにあるかどうかチェックする
                             aCmd.CommandText =
@@ -383,7 +383,7 @@ namespace nicorankLib.api
                         {
                             return false;
                         }
-                        using (var aCmd = new SQLiteCommand(dbCtrl.Connection))
+                        using (var aCmd = dbCtrl.Connection.CreateCommand())
                         {
                             //ローカルにあるかどうかチェックする
                             aCmd.CommandText =
@@ -448,7 +448,7 @@ namespace nicorankLib.api
         //        return true;
         //    }
         //    //DBにデータが存在するかチェックする
-        //    using (var aCmd = new SQLiteCommand(dbCtrl.Connection))
+        //    using (var aCmd = dbCtrl.Connection.CreateCommand())
         //    {
         //        aCmd.CommandText =
         //            @"SELECT ThreadID FROM IDConvert

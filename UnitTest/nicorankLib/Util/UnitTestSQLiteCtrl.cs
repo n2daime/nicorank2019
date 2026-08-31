@@ -1,5 +1,5 @@
 using System;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using nicorankLib.Util;
@@ -27,7 +27,7 @@ namespace UnitTest.nicorankLib.Util
             using (var dbCtrl = new SQLiteCtrl())
             {
                 dbCtrl.OpenInMemory();
-                using (var cmd = new SQLiteCommand(dbCtrl.Connection))
+                using (var cmd = dbCtrl.Connection.CreateCommand())
                 {
                     cmd.CommandText = "CREATE TABLE Test (ID TEXT PRIMARY KEY)";
                     cmd.ExecuteNonQuery();
@@ -46,7 +46,7 @@ namespace UnitTest.nicorankLib.Util
             var tempFile = Path.GetTempFileName();
             try
             {
-                SQLiteConnection.CreateFile(tempFile);
+                System.IO.File.Create(tempFile).Dispose();
                 using (var dbCtrl = new SQLiteCtrl())
                 {
                     var result = dbCtrl.Open(tempFile);
@@ -77,7 +77,7 @@ namespace UnitTest.nicorankLib.Util
             var tempFile = Path.GetTempFileName();
             try
             {
-                SQLiteConnection.CreateFile(tempFile);
+                System.IO.File.Create(tempFile).Dispose();
                 using (var dbCtrl = new SQLiteCtrl())
                 {
                     Assert.IsTrue(dbCtrl.Open(tempFile));
@@ -97,8 +97,8 @@ namespace UnitTest.nicorankLib.Util
             var tempFileB = Path.GetTempFileName();
             try
             {
-                SQLiteConnection.CreateFile(tempFileA);
-                SQLiteConnection.CreateFile(tempFileB);
+                System.IO.File.Create(tempFileA).Dispose();
+                System.IO.File.Create(tempFileB).Dispose();
                 using (var dbCtrl = new SQLiteCtrl())
                 {
                     Assert.IsTrue(dbCtrl.Open(tempFileA));

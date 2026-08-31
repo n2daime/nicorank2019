@@ -61,11 +61,11 @@ AnalyzeRank():
 
 `RankingHistory.cs` — LogOfficial.db（公式過去ランキング DB）の更新・参照。`IDisposable`。
 
-- `Open()` / `Close()`: LogOfficial を開閉し `LogNicoChart.db` を `attach 'NicoChart'` で併用
+- `Open()` / `Close()`: LogOfficial を開閉
 - `UpdateOfficialRankingDB()`: RankingDate の `Max(集計日)+1`（初期値 20190610）から今日までを日別に取得・登録。0 件の日はメンテナンス日として登録（UI で確認）
 - `CheckMaintananceDay(DateTime)`: RankingDate でメンテ日判定
-- `CheckSoMovieNeedSabun(id, baseTime)`: 公式チャンネル動画（so）の新着判定。過去ランキング既出なら差分、なければ NicoChart 確認
-- `GetRankingDataLogNicoChart(id, baseTime)`: `http://www.nicochart.jp/point/{id}.tsv` を取得し `NicoChart.Ranking` に登録（2019年未満は1件に間引き、空データは直前値引き継ぎ）
+- `CheckSoMovieNeedSabun(id, baseTime)`: 公式チャンネル動画（so）の差分取得判定。過去ランキング既出なら差分データ、なければ `ranking = null`（差分なし）。DB 非オープン・例外時は false
+- `GetRankingSabunDataLogOfficial(id, baseTime, baseTime2)`: 過去ログから差分候補を取得（7日間に無ければ baseTime 以降の最古データを採用）
 - `ISQLiteCtrl` コンストラクタ注入可
 
 ## Analyze/Option
@@ -75,13 +75,12 @@ AnalyzeRank():
 | クラス | 責務 |
 |---|---|
 | `HiddenMovieDelete` | サムネイル `/video_deleted` の動画を `isDelete=true` に |
-| `SabunReader` | 基準日との差分計算。so 動画は新着判定。差分取れず投稿が過去なら isDelete |
+| `SabunReader` | 基準日との差分計算。so 動画は差分が取れなければ ID 番号で新着判定（so40000000 未満は新着偽造で isDelete）。DB エラー等で判定不能な場合も isDelete |
 | `LastRankReader` | NicoranHistory.db の Lastresult から前回総合ランク/ポイントをセット |
 | `LastRankCsvReader` | SP 用。前回 result CSV から前回順位を付与 |
 | `GenreInfoReader` | カテゴリ不明の動画を NicoApi で補完 |
 | `MovieInfoReader` | NicoApi で動画情報（タイトル・投稿日）を取得 |
 | `SnapShotSabunReader` | SP 集計の中核。スナップショット DB 2本（AnalyzeDB/BaseDB）の累積値差分を計算。`IDisposable` |
-| `NocoChartReader` | now.nicochart.jp の today フィード 3 URL（mylist/res/view）から当日ランキング取得 |
 
 ### Ext（順位計算後に実行、`bool AnalyzeRank(List<Ranking>)`）
 
@@ -95,8 +94,8 @@ AnalyzeRank():
 
 - `Ranking` — 集計結果1件。`CalcPoint()`（ポイント計算、キャッシュ付き）・`PointCalcReset()`・`MergeRankingList`・`IsChannel`（`so` 始まり）。計算式の詳細は `../specs.md` セクション2
 - `EAnalyzeMode` — Weekly / SP / Tyukan / Daily / Mothly（タイポ）/ Unknown
-- `DB` — DB ファイルパス定数（`LOG_OFFICEIAL` / `LOG_NICOCHART` / `NiCORAN_HISTORY` / `LOG_SNAPSHOT`）
-- `NicoChartModel` / `RankGenreJson` / `RankLogJson` — デシリアライズ用モデル
+- `DB` — DB ファイルパス定数（`LOG_OFFICEIAL` / `NiCORAN_HISTORY` / `LOG_SNAPSHOT`）
+- `RankGenreJson` / `RankLogJson` — 公式ランキング JSON のデシリアライズ用モデル（`JsonReaderBase` / `RankApi2Json` で使用）
 
 ## output
 
@@ -136,8 +135,8 @@ AnalyzeRank():
 
 | クラス | 責務 |
 |---|---|
-| `SQLiteCtrl : ISQLiteCtrl, IDisposable` | SQLite 接続管理。`Open()`（Pooling=False / WAL / DefaultTimeout=30 + PRAGMA 4種・失敗時継続）/ `OpenInMemory()`（テスト用）/ `Close()` / `Dispose()`。同一 DataSource は再オープンしない |
-| `ISQLiteCtrl` | SQLite 操作の抽象化（テストでインメモリ実装に差し替え） |
+| `SQLiteCtrl : ISQLiteCtrl, IDisposable` | SQLite 接続管理（`Microsoft.Data.Sqlite 10.0.11` + `SQLitePCLRaw 2.1.12`）。`Open()`（`Data Source="<path>";Pooling=False;Default Timeout=30` 文字列構築 + PRAGMA 4種・失敗時継続。`lib` 集約で `probing`）/ `OpenInMemory()`（`Data Source=:memory:`）/ `Close()` / `Dispose()`。`Connection` は `SqliteConnection` 型 |
+| `ISQLiteCtrl` | SQLite 操作の抽象化（`SqliteConnection` 公開。テストでインメモリ実装に差し替え） |
 | `StatusLog` | 静的。`IStatusLogWriter` を注入するプラグイン方式（UI 側が実装を注入。未設定なら何も出さない） |
 | `ErrLog` | シングルトン。`nicorankerr.log` に追記（UTF8）。`Close()` で非 SilentMode ならキー入力待ち |
 | `DateConvert` | 日付 ↔ 文字列（yyyyMMdd / yyyyMMddHHmmss）変換 |

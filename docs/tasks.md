@@ -9,52 +9,11 @@
 - 各タスクは対応する **GitHub Issue 番号と関連付ける**（提案は Issue で管理。フローは `docs/proposal.md` 参照）。
 - 完了したタスクには `✅` を付け、`docs/knowledge/` を最新化し、関連する GitHub Issue を Close する。経緯・検証履歴は `docs/tasks/archive.md` に追記する。
 - ビルド: `dotnet restore` → `dotnet test UnitTest/UnitTest.csproj` が通ること。
-- ブランチ: main から作業用ブランチを切り、完了後 main にマージ。
+- ブランチ: `develop` から `feature/tXXX-*` を切り、完了後 `develop` にマージ（`--no-ff`）。`develop → main` はユーザーの明示指示時のみ（`docs/knowledge/release.md` 参照）。`main` は保護ブランチ。
 
 ---
 
 ## 未完了タスク
-
-### SQLite ライブラリ移行（System.Data.SQLite → Microsoft.Data.Sqlite）
-
-> GitHub issue #20 対応。背景・設計判断は `docs/design.md` の「SQLite 移行設計」、移行仕様は `docs/specs.md`「6. 移行仕様」を参照。
-
-#### 1. プロジェクト設定ファイルの変更
-
-- [ ] 1.1 nicorankLib.csproj の Reference を System.Data.SQLite 関連から Microsoft.Data.Sqlite に変更
-- [ ] 1.2 packages.config の System.Data.SQLite 関連パッケージを削除し Microsoft.Data.Sqlite を追加
-- [ ] 1.3 app.config の DbProviderFactories セクションを削除
-
-#### 2. SQLiteCtrl.cs の接続コード再実装
-
-- [ ] 2.1 接続文字列を `SQLiteConnectionStringBuilder` から `Data Source=<path>;Pooling=False;Default Timeout=30` 形式に変更
-- [ ] 2.2 `SQLiteConnection` → `SqliteConnection`、`SQLiteCommand` → `SqliteCommand`、`SQLiteTransaction` → `SqliteTransaction` に置き換え
-- [ ] 2.3 `using System.Data.SQLite` → `using Microsoft.Data.Sqlite` に変更
-- [ ] 2.4 ビルドが通ることを確認
-
-#### 3. 全ファイルの using 文一括置換
-
-- [ ] 3.1 31 ファイルの `using System.Data.SQLite` を `using Microsoft.Data.Sqlite` に置換
-- [ ] 3.2 ビルドエラーがないことを確認
-
-#### 4. API 呼び出しの機械的置換（残存箇所の対応）
-
-- [ ] 4.1 `SQLiteConnection` → `SqliteConnection` の置換（using 変更後の残り）
-- [ ] 4.2 `SQLiteCommand` → `SqliteCommand` の置換
-- [ ] 4.3 `SQLiteTransaction` → `SqliteTransaction` の置換
-- [ ] 4.4 `SQLiteParameter` → `SqliteParameter` の置換
-- [ ] 4.5 `SQLiteDataReader` → `SqliteDataReader` の置換
-- [ ] 4.6 `SQLiteException` → `SqliteException` の置換
-- [ ] 4.7 `CommandType` や `IsDBNull` など上記以外の非互換 API がないか確認し対応
-
-#### 5. ビルド検証と動作確認
-
-- [ ] 5.1 nicorankLib プロジェクトのビルドが成功することを確認
-- [ ] 5.2 nicorank2019 全体のビルドが成功することを確認
-- [ ] 5.3 基本的な動作（DB接続・読み取り）が従来通り動作することを確認
-- [ ] 5.4 `dotnet test UnitTest/UnitTest.csproj` が全件 PASS（移行前後の挙動一致の検証）
-
----
 
 ### テスト拡充（集計ロジック）
 
@@ -97,6 +56,8 @@
 
 | タスク | 完了日 | 主な成果物 |
 |---|---|---|
+| デッドロジック削除（NocoChartReader / NicoChartModel / AngleSharp） | 2026-08-31 | 呼び出し元ゼロの NocoChartReader・専用モデル削除、AngleSharp 依存の除去 |
+| Nicochartの仕様変更対応（別ロジックで代替） | 2026-08-31 | RankingHistory/SabunReader 改修（so40000000 未満を新着偽造として除外）、LogNicoChart.db 依存・SYSTEM.NicoChart 設定の完全削除 |
 | btreeInitPage() returns error code 11 対策 | 2026-06-03 | SQLiteCtrl 接続強化（WAL・PRAGMA・グレースフルフォールバック）、SnapShotDB 5000件バッチコミット・INSERT OR IGNORE・パラメータ再利用 |
 | SQLite 操作の単体テスト設計 | 2026-06-23 | ISQLiteCtrl 抽出、OpenInMemory、TestDbHelper、DB操作テスト（SELECT/INSERT/DDL/エラー） |
 | 単体テストの活性化（基盤） | 2026-06-23 | SDK-style csproj 化、Moq 導入、Fixtures 配置、Ranking/Config/TextUtil/StatusLog/Output のテスト（計69件） |

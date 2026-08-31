@@ -9,9 +9,10 @@ nicorank2019.sln
 ├── nicorank_SnapShot/    .NET Framework 4.8 WinForms アプリ（スナップショット取得ツール）
 ├── nicorank_oldlog/      .NET 8 コンソールアプリ（公式過去ランキング回収ツール、SDK-style）
 ├── UnitTest/             .NET Framework 4.8 MSTest テストプロジェクト（SDK-style、69件）
-├── 依存ファイル/           nicorank.xml・SQLite.Interop.dll・DB/*.db（ソリューションフォルダ）
+├── 依存ファイル/           nicorank.xml・DB/*.db（ソリューションフォルダ）
 ├── docs/                 ドキュメント（proposal / specs / design / tasks / knowledge）
 └── packages/             NuGet パッケージ（packages.config 用）
+※ SQLite マネージド DLL 4件（Microsoft.Data.Sqlite/SQLitePCLRaw.core/batteries_v2/provider.dynamic_cdecl）+ ネイティブ e_sqlite3.dll 3種（win-x64/x86/arm）はビルド時に `bin/{Debug,Release}/lib` へ配置（`lib` は出力物、ソリューション直下には存在しない。Costura 埋め込み除外）
 ```
 
 ## プロジェクト間の依存
@@ -57,7 +58,7 @@ UnitTest ──→ nicorankLib を net48 で直接テスト（インメモリ SQ
 2. **ファクトリ**: `ModeFactoryBase`（基底）/ `ModeFactoryWeekly` / `ModeFactoryTyukan` / `ModeFactroySP` — モードに合わせた入力セットアップと出力生成
 3. **集計**: `RankingAnalyze` — パイプライン制御（Input → BasicOption → calcRanking → ExtOption）
 4. **入力**: `JsonReader*`（公式ランキング JSON）/ `SPAnalyze`（IDリスト）/ `TyukanAnalyze`（中間）/ `GenreAnalyze`（ジャンル特化）
-5. **過去データ管理**: `RankingHistory` — LogOfficial.db の更新・参照、メンテ日判定、NicoChart 連携
+5. **過去データ管理**: `RankingHistory` — LogOfficial.db の更新・参照、メンテ日判定
 6. **出力**: `OutputBase` 派生（`NrmOutput` / `ResultCsv` / `ResultCsvRankDB` / `ResultJsonRankDB` / `ResultImageget*` / `ResultHistory`）
 7. **ユーティリティ**: `Config`（設定シングルトン）/ `StatusLog` / `ErrLog` / `SQLiteCtrl` / `ISQLiteCtrl` / `TextUtil` 等
 8. **ドメインモデル**: `Ranking`（集計結果1件）/ `RankGenreJson` / `RankLogJson` 等

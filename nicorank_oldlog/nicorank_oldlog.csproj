@@ -25,4 +25,9 @@
     <ProjectReference Include="..\nicorankLib\nicorankLib.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="config.json.org" />
+    <None Include="cookie.txt.org" />
+  </ItemGroup>
+
 </Project>

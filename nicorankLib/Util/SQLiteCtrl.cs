@@ -3,16 +3,38 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
+using SQLitePCL;
 
 namespace nicorankLib.Util
 {
     public class SQLiteCtrl : ISQLiteCtrl, IDisposable
     {
+        static SQLiteCtrl()
+        {
+            // SQLitePCLRaw.batteries_v2 は自アセンブリの Location を基準に
+            // runtimes/{rid}/native/e_sqlite3.dll を LoadLibrary する。
+            // Costura で埋め込むと Location が空になり探索が必ず失敗するため、
+            // FodyWeavers.xml の ExcludeAssemblies で埋め込み除外し物理 DLL として配置している。
+            // 物理配置が正しければここで初期化が成功する。失敗時は診断情報を付けて上位に伝播する。
+            try
+            {
+                Batteries_V2.Init();
+            }
+            catch (Exception ex)
+            {
+                var batteryLocation = typeof(SQLitePCL.Batteries_V2).Assembly.Location;
+                throw new InvalidOperationException(
+                    $"SQLitePCLRaw の初期化に失敗しました: {ex.Message}\n" +
+                    $"batteries_v2.dll の場所: {(string.IsNullOrEmpty(batteryLocation) ? "(埋め込み: FodyWeavers.xml の ExcludeAssemblies と AfterResolveReferences の除外、RemoveDuplicateSQLiteFiles を確認してください)" : batteryLocation)}\n" +
+                    $"lib\\SQLitePCLRaw.batteries_v2.dll と同じ lib\\runtimes\\win-x64\\native\\e_sqlite3.dll が配置されている必要があります（probing privatePath=\"lib\" + AssemblyResolve）。",
+                    ex);
+            }
+        }
         /// <summary>
         /// 実際のDB操作を行うクラス
         /// </summary>
-        public SQLiteConnection Connection { get; protected set; }
+        public SqliteConnection Connection { get; protected set; }
 
         /// <summary>
         /// 接続先を開いているかどうか
@@ -64,23 +86,14 @@ namespace nicorankLib.Util
             this.DataSource = sDataSource;
 
             //DBの接続処理
-            var builder = new SQLiteConnectionStringBuilder()
-            {
-                DataSource = this.DataSource,
-                // プーリングは環境によって問題を起こすことがあるため無効にする
-                Pooling = false,
-                // デフォルトで WAL を使用する
-                JournalMode = SQLiteJournalModeEnum.Wal,
-                // タイムアウトを少し長めに設定
-                DefaultTimeout = 30
-            };
-            this.Connection = new SQLiteConnection(builder.ToString());
+            var connectionString = $"Data Source={this.DataSource};Pooling=False;Default Timeout=30";
+            this.Connection = new SqliteConnection(connectionString);
             Connection.Open();
 
             // PRAGMA を明示的に設定して書き込み中の破損リスクを低減する
             try
             {
-                using (var cmd = new SQLiteCommand(Connection))
+                using (var cmd = Connection.CreateCommand())
                 {
                     // WAL モードと同期設定
                     cmd.CommandText = "PRAGMA journal_mode = WAL;";
@@ -145,11 +158,8 @@ namespace nicorankLib.Util
 
             this.DataSource = ":memory:";
 
-            var builder = new SQLiteConnectionStringBuilder()
-            {
-                DataSource = this.DataSource
-            };
-            this.Connection = new SQLiteConnection(builder.ToString());
+            var connectionString = $"Data Source={this.DataSource}";
+            this.Connection = new SqliteConnection(connectionString);
             Connection.Open();
 
             this.IsOpen = true;

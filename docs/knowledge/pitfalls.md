@@ -32,6 +32,45 @@
 
 - プーリングは**環境によって問題を起こすことがある**ため無効化（`Pooling=False`）
 
+### 4b. Microsoft.Data.Sqlite 移行時の非互換
+
+- `new SQLiteCommand(connection)` → `connection.CreateCommand()`（単引数コンストラクタが存在しない）
+- `SQLiteConnection.CreateFile(path)` → `System.IO.File.Create(path).Dispose()`（同等の静的メソッドが存在しない）
+- `SQLiteParameter` の型指定は `System.Data.DbType` ではなく `SqliteType`（`String`→`Text`、`Int64`→`Integer`）
+- `Connection.BeginTransaction()` の戻り値は `DbTransaction` のため `SqliteCommand.Transaction` への代入時に `(SqliteTransaction)` キャストが必要
+- 接続文字列は `SQLiteConnectionStringBuilder` ではなく `Data Source="<path>";Pooling=False;Default Timeout=30` の文字列連結で構築
+- ライブラリ本体は `Microsoft.Data.Sqlite.Core` の `lib/netstandard2.0/Microsoft.Data.Sqlite.dll` に存在（`Microsoft.Data.Sqlite` パッケージは空のメタパッケージ）
+- `packages.config` 形式では `packages.config` への列挙だけでは `CopyLocal` されず、`csproj` への `Reference` 追加が必須（`SQLitePCLRaw.core` / `batteries_v2` / `provider.dynamic_cdecl` の 3件を `HintPath` + `Private=True` で追加。`Version`/`PublicKeyToken` は `AssemblyName.GetAssemblyName` の実値と一致させる。例: `batteries_v2` は `8226ea5df37bcae9`、`provider.dynamic_cdecl` は `b68184102cba0b3b`）
+- `e_sqlite3.dll` ネイティブは `runtimes/win-{x64,x86,arm}/native/e_sqlite3.dll` を `Content` + `CopyToOutputDirectory` と `buildTransitive/net461/SQLitePCLRaw.lib.e_sqlite3.targets` の明示 Import で `bin/runtimes` にコピー（`SQLitePCLRaw.lib.e_sqlite3` は `build/` がなく `buildTransitive` のみのため `packages.config` では自動 Import されない。両方併用で確実にコピー）
+
+### 4c. `lib` サブフォルダ集約と `Costura` 埋め込み除外（2026-08 大規模トラブル）
+
+- **背景**: `System.Data.SQLite 1.0.118` → `Microsoft.Data.Sqlite 10.0.11` / `SQLitePCLRaw 2.1.12` 移行時に `bin` 直下の `Dll` 散乱を避けるため `lib` サブフォルダに集約。`SQLitePCLRaw.batteries_v2` は自 `Assembly.Location` を基準に `runtimes/{rid}/native/e_sqlite3.dll` を `NativeLibrary.TryLoad` するため、埋め込むと `Location=""` になり必ず `e_sqlite3 not found` となる。
+- **対策**:
+  - 5 DLL (`Microsoft.Data.Sqlite.dll` / `SQLitePCLRaw.core.dll` / `batteries_v2.dll` / `provider.dynamic_cdecl.dll` / `provider.e_sqlite3.dll`(3.xのみ)) と `runtimes/win-{x64,x86,arm,arm64}/native/e_sqlite3.dll` を **同一親 `lib` 配下** に配置。`lib` と `lib\runtimes` が別親だと `batteries_v2` の `Location` 基準探索が失敗する。
+  - `csproj` の `Reference` は `Private=False` ではなく `FodyWeavers.xml` の `<Costura ExcludeAssemblies="SQLitePCLRaw.core|SQLitePCLRaw.batteries_v2|SQLitePCLRaw.provider.dynamic_cdecl|SQLitePCLRaw.provider.e_sqlite3|Microsoft.Data.Sqlite" />` と `AfterResolveReferences` ターゲットの `EmbeddedResource` 除外で二重に埋め込み抑止。`Private=False` だけでは `ProjectReference` 経由で `ReferenceCopyLocalPaths` に残り `Costura` が再埋め込みするため。
+  - 実行 `EXE` 側にも同じ `None/Content` を冗長配置（`ProjectReference` の `None` は `transitive` で流れない場合がある）。`probing privatePath="lib"` を `App.config` に加え、`Program.cs` の `AssemblyResolve` で `lib\*.dll` へのフォールバックを実装。
+  - `FodyWeavers.xml` は `DisableCleanup="true"` を併用し `Costura` の `cleanup` が `lib` の物理 `Dll` を削除しないようにする。
+
+### 4d. `SQLitePCLRaw.lib.e_sqlite3` の `AnyCPU` 禁止と `Prefer32Bit`（2026-08）
+
+- `3.53.3` は `build/net471/SQLitePCLRaw.lib.e_sqlite3.props` で `Platform==AnyCPU && RuntimeIdentifier==""` の場合に `error : This package does not support Any CPU builds` を出す。`net48` の `AnyCPU` ビルドが必ず失敗する。
+- **対策**: `csproj` 末尾に空ターゲット `<Target Name="CheckForAnyCPU" />` を後勝ち定義して上書き無効化。`x64` 必須/`ARM` 任意のため `AnyCPU` でも手動で `lib\runtimes` を配置して動的ロードで対応する。
+- `AnyCPU` で `Prefer32Bit` 未指定は `64bit` 起動だが、VS テンプレート既定は `true` のため `32bit` で起動し `win-x86` を探す。`x64` 必須化のため `nicorank2019.csproj:19` の `Debug|AnyCPU` に `<Prefer32Bit>false</Prefer32Bit>` を明示し `64bit` 起動で `win-x64` を使用。`win-x86` は削除せず `win-x64/x86/arm` の3種を同梱して互換性を維持（`x86` 不要だが `32bit` フォールバック用）。
+
+### 4e. `System.ValueTuple` / `bindingRedirect` の落とし穴（2026-08）
+
+- `System.Memory 4.6.3` 等は `System.ValueTuple 4.0.2.0` に依存するが、`.NET 4.8` の `GAC` は `4.0.0.0`、`System.ValueTuple 4.6.2` のパッケージは `4.0.5.0`。`nuget` 更新で `System.ValueTuple` の参照が `GAC` の `<Reference Include="System.ValueTuple" />` のまま `CopyLocal=false` になると `bin` に `System.ValueTuple.dll` が出力されず `FileNotFoundException: System.ValueTuple 4.0.2.0` となる。
+- **対策**:
+  - `nicorankLib.csproj:233` を `HintPath` 付き `System.ValueTuple 4.0.5.0` (`..\packages\System.ValueTuple.4.6.2\lib\net47\System.ValueTuple.dll`) に変更し `CopyLocal` 化。
+  - `None` で `System.ValueTuple.dll` を `CopyToOutputDirectory` で `bin` 直下に手動配置。`PostBuildEvent` の `del System.*` は `System.ValueTuple` を除外（現在は `del System.*` 自体を廃止し `System.Buffers/Memory` 等のみ個別削除）。
+  - `App.config` の `bindingRedirect` は `SQLitePCLRaw.core 2.1.12.3116` と `System.ValueTuple 4.0.5.0` を単一 `assemblyBinding` 内に集約し `probing` と分離。`AutoGenerateBindingRedirects=true` のままでは二重 `assemblyBinding` が生成され後者が無視されるため `csproj:14` で `false` にし手動管理。
+
+### 4f. `packages.config` と `buildTransitive` の不一致（2026-08）
+
+- `SQLitePCLRaw.lib.e_sqlite3 2.1.12` は `build/` がなく `buildTransitive/net461` のみ。`packages.config` 形式では自動 `Import` されないため `csproj` で `Import Project="..\packages\...\buildTransitive\net461\..."` を明示。`EnsureNuGetPackageBuildImports` の `Exists` チェックも `buildTransitive\net461` に合わせる。存在しない `build\net471\*.props` をチェックすると `MSB3030` で必ず失敗する。
+- `nuget` 更新で `Microsoft.Data.Sqlite 10.0.11` ( `net48` 依存は `2.1.12` ) に対して `3.0.5/3.53.3` を手動で入れると `UnitTest` の `PackageReference` と競合し `MSB3277` で `2.1.12` が優先されて `Batteries_V2.Init() → 3.0.5` の `FileLoadException` となる。`net48` では `2.1.12` に統一すること。
+
 ---
 
 ## ニコニコ API 関連
@@ -91,8 +130,9 @@
 ### 12. 公式チャンネル動画（so）の再公開問題
 
 - so 動画は非公開→再公開で**投稿日時が更新される**（更新条件は不明）
-- 本ツールの DB は 2019 年以前の情報を持たないため、その補完に nicochart.jp を利用（`CheckSoMovieNeedSabun`）
-- 補完がないと「2026年に100万再生した」という実態と合わない扱いになる
+- 本ツールの DB は 2019 年以前の情報を持たないため、以前は nicochart.jp の TSV で過去数字を補完していた
+- nicochart.jp が利用できなくなったため補完機能を廃止（#23・2026-08）。代替として、過去ログに差分が取れない so 動画は **ID 番号で判定**する: so40000000 未満は新着偽造（再公開）として集計対象外、so40000000 以上は新着として扱う
+- so ID の数字部分は一般動画（sm 等）と共通の採番とみなしている。ID の割り当てルールが変わった場合は閾値を見直す
 
 ### 13. ビルド・環境の注意
 
@@ -107,3 +147,12 @@
 - **対処**: opencode アプリを**再起動**すればレジストリの PATH が反映される（gh の再インストール・PATH 再設定は不要）
 - **注意**: opencode のシェルは PowerShell プロファイルを読まないため、プロファイルへの PATH 追記は無効
 - **代替**: 再起動前はフルパス `& "C:\Program Files\GitHub CLI\gh.exe"` で実行可能
+
+### 15. 将来対応時の再発防止（Issue #20 関連）
+
+- **背景**: `SQLite` 移行後に残る将来タスクは `NuGet.config` 移行 / `EF6` 関連セクション削除（`entityFramework` 自体は保持、`SQLite.EF6 provider` 行のみ） / `.NET Core/.NET 5+` 移行（未決定） / `DB` ファイルパス変更・新機能追加。いずれも本件と同様に `packages.config` / `csproj` / `App.config` / `FodyWeavers.xml` を横断するため同じ落とし穴に再遭遇しやすい。
+- **NuGet.config 移行時**: `packages.config` → `PackageReference` に変える際は `csproj` の `Reference` + `HintPath` + `Private` / `EnsureNuGetPackageBuildImports` / `Import` / `FodyWeavers.xml` / `App.config` の `bindingRedirect` / `lib` の `None/Content` を **同時** に更新すること。片方だけ更新すると `MSB3030`（`HintPath` の `packages\*.dll` が見つからない）や `MSB3277`（`System.*` の二重バージョン）で即失敗する。移行後は `AutoGenerateBindingRedirects` の二重 `assemblyBinding` に注意（`4e` 参照）。
+- **EF6 削除時**: `App.config` / `nicorankLib/app.config` の `<entityFramework>` / `<DbProviderFactories>` から `SQLite.EF6` のみ削除し、`System.Data.SQLite.EF6` の `Reference` も同時に削除。`System.Data.SQLite` 本体が残っていると `Costura` が再び `e_sqlite3` を `runtimes` 直下にコピーしようとして `lib` 集約と競合する。
+- **.NET Core 移行時**: `Costura.Fody` は `net8.0` では不要（単一ファイル発行は `PublishSingleFile`）。`SQLitePCLRaw` の `AnyCPU` 禁止は `3.53` 以降で顕在化するため `CheckForAnyCPU` 空ターゲットや `RuntimeIdentifier` の扱いを再確認。`Microsoft.Data.Sqlite` の `net48` 依存は `2.1.12` だが `net8.0` では `3.0.5/3.53.3` のため `TargetFramework` ごとに `Condition` 分岐が必要。`System.ValueTuple` は `net8.0` では `Inbox` のため `HintPath` 追加は不要。
+- **DB パス変更時**: `DB.cs` の定数と `PostBuildEvent` の `xcopy` 元を同時更新。`lib` 集約と同様に `Probing` や `AssemblyResolve` の対象パスが変わるため `SQLiteCtrl` の診断メッセージ（`batteries_v2.dll の場所`）も更新すること。
+- **接続文字列の見送り**: `SQLiteCtrl.Open()` の接続文字列は `SqliteConnectionStringBuilder` 未使用の生連結のため `;` を含むパスは不可。現行 `DB.cs` のパスに `;` は含まれずリスク低のため今回は見送り。`DB` パス変更時に `SqliteConnectionStringBuilder` 化を検討すること。

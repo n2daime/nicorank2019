@@ -1,5 +1,5 @@
 using System;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using nicorankLib.Util;
@@ -18,19 +18,19 @@ namespace UnitTest.nicorankLib.Util
                 db.OpenInMemory();
                 TestDbHelper.CreateSnapshotRankingTable(db);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE TYPE='table' AND name='Ranking'";
                     Assert.AreEqual(1L, cmd.ExecuteScalar());
                 }
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "INSERT INTO Ranking(ID, 再生数, コメント数, マイリスト数, いいね数) VALUES('sm1',100,10,5,2)";
                     cmd.ExecuteNonQuery();
                 }
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT COUNT(*) FROM Ranking";
                     Assert.AreEqual(1L, cmd.ExecuteScalar());
@@ -46,13 +46,13 @@ namespace UnitTest.nicorankLib.Util
                 db.OpenInMemory();
                 TestDbHelper.CreateDBVersionTable(db);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "INSERT INTO DBVersion(集計日, Ver) VALUES(20200101, '1.0.0')";
                     cmd.ExecuteNonQuery();
                 }
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT Ver FROM DBVersion";
                     Assert.AreEqual("1.0.0", cmd.ExecuteScalar().ToString());
@@ -68,7 +68,7 @@ namespace UnitTest.nicorankLib.Util
                 db.OpenInMemory();
                 TestDbHelper.CreateLastResultTable(db);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "PRAGMA table_info('LastResult');";
                     using (var reader = cmd.ExecuteReader())
@@ -97,7 +97,7 @@ namespace UnitTest.nicorankLib.Util
                 TestDbHelper.CreateLastResultTable(db);
 
                 bool likeFieldExists = false;
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "PRAGMA table_info('LastResult');";
                     using (var reader = cmd.ExecuteReader())
@@ -115,7 +115,7 @@ namespace UnitTest.nicorankLib.Util
                 Assert.IsTrue(likeFieldExists);
 
                 bool nonExistentFieldExists = false;
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "PRAGMA table_info('LastResult');";
                     using (var reader = cmd.ExecuteReader())
@@ -141,20 +141,20 @@ namespace UnitTest.nicorankLib.Util
             {
                 db.OpenInMemory();
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "CREATE TABLE TestAlter (ID TEXT PRIMARY KEY, 名前 TEXT)";
                     cmd.ExecuteNonQuery();
                 }
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "ALTER TABLE TestAlter ADD 備考 TEXT DEFAULT ''";
                     cmd.ExecuteNonQuery();
                 }
 
                 bool columnExists = false;
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "PRAGMA table_info('TestAlter');";
                     using (var reader = cmd.ExecuteReader())
@@ -180,13 +180,13 @@ namespace UnitTest.nicorankLib.Util
             {
                 db.OpenInMemory();
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "CREATE TABLE TestCols (ID TEXT PRIMARY KEY)";
                     cmd.ExecuteNonQuery();
                 }
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText =
                         "ALTER TABLE TestCols ADD Col1 INTEGER DEFAULT 0; " +
@@ -196,7 +196,7 @@ namespace UnitTest.nicorankLib.Util
                 }
 
                 int columnCount = 0;
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "PRAGMA table_info('TestCols');";
                     using (var reader = cmd.ExecuteReader())
@@ -216,7 +216,7 @@ namespace UnitTest.nicorankLib.Util
                 db.OpenInMemory();
                 TestDbHelper.CreateRankingDateTable(db);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT * FROM sqlite_master WHERE TYPE='table' AND name='RankingDate'";
                     using (var reader = cmd.ExecuteReader())
@@ -225,7 +225,7 @@ namespace UnitTest.nicorankLib.Util
                     }
                 }
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT * FROM sqlite_master WHERE TYPE='table' AND name='NonExistentTable'";
                     using (var reader = cmd.ExecuteReader())
@@ -242,14 +242,14 @@ namespace UnitTest.nicorankLib.Util
             var attachFile = Path.GetTempFileName();
             try
             {
-                SQLiteConnection.CreateFile(attachFile);
+                System.IO.File.Create(attachFile).Dispose();
                 using (var mainDb = new SQLiteCtrl())
                 using (var attachDb = new SQLiteCtrl())
                 {
                     mainDb.OpenInMemory();
                     attachDb.Open(attachFile);
 
-                    using (var cmd = new SQLiteCommand(attachDb.Connection))
+                    using (var cmd = attachDb.Connection.CreateCommand())
                     {
                         cmd.CommandText = "CREATE TABLE AttachedTbl (ID TEXT PRIMARY KEY)";
                         cmd.ExecuteNonQuery();
@@ -257,19 +257,19 @@ namespace UnitTest.nicorankLib.Util
                         cmd.ExecuteNonQuery();
                     }
 
-                    using (var cmd = new SQLiteCommand(mainDb.Connection))
+                    using (var cmd = mainDb.Connection.CreateCommand())
                     {
                         cmd.CommandText = $"ATTACH DATABASE '{attachFile.Replace("'", "''")}' AS Extra";
                         cmd.ExecuteNonQuery();
                     }
 
-                    using (var cmd = new SQLiteCommand(mainDb.Connection))
+                    using (var cmd = mainDb.Connection.CreateCommand())
                     {
                         cmd.CommandText = "SELECT ID FROM Extra.AttachedTbl";
                         Assert.AreEqual("attached_data", cmd.ExecuteScalar().ToString());
                     }
 
-                    using (var cmd = new SQLiteCommand(mainDb.Connection))
+                    using (var cmd = mainDb.Connection.CreateCommand())
                     {
                         cmd.CommandText = "DETACH DATABASE Extra";
                         cmd.ExecuteNonQuery();

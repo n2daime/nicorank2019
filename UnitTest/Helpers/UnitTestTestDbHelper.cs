@@ -1,5 +1,5 @@
 using System;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using nicorankLib.Util;
 using UnitTest.Helpers;
@@ -27,7 +27,7 @@ namespace UnitTest.Helpers
                 TestDbHelper.CreateRankingTable(db);
                 TestDbHelper.InsertRankingData(db, "sm1", 20200101, 100, 10, 5, 2);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT COUNT(*) FROM Ranking WHERE ID='sm1'";
                     Assert.AreEqual(1L, cmd.ExecuteScalar());
@@ -43,7 +43,7 @@ namespace UnitTest.Helpers
                 TestDbHelper.CreateMovieTable(db);
                 TestDbHelper.InsertMovieData(db, "sm1", 20191201000000, "TestMovie");
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT タイトル FROM Movie WHERE ID='sm1'";
                     Assert.AreEqual("TestMovie", cmd.ExecuteScalar().ToString());
@@ -58,7 +58,7 @@ namespace UnitTest.Helpers
             {
                 TestDbHelper.CreateRankingDateTable(db);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "INSERT INTO RankingDate(集計日) VALUES(20200101)";
                     cmd.ExecuteNonQuery();
@@ -76,7 +76,7 @@ namespace UnitTest.Helpers
                 TestDbHelper.CreateNicovideoThumbTable(db);
                 TestDbHelper.InsertNicovideoThumbData(db, 20200101, "sm1", 1, "<thumb><status>ok</status></thumb>");
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT Status FROM NicovideoThumb WHERE ID='sm1'";
                     Assert.AreEqual(1L, cmd.ExecuteScalar());
@@ -91,7 +91,7 @@ namespace UnitTest.Helpers
             {
                 TestDbHelper.CreateHistoryTable(db);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "INSERT INTO History(集計日, ID, 総合ランク, ポイント, 再生数, コメント数, マイリスト数) VALUES(20200101,'sm1',1,100,10,5,2)";
                     cmd.ExecuteNonQuery();
@@ -108,7 +108,7 @@ namespace UnitTest.Helpers
             {
                 TestDbHelper.CreateLastResultTable(db);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "INSERT INTO LastResult(種別, ID, ポイント) VALUES('genre','sm1',100)";
                     cmd.ExecuteNonQuery();
@@ -125,7 +125,7 @@ namespace UnitTest.Helpers
             {
                 TestDbHelper.CreateDBVersionTable(db);
 
-                using (var cmd = new SQLiteCommand(db.Connection))
+                using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "INSERT INTO DBVersion(集計日, Ver) VALUES(20200101, '1.0.0')";
                     cmd.ExecuteNonQuery();

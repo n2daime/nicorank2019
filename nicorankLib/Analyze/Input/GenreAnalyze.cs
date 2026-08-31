@@ -1,8 +1,8 @@
-﻿using nicorankLib.Analyze.model;
+using nicorankLib.Analyze.model;
 using nicorankLib.Util;
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 
 namespace nicorankLib.Analyze.Input
 {
@@ -35,7 +35,7 @@ namespace nicorankLib.Analyze.Input
                     StatusLog.WriteLine($"{DB.LOG_OFFICEIAL}が開けません");
                     return false;
                 }
-                using (var aCmd = new SQLiteCommand(dbCtrl.Connection))
+                using (var aCmd = dbCtrl.Connection.CreateCommand())
                 {
                     aCmd.CommandText =
                         $@"SELECT Movie.ID as ID , Movie.タイトル , Movie.投稿日 FROM Movie

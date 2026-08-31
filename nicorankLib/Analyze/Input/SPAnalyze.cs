@@ -1,9 +1,9 @@
-﻿using nicorankLib.Analyze.model;
+using nicorankLib.Analyze.model;
 using nicorankLib.Util;
 using nicorankLib.Util.Text;
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 
 namespace nicorankLib.Analyze.Input
 {

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using nicorankLib.Util;
 
 namespace UnitTest.Helpers
@@ -16,7 +16,7 @@ namespace UnitTest.Helpers
 
         public static void CreateRankingTable(ISQLiteCtrl dbCtrl)
         {
-            using (var cmd = new SQLiteCommand(dbCtrl.Connection))
+            using (var cmd = dbCtrl.Connection.CreateCommand())
             {
                 cmd.CommandText = @"
                     CREATE TABLE IF NOT EXISTS Ranking (
@@ -34,7 +34,7 @@ namespace UnitTest.Helpers
 
         public static void CreateMovieTable(ISQLiteCtrl dbCtrl)
         {
-            using (var cmd = new SQLiteCommand(dbCtrl.Connection))
+            using (var cmd = dbCtrl.Connection.CreateCommand())
             {
                 cmd.CommandText = @"
                     CREATE TABLE IF NOT EXISTS Movie (
@@ -48,7 +48,7 @@ namespace UnitTest.Helpers
 
         public static void CreateRankingDateTable(ISQLiteCtrl dbCtrl)
         {
-            using (var cmd = new SQLiteCommand(dbCtrl.Connection))
+            using (var cmd = dbCtrl.Connection.CreateCommand())
             {
                 cmd.CommandText = @"
                     CREATE TABLE IF NOT EXISTS RankingDate (
@@ -61,7 +61,7 @@ namespace UnitTest.Helpers
 
         public static void CreateNicovideoThumbTable(ISQLiteCtrl dbCtrl)
         {
-            using (var cmd = new SQLiteCommand(dbCtrl.Connection))
+            using (var cmd = dbCtrl.Connection.CreateCommand())
             {
                 cmd.CommandText = @"
                     CREATE TABLE IF NOT EXISTS NicovideoThumb (
@@ -76,7 +76,7 @@ namespace UnitTest.Helpers
 
         public static void CreateLastResultTable(ISQLiteCtrl dbCtrl)
         {
-            using (var cmd = new SQLiteCommand(dbCtrl.Connection))
+            using (var cmd = dbCtrl.Connection.CreateCommand())
             {
                 cmd.CommandText = @"
                     CREATE TABLE IF NOT EXISTS LastResult (
@@ -102,7 +102,7 @@ namespace UnitTest.Helpers
 
         public static void CreateHistoryTable(ISQLiteCtrl dbCtrl)
         {
-            using (var cmd = new SQLiteCommand(dbCtrl.Connection))
+            using (var cmd = dbCtrl.Connection.CreateCommand())
             {
                 cmd.CommandText = @"
                     CREATE TABLE IF NOT EXISTS History (
@@ -121,7 +121,7 @@ namespace UnitTest.Helpers
 
         public static void CreateLastResultInfoTable(ISQLiteCtrl dbCtrl)
         {
-            using (var cmd = new SQLiteCommand(dbCtrl.Connection))
+            using (var cmd = dbCtrl.Connection.CreateCommand())
             {
                 cmd.CommandText = @"
                     CREATE TABLE IF NOT EXISTS LastResultInfo (
@@ -135,7 +135,7 @@ namespace UnitTest.Helpers
 
         public static void CreateDailylogTable(ISQLiteCtrl dbCtrl)
         {
-            using (var cmd = new SQLiteCommand(dbCtrl.Connection))
+            using (var cmd = dbCtrl.Connection.CreateCommand())
             {
                 cmd.CommandText = @"
                     CREATE TABLE IF NOT EXISTS Dailylog (
@@ -173,7 +173,7 @@ namespace UnitTest.Helpers
 
         public static void CreateSnapshotRankingTable(ISQLiteCtrl dbCtrl)
         {
-            using (var cmd = new SQLiteCommand(dbCtrl.Connection))
+            using (var cmd = dbCtrl.Connection.CreateCommand())
             {
                 cmd.CommandText = @"
                     CREATE TABLE IF NOT EXISTS Ranking (
@@ -189,7 +189,7 @@ namespace UnitTest.Helpers
 
         public static void CreateDBVersionTable(ISQLiteCtrl dbCtrl)
         {
-            using (var cmd = new SQLiteCommand(dbCtrl.Connection))
+            using (var cmd = dbCtrl.Connection.CreateCommand())
             {
                 cmd.CommandText = @"
                     CREATE TABLE IF NOT EXISTS DBVersion (
@@ -202,7 +202,7 @@ namespace UnitTest.Helpers
 
         public static void InsertRankingData(ISQLiteCtrl dbCtrl, string id, int syuukeiBi, int play, int comment, int mylist, int like, string tags = "[]")
         {
-            using (var cmd = new SQLiteCommand(dbCtrl.Connection))
+            using (var cmd = dbCtrl.Connection.CreateCommand())
             {
                 cmd.CommandText = @"INSERT INTO Ranking(ID, 集計日, 再生数, コメント数, マイリスト数, いいね数, 人気のタグ)
                                     VALUES(@ID, @集計日, @再生数, @コメント数, @マイリスト数, @いいね数, @人気のタグ)";
@@ -219,7 +219,7 @@ namespace UnitTest.Helpers
 
         public static void InsertMovieData(ISQLiteCtrl dbCtrl, string id, long date, string title)
         {
-            using (var cmd = new SQLiteCommand(dbCtrl.Connection))
+            using (var cmd = dbCtrl.Connection.CreateCommand())
             {
                 cmd.CommandText = @"INSERT INTO Movie(ID, 投稿日, タイトル) VALUES(@ID, @投稿日, @タイトル)";
                 cmd.Parameters.AddWithValue("@ID", id);
@@ -231,7 +231,7 @@ namespace UnitTest.Helpers
 
         public static void InsertNicovideoThumbData(ISQLiteCtrl dbCtrl, int getDate, string id, int status, string xml)
         {
-            using (var cmd = new SQLiteCommand(dbCtrl.Connection))
+            using (var cmd = dbCtrl.Connection.CreateCommand())
             {
                 cmd.CommandText = @"INSERT INTO NicovideoThumb(取得日, ID, Status, XML) VALUES(@取得日, @ID, @Status, @XML)";
                 cmd.Parameters.AddWithValue("@取得日", getDate);
