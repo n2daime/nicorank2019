@@ -323,8 +323,7 @@
     </PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PostBuildEvent>del AngleSharp*
-del EntityFramework*
+    <PostBuildEvent>del EntityFramework*
 del Microsoft.Win32.Primitives*
 del netstandard*
 del Newtonsoft.Json*

@@ -15,6 +15,10 @@
 
 ## 未完了タスク
 
+### デッドロジック削除（NocoChartReader / NicoChartModel / AngleSharp）
+
+> GitHub issue #24 対応。呼び出し元ゼロの `NocoChartReader` とその専用モデル・AngleSharp 依存を削除。詳細は issue を参照。
+
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。
