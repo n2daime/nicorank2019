@@ -81,7 +81,7 @@
 		<ResultCsv Code="0" />
 
 		<!-- マルチスレッドが有効な処理での最大のスレッド数 --> 
-		<Thread Max="16" />
+		<Thread Max="6" />
 		
 		<Download>
 			<NicoAPI Retry="20" /><!-- SPとかに影響-->
