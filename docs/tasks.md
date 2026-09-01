@@ -15,6 +15,10 @@
 
 ## 未完了タスク
 
+### 配布 zip 展開時の MOTW で SQLiteCtrl のタイプ初期化が失敗する対処
+
+> GitHub issue #26 対応。GitHub Release 配布 zip をエクスプローラで展開すると DLL に MOTW(Zone.Identifier)が付き、SQLiteCtrl のタイプ初期化が失敗する。App.config へ `loadFromRemoteSources` 追加、起動時エラー表示の改善、knowledge 更新。詳細は issue を参照。
+
 ### ビルド警告の対処と未使用 AngleSharp の削除
 
 > GitHub issue #25 対応。Release ビルドの警告 5 件（MSB3276 / CS0414 / CS0168×3）の対処と、`nicorank_oldlog` から未使用の AngleSharp PackageReference を削除（Dependabot #10）。詳細は issue を参照。

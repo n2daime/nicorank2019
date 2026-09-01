@@ -156,3 +156,11 @@
 - **.NET Core 移行時**: `Costura.Fody` は `net8.0` では不要（単一ファイル発行は `PublishSingleFile`）。`SQLitePCLRaw` の `AnyCPU` 禁止は `3.53` 以降で顕在化するため `CheckForAnyCPU` 空ターゲットや `RuntimeIdentifier` の扱いを再確認。`Microsoft.Data.Sqlite` の `net48` 依存は `2.1.12` だが `net8.0` では `3.0.5/3.53.3` のため `TargetFramework` ごとに `Condition` 分岐が必要。`System.ValueTuple` は `net8.0` では `Inbox` のため `HintPath` 追加は不要。
 - **DB パス変更時**: `DB.cs` の定数と `PostBuildEvent` の `xcopy` 元を同時更新。`lib` 集約と同様に `Probing` や `AssemblyResolve` の対象パスが変わるため `SQLiteCtrl` の診断メッセージ（`batteries_v2.dll の場所`）も更新すること。
 - **接続文字列の見送り**: `SQLiteCtrl.Open()` の接続文字列は `SqliteConnectionStringBuilder` 未使用の生連結のため `;` を含むパスは不可。現行 `DB.cs` のパスに `;` は含まれずリスク低のため今回は見送り。`DB` パス変更時に `SqliteConnectionStringBuilder` 化を検討すること。
+
+### 16. 配布 zip 展開時の MOTW でリモートゾーン DLL のロードが失敗する（Issue #26・2026-09）
+
+- **症状**: GitHub Release から DL した zip をエクスプローラで展開した環境で、起動時に `'nicorankLib.Util.SQLiteCtrl' のタイプ初期化子が例外をスローしました` が発生。配布 lib の DLL は正常環境とバイト一致しており、開発 PC でも再現する
+- **原因**: エクスプローラで zip を展開すると中の全ファイルに Zone.Identifier（MOTW, ZoneId=3）が付く。.NET Framework 4 系は `loadFromRemoteSources` 未設定のアプリでリモートゾーンのマネージ DLL のロードを `FileLoadException` で拒否するため、`lib` フォルダの `SQLitePCLRaw.core.dll` 等がロードできず `Batteries_V2.Init()` が失敗する。ネイティブの `e_sqlite3.dll` は `LoadLibrary` のため MOTW の影響を受けない
+- **対策（実装済み）**: `nicorank2019` / `nicorank_SnapShot` の `App.config` に `<loadFromRemoteSources enabled="true" />` を追加
+- **エンドユーザー向け即時回避策**: `Get-ChildItem "<展開先>\lib" -Recurse -File | Unblock-File` または各 DLL のプロパティ「許可する」
+- **切り分けの教訓**: 差分が MOTW・ACL・隠し属性などメタデータだけの場合、ファイルのバイト比較では検出できない。`Get-Item -Stream Zone.Identifier` で ADS を確認する。エラー詳細は `nicorankerr.log` に例外チェーン込みで記録されるため、ユーザー報告時はそちらを取得する

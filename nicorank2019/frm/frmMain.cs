@@ -37,13 +37,23 @@ namespace nicorank2019.frm
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"起動時にエラーが発生しました。設定項目が不正な可能性があります\n\n{ex.Message}", "システムエラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"起動時にエラーが発生しました。設定項目が不正な可能性があります\n\n{GetExceptionMessages(ex)}", "システムエラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 ErrLog.GetInstance().Write(ex);
                 Application.Exit();
             }
         }
 
 
+
+        private static string GetExceptionMessages(Exception ex)
+        {
+            var messages = new List<string>();
+            for (var e = ex; e != null; e = e.InnerException)
+            {
+                messages.Add(e.Message);
+            }
+            return string.Join("\n→ ", messages);
+        }
 
         private async void btnAnalyze_Click(object sender, EventArgs e)
         {
@@ -82,7 +92,7 @@ namespace nicorank2019.frm
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "システムエラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(GetExceptionMessages(ex), "システムエラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {

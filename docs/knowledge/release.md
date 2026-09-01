@@ -139,6 +139,7 @@ GitHub Release に添付する zip の内容は以下を厳守する。**ユー�
 - [ ] 関連する GitHub Issue の状態を確認（クローズ方針は `develop` 側の運用に従う）
 - [ ] `develop` で `dotnet restore` + `dotnet test UnitTest/UnitTest.csproj` が全件 PASS
 - [ ] `develop` で `bin\Release\lib\` に `Microsoft.Data.Sqlite.dll` 等 4件 + `lib\runtimes\win-{x64,x86,arm}\native\e_sqlite3.dll` が配置されていること
+- [ ] `nicorank2019.exe.config` / `nicorank_SnapShot.exe.config` に `<loadFromRemoteSources enabled="true" />` が含まれていること（#26。旧 config が混入すると GitHub から DL した zip 展開時の MOTW で SQLiteCtrl のタイプ初期化が失敗する）
 - [ ] `bin\Release\nicorank.xml` が `依存ファイル/nicorank.xml` と一致していること（PostBuildEvent の xcopy はビルド方式・タイミングによって反映が保証されない。廃止済み設定が残った古い版が zip に入った実例あり。差異があれば手動コピーしてから zip 化する）
 - [ ] リリース成果物（zip）がホワイトリスト通りであること（パターンA: `nicorank2019.exe` / `nicorank.xml.org` / `nicorank2019.exe.config` / `lib\*.*` のみ、パターンB: `nicorank_SnapShot.exe` / `exe.config` / `lib\*.*` のみ、パターンC: `nicorank_oldlog.exe` / `dll` / `runtimeconfig.json` / `config.json.org` / `cookie.txt.org` のみ。`DB/*.db` / `*.org` でない設定本体 / `*.pdb` / `Output/` / `System.*.dll` 直下等が含まれていないこと。上記「リリース成果物のルール」参照）
 - [ ] 実機で集計（週刊/中間/SP）が通ることの確認（`develop` のビルド成果物で確認）
@@ -193,6 +194,7 @@ git push origin develop
 - 導入手順は **「上書き更新する場合（既存ユーザー）」と「新規に導入する場合」に分離**する
 - 旧環境の不要ファイルの削除指示を含める（例: 旧 SQLite ライブラリの `x64` / `x86` フォルダ、廃止した DB。**残っていても動作するものは「削除してかまわない」と表記**）
 - 既存ユーザーの設定ファイルはそのまま使い続けられる旨を明記する（設定廃止時は「残っていても無視される」を添える）
+- `exe` と `exe.config` は**セットで上書き**するよう案内する（`loadFromRemoteSources` は `exe.config` に含まれる。exe だけ差し替えて config が旧版のままだと、GitHub から DL した zip を展開した際の MOTW で `SQLiteCtrl` のタイプ初期化が失敗する — #26。旧版は DLL のプロパティ「許可する」または `Unblock-File` で回避可能）
 
 ### 補足
 
