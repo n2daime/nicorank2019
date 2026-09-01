@@ -97,3 +97,19 @@
   - `bin/Release/nicorank.xml` が PostBuildEvent xcopy のタイミングで更新されず、廃止済み設定（`<NicoChart>`）が残った古い版が zip に入った（ユーザー指摘で発覚）。zip 作成前に bin/Release と依存ファイルの一致確認が必要
   - PowerShell から `gh --notes` に日本語 + バッククォート入り本文を直接渡すと `` `n `` が改行に置換され文字欠けが発生 → `--notes-file` を使うべき
   - develop の未プッシュコミット push が手順の明示ステップに無かった
+
+---
+
+## 2026-09-01 リリース v20260901_nicorank
+
+- **タグ**: `v20260901_nicorank`（main `e54963f`。annotated tag でコミット位置を確認済み）
+- **GitHub Release**: https://github.com/n2daime/nicorank2019/releases/tag/v20260901_nicorank
+- **成果物**: `nicorank2019_20260901.zip`（パターンA）/ `nicorank_SnapShot_20260901.zip`（パターンB）— **初めて SnapShot を配布**（#26 の exe.config 修正が両アプリに影響するためユーザー判断で追加）
+- **含まれる変更**: #26（MOTW 対応: loadFromRemoteSources 追加・起動時エラー表示の例外チェーン化）+ 配布テンプレート `nicorank.xml` の Thread Max 既定値 16→6（ユーザー指示）
+- **検証**:
+  - main 上で `dotnet test` 69件 PASS、nicorank2019 / nicorank_SnapShot の Release ビルド EXIT=0
+  - lib 配置確認（両アプリとも 4件 + runtimes 3種）、両 exe.config に `loadFromRemoteSources enabled="true"` 含まれることを確認（今回から追加したチェック項目）
+  - `依存ファイル/nicorank.xml` と `bin\Release\nicorank.xml` のハッシュ照合で **Thread Max の不一致（16 vs 6）を検出** → 依存ファイル側を 6 に修正して統一してから zip 化（チェックリストが再び有効に機能した。bin\Release 側は実行中に書き換わるため今後も必ず確認）
+  - zip ホワイトリスト照合（不要ファイルの混入なし）、MOTW 付き lib での起動確認済み（ユーザー）
+- **実機集計確認（週刊/中間/SP）**: ユーザー判断で省略（変更が config・エラー表示のみで集計ロジックに影響しないため）
+- **備考**: Release ノートは `--notes-file` 方式（前回の知見通り）、exe と exe.config のセット上書き案内を明記。既知の Dependabot 警告（moderate × 1、Dependabot #10・#25 対応対象）は継続中
