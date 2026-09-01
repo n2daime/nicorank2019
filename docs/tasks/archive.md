@@ -67,6 +67,25 @@
 
 ---
 
+## 2026-09-01 配布 zip 展開時の MOTW で SQLiteCtrl のタイプ初期化が失敗する対処 (#26)
+
+- **Issue**: #26
+- **ブランチ**: `feature/t026-motw-loadfromremotesources` → `develop` (`ef43f81` Merge)
+- **背景**: GitHub Release(v20260831_nicorank)から配布した zip をエクスプローラで展開した環境で `'nicorankLib.Util.SQLiteCtrl' のタイプ初期化子が例外をスローしました` が発生するという報告。配布 lib の DLL は正常環境とバイト一致(SHA256)しており、開発 PC でも「テストしたい lib を lib にリネームする」手順のみで再現/解消する現象だった
+- **原因**: エクスプローラで zip を展開すると中の全ファイルに Zone.Identifier(MOTW, ZoneId=3)が付く。.NET Framework 4.8 は `loadFromRemoteSources` 未設定のアプリでリモートゾーンのマネージ DLL のロードを `FileLoadException` で拒否し、`Batteries_V2.Init()` が失敗する。ネイティブ `e_sqlite3.dll` は `LoadLibrary` のため影響を受けない
+- **切り分けの経緯**: DLL のバイト一致・exe/config 共通・実行時フォルダ名は常に lib に統一、という条件で残った差分はメタデータ(ADS/ACL/隠し属性)に絞られた。`Get-Item -Stream Zone.Identifier` で確認したところ、配布 lib の DLL は全件 MOTW あり(正常 lib はなし)。exe.config に MOTW が残っていたことも配布物展開の痕跡として手掛かりになった。なお切り分け中にテストフォルダ名のアンダースコアが半角/全角で不一致となり出力が空になる一幕があった(パス確認の重要性)
+- **実施内容**:
+  - `nicorank2019` / `nicorank_SnapShot` の App.config に `<loadFromRemoteSources enabled="true" />` を追加
+  - `frmMain.cs` の起動時/集計時のエラー表示を `ex.Message` → `GetExceptionMessages`(例外チェーン連結)に変更。従来は SQLiteCtrl が付与する診断情報(InnerException)が一行目しか見えなかった
+  - pitfalls.md 項目16 追記、release.md にリリース前チェックリスト・Release ノート指針を追記
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 69 件 PASS(EXIT CODE 0)、`dotnet build nicorank2019/nicorank2019.csproj -c Release` 成功(EXIT CODE 0)
+  - reviewer レビュー: 高・中深刻度の指摘なし。低深刻度 2 件(AggregateException 展開・循環参照防御)は見送り、理由と将来対応を Issue #26 コメントに記録
+  - ユーザー実行確認: lib DLL に MOTW を再付与した状態で新 exe + exe.config による正常起動を確認(loadFromRemoteSources の効果確認済み)
+- **残課題**: 将来 `Task.WhenAll` / 並列集計導入時に `GetExceptionMessages` へ `AggregateException` 展開を追加(Issue #26 コメント参照)
+
+---
+
 ## 2026-08-31 リリース v20260831_nicorank
 
 - **タグ**: `v20260831_nicorank`（main `d8af711`。annotated tag でコミット位置を確認済み）

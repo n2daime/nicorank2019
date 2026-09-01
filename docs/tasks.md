@@ -15,10 +15,6 @@
 
 ## 未完了タスク
 
-### 配布 zip 展開時の MOTW で SQLiteCtrl のタイプ初期化が失敗する対処
-
-> GitHub issue #26 対応。GitHub Release 配布 zip をエクスプローラで展開すると DLL に MOTW(Zone.Identifier)が付き、SQLiteCtrl のタイプ初期化が失敗する。App.config へ `loadFromRemoteSources` 追加、起動時エラー表示の改善、knowledge 更新。詳細は issue を参照。
-
 ### ビルド警告の対処と未使用 AngleSharp の削除
 
 > GitHub issue #25 対応。Release ビルドの警告 5 件（MSB3276 / CS0414 / CS0168×3）の対処と、`nicorank_oldlog` から未使用の AngleSharp PackageReference を削除（Dependabot #10）。詳細は issue を参照。
@@ -64,6 +60,7 @@
 
 | タスク | 完了日 | 主な成果物 |
 |---|---|---|
+| 配布 zip 展開時の MOTW で SQLiteCtrl のタイプ初期化が失敗する対処 | 2026-09-01 | App.config に `loadFromRemoteSources` 追加(両アプリ)、起動時エラー表示の例外チェーン化、pitfalls.md 項目16・release.md 更新 |
 | デッドロジック削除（NocoChartReader / NicoChartModel / AngleSharp） | 2026-08-31 | 呼び出し元ゼロの NocoChartReader・専用モデル削除、AngleSharp 依存の除去 |
 | Nicochartの仕様変更対応（別ロジックで代替） | 2026-08-31 | RankingHistory/SabunReader 改修（so40000000 未満を新着偽造として除外）、LogNicoChart.db 依存・SYSTEM.NicoChart 設定の完全削除 |
 | btreeInitPage() returns error code 11 対策 | 2026-06-03 | SQLiteCtrl 接続強化（WAL・PRAGMA・グレースフルフォールバック）、SnapShotDB 5000件バッチコミット・INSERT OR IGNORE・パラメータ再利用 |
