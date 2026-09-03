@@ -165,6 +165,7 @@ namespace UnitTest.nicorankLib.Util
                         Assert.IsFalse(reader.Read());
                     }
 
+                    // 3発目: 同一文の再利用でも Clear すれば問題ないことの追加確認（本番の2発を超える拡張）
                     cmd.CommandText = "SELECT * FROM Ranking WHERE ID=@ID AND 集計日>=@Date ORDER BY 集計日 LIMIT 1";
                     cmd.Parameters.Clear();
                     cmd.Parameters.AddWithValue("@ID", "sm1");
@@ -179,8 +180,9 @@ namespace UnitTest.nicorankLib.Util
         }
 
         [TestMethod]
-        public void PRAGMA判定からALTERしてINSERTする同一トランザクション_calcDailyRank型()
+        public void PRAGMA判定からALTERしてINSERTする同一トランザクション成功系_calcDailyRank型()
         {
+            // 成功系のみ再現。失敗時ロールバック→再実行の連鎖検証は対象外（Issue #22 残課題）。
             using (var db = new SQLiteCtrl())
             {
                 db.OpenInMemory();
@@ -195,7 +197,7 @@ namespace UnitTest.nicorankLib.Util
                     cmd.Transaction = (SqliteTransaction)db.Connection.BeginTransaction();
                     try
                     {
-                        // PRAGMA で列存在確認（いいね数 は未作成のはず）
+                        // PRAGMA で列存在確認（いいね数 は未作成のはず。本番は PRAGMA table_info＋ExecuteReaderループ、ここでは等価なテーブル値関数で確認）
                         cmd.CommandText = "SELECT COUNT(*) FROM PRAGMA_TABLE_INFO('Dailylog') WHERE name='いいね数'";
                         bool hasLike = Convert.ToInt64(cmd.ExecuteScalar()) > 0;
                         Assert.IsFalse(hasLike);
@@ -251,8 +253,8 @@ namespace UnitTest.nicorankLib.Util
 
         private static long GetPlayCountById(SqliteCommand cmd, string id)
         {
-            cmd.CommandText = "SELECT 再生数 FROM Ranking WHERE ID=@ID ORDER BY 集計日 DESC LIMIT 1";
             cmd.Parameters.Clear();
+            cmd.CommandText = "SELECT 再生数 FROM Ranking WHERE ID=@ID ORDER BY 集計日 DESC LIMIT 1";
             cmd.Parameters.AddWithValue("@ID", id);
             using (var reader = cmd.ExecuteReader())
             {

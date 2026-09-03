@@ -170,8 +170,8 @@
 
 - **背景**: #20 移行ではビルド成功・単体テスト全件 PASS 後に実行時テストでのみ同一コマンド再利用問題が発覚した。API 互換だけでなくランタイム挙動差分を検証する。
 - **チェック項目（移行・更新時に全件確認）**:
-  - 同一 `SqliteCommand` の使い回し箇所を `CreateCommand()` 単位で列挙し、`CommandText` 差し替え前とループ内 `AddWithValue` 前に `Parameters.Clear()` があるか確認する。`Microsoft.Data.Sqlite` では重複追加が `InvalidOperationException`（`Must add values...`）になる
+  - 同一 `SqliteCommand` の使い回し箇所を `CreateCommand()` 単位で列挙し、`CommandText` 差し替え前とループ内 `AddWithValue` 前に `Parameters.Clear()` があるか確認する。`Microsoft.Data.Sqlite` では重複追加が `InvalidOperationException`（重複バインド）になる
   - `CommandText` 差し替えでもパラメータ名が同一で追加し直さない連続実行（`ResultHistory` の SELECT→DELETE 等）は `Clear` 不要のため対象外とする。機械的に `Clear` を足さず用途で判断する
-  - `ALTER TABLE` と `INSERT` を同一トランザクションで行う箇所（`TyukanAnalyze.calcDailyRank` / `ResultHistory.Execute` 型）では、失敗時のロールバックで `ALTER` も巻き戻る連鎖を想定し、再実行時の列存在確認（`PRAGMA_TABLE_INFO`）と後続処理の列参照を検証する
+  - `ALTER TABLE` と `INSERT` を同一トランザクションで行う箇所（`TyukanAnalyze.calcDailyRank` / `ResultHistory.Execute` 型）では、失敗時のロールバックで `ALTER` も巻き戻る連鎖を想定する。回帰テストは成功系（列存在確認→`ALTER`→`INSERT`→コミット）のみ再現し、ロールバック→再実行の検証は残課題とする。再実行時の列存在確認（`PRAGMA table_info`／`PRAGMA_TABLE_INFO`）と後続処理の列参照は移行時に目視確認する
   - 単体テストは操作パターン単位だけでなく、実際の呼び出しシーケンス（差し替え・ループ・トランザクション境界）を再現する。再利用シナリオの回帰テストは `UnitTest/nicorankLib/Util/UnitTestDbCommandReuse.cs` に集約する
   - 大量登録は `db.md` のバッチ設計（バッチコミット + `INSERT OR IGNORE` + パラメータ再利用）を維持し、ループ内 `Add` ではなく `Value` 更新または毎回 `Clear` のいずれかに統一する
