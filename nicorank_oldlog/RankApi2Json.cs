@@ -432,21 +432,10 @@ namespace nicorank_oldlog
             ParallelOptions parallelOptions = new ParallelOptions();
             parallelOptions.MaxDegreeOfParallelism = 5;
 
-            if (false)
-            {// デバッグ
-                var debugTarget = this.GenreResultList.Where(x => (string?)x.genreInfo.genre == "全ジャンル").ToList();
-                foreach (var genreResult in debugTarget)
-                {
-                    analyze(genreResult);
-                }
-            }
-            else
+            Parallel.ForEach(this.GenreResultList, parallelOptions, genreResult =>
             {
-                Parallel.ForEach(this.GenreResultList, parallelOptions, genreResult =>
-                {
-                    analyze(genreResult);
-                });
-            }
+                analyze(genreResult);
+            });
             return SaveOldRankingData();
         }
 

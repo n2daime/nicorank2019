@@ -1,5 +1,4 @@
 ﻿using nicorank2019.frm;
-using nicorankLib.Analyze.model;
 using nicorankLib.Analyze.Official;
 using nicorankLib.Common;
 using nicorankLib.Factory;
@@ -20,8 +19,6 @@ namespace nicorank2019.frm
     public partial class frmMain
     {
 
-        private EAnalyzeMode eAnalyzeMode = EAnalyzeMode.Weekly;
-
         /// <summary>
         /// 集計モードを選択する
         /// </summary>
@@ -31,13 +28,11 @@ namespace nicorank2019.frm
             config.IsSP = false;
             if (rbWeekly.Checked)
             {
-                this.eAnalyzeMode = EAnalyzeMode.Weekly;
                 this.dtPAnalyzeDay.Enabled = true;
                 this.dtPLastweekDay.Enabled = true;
             }
             else if (rbTyukan.Checked)
             {
-                this.eAnalyzeMode = EAnalyzeMode.Tyukan;
                 this.dtPAnalyzeDay.Enabled = false;
                 this.dtPLastweekDay.Enabled = true;
                 this.dtPLastweekDay.Value = DateTime.Today;
@@ -45,7 +40,6 @@ namespace nicorank2019.frm
             }
             else if (rbSP.Checked)
             {
-                this.eAnalyzeMode = EAnalyzeMode.SP;
                 this.dtPAnalyzeDay.Enabled = false;
                 this.dtPLastweekDay.Enabled = false;
 

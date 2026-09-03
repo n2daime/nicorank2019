@@ -36,7 +36,7 @@
 - `RankAPI/NicoRankiApi.cs`: シングルトン。nvapi に user_session クッキー + UA を付与して GET。GenreList / TeibanGenreList / TrendTagList / GenreRanking（hasNext まで最大20ページ）/ TeibanRanking
 - `RankApi2Json.cs`: ジャンル/定番取得（失敗時3回リトライ）、ID 重複排除マージ、`lastweekly_all.json` / `lastmonthly_all.json` との更新チェック（更新なしなら5分ポーリング）
 - `RankApi2JsonDaily.cs`: 派生クラス。トレンドタグ展開 + タグ別定番ランキング追加取得
-- **ビルド**: net8.0、SDK-style。AngleSharp / Newtonsoft.Json / Costura.Fody。**nicorankLib（net48）を参照するハイブリッド構成**
+- **ビルド**: net8.0、SDK-style。Newtonsoft.Json / Costura.Fody。**nicorankLib（net48）を参照するハイブリッド構成**
 
 ## 設定ファイル（アプリ起動に必要）
 
