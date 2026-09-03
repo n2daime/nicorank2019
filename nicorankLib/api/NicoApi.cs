@@ -206,6 +206,7 @@ namespace nicorankLib.api
                             aCmd.Parameters.Clear();
                             foreach (var thmbInfo in thumbinfoList)
                             {
+                                aCmd.Parameters.Clear();
                                 aCmd.Parameters.AddWithValue("@ID", thmbInfo.Ranking.ID);
                                 aCmd.ExecuteNonQuery();
                             }
@@ -214,9 +215,11 @@ namespace nicorankLib.api
                                       @"INSERT INTO NicovideoThumb(取得日,ID,Status,XML)
                                             VALUES(@取得日,@ID,@Status,@XML)";
                             aCmd.Parameters.Clear();
-                            aCmd.Parameters.AddWithValue("@取得日", DateConvert.Time2String(DateTime.Today, false));
+                            var todayStr = DateConvert.Time2String(DateTime.Today, false);
                             foreach (var thmbInfo in thumbinfoList)
                             {
+                                aCmd.Parameters.Clear();
+                                aCmd.Parameters.AddWithValue("@取得日", todayStr);
                                 aCmd.Parameters.AddWithValue("@ID", thmbInfo.Ranking.ID);
                                 aCmd.Parameters.AddWithValue("@Status", thmbInfo.Status == "ok" ? 1 : 0);
                                 aCmd.Parameters.AddWithValue("@XML", thmbInfo.XML);

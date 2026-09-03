@@ -32,6 +32,32 @@
 
 ---
 
+### 単体テストでDB操作のビジネスロジック問題を検出できるようにする
+
+> GitHub issue #22 対応。#20移行の検証過程で実行時テストでのみ発覚した同一コマンド再利用問題の再発防止。
+
+#### 1. 残存不具合修正（nicorankLib/api/NicoApi.cs UpdateTumbInfo）
+
+- [ ] 1.1 DELETEループをループ内Clear化（2件以上更新時の重複パラメータ例外を解消）
+- [ ] 1.2 INSERTループをループ内Clear化（@取得日を含め毎回再設定）
+
+#### 2. コマンド再利用パターンの単体テスト追加（UnitTest/nicorankLib/Util/UnitTestDbCommandReuse.cs 新設）
+
+- [ ] 2.1 Clearなし重複Addで例外になることのネガティブテスト
+- [ ] 2.2 DELETEループ（NicoApi型）・DELETE→INSERT切替のテスト
+- [ ] 2.3 SELECT切替（GetRankingSabun型 BETWEEN→範囲外フォールバック）のテスト
+- [ ] 2.4 PRAGMA判定→ALTER→INSERT同一トランザクション（calcDailyRank型）のテスト
+- [ ] 2.5 外部コマンド使い回しExecuteReader（GetMovieData型）のテスト
+
+#### 3. 移行時検証チェックリスト整備
+
+- [ ] 3.1 pitfalls.md にランタイム挙動差分の確認項目を追記
+- [ ] 3.2 共通ヘルパー集約改修はスコープ外として見送り（理由をレビュー依頼文・コミットメッセージに記録）
+
+受け入れ条件: `dotnet test UnitTest/UnitTest.csproj` 全件PASS、新規テストがClear漏れを検出できること（ネガティブテストで例外確認・修正後ガードで正常確認）。
+
+---
+
 ### ニコ動APIのリクエスト組み立てを型付きリクエストへ変更
 
 > GitHub issue #19 対応。詳細は `docs/specs.md`「API 仕様」と issue を参照。
