@@ -86,6 +86,30 @@
 
 ---
 
+## 2026-09-03 ビルド警告の対処と未使用 AngleSharp の削除 (#25)
+
+- **Issue**: #25（Dependabot alert #10 の AngleSharp 脆弱性も本件で解消）
+- **ブランチ**: `feature/t025-build-warnings-anglesharp` → `develop`
+- **背景**: Release ビルドの警告 5 件（MSB3276 / CS0414 / CS0168×3）と、`nicorank_oldlog` の未使用 AngleSharp 1.1.2（脆弱性 medium）
+- **実施内容**:
+  - CS0168×3: `InternetUtil.cs` の未使用 catch 変数 `ex` を除去（`WebException ex` は使用中のため対象外）。reviewer 指摘で `ex` 参照の死にコメント 2 行も削除
+  - CS0414: `frmMainSyukei.cs` の `eAnalyzeMode`（宣言＋代入 3 件＋関連 using）を削除。`GetModeFactory` は従来通りラジオボタン直接参照。`frmMain.cs` の未使用 using も併せて削除
+  - MSB3276（A 案）: 詳細ログで競合は `System.Memory` のみと特定。両 EXE の `App.config` の redirect を `4.0.1.2` → `4.0.5.0` に修正し `nicorankLib/app.config` と整合。`AutoGenerateBindingRedirects=false` は維持（#20 の二重 `assemblyBinding` 再発防止）
+  - AngleSharp 削除: `nicorank_oldlog.csproj` から PackageReference を削除（`.cs` からの使用ゼロ確認済み）
+  - ソリューション全体ビルドで追加発覚した警告も対処（Issue 記載通り追記相当）: `RankApi2Json.cs` の `if(false)` デバッグ分岐を削除（CS0162。`Parallel.ForEach` 側のみ残し挙動不変）、Fody/Costura.Fody の `IncludeAssets` 除去（Fody 警告の推奨通り、`PrivateAssets=all` 維持）
+  - `docs/knowledge/apps.md` の依存記述から AngleSharp を除去
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 成功（EXIT CODE 0）
+  - `dotnet build nicorank2019.sln -c Release --no-incremental` で警告 0・EXIT 0
+  - reviewer レビュー: 高・中深刻度なし（マージ可判定）。低 2 件は対応済み
+  - ユーザーが週刊/中間/SP の実集計で実行確認済み（問題なし）
+- **設計判断**:
+  - `eAnalyzeMode` は削除（使う形への修正ではなく）。`GetModeFactory` との二重状態解消より最小差分を優先
+  - MSB3276 は `AutoGenerateBindingRedirects=true` 化ではなく手動 redirect 追加。`true` 化は #20 の二重化問題に逆戻りするため
+  - `nicorank_SnapShot/App.config` も同一の陳腐化 redirect だったため同時修正（ソリューション警告 0 のため）
+
+---
+
 ## 2026-08-31 リリース v20260831_nicorank
 
 - **タグ**: `v20260831_nicorank`（main `d8af711`。annotated tag でコミット位置を確認済み）

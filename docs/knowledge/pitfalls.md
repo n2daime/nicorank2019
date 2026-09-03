@@ -65,6 +65,7 @@
   - `nicorankLib.csproj:233` を `HintPath` 付き `System.ValueTuple 4.0.5.0` (`..\packages\System.ValueTuple.4.6.2\lib\net47\System.ValueTuple.dll`) に変更し `CopyLocal` 化。
   - `None` で `System.ValueTuple.dll` を `CopyToOutputDirectory` で `bin` 直下に手動配置。`PostBuildEvent` の `del System.*` は `System.ValueTuple` を除外（現在は `del System.*` 自体を廃止し `System.Buffers/Memory` 等のみ個別削除）。
   - `App.config` の `bindingRedirect` は `SQLitePCLRaw.core 2.1.12.3116` と `System.ValueTuple 4.0.5.0` を単一 `assemblyBinding` 内に集約し `probing` と分離。`AutoGenerateBindingRedirects=true` のままでは二重 `assemblyBinding` が生成され後者が無視されるため `csproj:14` で `false` にし手動管理。
+  - EXE 側 `App.config` の redirect は `nicorankLib/app.config` と整合させること。食い違うと `MSB3276` になる（#25 で `System.Memory` が EXE 側 `4.0.1.2`・Lib 側 `4.0.5.0` に乖離して発覚。詳細ログの「マップし直してください」が正解バージョンを示す）。
 
 ### 4f. `packages.config` と `buildTransitive` の不一致（2026-08）
 
