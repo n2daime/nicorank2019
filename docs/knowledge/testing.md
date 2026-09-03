@@ -9,7 +9,7 @@ dotnet test UnitTest/UnitTest.csproj
 
 - 環境: **.NET Framework 4.8 ターゲットだが .NET 10 SDK でビルド・実行**（Windows）
 - テストフレームワーク: MSTest 3.5.2 / モック: Moq 4.20.72
-- 全 **69 件** のテストが PASS
+- 全 **75 件**のテストが PASS
 
 ## 構成
 
@@ -24,7 +24,7 @@ UnitTest/
 │   ├── TestConfigBuilder.cs  # Config の非公開フィールドをリフレクションで書き換えるテスト用ビルダー
 │   └── UnitTestTestDbHelper.cs
 └── nicorankLib/
-    ├── Util/       UnitTestSQLiteCtrl(12) / DbQuery(10) / DbWrite(9) / DbSchema(8) / DbError(4) / StatusLog(3) / TextUtil(3)
+    ├── Util/       UnitTestSQLiteCtrl(12) / DbQuery(10) / DbWrite(9) / DbSchema(8) / DbError(4) / DbCommandReuse(6) / StatusLog(3) / TextUtil(3)
     ├── Common/     UnitTestConfig(4)
     ├── output/     UnitTestOutput(2)
     └── Analyze/model/ UnitTestRanking(6)
@@ -39,6 +39,7 @@ UnitTest/
 | `UnitTestDbWrite` | 9 | INSERT（単行/重複防止/ループ）、DELETE、トランザクション（Commit/Rollback/例外時）、パラメータ再利用 |
 | `UnitTestDbSchema` | 8 | CREATE TABLE、PRAGMA table_info、ALTER TABLE、sqlite_master、ATTACH/DETACH |
 | `UnitTestDbError` | 4 | ファイル不在、未接続/多重 Dispose、複数インスタンス同時接続 |
+| `UnitTestDbCommandReuse` | 6 | 同一コマンド再利用（Clearなし重複の例外・DELETEループ・DELETE→INSERT切替・SELECT切替・ALTER同一トランザクション・外部コマンド使い回し。Issue #22） |
 | `UnitTestStatusLog` | 3 | StatusLog の Write/WriteLine/null writer（モック IStatusLogWriter） |
 | `UnitTestTextUtil` | 3 | TextUtil.ReadCsv（List版/Dictionary版/ファイル不在） |
 | `UnitTestConfig` | 4 | Config シングルトン、デフォルト値、SP モード、XML 文字列出力 |
