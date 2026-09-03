@@ -1,5 +1,4 @@
 ﻿using nicorank2019.frm;
-using nicorankLib.Analyze.model;
 using nicorankLib.Analyze.Official;
 using nicorankLib.Common;
 using nicorankLib.Factory;

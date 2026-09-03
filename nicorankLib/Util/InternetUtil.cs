@@ -81,7 +81,6 @@ namespace nicorankLib.Util
                     }
                     catch (System.IO.IOException)
                     {
-                        //Console.WriteLine($"\nIOException:{ex.Message} retry:{count}");
                         int delayMax = calculateDelayMax(count);
                         int delay = random.Next(1000, delayMax);
                         Thread.Sleep(delay);
@@ -89,7 +88,6 @@ namespace nicorankLib.Util
                     }
                     catch (Exception)
                     {
-                        //Console.WriteLine($"\nException:{ex.Message} retry:{count}");
                         int delayMax = calculateDelayMax(count);
                         int delay = random.Next(1000, delayMax);
                         Thread.Sleep(delay);
