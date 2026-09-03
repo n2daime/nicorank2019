@@ -110,6 +110,26 @@
 
 ---
 
+## 2026-09-03 単体テストでDB操作のビジネスロジック問題を検出できるようにする (#22)
+
+- **Issue**: #22
+- **ブランチ**: `feature/t022-db-command-reuse-tests` → `develop`
+- **背景**: #20移行の検証過程で実行時テストでのみ同一コマンド再利用問題が発覚した（単体テスト69件PASSでは検出不可）。本番コードを網羅調査し、残存Clear漏れ2件のみ検出（他は暫定修正済み）。
+- **実施内容**:
+  - `NicoApi.UpdateTumbInfo` のDELETE/INSERTループをループ内Clear化（2件以上更新時の `InvalidOperationException: Must add values...` を解消。`@取得日` は `todayStr` に退避して毎回再設定）
+  - `UnitTest/nicorankLib/Util/UnitTestDbCommandReuse.cs` 新設6件（ネガティブ・NicoApi型DELETE・DELETE→INSERT切替・GetRankingSabun型SELECT切替・calcDailyRank型ALTER同一Tx成功系・GetMovieData型）。計75件
+  - `pitfalls.md` 項目17に移行時ランタイム差分チェックリスト追記、`testing.md`/`structure.md` の件数を75に更新、`tasks.md` に#22タスク追記→完了化
+  - reviewer指摘対応: 中1件（ALTER同一Txの成功系限定化）・低4件（例外文言一般化・PRAGMA両記・ヘルパー順序・拡張コメント）を修正、低2件（NicoApi外側Clear冗長・testing.md内訳欠落）を見送り。再レビューでマージ可判定
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 全75件PASS（EXIT CODE 0）、`dotnet build nicorank2019.sln -c Release --no-incremental` 成功（EXIT CODE 0）
+  - 実集計での実行確認はユーザー判断で省略（自動テストでガード、出力形式の変更なし）
+- **残課題**（Issue #22 のクローズ時コメントに転記）:
+  - ALTER同一Txのロールバック→再実行検証（本件は成功系のみ）
+  - DB操作の共通ヘルパー集約改修の要否検討（Issue #22 方針3、スコープ大・要相談のため見送り）
+  - `NicoApi` ループ外Clear冗長の微修正、`testing.md` 内訳の `UnitTestTestDbHelper` 欠落とREADME件数表ドリフトの整理
+
+---
+
 ## 2026-08-31 リリース v20260831_nicorank
 
 - **タグ**: `v20260831_nicorank`（main `d8af711`。annotated tag でコミット位置を確認済み）
