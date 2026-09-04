@@ -119,6 +119,39 @@ namespace UnitTest.nicorankLib.SnapShot
         }
 
         [TestMethod]
+        public void ToUrl_ClampsOffsetUpperBound()
+        {
+            var request = SnapShotRequest.CreateRange(StartDay, EndDay, 100, 100001, true);
+
+            string url = request.ToUrl();
+
+            Assert.IsTrue(url.Contains("_offset=100000"), url);
+        }
+
+        [TestMethod]
+        public void ToUrl_OmitsTargets_WhenKeywordLessSearch()
+        {
+            // キーワード無し検索では targets を省略すること
+            var request = SnapShotRequest.CreateRange(StartDay, EndDay, 0, 0, true);
+
+            string url = request.ToUrl();
+
+            Assert.IsFalse(url.Contains("targets="), url);
+        }
+
+        [TestMethod]
+        public void ToUrl_EncodesJsonFilter_WhenSpecified()
+        {
+            // 将来拡張口 jsonFilter はエンコードして載ること
+            var request = SnapShotRequest.CreateRange(StartDay, EndDay, 0, 0, true);
+            request.JsonFilterJson = "{\"type\":\"equal\",\"field\":\"genre\",\"value\":\"ゲーム\"}";
+
+            string url = request.ToUrl();
+
+            Assert.IsTrue(url.Contains("jsonFilter=" + Uri.EscapeDataString("{\"type\":\"equal\",\"field\":\"genre\",\"value\":\"ゲーム\"}")), url);
+        }
+
+        [TestMethod]
         public void FromJson_NullCounters_RequireNullToZeroReplacement()
         {
             // レスポンスの null カウンタは long 直結のため FromJson 単体では読めない。

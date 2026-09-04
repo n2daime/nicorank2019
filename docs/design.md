@@ -106,7 +106,12 @@
 
 - **選択**: `requestAPI(apiurl, appendURL)` → `requestAPI(apiurl, query辞書)` に変更し文字列連結を廃止。`_frontendId=6`・UAを定数化。パス埋め込み（`genre/featuredKey`）も `EscapeDataString`。`tag` は `term=24h/hour` 以外では省略＋ログ（公式仕様の制約）。
 - **理由**: 日本語タグの未エンコードが実害リスク最大のため。`tag` 省略は振る舞い変更のためレビュー依頼文・コミットメッセージに明記。
+- **汎用組み立ては `nicorankLib.Util.ApiUrlBuilder` に抽出**（reviewer指摘対応）。値のエンコード・`?`/`&` 切替・null/空辞書を単体テストで担保し、`NicoRankiApi.BuildUrl` は `_frontendId` 付与＋委譲に縮小。`tag` 分岐自体はspec直結の条件のため抽出せず、両分岐のdict形状に対するテストで間接担保する。
 - **見送り**: `NicoApi.cs` のID連結（`sm/so`＋数字のみで実害なし）・`JsonReader`系のパス連結（クエリなし）・`InternetUtil` のデッドコードは対象外。理由はレビュー依頼文・コミットメッセージに残す。
+
+#### Decision: エンコード済みURLの実サーバー受け入れは実証済み
+
+- 全面エンコード（`fields` の `,`→`%2C`・日時の `:`→`%3A`・`+09:00`→`%2B`）＋`_context` 送信の件数取得1件で HTTP 200・`status:200` を確認（2026-09-04）。旧URLとのデコード等価性と併せ、移行の安全性を担保する。
 
 ---
 

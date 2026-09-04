@@ -1,7 +1,6 @@
 ﻿using Newtonsoft.Json;
 using nicorankLib.Util.Text;
 using nicorankLib.Util;
-using System.Text;
 
 
 namespace nicorank_oldlog.RankAPI
@@ -62,23 +61,25 @@ namespace nicorank_oldlog.RankAPI
 
         /// <summary>
         /// クエリパラメータ付きのAPI URLを組み立てる（Issue #19。文字列連結の代替）
-        /// 共通クエリ _frontendId を自動付与し、値は Uri.EscapeDataString でエンコードする。
+        /// 共通クエリ _frontendId を先頭に付与し、組み立ては ApiUrlBuilder（値のエンコード付き）に委譲する。
         /// </summary>
         /// <param name="apiurl">APIのURL（クエリなし）</param>
         /// <param name="query">追加のクエリパラメータ</param>
         /// <returns>組み立てたURL</returns>
         public static string BuildUrl(string apiurl, IDictionary<string, string>? query = null)
         {
-            var workApi = new StringBuilder(apiurl);
-            workApi.Append("?_frontendId=").Append(FrontendId);
+            var merged = new Dictionary<string, string>
+            {
+                { "_frontendId", FrontendId }
+            };
             if (query != null)
             {
                 foreach (var param in query)
                 {
-                    workApi.Append('&').Append(param.Key).Append('=').Append(Uri.EscapeDataString(param.Value ?? ""));
+                    merged.Add(param.Key, param.Value);
                 }
             }
-            return workApi.ToString();
+            return ApiUrlBuilder.Build(apiurl, merged);
         }
 
         /// <summary>
