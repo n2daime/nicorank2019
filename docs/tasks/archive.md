@@ -205,3 +205,19 @@
   - reviewerレビュー＋2回の再レビュー: 必須（高・中）指摘を全解消（注入NicoApiのOpenDB非対称・nullガード2件）。再レビューでマージ可判定。低指摘の見送り分は理由をコミットメッセージに記録
   - ユーザー実行確認: コードレビューOK・マージ指示あり（出力内容変更のため）
 - **残課題**: Issue #28（ランキングJSON肥大化対策: FavoriteTag見直し＋LastResult.JSON空文字化。外部システムと協議中。今回は対応せず）
+
+---
+
+## 2026-09-04 プレリリース v20260904_nicorank_preview（nicorank2019のみ）
+
+- **タグ**: `v20260904_nicorank_preview`（main `b303db3`。annotated tag が main HEAD を指すことを確認済み）
+- **GitHub Release（Pre-release）**: https://github.com/n2daime/nicorank2019/releases/tag/v20260904_nicorank_preview
+- **成果物**: `nicorank2019_20260904.zip`（パターンA ホワイトリストのみ: exe / exe.config / nicorank.xml.org / lib 4件 + runtimes 3種）。`nicorank_SnapShot` の配布なし
+- **含まれる変更**: #25（ビルド警告対処）/ #22（NicoApi残存Clear漏れ修正）/ #19（型付きリクエスト化）/ #27（人気タグ全件補完・出力仕様変更）。#28は対象外
+- **検証**:
+  - `develop` で `dotnet test` 119件 PASS（EXIT CODE 0）、`dotnet build nicorank2019.sln -c Release --no-incremental` 成功・警告0（EXIT CODE 0）
+  - main 上で lib 配置（4件 + runtimes 3種）・`exe.config` の `loadFromRemoteSources`・`依存ファイル/nicorank.xml` と `bin\Release\nicorank.xml` のハッシュ一致を確認
+  - zip ホワイトリスト照合（不要ファイル混入なし）
+  - タグが main HEAD を指すこと・`git diff main develop --stat` が空であることを確認
+- **実機集計確認**: ユーザー指示で簡易化のため省略（#19 daily比較・#25週刊中間SP・#27出力確認で代替）。Releaseノートに検証フィールドは記載なし
+- **備考**: ソリューションビルドの初回は `nicorank2019.exe` 常駐＋VS による `bin\Release` ロックで `MSB3021/MSB3027` 失敗。VS終了後に再実行して成功。Releaseノートは `--notes-file` 方式、冒頭にプレリリース（動作確認用）の一文あり
