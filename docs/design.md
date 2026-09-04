@@ -128,7 +128,7 @@
 
 ### Decisions
 
-- **収集は無制限・制限は出力側**: `FavoriteTagReader` の件数上限を廃止し全件補完する。ファイル別の出し分け（TSV系は3件、`result(UTF8).csv`・`result_DB登録用(UTF8).json` のみ全件）は `NrmOutput` の上限パラメータで行う
+- **収集は無制限・制限は出力側**: `FavoriteTagReader` の件数上限を廃止し全件補完する。TSV系の3件制限は `NrmOutput` の上限パラメータで行う（`result(UTF8).csv`・`result_DB登録用(UTF8).json` はそれぞれ全件仕様）
 - **カテゴリ重複の除外は出力側ヘルパー**（`Ranking.GetDisplayTags()`）: `UserInfoReader` が後段でカテゴリを補完するため、収集時点ではカテゴリ未確定の動画がある。最終カテゴリで判定する出力側が完全。DB格納値は重複のまま残ることを許容
 - **順序保障のため `List<string>` 化**: 影響は宣言・初期化・マージ・3箇所の `Add`（重複判定化）のみ。DB・履歴内の既存 JSON は配列形式のため互換性あり
 - **SJIS・DB登録用CSV の生成停止**: `CreateOutputCSV` の設定からSJIS除外、`CreateOutputCSV_rankDB`（週刊。SPは継承、中間は既にnull）を `null` 化。`frmMainSyukei` はnull安全のため無変更。`ResultCsvRankDB` クラスは温存
