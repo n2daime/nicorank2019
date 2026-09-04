@@ -261,7 +261,7 @@ namespace nicorankLib.api
             var lockedTags = new List<string>();
             try
             {
-                if (!dbCtrl.IsOpen)
+                if (dbCtrl?.IsOpen != true)
                 {
                     return lockedTags;
                 }

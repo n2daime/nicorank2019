@@ -659,9 +659,9 @@ namespace nicorankLib.Analyze.model
         /// <returns></returns>
         public List<string> GetDisplayTags()
         {
-            var result = new List<string>(FavoriteTags.Count);
+            var result = new List<string>(FavoriteTags?.Count ?? 0);
             string workCategory = Category?.Trim();
-            foreach (var tag in FavoriteTags)
+            foreach (var tag in FavoriteTags ?? Enumerable.Empty<string>())
             {
                 if (string.IsNullOrWhiteSpace(tag))
                 {

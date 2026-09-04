@@ -60,5 +60,13 @@ namespace UnitTest.nicorankLib.Analyze.model
             CollectionAssert.AreEqual(
                 new List<string> { "音楽", "演奏してみた" }, new List<string>(rank.FavoriteTags));
         }
+
+        [TestMethod]
+        public void FavoriteTagsがnullでも空リストを返す()
+        {
+            var rank = new Ranking() { Category = "音楽", FavoriteTags = null };
+
+            Assert.AreEqual(0, rank.GetDisplayTags().Count);
+        }
     }
 }

@@ -110,6 +110,10 @@ namespace nicorankLib.Analyze.Option
                                 {
                                     string jsonString = reader["人気のタグ"].ToString();
                                     var hashObj = JsonConvert.DeserializeObject<List<string>>(jsonString);
+                                    if (hashObj == null)
+                                    {
+                                        continue;
+                                    }
                                     hashObj.ForEach(tag =>
                                     {
                                         if (!wRank.FavoriteTags.Contains(tag))
@@ -158,12 +162,12 @@ namespace nicorankLib.Analyze.Option
                 return true;
             }
 
-            // 注入されたインスタンスは呼び出し側の所有物のため開閉・破棄しない。自前生成分のみ破棄する
+            // 注入されたインスタンスは呼び出し側の所有物のため開閉・破棄しない。自前生成分のみ開閉・破棄する
             bool ownsApi = _apiOverride == null;
             var api = _apiOverride ?? new NicoApi();
             try
             {
-                if (!api.OpenDB())
+                if (ownsApi && !api.OpenDB())
                 {
                     StatusLog.WriteLine("DB/ApiXML.dbを開けませんでした。");
                     return false;

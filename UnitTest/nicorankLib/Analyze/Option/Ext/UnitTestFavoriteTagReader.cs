@@ -147,6 +147,25 @@ namespace UnitTest.nicorankLib.Analyze.Option.Ext
         }
 
         [TestMethod]
+        public void 人気タグがnull値の行は読み飛ばして補完する()
+        {
+            using (var db = TestDbHelper.CreateInMemoryDb())
+            {
+                TestDbHelper.CreateRankingTable(db);
+                TestDbHelper.InsertRankingData(db, "sm1", 20200105, 100, 10, 5, 2, "null");
+
+                var api = new FakeNicoApi();
+                api.LockedTags["sm1"] = new List<string> { "X" };
+                var reader = new FavoriteTagReader(10, BaseTime, EndTime, db, api);
+
+                var list = new List<Ranking> { CreateRank("sm1", 1) };
+
+                Assert.IsTrue(reader.AnalyzeRank(list));
+                CollectionAssert.AreEqual(new List<string> { "X" }, new List<string>(list[0].FavoriteTags));
+            }
+        }
+
+        [TestMethod]
         public void 確保失敗時はfalseを返す()
         {
             using (var db = TestDbHelper.CreateInMemoryDb())

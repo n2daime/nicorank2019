@@ -9,7 +9,7 @@ dotnet test UnitTest/UnitTest.csproj
 
 - 環境: **.NET Framework 4.8 ターゲットだが .NET 10 SDK でビルド・実行**（Windows）
 - テストフレームワーク: MSTest 3.5.2 / モック: Moq 4.20.72
-- 全 **115 件**のテストが PASS
+- 全 **119 件**のテストが PASS
 
 ## 構成
 
@@ -29,7 +29,7 @@ UnitTest/
     ├── output/     UnitTestOutput(6)
     ├── SnapShot/   UnitTestSnapShotRequest(12)
     ├── Analyze/model/ UnitTestRanking(6) / UnitTestRankingDisplayTags(5)
-    ├── Analyze/Option/Ext/ UnitTestFavoriteTagReader(6)
+    ├── Analyze/Option/Ext/ UnitTestFavoriteTagReader(9)
     └── api/        UnitTestNicoApiLockedTags(6)
 ```
 
@@ -47,8 +47,8 @@ UnitTest/
 | `UnitTestTextUtil` | 3 | TextUtil.ReadCsv（List版/Dictionary版/ファイル不在） |
 | `UnitTestConfig` | 4 | Config シングルトン、デフォルト値、SP モード、XML 文字列出力 |
 | `UnitTestOutput` | 6 | ResultCsv と NrmOutput の一時ディレクトリへの実出力検証（タグ列・上限3・全件・カテゴリ除外。Issue #27） |
-| `UnitTestRankingDisplayTags` | 5 | `GetDisplayTags` のカテゴリ除外・順序・Trim・重複・非破壊（Issue #27） |
-| `UnitTestFavoriteTagReader` | 6 | 人気タグ＋ロックタグ全件補完・重複除外・対象外・確保失敗（Issue #27） |
+| `UnitTestRankingDisplayTags` | 6 | `GetDisplayTags` のカテゴリ除外・順序・Trim・重複・非破壊・null（Issue #27） |
+| `UnitTestFavoriteTagReader` | 9 | 人気タグ＋ロックタグ全件補完・重複除外・対象外・確保失敗・null行・`isLocalOnly`×2（Issue #27） |
 | `UnitTestNicoApiLockedTags` | 6 | `GetLockedTags` のlock抽出・行なし・最新取得日・非ok・破損XML（Issue #27） |
 | `UnitTestRanking` | 6 | PointTotal/HoseiAllPoint の補正計算（VOCACOLE2023実測、補正なし、sqrt、削除動画、ゼロ、境界値 0.25〜1.0） |
 | `UnitTestSnapShotRequest` | 12 | SnapShotRequest の URL 生成（1000フィルタ有無・`_context`・`%2B`・旧URL等価・日本語Q・クランプ・ゼロlimit・`_offset`上限・targets省略・jsonFilter・null回帰。Issue #19） |
