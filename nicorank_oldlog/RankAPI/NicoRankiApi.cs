@@ -11,6 +11,16 @@ namespace nicorank_oldlog.RankAPI
         protected string _cookie = "";
 
         /// <summary>
+        /// 共通クエリパラメータ _frontendId（公式仕様で 6 が必須）
+        /// </summary>
+        public const string FrontendId = "6";
+
+        /// <summary>
+        /// リクエストヘッダー User-Agent（公式仕様で識別可能なツール名が必須）
+        /// </summary>
+        public const string UserAgent = "WeeklyNicoranProgram/2025.04";
+
+        /// <summary>
         /// NicoRankiApiのインスタンスを取得します。
         /// </summary>
         /// <returns>NicoRankiApiのインスタンス</returns>
@@ -50,24 +60,47 @@ namespace nicorank_oldlog.RankAPI
         }
 
         /// <summary>
+        /// クエリパラメータ付きのAPI URLを組み立てる（Issue #19。文字列連結の代替）
+        /// 共通クエリ _frontendId を先頭に付与し、組み立ては ApiUrlBuilder（値のエンコード付き）に委譲する。
+        /// </summary>
+        /// <param name="apiurl">APIのURL（クエリなし）</param>
+        /// <param name="query">追加のクエリパラメータ</param>
+        /// <returns>組み立てたURL</returns>
+        public static string BuildUrl(string apiurl, IDictionary<string, string>? query = null)
+        {
+            var merged = new Dictionary<string, string>
+            {
+                { "_frontendId", FrontendId }
+            };
+            if (query != null)
+            {
+                foreach (var param in query)
+                {
+                    merged[param.Key] = param.Value;
+                }
+            }
+            return ApiUrlBuilder.Build(apiurl, merged);
+        }
+
+        /// <summary>
         /// 指定されたAPI URLに対してリクエストを送信し、レスポンスを取得します。
         /// </summary>
         /// <typeparam name="ResObjType">レスポンスオブジェクトの型</typeparam>
         /// <param name="apiurl">APIのURL</param>
-        /// <param name="appendURL">追加のURLパラメータ</param>
+        /// <param name="query">追加のクエリパラメータ</param>
         /// <returns>レスポンスオブジェクト</returns>
-        public async Task<ResObjType?> requestAPI<ResObjType>(string apiurl, string appendURL = "")
+        public async Task<ResObjType?> requestAPI<ResObjType>(string apiurl, IDictionary<string, string>? query = null)
         {
             using (HttpClient client = new HttpClient())
             {
-                string workApi = $"{apiurl}?_frontendId=6";
+                string workApi = BuildUrl(apiurl, query);
                 try
                 {
-                    client.DefaultRequestHeaders.UserAgent.ParseAdd("WeeklyNicoranProgram/2025.04");
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
                     client.DefaultRequestHeaders.Add("Cookie", $"user_session={this._cookie}");
 
                     // GETリクエストを送信
-                    HttpResponseMessage response = await client.GetAsync(workApi + appendURL);
+                    HttpResponseMessage response = await client.GetAsync(workApi);
 
                     // レスポンスが成功かチェック
                     var statusCode = response.EnsureSuccessStatusCode();
@@ -206,7 +239,7 @@ namespace nicorank_oldlog.RankAPI
             trendTagList = new List<string>();
 
             // APIのURL
-            string apiUrl = $"https://nvapi.nicovideo.jp/v1/ranking/teiban/featured-keys/{featuredKey}/trend-tags";
+            string apiUrl = $"https://nvapi.nicovideo.jp/v1/ranking/teiban/featured-keys/{Uri.EscapeDataString(featuredKey)}/trend-tags";
 
             try
             {
@@ -266,20 +299,27 @@ namespace nicorank_oldlog.RankAPI
             rankingItemList = new List<ResGenreRanking.Item>();
 
             // APIのURL
-            string apiUrl = $"https://nvapi.nicovideo.jp/v1/ranking/genre/{genre}";
+            string apiUrl = $"https://nvapi.nicovideo.jp/v1/ranking/genre/{Uri.EscapeDataString(genre)}";
 
             bool getResult = true;
             try
             {
-                var appendURL_base = $"&term={term}&pageSize={pageSize}";
+                var queryBase = new Dictionary<string, string>
+                {
+                    { "term", term },
+                    { "pageSize", pageSize.ToString() }
+                };
 
                 for (uint page = 1; page <= maxpage; page++)
                 {
 
-                    var appendURL = appendURL_base + $"&page={page}";
+                    var query = new Dictionary<string, string>(queryBase)
+                    {
+                        { "page", page.ToString() }
+                    };
 
                     // JSONデータを取得
-                    var result = requestAPI<ResGenreRanking.Rootobject>(apiUrl, appendURL);
+                    var result = requestAPI<ResGenreRanking.Rootobject>(apiUrl, query);
                     var resObj = result.Result;
 
                     if (resObj == null)
@@ -346,24 +386,39 @@ namespace nicorank_oldlog.RankAPI
             rankingItemList = new List<ResTeibanRanking.Item>();
 
             // APIのURL
-            string apiUrl = $"https://nvapi.nicovideo.jp/v1/ranking/teiban/{featuredKey}";
+            string apiUrl = $"https://nvapi.nicovideo.jp/v1/ranking/teiban/{Uri.EscapeDataString(featuredKey)}";
 
             try
             {
-                var appendURL_base = $"&term={term}&pageSize={pageSize}";
+                var queryBase = new Dictionary<string, string>
+                {
+                    { "term", term },
+                    { "pageSize", pageSize.ToString() }
+                };
 
                 if (!string.IsNullOrEmpty(tagName))
                 {
-                    appendURL_base += $"&tag={tagName}";
+                    if (term == "24h" || term == "hour")
+                    {
+                        queryBase.Add("tag", tagName);
+                    }
+                    else
+                    {
+                        // tag指定は term=24h/hour の場合のみ有効（公式仕様）のため省略する
+                        Console.WriteLine($"{apiUrl} : tag指定は term=24h/hour の場合のみ有効のため省略します (term={term})");
+                    }
                 }
 
                 for (uint page = 1; page <= maxpage; page++)
                 {
 
-                    var appendURL = appendURL_base + $"&page={page}";
+                    var query = new Dictionary<string, string>(queryBase)
+                    {
+                        { "page", page.ToString() }
+                    };
 
                     // JSONデータを取得
-                    var result = requestAPI<ResTeibanRanking.Rootobject>(apiUrl, appendURL);
+                    var result = requestAPI<ResTeibanRanking.Rootobject>(apiUrl, query);
                     var resObj = result.Result;
 
                     if (resObj == null)

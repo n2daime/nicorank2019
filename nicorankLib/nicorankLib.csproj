@@ -275,6 +275,7 @@
     <Compile Include="Settings.cs" />
     <Compile Include="SnapShot\SnapController.cs" />
     <Compile Include="SnapShot\SnapShotAnalyze.cs" />
+    <Compile Include="SnapShot\SnapShotRequest.cs" />
     <Compile Include="Analyze\model\EAnalyzeMode.cs" />
     <Compile Include="Analyze\Option\Ext\UserInfoReader.cs" />
     <Compile Include="Factory\ModeFactoryBase.cs" />
@@ -301,6 +302,7 @@
     <Compile Include="output\ResultHistory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Util\DateConvert.cs" />
+    <Compile Include="Util\ApiUrlBuilder.cs" />
     <Compile Include="Util\ErrLog.cs" />
     <Compile Include="Util\InternetUtil.cs" />
     <Compile Include="Util\IStatusLogWriter.cs" />
