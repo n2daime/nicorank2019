@@ -49,7 +49,8 @@ namespace nicorankLib.Factory
             //集計後に実行する（ランキング順位などを参照する）オプションを作成する
             var extoptions = new List<IExtOptionBase>()
             {
-                new FavoriteTagReader(config.UserNum, BaseDay, TargetDay)           //人気のタグ
+                // 中間集計では外部取得を行わず、キャッシュ参照のみで補完する
+                new FavoriteTagReader(config.UserNum, BaseDay, TargetDay, isLocalOnly: true)           //人気のタグ
             };
 
             this.RankingAnalyze = new RankingAnalyze(inputBase, options, extoptions);
@@ -65,14 +66,14 @@ namespace nicorankLib.Factory
         public override OutputBase CreateNRMRank()
         {
             var nrm = new NrmOutput();
-            nrm.Set(OUTPUTDIR, "rank.txt", 0, GetRank());
+            nrm.Set(OUTPUTDIR, "rank.txt", 0, GetRank(), false, 3);
             return nrm;
         }
 
         public override OutputBase CreateNRMRank1000()
         {
             var nrm = new NrmOutput();
-            nrm.Set(OUTPUTDIR, "rank1000.txt", 0, 1000);
+            nrm.Set(OUTPUTDIR, "rank1000.txt", 0, 1000, false, 3);
             return nrm;
         }
 
@@ -82,7 +83,7 @@ namespace nicorankLib.Factory
             int rank = GetRank();
             Config config = Config.GetInstance();
 
-            nrm.Set(OUTPUTDIR, "rankED.txt", rank, rank + config.RankED);
+            nrm.Set(OUTPUTDIR, "rankED.txt", rank, rank + config.RankED, false, 3);
             return nrm;
         }
 
@@ -90,8 +91,7 @@ namespace nicorankLib.Factory
         {
             var output = new ResultCsv();
             output.SetOutput(OUTPUTDIR, new List<ResultCsv.CsvConfig>() {
-                new ResultCsv.CsvConfig() { csvName = "result(UTF8).csv", isUnicode = true, isOverwrite = true },
-                new ResultCsv.CsvConfig() { csvName = "result(SJIS).csv", isUnicode = false, isOverwrite = true }
+                new ResultCsv.CsvConfig() { csvName = "result(UTF8).csv", isUnicode = true, isOverwrite = true }
             });
             return output;
         }

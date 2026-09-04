@@ -121,7 +121,7 @@ namespace nicorankLib.Analyze.Json
                                 }
                                 else 
                                 {
-                                    if (!string.IsNullOrEmpty(workTag))
+                                    if (!string.IsNullOrEmpty(workTag) && !rank.FavoriteTags.Contains(workTag))
                                     {
                                         rank.FavoriteTags.Add(workTag);
                                     }

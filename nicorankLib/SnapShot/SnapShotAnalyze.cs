@@ -20,17 +20,16 @@ namespace nicorankLib.SnapShot
             public long offset_end = 0;
         }
 
+        DateTime startDate;
+        DateTime endDate;
+
         /// <summary>
-        /// リクエストURL
+        /// 期間指定のリクエストURLを生成する（Issue #19。string.Format 直書きの代替）
         /// </summary>
-        const string REQUEST_URL =
-            @"https://snapshot.search.nicovideo.jp/api/v2/snapshot/video/contents/search?q=&_sort=-viewCounter&fields=contentId,commentCounter,viewCounter,mylistCounter,likeCounter&filters[startTime][gte]={0}T00:00:00%2B09:00&filters[startTime][lt]={1}T00:00:00%2B09:00&_limit={2}&_offset={3}&filters[viewCounter][gte]=1000";
-
-        const string REQUEST_URL_LAST_1YEAR =
-            @"https://snapshot.search.nicovideo.jp/api/v2/snapshot/video/contents/search?q=&_sort=-viewCounter&fields=contentId,commentCounter,viewCounter,mylistCounter,likeCounter&filters[startTime][gte]={0}T00:00:00%2B09:00&filters[startTime][lt]={1}T00:00:00%2B09:00&_limit={2}&_offset={3}";
-
-        string startDay = "";
-        string endDay = "";
+        private string CreateRequestUrl(int limit, long offset, bool flgLimit1000)
+        {
+            return SnapShotRequest.CreateRange(startDate, endDate, limit, offset, flgLimit1000).ToUrl();
+        }
 
         List<SnapShotJson> dataList;
 
@@ -45,23 +44,15 @@ namespace nicorankLib.SnapShot
 
             TimeSpan DATERANGE_MIN = new TimeSpan(1,0,0,0);
 
-            startDay = dateTime.Date.ToString("yyyy-MM-dd"); ;
+            startDate = dateTime.Date;
             SnapShotJson snapShotInfo = null;
             while (true)
             {
 
-                endDay = dateTime.Date.Add(addDate).ToString("yyyy-MM-dd");
+                endDate = dateTime.Date.Add(addDate);
 
                 // 件数取得用のURLを計算する
-                string fileURL;
-                if (flgLimit1000)
-                {
-                    fileURL = string.Format(REQUEST_URL, startDay, endDay, 0, 0);
-                }
-                else
-                {
-                    fileURL = string.Format(REQUEST_URL_LAST_1YEAR, startDay, endDay, 0, 0);
-                }
+                string fileURL = CreateRequestUrl(0, 0, flgLimit1000);
                 
 
                 for (int retry = 0; retry < 20; retry++)
@@ -120,7 +111,7 @@ namespace nicorankLib.SnapShot
 
             Parallel.ForEach(snapShotTaskList,new ParallelOptions() {  MaxDegreeOfParallelism = threadMax }, (taskOffset) =>
             {
-                SetRequestResult(taskOffset,dateTime);
+                SetRequestResult(taskOffset, flgLimit1000);
             });
 
             return true;
@@ -128,7 +119,7 @@ namespace nicorankLib.SnapShot
 
         object lockObj = new object();
 
-		protected bool SetRequestResult(TaskOffset taskOffset,DateTime dateTime)
+		protected bool SetRequestResult(TaskOffset taskOffset, bool flgLimit1000)
         {
 
 
@@ -144,7 +135,8 @@ namespace nicorankLib.SnapShot
                 SnapShotJson snapShotInfo = null;
                 string fileListJsonText = "";
 
-                string fileURL = string.Format(REQUEST_URL, startDay,endDay , 100, offset);
+                // 件数取得時と同じ flgLimit1000 でURLを生成する（旧実装は常に1000制限URLだった不整合を解消。Issue #19）
+                string fileURL = CreateRequestUrl(100, offset, flgLimit1000);
 
                 
                 while(true)//for (int retry = 0; retry < 20; retry++)

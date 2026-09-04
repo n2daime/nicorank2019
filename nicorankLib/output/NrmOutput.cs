@@ -19,6 +19,11 @@ namespace nicorankLib.output
         protected int RankEnd;
         protected bool isED;
 
+        /// <summary>
+        /// 出力するタグの上限件数（0は無制限）
+        /// </summary>
+        protected int MaxFavoriteTags;
+
         public NrmOutput()
         {
         }
@@ -123,13 +128,19 @@ namespace nicorankLib.output
                         rowData.Add($"{wRank.HoseiMylist:F2}");
                     }
                     StringBuilder stringBuilder = new StringBuilder();
-                    foreach (var tag in wRank.FavoriteTags)
+                    int tagCount = 0;
+                    foreach (var tag in wRank.GetDisplayTags())
                     {
+                        if (MaxFavoriteTags > 0 && tagCount >= MaxFavoriteTags)
+                        {
+                            break;
+                        }
                         if (stringBuilder.Length > 0)
                         {
                             stringBuilder.Append(",");
                         }
                         stringBuilder.Append(tag);
+                        tagCount++;
                     }
                     rowData.Add(stringBuilder);
 
@@ -162,13 +173,14 @@ namespace nicorankLib.output
             return true;
         }
 
-        public void Set(string outputDir, string fileName, int rankStart, int rankEnd, bool isED = false)
+        public void Set(string outputDir, string fileName, int rankStart, int rankEnd, bool isED = false, int maxFavoriteTags = 0)
         {
             OutputDir = outputDir;
             FileName = fileName;
             RankStart = rankStart;
             RankEnd = rankEnd;
             this.isED = isED;
+            MaxFavoriteTags = maxFavoriteTags;
         }
     }
 }

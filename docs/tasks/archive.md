@@ -86,6 +86,50 @@
 
 ---
 
+## 2026-09-03 ビルド警告の対処と未使用 AngleSharp の削除 (#25)
+
+- **Issue**: #25（Dependabot alert #10 の AngleSharp 脆弱性も本件で解消）
+- **ブランチ**: `feature/t025-build-warnings-anglesharp` → `develop`
+- **背景**: Release ビルドの警告 5 件（MSB3276 / CS0414 / CS0168×3）と、`nicorank_oldlog` の未使用 AngleSharp 1.1.2（脆弱性 medium）
+- **実施内容**:
+  - CS0168×3: `InternetUtil.cs` の未使用 catch 変数 `ex` を除去（`WebException ex` は使用中のため対象外）。reviewer 指摘で `ex` 参照の死にコメント 2 行も削除
+  - CS0414: `frmMainSyukei.cs` の `eAnalyzeMode`（宣言＋代入 3 件＋関連 using）を削除。`GetModeFactory` は従来通りラジオボタン直接参照。`frmMain.cs` の未使用 using も併せて削除
+  - MSB3276（A 案）: 詳細ログで競合は `System.Memory` のみと特定。両 EXE の `App.config` の redirect を `4.0.1.2` → `4.0.5.0` に修正し `nicorankLib/app.config` と整合。`AutoGenerateBindingRedirects=false` は維持（#20 の二重 `assemblyBinding` 再発防止）
+  - AngleSharp 削除: `nicorank_oldlog.csproj` から PackageReference を削除（`.cs` からの使用ゼロ確認済み）
+  - ソリューション全体ビルドで追加発覚した警告も対処（Issue 記載通り追記相当）: `RankApi2Json.cs` の `if(false)` デバッグ分岐を削除（CS0162。`Parallel.ForEach` 側のみ残し挙動不変）、Fody/Costura.Fody の `IncludeAssets` 除去（Fody 警告の推奨通り、`PrivateAssets=all` 維持）
+  - `docs/knowledge/apps.md` の依存記述から AngleSharp を除去
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 成功（EXIT CODE 0）
+  - `dotnet build nicorank2019.sln -c Release --no-incremental` で警告 0・EXIT 0
+  - reviewer レビュー: 高・中深刻度なし（マージ可判定）。低 2 件は対応済み
+  - ユーザーが週刊/中間/SP の実集計で実行確認済み（問題なし）
+- **設計判断**:
+  - `eAnalyzeMode` は削除（使う形への修正ではなく）。`GetModeFactory` との二重状態解消より最小差分を優先
+  - MSB3276 は `AutoGenerateBindingRedirects=true` 化ではなく手動 redirect 追加。`true` 化は #20 の二重化問題に逆戻りするため
+  - `nicorank_SnapShot/App.config` も同一の陳腐化 redirect だったため同時修正（ソリューション警告 0 のため）
+
+---
+
+## 2026-09-03 単体テストでDB操作のビジネスロジック問題を検出できるようにする (#22)
+
+- **Issue**: #22
+- **ブランチ**: `feature/t022-db-command-reuse-tests` → `develop`
+- **背景**: #20移行の検証過程で実行時テストでのみ同一コマンド再利用問題が発覚した（単体テスト69件PASSでは検出不可）。本番コードを網羅調査し、残存Clear漏れ2件のみ検出（他は暫定修正済み）。
+- **実施内容**:
+  - `NicoApi.UpdateTumbInfo` のDELETE/INSERTループをループ内Clear化（2件以上更新時の `InvalidOperationException: Must add values...` を解消。`@取得日` は `todayStr` に退避して毎回再設定）
+  - `UnitTest/nicorankLib/Util/UnitTestDbCommandReuse.cs` 新設6件（ネガティブ・NicoApi型DELETE・DELETE→INSERT切替・GetRankingSabun型SELECT切替・calcDailyRank型ALTER同一Tx成功系・GetMovieData型）。計75件
+  - `pitfalls.md` 項目17に移行時ランタイム差分チェックリスト追記、`testing.md`/`structure.md` の件数を75に更新、`tasks.md` に#22タスク追記→完了化
+  - reviewer指摘対応: 中1件（ALTER同一Txの成功系限定化）・低4件（例外文言一般化・PRAGMA両記・ヘルパー順序・拡張コメント）を修正、低2件（NicoApi外側Clear冗長・testing.md内訳欠落）を見送り。再レビューでマージ可判定
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 全75件PASS（EXIT CODE 0）、`dotnet build nicorank2019.sln -c Release --no-incremental` 成功（EXIT CODE 0）
+  - 実集計での実行確認はユーザー判断で省略（自動テストでガード、出力形式の変更なし）
+- **残課題**（Issue #22 のクローズ時コメントに転記）:
+  - ALTER同一Txのロールバック→再実行検証（本件は成功系のみ）
+  - DB操作の共通ヘルパー集約改修の要否検討（Issue #22 方針3、スコープ大・要相談のため見送り）
+  - `NicoApi` ループ外Clear冗長の微修正、`testing.md` 内訳の `UnitTestTestDbHelper` 欠落とREADME件数表ドリフトの整理
+
+---
+
 ## 2026-08-31 リリース v20260831_nicorank
 
 - **タグ**: `v20260831_nicorank`（main `d8af711`。annotated tag でコミット位置を確認済み）
@@ -97,3 +141,67 @@
   - `bin/Release/nicorank.xml` が PostBuildEvent xcopy のタイミングで更新されず、廃止済み設定（`<NicoChart>`）が残った古い版が zip に入った（ユーザー指摘で発覚）。zip 作成前に bin/Release と依存ファイルの一致確認が必要
   - PowerShell から `gh --notes` に日本語 + バッククォート入り本文を直接渡すと `` `n `` が改行に置換され文字欠けが発生 → `--notes-file` を使うべき
   - develop の未プッシュコミット push が手順の明示ステップに無かった
+
+---
+
+## 2026-09-01 リリース v20260901_nicorank
+
+- **タグ**: `v20260901_nicorank`（main `e54963f`。annotated tag でコミット位置を確認済み）
+- **GitHub Release**: https://github.com/n2daime/nicorank2019/releases/tag/v20260901_nicorank
+- **成果物**: `nicorank2019_20260901.zip`（パターンA）/ `nicorank_SnapShot_20260901.zip`（パターンB）— **初めて SnapShot を配布**（#26 の exe.config 修正が両アプリに影響するためユーザー判断で追加）
+- **含まれる変更**: #26（MOTW 対応: loadFromRemoteSources 追加・起動時エラー表示の例外チェーン化）+ 配布テンプレート `nicorank.xml` の Thread Max 既定値 16→6（ユーザー指示）
+- **検証**:
+  - main 上で `dotnet test` 69件 PASS、nicorank2019 / nicorank_SnapShot の Release ビルド EXIT=0
+  - lib 配置確認（両アプリとも 4件 + runtimes 3種）、両 exe.config に `loadFromRemoteSources enabled="true"` 含まれることを確認（今回から追加したチェック項目）
+  - `依存ファイル/nicorank.xml` と `bin\Release\nicorank.xml` のハッシュ照合で **Thread Max の不一致（16 vs 6）を検出** → 依存ファイル側を 6 に修正して統一してから zip 化（チェックリストが再び有効に機能した。bin\Release 側は実行中に書き換わるため今後も必ず確認）
+  - zip ホワイトリスト照合（不要ファイルの混入なし）、MOTW 付き lib での起動確認済み（ユーザー）
+- **実機集計確認（週刊/中間/SP）**: ユーザー判断で省略（変更が config・エラー表示のみで集計ロジックに影響しないため）
+- **備考**: Release ノートは `--notes-file` 方式（前回の知見通り）、exe と exe.config のセット上書き案内を明記。既知の Dependabot 警告（moderate × 1、Dependabot #10・#25 対応対象）は継続中
+
+---
+
+## 2026-09-04 ニコ動APIのリクエスト組み立てを型付きリクエストへ変更 (#19)
+
+- **Issue**: #19（作成時に未記載だった「なぜ変更するか」を追記済み）
+- **ブランチ**: `feature/t019-snapshot-typed-request` → `develop`（`44795c7` Merge）
+- **背景**: スナップショット検索 API v2 には未使用パラメータが多数あり、将来的な CLI 操作等での外部検索条件指定の下地として Get パラメータ直書きの技術負債を解消する。スナップショット API v2 を優先度高、nvapi は拡張予定なしのため横展開程度（優先度低）で実施。
+- **実施内容**:
+  - `nicorankLib/SnapShot/SnapShotRequest.cs` 新設（q / targets / fields / filters / jsonFilter / _sort / _limit / _offset / _context）。キーはブラケット記法のまま、値のみ `EscapeDataString`。`_context=WeeklyNicoranProgram` 追加、`_limit/_offset` クランプ。`jsonFilter` は string 経路のみで型階層は先送り
+  - `SnapShotAnalyze.cs` の `REQUEST_URL` 直書き廃止。`SetRequestResult` の `flgLimit1000` 無視（常に1000制限URL）を解消し件数取得と統一。未使用 `dateTime` 引数を `flgLimit1000` に置換
+  - `nicorankLib/Util/ApiUrlBuilder.cs` 新設（reviewer指摘対応。汎用クエリ組み立て＋`?`/`&` 切替）。`NicoRankiApi.requestAPI` を辞書受けに変更し文字列連結廃止、`_frontendId`・UA 定数化、genre/featuredKey パスをエンコード、`tag` は term=24h/hour 以外省略＋ログ
+  - `UnitTestSnapShotRequest.cs` 9件＋`UnitTestApiUrlBuilder.cs` 7件＋境界値3件追加。計94件（75→94）
+  - `specs.md`（API仕様の現実装）・`design.md`（型付き化の設計判断）に反映
+- **設計判断**（詳細は `design.md`）:
+  - `Replace(":null", ":0")` は温存。null→`long` 直結の `FromJson` は `JsonSerializationException` を実証済み。`long?` 化は `RegistDB` まで波及するためリスク＞効果
+  - `NicoApi.cs` のID連結・`JsonReader`系パス連結・`InternetUtil` デッドコードは対象外（実害なし・変更リスク＞効果）
+  - 日付逆転等のバリデーションは将来のCLI外部指定時に実施
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 全94件PASS（EXIT CODE 0）、`dotnet build nicorank2019.sln` 成功・警告0
+  - 全面エンコード＋`_context` の件数取得1件で実サーバー HTTP 200・`status:200` を確認
+  - reviewerレビュー＋再レビュー: 必須（高・中）指摘を全解消（中1件は ApiUrlBuilder 抽出で対応）。低指摘の見送り分は理由をコミットメッセージ・design.md に記録。再レビューでマージ可判定
+  - ユーザー実機確認: 修正前後の daily（2026-09-04）200ファイルをID集合比較。ファイル集合一致・AFTER空ファイル0・総件数+0.15%・共通IDタイトル変更4件のみ。上位100位は100%維持（r18除き90%）で変動は501位以降に集中＝取得時刻差のランキング変動。取得欠落なしと判定
+- **残課題**: `tag` 省略ガードの実動作確認は weekly（term=week＋tag付き区分）取得時に目視するのが確実（daily は term=24h のため新旧同一条件）
+
+---
+
+## 2026-09-04 人気タグのタグロック補完 (#27)
+
+- **Issue**: #27
+- **ブランチ**: `feature/t27-favorite-tag-complement` → `develop`（`2fe6f3c` Merge）
+- **背景**: `FavoriteTagReader` は LogOfficial.db の「人気のタグ」のみ取得していた。実利用者から「カテゴリ名とタグの重複」「ロックタグは3つだけ欲しい時と全部欲しい時がある」と要望があった。文字コード違いの出力群（SJIS / DB登録用CSV）は旧連携方式の名残で、現行は `result_DB登録用(UTF8).json` に一本化済みのため存在理由が消滅していた
+- **実施内容**:
+  - `NicoApi.GetLockedTags` 新設（取得専責。最新取得日行・`lock="1"` 定義順・異常時は空リスト）。`UpdateTumbInfo` と分離し他オプションの処理順に依存しない自己完結型。テスト容易性のため `UpdateTumbInfo` / `OpenDB` / `CloseDB` を virtual 化
+  - `FavoriteTagReader` は件数上限を廃止し全件補完（全対象を `UpdateTumbInfo` で確保。中間集計のみ `isLocalOnly: true` で外部取得なし・キャッシュ参照のみ。週刊/SPは先行オプションが確保するため現状維持）
+  - `FavoriteTags` を `HashSet`→`List` 化し挿入順を保証（人気タグ→タグロック定義順）。`Ranking.GetDisplayTags()` で出力時にカテゴリ同名タグを除外（Trim後完全一致・空カテゴリは除外なし・非破壊）
+  - `NrmOutput` にタグ上限パラメータ追加（TSV系4ファイルはすべて3件。全件は `result(UTF8).csv` 最終列と `result_DB登録用(UTF8).json` のみ）。`result(SJIS).csv`・DB登録用CSV×2の生成停止（`ResultCsvRankDB` クラスは温存）
+  - `using`＋`_dbCtrlOverride` 全10箇所を try/finally 化（注入分は破棄しない所有権対応。2026-06-23 の注入対応時に混入した将来の共有破壊リスクを解消）
+  - 仕様変更の経緯: 当初3件上限→全件補完＋出力側制限へ転換、rankED→rank1000/rankUserNum も3件に統一（ニコランWEB管理者の意見）
+- **設計判断**（詳細は `design.md`）:
+  - 除外は出力側ヘルパー（`UserInfoReader` が後段でカテゴリ補完するため収集時点では未確定の動画がある。DB格納値は重複のまま許容）
+  - `RankingHistory` / `NicoApi` の Open/Close は現状維持（`using` なし明示ライフサイクルのため別タスク化が適切）
+  - `IsOpen` ガード統一・Trim統一は見送り（対象クラスにテストなし・出力側で吸収済み。テスト整備時に実施）
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 全119件PASS（既存94＋新規25。内訳: LockedTags 6・FavoriteTagReader 9・DisplayTags 6・Output 4。EXIT CODE 0）、`dotnet build nicorank2019.sln` 成功
+  - reviewerレビュー＋2回の再レビュー: 必須（高・中）指摘を全解消（注入NicoApiのOpenDB非対称・nullガード2件）。再レビューでマージ可判定。低指摘の見送り分は理由をコミットメッセージに記録
+  - ユーザー実行確認: コードレビューOK・マージ指示あり（出力内容変更のため）
+- **残課題**: Issue #28（ランキングJSON肥大化対策: FavoriteTag見直し＋LastResult.JSON空文字化。外部システムと協議中。今回は対応せず）

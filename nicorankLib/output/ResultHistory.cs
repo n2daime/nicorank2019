@@ -59,7 +59,10 @@ namespace nicorankLib.output
         {
             try
             {
-                using (ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl())
+                // 注入された接続は呼び出し側の所有物のため破棄しない。自前生成分のみ破棄する
+                bool ownsDbCtrl = _dbCtrlOverride == null;
+                ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl();
+                try
                 {
                     if (!dbCtrl.Open(DATASOURCE))
                     {
@@ -131,6 +134,13 @@ namespace nicorankLib.output
                             aCmd.Transaction.Rollback();
                             return false;
                         }
+                    }
+                }
+                finally
+                {
+                    if (ownsDbCtrl)
+                    {
+                        dbCtrl.Dispose();
                     }
                 }
             }

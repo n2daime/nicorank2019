@@ -67,6 +67,75 @@
 
 ---
 
+## APIリクエスト組み立ての型付き化（Issue #19・2026-09）
+
+> タスクは `docs/tasks.md` の「ニコ動APIのリクエスト組み立てを型付きリクエストへ変更」を参照。背景（CLI等による外部検索条件指定の下地・スナップショット優先/nvapi横展開）は Issue #19「なぜ変更するか」を参照。
+
+### Context
+
+- スナップショットAPIのURLを `string.Format` リテラル直書き＋`%2B`手動エンコードで組み立てており、値のエスケープ未実施・必須 `_context` 未送信・フィルタ追加困難の技術負債があった。
+- nvapi も `appendURL` 文字列連結で同種の問題（特に日本語 `tag` の未エンコード）を抱えていた。
+- 公式仕様はいずれも GET クエリパラメータ形式のため、JSONボディPOST化はしない。
+
+### Decisions
+
+#### Decision: SnapShotRequest（型付きリクエストクラス新設・`nicorankLib/SnapShot/SnapShotRequest.cs`）
+
+- **選択**: `q/targets/fields/filters/_sort/_limit/_offset/_context` をプロパティで保持し、`ToUrl()` で組み立て。キーは公式のブラケット記法（`filters[...][...]`）のまま、**値のみ `Uri.EscapeDataString`**。
+- **理由**: ブラケットまでエンコードすると公式curl例の記法と乖離する。値のみのエンコードで `+09:00`→`%2B` の手書きが不要になり、日本語・`&`・`%` 混じり値のクエリ破壊を防ぐ。旧URLとのデコード等価性は単体テストで担保。
+- **`_context` は `WeeklyNicoranProgram` を流用**（現行UAと同一・40文字制限内・追跡性維持）。
+- **`_limit/_offset` はクランプ**（上限100/100000・下限0）。`_limit=0` の件数取得用途は維持。
+- **見送り**: 日付逆転・`Context` 長・`Fields` 空等のバリデーションは将来のCLI外部指定時に実施（現行フローは内部生成のみのため）。
+- **代替案**: `UriBuilder.Query`＋`ParseQueryString` は .NET Framework 4.8 で `System.Web` 依存を持ち込むため不採用。素の `StringBuilder`＋`EscapeDataString` で完結させる。
+
+#### Decision: jsonFilter は string 経路のみ・型階層は先送り
+
+- **選択**: `JsonFilterJson`（生JSON文字列＋エンコード経路）のみ用意し、`equal/range/or/and/not` の型階層は作らない。
+- **理由**: 現行フローで使用箇所ゼロ。CLI要件未確定の段階で型を固めると手戻りになる。string経路があれば将来の型追加はビルダー内に閉じる。
+
+#### Decision: SetRequestResult の flgLimit1000 不整合を解消
+
+- **選択**: 旧 `SetRequestResult` は `flgLimit1000` を無視し常に1000制限URLを使っていた。`CreateRequestUrl(limit, offset, flgLimit1000)` に一本化し、件数取得時と同じフラグでページング取得する。未使用の `dateTime` 引数は `flgLimit1000` に置換。
+- **理由**: 直近1年は「件数取得は無制限・実取得は1000制限」の矛盾があった。specs.md の「1000再生以上フィルタ（直近1年以外）」通りの挙動に合わせる。振る舞い変更のためレビュー依頼文・コミットメッセージに明記。
+
+#### Decision: Replace(":null", ":0") は温存
+
+- **選択**: シリアライズ設定側での解消は見送り、文字列ハックを維持。必須性を示す回帰テスト（`FromJson_NullCounters_RequireNullToZeroReplacement`）を追加。
+- **理由**: 実証したところ null→`long` 直結の `FromJson` は `JsonSerializationException` で失敗する。POCOを `long?` 化すると `SnapShotDB.RegistDB` まで波及しリスク＞効果。
+- **見送り**: カウンタ限定の正規表現への狭め化（文字列値中の `:null` 破壊は現実リスク極小のため）。
+
+#### Decision: nvapi は辞書受け＋最小限ガード（横展開）
+
+- **選択**: `requestAPI(apiurl, appendURL)` → `requestAPI(apiurl, query辞書)` に変更し文字列連結を廃止。`_frontendId=6`・UAを定数化。パス埋め込み（`genre/featuredKey`）も `EscapeDataString`。`tag` は `term=24h/hour` 以外では省略＋ログ（公式仕様の制約）。
+- **理由**: 日本語タグの未エンコードが実害リスク最大のため。`tag` 省略は振る舞い変更のためレビュー依頼文・コミットメッセージに明記。
+- **汎用組み立ては `nicorankLib.Util.ApiUrlBuilder` に抽出**（reviewer指摘対応）。値のエンコード・`?`/`&` 切替・null/空辞書を単体テストで担保し、`NicoRankiApi.BuildUrl` は `_frontendId` 付与＋委譲に縮小。`tag` 分岐自体はspec直結の条件のため抽出せず、両分岐のdict形状に対するテストで間接担保する。
+- **見送り**: `term` の大文字小文字許容（`config.json` 由来の固定小文字語彙のため）・`BuildUrl` の順序テスト（oldlogは単体テスト対象外・委譲は目視済み）・フラグメント付きURL（呼び出し元なし）。
+- **見送り**: `NicoApi.cs` のID連結（`sm/so`＋数字のみで実害なし）・`JsonReader`系のパス連結（クエリなし）・`InternetUtil` のデッドコードは対象外。理由はレビュー依頼文・コミットメッセージに残す。
+
+#### Decision: エンコード済みURLの実サーバー受け入れは実証済み
+
+- 全面エンコード（`fields` の `,`→`%2C`・日時の `:`→`%3A`・`+09:00`→`%2B`）＋`_context` 送信の件数取得1件で HTTP 200・`status:200` を確認（2026-09-04）。旧URLとのデコード等価性と併せ、移行の安全性を担保する。
+
+---
+
+## タグ出力の再設計（Issue #27・2026-09）
+
+### Context
+
+- 実利用者から「カテゴリ名と FavoriteTag が重複する」「ロックタグは3つだけ欲しい時と全部欲しい時がある」と要望があった
+- 文字コード違いの出力群（SJIS / DB登録用CSV）は旧連携方式の名残で、現行は `result_DB登録用(UTF8).json` に一本化済みのため存在理由が消滅していた
+- `FavoriteTags` は `HashSet<string>` で出力順が不定だったため、「最大3つ」の切り取りが決定的にならない問題があった
+
+### Decisions
+
+- **収集は無制限・制限は出力側**: `FavoriteTagReader` の件数上限を廃止し全件補完する。TSV系の3件制限は `NrmOutput` の上限パラメータで行う（`result(UTF8).csv`・`result_DB登録用(UTF8).json` はそれぞれ全件仕様）
+- **カテゴリ重複の除外は出力側ヘルパー**（`Ranking.GetDisplayTags()`）: `UserInfoReader` が後段でカテゴリを補完するため、収集時点ではカテゴリ未確定の動画がある。最終カテゴリで判定する出力側が完全。DB格納値は重複のまま残ることを許容
+- **順序保障のため `List<string>` 化**: 影響は宣言・初期化・マージ・3箇所の `Add`（重複判定化）のみ。DB・履歴内の既存 JSON は配列形式のため互換性あり
+- **SJIS・DB登録用CSV の生成停止**: `CreateOutputCSV` の設定からSJIS除外、`CreateOutputCSV_rankDB`（週刊。SPは継承、中間は既にnull）を `null` 化。`frmMainSyukei` はnull安全のため無変更。`ResultCsvRankDB` クラスは温存
+- **中間集計は外部取得なし**（`isLocalOnly`）: `FavoriteTagReader` にフラグを追加し、中間集計のみ `UpdateTumbInfo` を呼ばずキャッシュ参照で補完する。週刊/SPは先行オプション（`GenreInfoReader`/`UserInfoReader`/`MovieInfoReader`）が確保するため現状維持
+
+---
+
 ## 実装済みの設計判断（要点）
 
 詳細は `docs/knowledge/db.md`・`docs/knowledge/testing.md` を参照。

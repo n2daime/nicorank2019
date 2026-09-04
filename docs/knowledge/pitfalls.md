@@ -65,6 +65,7 @@
   - `nicorankLib.csproj:233` を `HintPath` 付き `System.ValueTuple 4.0.5.0` (`..\packages\System.ValueTuple.4.6.2\lib\net47\System.ValueTuple.dll`) に変更し `CopyLocal` 化。
   - `None` で `System.ValueTuple.dll` を `CopyToOutputDirectory` で `bin` 直下に手動配置。`PostBuildEvent` の `del System.*` は `System.ValueTuple` を除外（現在は `del System.*` 自体を廃止し `System.Buffers/Memory` 等のみ個別削除）。
   - `App.config` の `bindingRedirect` は `SQLitePCLRaw.core 2.1.12.3116` と `System.ValueTuple 4.0.5.0` を単一 `assemblyBinding` 内に集約し `probing` と分離。`AutoGenerateBindingRedirects=true` のままでは二重 `assemblyBinding` が生成され後者が無視されるため `csproj:14` で `false` にし手動管理。
+  - EXE 側 `App.config` の redirect は `nicorankLib/app.config` と整合させること。食い違うと `MSB3276` になる（#25 で `System.Memory` が EXE 側 `4.0.1.2`・Lib 側 `4.0.5.0` に乖離して発覚。詳細ログの「マップし直してください」が正解バージョンを示す）。
 
 ### 4f. `packages.config` と `buildTransitive` の不一致（2026-08）
 
@@ -164,3 +165,13 @@
 - **対策（実装済み）**: `nicorank2019` / `nicorank_SnapShot` の `App.config` に `<loadFromRemoteSources enabled="true" />` を追加
 - **エンドユーザー向け即時回避策**: `Get-ChildItem "<展開先>\lib" -Recurse -File | Unblock-File` または各 DLL のプロパティ「許可する」
 - **切り分けの教訓**: 差分が MOTW・ACL・隠し属性などメタデータだけの場合、ファイルのバイト比較では検出できない。`Get-Item -Stream Zone.Identifier` で ADS を確認する。エラー詳細は `nicorankerr.log` に例外チェーン込みで記録されるため、ユーザー報告時はそちらを取得する
+
+### 17. ライブラリ移行時のランタイム挙動差分チェックリスト（Issue #22・2026-09）
+
+- **背景**: #20 移行ではビルド成功・単体テスト全件 PASS 後に実行時テストでのみ同一コマンド再利用問題が発覚した。API 互換だけでなくランタイム挙動差分を検証する。
+- **チェック項目（移行・更新時に全件確認）**:
+  - 同一 `SqliteCommand` の使い回し箇所を `CreateCommand()` 単位で列挙し、`CommandText` 差し替え前とループ内 `AddWithValue` 前に `Parameters.Clear()` があるか確認する。`Microsoft.Data.Sqlite` では重複追加が `InvalidOperationException`（重複バインド）になる
+  - `CommandText` 差し替えでもパラメータ名が同一で追加し直さない連続実行（`ResultHistory` の SELECT→DELETE 等）は `Clear` 不要のため対象外とする。機械的に `Clear` を足さず用途で判断する
+  - `ALTER TABLE` と `INSERT` を同一トランザクションで行う箇所（`TyukanAnalyze.calcDailyRank` / `ResultHistory.Execute` 型）では、失敗時のロールバックで `ALTER` も巻き戻る連鎖を想定する。回帰テストは成功系（列存在確認→`ALTER`→`INSERT`→コミット）のみ再現し、ロールバック→再実行の検証は残課題とする。再実行時の列存在確認（`PRAGMA table_info`／`PRAGMA_TABLE_INFO`）と後続処理の列参照は移行時に目視確認する
+  - 単体テストは操作パターン単位だけでなく、実際の呼び出しシーケンス（差し替え・ループ・トランザクション境界）を再現する。再利用シナリオの回帰テストは `UnitTest/nicorankLib/Util/UnitTestDbCommandReuse.cs` に集約する
+  - 大量登録は `db.md` のバッチ設計（バッチコミット + `INSERT OR IGNORE` + パラメータ再利用）を維持し、ループ内 `Add` ではなく `Value` 更新または毎回 `Clear` のいずれかに統一する

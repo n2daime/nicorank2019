@@ -15,9 +15,13 @@
 
 ## 未完了タスク
 
-### ビルド警告の対処と未使用 AngleSharp の削除
+### ランキングJSON肥大化対策（#28）
 
-> GitHub issue #25 対応。Release ビルドの警告 5 件（MSB3276 / CS0414 / CS0168×3）の対処と、`nicorank_oldlog` から未使用の AngleSharp PackageReference を削除（Dependabot #10）。詳細は issue を参照。
+> 外部システムとの協議中のため着手不可。#27 の全件補完で肥大化が進行した件の対策 backlog。
+
+- [ ] 28.1 外部システムとの協議結果を反映した FavoriteTag フィールド仕様の確定
+- [ ] 28.2 LastResult.JSON の空文字登録化
+- [ ] 28.3 移行用batファイルの配布手順の整備
 
 ### テスト拡充（集計ロジック）
 
@@ -36,30 +40,14 @@
 
 ---
 
-### ニコ動APIのリクエスト組み立てを型付きリクエストへ変更
-
-> GitHub issue #19 対応。詳細は `docs/specs.md`「API 仕様」と issue を参照。
-
-#### 1. スナップショット検索 API（優先度高・nicorankLib/SnapShot/SnapShotAnalyze.cs）
-
-- [ ] 1.1 型付きリクエストクラス（q / targets / fields / filters / _sort / _limit / _offset / _context）を新設
-- [ ] 1.2 `REQUEST_URL` / `REQUEST_URL_LAST_1YEAR` の `string.Format` を廃止し UriBuilder + 正しいエンコードで URL 生成
-- [ ] 1.3 必須パラメータ `_context` を追加
-- [ ] 1.4 レスポンスの `Replace(":null", ":0")` ハックをシリアライズ設定側で解消（検討）
-- [ ] 1.5 URL 生成の単体テストを追加（パラメータ・エンコード・`_context` 有無）
-
-#### 2. nvapi ランキング API（優先度低・nicorank_oldlog/RankAPI/NicoRankiApi.cs）
-
-- [ ] 2.1 `requestAPI` をクエリパラメータ（辞書型）受け取りに変更し文字列連結を廃止
-- [ ] 2.2 `_frontendId=6` を定数化
-- [ ] 2.3 `GetGenreRanking` / `GetTeibanRanking` を型付きで呼び出し
-
----
-
 ## 完了済みタスク（履歴）
 
 | タスク | 完了日 | 主な成果物 |
 |---|---|---|
+| 人気タグのタグロック補完(#27)✅ | 2026-09-04 | GetLockedTags新設・全件補完・FavoriteTags List化・GetDisplayTags・TSV系上限3・UTF8/JSON全件・SJIS/DB登録用CSV停止・isLocalOnly・所有権全10箇所対応、UnitTest25件追加（計119件）、specs/design/knowledge更新 |
+| ニコ動APIのリクエスト組み立てを型付きリクエストへ変更(#19) | 2026-09-04 | SnapShotRequest・ApiUrlBuilder新設、nvapi辞書化、UnitTest19件追加（計94件）、specs/design更新 |
+| 単体テストでDB操作のビジネスロジック問題を検出できるようにする(#22) | 2026-09-03 | NicoApi残存Clear漏れ2件修正、UnitTestDbCommandReuse新設6件（計75件）、pitfalls項目17・testing/structure更新 |
+| ビルド警告の対処と未使用 AngleSharp の削除 | 2026-09-03 | CS0168×3・CS0414・MSB3276(System.Memory 4.0.5.0整合)・CS0162・Fody警告を解消しソリューション警告0、nicorank_oldlog の AngleSharp 削除 |
 | 配布 zip 展開時の MOTW で SQLiteCtrl のタイプ初期化が失敗する対処 | 2026-09-01 | App.config に `loadFromRemoteSources` 追加(両アプリ)、起動時エラー表示の例外チェーン化、pitfalls.md 項目16・release.md 更新 |
 | デッドロジック削除（NocoChartReader / NicoChartModel / AngleSharp） | 2026-08-31 | 呼び出し元ゼロの NocoChartReader・専用モデル削除、AngleSharp 依存の除去 |
 | Nicochartの仕様変更対応（別ロジックで代替） | 2026-08-31 | RankingHistory/SabunReader 改修（so40000000 未満を新着偽造として除外）、LogNicoChart.db 依存・SYSTEM.NicoChart 設定の完全削除 |

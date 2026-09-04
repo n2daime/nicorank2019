@@ -87,7 +87,7 @@ AnalyzeRank():
 | クラス | 責務 |
 |---|---|
 | `TyokiHantei` | **長期動画判定**。NicoranHistory.db の History で過去ランクイン回数を数え、今回含め3回目以降を長期リストに。`Output/長期動画リスト.txt` 出力。`ModeFactoryBase.GetRank()` が件数を紹介枠に加算（門番拡張） |
-| `FavoriteTagReader` | LogOfficial.db の Ranking.人気のタグ から最新データを取得し FavoriteTags に追加（UserEnd 以内 or カテゴリ1位） |
+| `FavoriteTagReader` | LogOfficial.db の Ranking.人気のタグ＋ApiXML.db のタグロック（全件・定義順）を FavoriteTags（List・挿入順）に取得（UserEnd 以内 or カテゴリ1位）。件数上限なし（Issue #27） |
 | `UserInfoReader` | NicoApi でユーザー名/アイコン情報を取得（未取得のみ） |
 
 ## Analyze/model
@@ -103,9 +103,9 @@ AnalyzeRank():
 
 | クラス | 生成物 |
 |---|---|
-| `NrmOutput` | `rank.txt` / `rank{UserNum}.txt` / `rankED.txt`（TSV） |
-| `ResultCsv` | `result(UTF8).csv` / `result(SJIS).csv` |
-| `ResultCsvRankDB` | `result_DB登録用(UTF8).csv` / `result_DB登録用(SJIS).csv`（27列・旧フォーマット互換） |
+| `NrmOutput` | `rank.txt` / `rankED.txt` / `rank{UserNum}.txt` / `rank1000.txt`（TSV・タグ最大3件。全件はCSV・JSONのみ）。`GetDisplayTags()` でカテゴリ同名除外 |
+| `ResultCsv` | `result(UTF8).csv`（最終列「人気のタグ」・全件。SJISは生成停止） |
+| `ResultCsvRankDB` | 生成停止（連携は `result_DB登録用(UTF8).json` に一本化。クラスは温存） |
 | `ResultJsonRankDB` | `result_DB登録用(UTF8).json` |
 | `ResultImagegetBase`（abstract） | 画像 DL キュー出力基底（.irv 形式） |
 | `ResultImagegetMovieIcon` | `queue.irv`（動画サムネイル、ED枠まで） |
@@ -123,6 +123,7 @@ AnalyzeRank():
 
 - `SnapController` — スナップショット一括取得エントリ。20070306 から現在まで 15 日間隔でループ。直近1年以内は 1000 再生制限なし URL、それ以前は制限あり URL。10000 件ごとに `SnapShotDB.RegistDB`
 - `SnapShotAnalyze` — snapshot API リクエスト構築・並列ページング（4 並列）。総件数 5 万超なら期間を狭めて再試行。`":null"` → `":0"` 置換
+- `SnapShotRequest` — スナップショット検索API v2 の型付きリクエスト（Issue #19）。`q/targets/fields/filters/jsonFilter/_sort/_limit/_offset/_context` を保持し値のみ `EscapeDataString` で URL 生成。`_context` 既定 `WeeklyNicoranProgram`、`_limit/_offset` クランプ
 - `SnapShotDB` — `LogSnapshot{yyyyMMdd}.db` の作成・登録（5000件バッチコミット・INSERT OR IGNORE・パラメータ再利用）。`ISQLiteCtrl` 注入可。旧 JSON ファイル読込（`GetJsonData`）も保持
 - `SnapShotJson` — レスポンス POCO
 
@@ -136,6 +137,7 @@ AnalyzeRank():
 | クラス | 責務 |
 |---|---|
 | `SQLiteCtrl : ISQLiteCtrl, IDisposable` | SQLite 接続管理（`Microsoft.Data.Sqlite 10.0.11` + `SQLitePCLRaw 2.1.12`）。`Open()`（`Data Source="<path>";Pooling=False;Default Timeout=30` 文字列構築 + PRAGMA 4種・失敗時継続。`lib` 集約で `probing`）/ `OpenInMemory()`（`Data Source=:memory:`）/ `Close()` / `Dispose()`。`Connection` は `SqliteConnection` 型 |
+| `ApiUrlBuilder` | GETクエリ付きURL組み立ての静的ヘルパー（Issue #19）。キーはそのまま・値は `EscapeDataString`、`?`/`&` 切替、null/空対応 |
 | `ISQLiteCtrl` | SQLite 操作の抽象化（`SqliteConnection` 公開。テストでインメモリ実装に差し替え） |
 | `StatusLog` | 静的。`IStatusLogWriter` を注入するプラグイン方式（UI 側が実装を注入。未設定なら何も出さない） |
 | `ErrLog` | シングルトン。`nicorankerr.log` に追記（UTF8）。`Close()` で非 SilentMode ならキー入力待ち |
