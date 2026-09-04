@@ -7,6 +7,7 @@ namespace nicorankLib.Util
     /// <summary>
     /// GETクエリパラメータ付きURLの組み立て（Issue #19）
     /// キーはそのまま、値は Uri.EscapeDataString でエンコードする。ベースURLにクエリがあれば &amp; で連結する。
+    /// キーは呼び出し側の固定リテラルに限定すること（キー自体はエンコードしない）。
     /// </summary>
     public static class ApiUrlBuilder
     {
@@ -18,6 +19,7 @@ namespace nicorankLib.Util
         /// <returns>組み立てたURL</returns>
         public static string Build(string baseUrl, IDictionary<string, string> query)
         {
+            if (baseUrl == null) { throw new ArgumentNullException("baseUrl"); }
             var url = new StringBuilder(baseUrl);
             string separator = baseUrl.Contains("?") ? "&" : "?";
             if (query != null)

@@ -86,5 +86,11 @@ namespace UnitTest.nicorankLib.Util
 
             Assert.AreEqual("https://example.com/api?_frontendId=6&page=1", url);
         }
+
+        [TestMethod]
+        public void Build_NullBaseUrl_Throws()
+        {
+            Assert.ThrowsException<ArgumentNullException>(() => ApiUrlBuilder.Build(null, new Dictionary<string, string>()));
+        }
     }
 }

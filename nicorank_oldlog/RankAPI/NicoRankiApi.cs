@@ -76,7 +76,7 @@ namespace nicorank_oldlog.RankAPI
             {
                 foreach (var param in query)
                 {
-                    merged.Add(param.Key, param.Value);
+                    merged[param.Key] = param.Value;
                 }
             }
             return ApiUrlBuilder.Build(apiurl, merged);
