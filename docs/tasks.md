@@ -15,17 +15,6 @@
 
 ## 未完了タスク
 
-### 人気タグのタグロック補完（#27）
-
-- [ ] 27.1 `NicoApi` に取得専責 `GetLockedTags` を追加する
-- [ ] 27.2 `FavoriteTagReader` に不足時補完（上限なし全件、最新取得日、全対象を確保）を実装する
-- [ ] 27.3 `FavoriteTags` をList化し挿入順を保証する
-- [ ] 27.4 出力側共通ヘルパー（カテゴリ同名除外）＋ファイル別仕様（TSV系上限3・UTF8/JSON全件・SJIS/DB登録用CSV停止）を実装する
-- [ ] 27.5 単体・結合テストを追加し、テスト＋ビルドを成功させる
-- [ ] 27.6 `using`＋`_dbCtrlOverride` 全10箇所の所有権対応（レビュー指摘の横展開。注入分は破棄しない）
-- [ ] 27.7 中間集計の外部取得停止（`isLocalOnly`。キャッシュ参照のみで補完）
-- [ ] 27.8 ユーザー実行確認を得て `develop` にマージする
-
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。
@@ -47,6 +36,7 @@
 
 | タスク | 完了日 | 主な成果物 |
 |---|---|---|
+| 人気タグのタグロック補完(#27)✅ | 2026-09-04 | GetLockedTags新設・全件補完・FavoriteTags List化・GetDisplayTags・TSV系上限3・UTF8/JSON全件・SJIS/DB登録用CSV停止・isLocalOnly・所有権全10箇所対応、UnitTest25件追加（計119件）、specs/design/knowledge更新 |
 | ニコ動APIのリクエスト組み立てを型付きリクエストへ変更(#19) | 2026-09-04 | SnapShotRequest・ApiUrlBuilder新設、nvapi辞書化、UnitTest19件追加（計94件）、specs/design更新 |
 | 単体テストでDB操作のビジネスロジック問題を検出できるようにする(#22) | 2026-09-03 | NicoApi残存Clear漏れ2件修正、UnitTestDbCommandReuse新設6件（計75件）、pitfalls項目17・testing/structure更新 |
 | ビルド警告の対処と未使用 AngleSharp の削除 | 2026-09-03 | CS0168×3・CS0414・MSB3276(System.Memory 4.0.5.0整合)・CS0162・Fody警告を解消しソリューション警告0、nicorank_oldlog の AngleSharp 削除 |

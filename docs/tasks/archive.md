@@ -181,3 +181,27 @@
   - reviewerレビュー＋再レビュー: 必須（高・中）指摘を全解消（中1件は ApiUrlBuilder 抽出で対応）。低指摘の見送り分は理由をコミットメッセージ・design.md に記録。再レビューでマージ可判定
   - ユーザー実機確認: 修正前後の daily（2026-09-04）200ファイルをID集合比較。ファイル集合一致・AFTER空ファイル0・総件数+0.15%・共通IDタイトル変更4件のみ。上位100位は100%維持（r18除き90%）で変動は501位以降に集中＝取得時刻差のランキング変動。取得欠落なしと判定
 - **残課題**: `tag` 省略ガードの実動作確認は weekly（term=week＋tag付き区分）取得時に目視するのが確実（daily は term=24h のため新旧同一条件）
+
+---
+
+## 2026-09-04 人気タグのタグロック補完 (#27)
+
+- **Issue**: #27
+- **ブランチ**: `feature/t27-favorite-tag-complement` → `develop`（`2fe6f3c` Merge）
+- **背景**: `FavoriteTagReader` は LogOfficial.db の「人気のタグ」のみ取得していた。実利用者から「カテゴリ名とタグの重複」「ロックタグは3つだけ欲しい時と全部欲しい時がある」と要望があった。文字コード違いの出力群（SJIS / DB登録用CSV）は旧連携方式の名残で、現行は `result_DB登録用(UTF8).json` に一本化済みのため存在理由が消滅していた
+- **実施内容**:
+  - `NicoApi.GetLockedTags` 新設（取得専責。最新取得日行・`lock="1"` 定義順・異常時は空リスト）。`UpdateTumbInfo` と分離し他オプションの処理順に依存しない自己完結型。テスト容易性のため `UpdateTumbInfo` / `OpenDB` / `CloseDB` を virtual 化
+  - `FavoriteTagReader` は件数上限を廃止し全件補完（全対象を `UpdateTumbInfo` で確保。中間集計のみ `isLocalOnly: true` で外部取得なし・キャッシュ参照のみ。週刊/SPは先行オプションが確保するため現状維持）
+  - `FavoriteTags` を `HashSet`→`List` 化し挿入順を保証（人気タグ→タグロック定義順）。`Ranking.GetDisplayTags()` で出力時にカテゴリ同名タグを除外（Trim後完全一致・空カテゴリは除外なし・非破壊）
+  - `NrmOutput` にタグ上限パラメータ追加（TSV系4ファイルはすべて3件。全件は `result(UTF8).csv` 最終列と `result_DB登録用(UTF8).json` のみ）。`result(SJIS).csv`・DB登録用CSV×2の生成停止（`ResultCsvRankDB` クラスは温存）
+  - `using`＋`_dbCtrlOverride` 全10箇所を try/finally 化（注入分は破棄しない所有権対応。2026-06-23 の注入対応時に混入した将来の共有破壊リスクを解消）
+  - 仕様変更の経緯: 当初3件上限→全件補完＋出力側制限へ転換、rankED→rank1000/rankUserNum も3件に統一（ニコランWEB管理者の意見）
+- **設計判断**（詳細は `design.md`）:
+  - 除外は出力側ヘルパー（`UserInfoReader` が後段でカテゴリ補完するため収集時点では未確定の動画がある。DB格納値は重複のまま許容）
+  - `RankingHistory` / `NicoApi` の Open/Close は現状維持（`using` なし明示ライフサイクルのため別タスク化が適切）
+  - `IsOpen` ガード統一・Trim統一は見送り（対象クラスにテストなし・出力側で吸収済み。テスト整備時に実施）
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 全119件PASS（既存94＋新規25。内訳: LockedTags 6・FavoriteTagReader 9・DisplayTags 6・Output 4。EXIT CODE 0）、`dotnet build nicorank2019.sln` 成功
+  - reviewerレビュー＋2回の再レビュー: 必須（高・中）指摘を全解消（注入NicoApiのOpenDB非対称・nullガード2件）。再レビューでマージ可判定。低指摘の見送り分は理由をコミットメッセージに記録
+  - ユーザー実行確認: コードレビューOK・マージ指示あり（出力内容変更のため）
+- **残課題**: Issue #28（ランキングJSON肥大化対策: FavoriteTag見直し＋LastResult.JSON空文字化。外部システムと協議中。今回は対応せず）
