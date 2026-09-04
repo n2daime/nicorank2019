@@ -32,31 +32,11 @@
 
 ---
 
-### ニコ動APIのリクエスト組み立てを型付きリクエストへ変更
-
-> GitHub issue #19 対応。詳細は `docs/specs.md`「API 仕様」と issue を参照。
-> 背景：将来的な CLI 操作等での外部検索条件指定の下地として、Get パラメータ直書きの技術負債を解消する。スナップショット API v2 を優先度高、nvapi は横展開程度（優先度低）で実施する。
-
-#### 1. スナップショット検索 API（優先度高・nicorankLib/SnapShot/SnapShotAnalyze.cs）
-
-- [ ] 1.1 型付きリクエストクラス（q / targets / fields / filters / _sort / _limit / _offset / _context）を新設
-- [ ] 1.2 `REQUEST_URL` / `REQUEST_URL_LAST_1YEAR` の `string.Format` を廃止し UriBuilder + 正しいエンコードで URL 生成
-- [ ] 1.3 必須パラメータ `_context` を追加
-- [ ] 1.4 レスポンスの `Replace(":null", ":0")` ハックをシリアライズ設定側で解消（検討）
-- [ ] 1.5 URL 生成の単体テストを追加（パラメータ・エンコード・`_context` 有無）
-
-#### 2. nvapi ランキング API（優先度低・nicorank_oldlog/RankAPI/NicoRankiApi.cs）
-
-- [ ] 2.1 `requestAPI` をクエリパラメータ（辞書型）受け取りに変更し文字列連結を廃止
-- [ ] 2.2 `_frontendId=6` を定数化
-- [ ] 2.3 `GetGenreRanking` / `GetTeibanRanking` を型付きで呼び出し
-
----
-
 ## 完了済みタスク（履歴）
 
 | タスク | 完了日 | 主な成果物 |
 |---|---|---|
+| ニコ動APIのリクエスト組み立てを型付きリクエストへ変更(#19) | 2026-09-04 | SnapShotRequest・ApiUrlBuilder新設、nvapi辞書化、UnitTest19件追加（計94件）、specs/design更新 |
 | 単体テストでDB操作のビジネスロジック問題を検出できるようにする(#22) | 2026-09-03 | NicoApi残存Clear漏れ2件修正、UnitTestDbCommandReuse新設6件（計75件）、pitfalls項目17・testing/structure更新 |
 | ビルド警告の対処と未使用 AngleSharp の削除 | 2026-09-03 | CS0168×3・CS0414・MSB3276(System.Memory 4.0.5.0整合)・CS0162・Fody警告を解消しソリューション警告0、nicorank_oldlog の AngleSharp 削除 |
 | 配布 zip 展開時の MOTW で SQLiteCtrl のタイプ初期化が失敗する対処 | 2026-09-01 | App.config に `loadFromRemoteSources` 追加(両アプリ)、起動時エラー表示の例外チェーン化、pitfalls.md 項目16・release.md 更新 |

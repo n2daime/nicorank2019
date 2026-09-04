@@ -157,3 +157,27 @@
   - zip ホワイトリスト照合（不要ファイルの混入なし）、MOTW 付き lib での起動確認済み（ユーザー）
 - **実機集計確認（週刊/中間/SP）**: ユーザー判断で省略（変更が config・エラー表示のみで集計ロジックに影響しないため）
 - **備考**: Release ノートは `--notes-file` 方式（前回の知見通り）、exe と exe.config のセット上書き案内を明記。既知の Dependabot 警告（moderate × 1、Dependabot #10・#25 対応対象）は継続中
+
+---
+
+## 2026-09-04 ニコ動APIのリクエスト組み立てを型付きリクエストへ変更 (#19)
+
+- **Issue**: #19（作成時に未記載だった「なぜ変更するか」を追記済み）
+- **ブランチ**: `feature/t019-snapshot-typed-request` → `develop`（`44795c7` Merge）
+- **背景**: スナップショット検索 API v2 には未使用パラメータが多数あり、将来的な CLI 操作等での外部検索条件指定の下地として Get パラメータ直書きの技術負債を解消する。スナップショット API v2 を優先度高、nvapi は拡張予定なしのため横展開程度（優先度低）で実施。
+- **実施内容**:
+  - `nicorankLib/SnapShot/SnapShotRequest.cs` 新設（q / targets / fields / filters / jsonFilter / _sort / _limit / _offset / _context）。キーはブラケット記法のまま、値のみ `EscapeDataString`。`_context=WeeklyNicoranProgram` 追加、`_limit/_offset` クランプ。`jsonFilter` は string 経路のみで型階層は先送り
+  - `SnapShotAnalyze.cs` の `REQUEST_URL` 直書き廃止。`SetRequestResult` の `flgLimit1000` 無視（常に1000制限URL）を解消し件数取得と統一。未使用 `dateTime` 引数を `flgLimit1000` に置換
+  - `nicorankLib/Util/ApiUrlBuilder.cs` 新設（reviewer指摘対応。汎用クエリ組み立て＋`?`/`&` 切替）。`NicoRankiApi.requestAPI` を辞書受けに変更し文字列連結廃止、`_frontendId`・UA 定数化、genre/featuredKey パスをエンコード、`tag` は term=24h/hour 以外省略＋ログ
+  - `UnitTestSnapShotRequest.cs` 9件＋`UnitTestApiUrlBuilder.cs` 7件＋境界値3件追加。計94件（75→94）
+  - `specs.md`（API仕様の現実装）・`design.md`（型付き化の設計判断）に反映
+- **設計判断**（詳細は `design.md`）:
+  - `Replace(":null", ":0")` は温存。null→`long` 直結の `FromJson` は `JsonSerializationException` を実証済み。`long?` 化は `RegistDB` まで波及するためリスク＞効果
+  - `NicoApi.cs` のID連結・`JsonReader`系パス連結・`InternetUtil` デッドコードは対象外（実害なし・変更リスク＞効果）
+  - 日付逆転等のバリデーションは将来のCLI外部指定時に実施
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 全94件PASS（EXIT CODE 0）、`dotnet build nicorank2019.sln` 成功・警告0
+  - 全面エンコード＋`_context` の件数取得1件で実サーバー HTTP 200・`status:200` を確認
+  - reviewerレビュー＋再レビュー: 必須（高・中）指摘を全解消（中1件は ApiUrlBuilder 抽出で対応）。低指摘の見送り分は理由をコミットメッセージ・design.md に記録。再レビューでマージ可判定
+  - ユーザー実機確認: 修正前後の daily（2026-09-04）200ファイルをID集合比較。ファイル集合一致・AFTER空ファイル0・総件数+0.15%・共通IDタイトル変更4件のみ。上位100位は100%維持（r18除き90%）で変動は501位以降に集中＝取得時刻差のランキング変動。取得欠落なしと判定
+- **残課題**: `tag` 省略ガードの実動作確認は weekly（term=week＋tag付き区分）取得時に目視するのが確実（daily は term=24h のため新旧同一条件）

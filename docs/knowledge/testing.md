@@ -9,7 +9,7 @@ dotnet test UnitTest/UnitTest.csproj
 
 - 環境: **.NET Framework 4.8 ターゲットだが .NET 10 SDK でビルド・実行**（Windows）
 - テストフレームワーク: MSTest 3.5.2 / モック: Moq 4.20.72
-- 全 **75 件**のテストが PASS
+- 全 **94 件**のテストが PASS
 
 ## 構成
 
@@ -24,9 +24,10 @@ UnitTest/
 │   ├── TestConfigBuilder.cs  # Config の非公開フィールドをリフレクションで書き換えるテスト用ビルダー
 │   └── UnitTestTestDbHelper.cs
 └── nicorankLib/
-    ├── Util/       UnitTestSQLiteCtrl(12) / DbQuery(10) / DbWrite(9) / DbSchema(8) / DbError(4) / DbCommandReuse(6) / StatusLog(3) / TextUtil(3)
+    ├── Util/       UnitTestSQLiteCtrl(12) / DbQuery(10) / DbWrite(9) / DbSchema(8) / DbError(4) / DbCommandReuse(6) / StatusLog(3) / TextUtil(3) / ApiUrlBuilder(7)
     ├── Common/     UnitTestConfig(4)
     ├── output/     UnitTestOutput(2)
+    ├── SnapShot/   UnitTestSnapShotRequest(12)
     └── Analyze/model/ UnitTestRanking(6)
 ```
 
@@ -45,6 +46,8 @@ UnitTest/
 | `UnitTestConfig` | 4 | Config シングルトン、デフォルト値、SP モード、XML 文字列出力 |
 | `UnitTestOutput` | 2 | ResultCsv と NrmOutput の一時ディレクトリへの実出力検証 |
 | `UnitTestRanking` | 6 | PointTotal/HoseiAllPoint の補正計算（VOCACOLE2023実測、補正なし、sqrt、削除動画、ゼロ、境界値 0.25〜1.0） |
+| `UnitTestSnapShotRequest` | 12 | SnapShotRequest の URL 生成（1000フィルタ有無・`_context`・`%2B`・旧URL等価・日本語Q・クランプ・ゼロlimit・`_offset`上限・targets省略・jsonFilter・null回帰。Issue #19） |
+| `UnitTestApiUrlBuilder` | 7 | ApiUrlBuilder のクエリ組み立て（日本語tag・tag省略形状・null/空・null値・`?`付きベース・nullベース例外。Issue #19） |
 
 ## テストパターン
 

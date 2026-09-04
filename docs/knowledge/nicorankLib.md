@@ -123,6 +123,7 @@ AnalyzeRank():
 
 - `SnapController` — スナップショット一括取得エントリ。20070306 から現在まで 15 日間隔でループ。直近1年以内は 1000 再生制限なし URL、それ以前は制限あり URL。10000 件ごとに `SnapShotDB.RegistDB`
 - `SnapShotAnalyze` — snapshot API リクエスト構築・並列ページング（4 並列）。総件数 5 万超なら期間を狭めて再試行。`":null"` → `":0"` 置換
+- `SnapShotRequest` — スナップショット検索API v2 の型付きリクエスト（Issue #19）。`q/targets/fields/filters/jsonFilter/_sort/_limit/_offset/_context` を保持し値のみ `EscapeDataString` で URL 生成。`_context` 既定 `WeeklyNicoranProgram`、`_limit/_offset` クランプ
 - `SnapShotDB` — `LogSnapshot{yyyyMMdd}.db` の作成・登録（5000件バッチコミット・INSERT OR IGNORE・パラメータ再利用）。`ISQLiteCtrl` 注入可。旧 JSON ファイル読込（`GetJsonData`）も保持
 - `SnapShotJson` — レスポンス POCO
 
@@ -136,6 +137,7 @@ AnalyzeRank():
 | クラス | 責務 |
 |---|---|
 | `SQLiteCtrl : ISQLiteCtrl, IDisposable` | SQLite 接続管理（`Microsoft.Data.Sqlite 10.0.11` + `SQLitePCLRaw 2.1.12`）。`Open()`（`Data Source="<path>";Pooling=False;Default Timeout=30` 文字列構築 + PRAGMA 4種・失敗時継続。`lib` 集約で `probing`）/ `OpenInMemory()`（`Data Source=:memory:`）/ `Close()` / `Dispose()`。`Connection` は `SqliteConnection` 型 |
+| `ApiUrlBuilder` | GETクエリ付きURL組み立ての静的ヘルパー（Issue #19）。キーはそのまま・値は `EscapeDataString`、`?`/`&` 切替、null/空対応 |
 | `ISQLiteCtrl` | SQLite 操作の抽象化（`SqliteConnection` 公開。テストでインメモリ実装に差し替え） |
 | `StatusLog` | 静的。`IStatusLogWriter` を注入するプラグイン方式（UI 側が実装を注入。未設定なら何も出さない） |
 | `ErrLog` | シングルトン。`nicorankerr.log` に追記（UTF8）。`Close()` で非 SilentMode ならキー入力待ち |
