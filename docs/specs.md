@@ -26,7 +26,7 @@
 
 - 収集: LogOfficial.db の `人気のタグ`（最新集計日）に加え、ApiXML.db（NicovideoThumb・最新取得日）の `lock="1"` タグを定義順に全件補完する（件数上限なし、重複除外）。行なし・Status非ok・パース失敗は素通り。対象は UserEnd 以内 or カテゴリ1位。中間集計は `isLocalOnly` のため外部取得を行わずキャッシュ参照のみ
 - `Ranking.FavoriteTags` は `List<string>` で挿入順を保持する（人気タグ→タグロック定義順）
-- 出力: `Ranking.GetDisplayTags()` が挿入順のままカテゴリ名と同名のタグを除外する（`Trim` 後完全一致。空カテゴリは除外なし）。ファイル別の件数制限は `NrmOutput` の上限パラメータで行う（`rank.txt`・`rankED.txt` のみ3件）
+- 出力: `Ranking.GetDisplayTags()` が挿入順のままカテゴリ名と同名のタグを除外する（`Trim` 後完全一致。空カテゴリは除外なし）。ファイル別の件数制限は `NrmOutput` の上限パラメータで行う（TSV系は3件。`result(UTF8).csv`・`result_DB登録用(UTF8).json` のみ全件）
 
 ### 差分集計と so 新着偽造判定（SabunReader）
 
@@ -54,7 +54,7 @@
 | `CreateHistory()`（NicoranHistory.db 登録） | ✅ ResultHistory | —（null） | —（null） |
 | `TyokiHantei`（長期動画判定・リスト出力） | ✅ | —（null） | —（null） |
 | `CreateNRMRank()`（`rank.txt`） | ✅ 0〜GetRank()・タグ最大3件 | ✅ | ✅ |
-| `CreateNRMRank1000()`（`rank{UserNum}.txt` / `rank1000.txt`） | ✅ rank{UserNum}.txt・タグ全件 | ✅ **rank1000.txt（固定0〜1000）・タグ全件** | ✅ rank{UserNum}.txt・タグ全件 |
+| `CreateNRMRank1000()`（`rank{UserNum}.txt` / `rank1000.txt`） | ✅ rank{UserNum}.txt・タグ最大3件 | ✅ **rank1000.txt（固定0〜1000）・タグ最大3件** | ✅ rank{UserNum}.txt・タグ最大3件 |
 | `CreateNRMRankED()`（`rankED.txt`） | ✅ タグ最大3件 | ✅ | ✅ |
 | `CreateOutputCSV()`（result CSV） | ✅ result(UTF8).csv のみ | ✅ | ✅ |
 | `CreateOutputCSV_rankDB()`（DB登録用 CSV） | —（null・生成停止） | —（null） | —（null・継承） |
@@ -137,8 +137,7 @@
 
 | ファイル | クラス | 内容 |
 |---|---|---|
-| `rank.txt` / `rankED.txt` | NrmOutput（タグ最大3件） | 紹介枠 TSV（ID/投稿日/タイトル/再生時間/総合ランク/ポイント/カテゴリ/各ランク・数/前回ランク/補正値/ユーザー情報/人気タグ）。TSV・クォートなし |
-| `rank{UserNum}.txt` / `rank1000.txt` | NrmOutput（タグ無制限） | 同上。人気タグは全件 |
+| `rank.txt` / `rankED.txt` / `rank{UserNum}.txt` / `rank1000.txt` | NrmOutput（タグ最大3件） | 紹介枠 TSV（ID/投稿日/タイトル/再生時間/総合ランク/ポイント/カテゴリ/各ランク・数/前回ランク/補正値/ユーザー情報/人気タグ）。TSV・クォートなし。全件タグは `result(UTF8).csv`・`result_DB登録用(UTF8).json` のみ |
 | `result(UTF8).csv` | ResultCsv | 集計結果全件 CSV。ヘッダー31列（30列＋最終列「人気のタグ」・全件カンマ結合）。文字列は `"` 囲み、`"`→`”` 置換 |
 | `result_DB登録用(UTF8).json` | ResultJsonRankDB | DB 登録用 JSON（Newtonsoft.Json シリアライズ、Formatting.None。変更なし） |
 | `queue.irv` | ResultImagegetMovieIcon | 動画アイコン DL キュー（ED枠まで） |

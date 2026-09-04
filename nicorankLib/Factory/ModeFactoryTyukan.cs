@@ -73,7 +73,7 @@ namespace nicorankLib.Factory
         public override OutputBase CreateNRMRank1000()
         {
             var nrm = new NrmOutput();
-            nrm.Set(OUTPUTDIR, "rank1000.txt", 0, 1000);
+            nrm.Set(OUTPUTDIR, "rank1000.txt", 0, 1000, false, 3);
             return nrm;
         }
 

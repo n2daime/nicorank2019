@@ -113,7 +113,7 @@ namespace nicorankLib.Factory
         {
             var nrm = new NrmOutput();
             var config = Config.GetInstance();
-            nrm.Set(OUTPUTDIR, $"rank{config.UserNum}.txt", 0, config.UserNum);
+            nrm.Set(OUTPUTDIR, $"rank{config.UserNum}.txt", 0, config.UserNum, false, 3);
             return nrm;
         }
 

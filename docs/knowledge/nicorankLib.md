@@ -103,7 +103,7 @@ AnalyzeRank():
 
 | クラス | 生成物 |
 |---|---|
-| `NrmOutput` | `rank.txt` / `rankED.txt`（タグ最大3件）/ `rank{UserNum}.txt` / `rank1000.txt`（TSV・タグ全件）。`GetDisplayTags()` でカテゴリ同名除外 |
+| `NrmOutput` | `rank.txt` / `rankED.txt` / `rank{UserNum}.txt` / `rank1000.txt`（TSV・タグ最大3件。全件はCSV・JSONのみ）。`GetDisplayTags()` でカテゴリ同名除外 |
 | `ResultCsv` | `result(UTF8).csv`（最終列「人気のタグ」・全件。SJISは生成停止） |
 | `ResultCsvRankDB` | 生成停止（連携は `result_DB登録用(UTF8).json` に一本化。クラスは温存） |
 | `ResultJsonRankDB` | `result_DB登録用(UTF8).json` |
