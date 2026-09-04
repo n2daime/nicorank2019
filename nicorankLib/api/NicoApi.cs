@@ -55,7 +55,7 @@ namespace nicorankLib.api
         /// <returns></returns>
         public virtual bool UpdateTumbInfo(IReadOnlyList<Ranking> rankingList, DateTime? targetDate)
         {
-            if (!dbCtrl.IsOpen)
+            if (dbCtrl?.IsOpen != true)
             {
                 return false;
             }
