@@ -114,7 +114,10 @@ namespace nicorankLib.Analyze.Input
             rakingList = new List<Ranking>();
             try
             {
-                using (ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl())
+                // 注入された接続は呼び出し側の所有物のため破棄しない。自前生成分のみ破棄する
+                bool ownsDbCtrl = _dbCtrlOverride == null;
+                ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl();
+                try
                 {
                     if (!dbCtrl.Open(DATASOURCE))
                     {
@@ -162,6 +165,13 @@ namespace nicorankLib.Analyze.Input
                         }
                     }
                 }
+                finally
+                {
+                    if (ownsDbCtrl)
+                    {
+                        dbCtrl.Dispose();
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -180,10 +190,13 @@ namespace nicorankLib.Analyze.Input
         /// <returns></returns>
         protected bool calcDailyRank(DateTime targetDate)
         {
+            // 注入された接続は呼び出し側の所有物のため破棄しない。自前生成分のみ破棄する
+            // （二重usingの外側をtry/finally化。内側のrankOfficialは自前生成のためusingのまま）
+            bool ownsDbCtrl = _dbCtrlOverride == null;
+            ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl();
             try
             {
-                using (ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl())
-                using ( var rankOfficial = new RankingHistory())
+                using (var rankOfficial = new RankingHistory())
                 {
                     if (!rankOfficial.Open())
                     {
@@ -343,6 +356,13 @@ namespace nicorankLib.Analyze.Input
             {
                 ErrLog.GetInstance().Write(ex);
                 return false;
+            }
+            finally
+            {
+                if (ownsDbCtrl)
+                {
+                    dbCtrl.Dispose();
+                }
             }
             return true;
         }

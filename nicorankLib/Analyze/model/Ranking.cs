@@ -165,10 +165,10 @@ namespace nicorankLib.Analyze.model
         public string Category = string.Empty;
 
         /// <summary>
-        /// 人気のタグ
+        /// 人気のタグ（挿入順を保持する。重複なし）
         /// </summary>
         [JsonProperty("FavoriteTags")]
-        public HashSet<string> FavoriteTags;
+        public List<string> FavoriteTags;
 
         /// <summary>
         /// カテゴリランク
@@ -309,7 +309,7 @@ namespace nicorankLib.Analyze.model
 
             HoseiAllPoint = 1;
 
-            FavoriteTags = new HashSet<string>();
+            FavoriteTags = new List<string>();
         }
 
         public void PointCalcReset()
@@ -630,7 +630,7 @@ namespace nicorankLib.Analyze.model
                             foreach (var tag in rankInfo.FavoriteTags)
                             {
                                 var workTag = tag.Trim();
-                                if (!string.IsNullOrEmpty(workTag))
+                                if (!string.IsNullOrEmpty(workTag) && !editInfo.FavoriteTags.Contains(workTag))
                                 {
                                     editInfo.FavoriteTags.Add(workTag);
                                 }
@@ -651,6 +651,33 @@ namespace nicorankLib.Analyze.model
         public string ToJson()
         {
             return JsonConvert.SerializeObject(this);
+        }
+
+        /// <summary>
+        /// 出力用のタグ一覧を取得する（挿入順。カテゴリ名と同名のタグは除外する）
+        /// </summary>
+        /// <returns></returns>
+        public List<string> GetDisplayTags()
+        {
+            var result = new List<string>(FavoriteTags.Count);
+            string workCategory = Category?.Trim();
+            foreach (var tag in FavoriteTags)
+            {
+                if (string.IsNullOrWhiteSpace(tag))
+                {
+                    continue;
+                }
+                var workTag = tag.Trim();
+                if (!string.IsNullOrEmpty(workCategory) && workTag == workCategory)
+                {
+                    continue;
+                }
+                if (!result.Contains(workTag))
+                {
+                    result.Add(workTag);
+                }
+            }
+            return result;
         }
 
 

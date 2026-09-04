@@ -87,7 +87,7 @@ AnalyzeRank():
 | クラス | 責務 |
 |---|---|
 | `TyokiHantei` | **長期動画判定**。NicoranHistory.db の History で過去ランクイン回数を数え、今回含め3回目以降を長期リストに。`Output/長期動画リスト.txt` 出力。`ModeFactoryBase.GetRank()` が件数を紹介枠に加算（門番拡張） |
-| `FavoriteTagReader` | LogOfficial.db の Ranking.人気のタグ から最新データを取得し FavoriteTags に追加（UserEnd 以内 or カテゴリ1位） |
+| `FavoriteTagReader` | LogOfficial.db の Ranking.人気のタグ＋ApiXML.db のタグロック（全件・定義順）を FavoriteTags（List・挿入順）に取得（UserEnd 以内 or カテゴリ1位）。件数上限なし（Issue #27） |
 | `UserInfoReader` | NicoApi でユーザー名/アイコン情報を取得（未取得のみ） |
 
 ## Analyze/model
@@ -103,9 +103,9 @@ AnalyzeRank():
 
 | クラス | 生成物 |
 |---|---|
-| `NrmOutput` | `rank.txt` / `rank{UserNum}.txt` / `rankED.txt`（TSV） |
-| `ResultCsv` | `result(UTF8).csv` / `result(SJIS).csv` |
-| `ResultCsvRankDB` | `result_DB登録用(UTF8).csv` / `result_DB登録用(SJIS).csv`（27列・旧フォーマット互換） |
+| `NrmOutput` | `rank.txt` / `rankED.txt`（タグ最大3件）/ `rank{UserNum}.txt` / `rank1000.txt`（TSV・タグ全件）。`GetDisplayTags()` でカテゴリ同名除外 |
+| `ResultCsv` | `result(UTF8).csv`（最終列「人気のタグ」・全件。SJISは生成停止） |
+| `ResultCsvRankDB` | 生成停止（連携は `result_DB登録用(UTF8).json` に一本化。クラスは温存） |
 | `ResultJsonRankDB` | `result_DB登録用(UTF8).json` |
 | `ResultImagegetBase`（abstract） | 画像 DL キュー出力基底（.irv 形式） |
 | `ResultImagegetMovieIcon` | `queue.irv`（動画サムネイル、ED枠まで） |

@@ -105,7 +105,7 @@ namespace nicorankLib.Factory
         public override OutputBase CreateNRMRank()
         {
             var nrm = new NrmOutput();
-            nrm.Set( OUTPUTDIR, "rank.txt", 0, GetRank() );
+            nrm.Set( OUTPUTDIR, "rank.txt", 0, GetRank(), false, 3 );
             return nrm;
         }
 
@@ -123,7 +123,7 @@ namespace nicorankLib.Factory
             int rank = GetRank();
             Config config = Config.GetInstance();
 
-            nrm.Set(OUTPUTDIR, "rankED.txt", rank, rank + config.RankED);
+            nrm.Set(OUTPUTDIR, "rankED.txt", rank, rank + config.RankED, false, 3);
             return nrm;
         }
 
@@ -131,20 +131,15 @@ namespace nicorankLib.Factory
         {
             var output = new ResultCsv();
             output.SetOutput(OUTPUTDIR, new List<ResultCsv.CsvConfig>() {
-                new ResultCsv.CsvConfig() { csvName = "result(UTF8).csv", isUnicode = true, isOverwrite = true },
-                new ResultCsv.CsvConfig() { csvName = "result(SJIS).csv", isUnicode = false, isOverwrite = true }
+                new ResultCsv.CsvConfig() { csvName = "result(UTF8).csv", isUnicode = true, isOverwrite = true }
             });
             return output;
         }
 
         public override OutputBase CreateOutputCSV_rankDB()
         {
-            var output = new ResultCsvRankDB();
-            output.SetOutput(OUTPUTDIR, new List<ResultCsv.CsvConfig>() {
-                new ResultCsv.CsvConfig() { csvName = "result_DB登録用(UTF8).csv", isUnicode = true, isOverwrite = true },
-                new ResultCsv.CsvConfig() { csvName = "result_DB登録用(SJIS).csv", isUnicode = false, isOverwrite = true }
-            });
-            return output;
+            // DB登録用CSVは出力しない（連携はresult_DB登録用(UTF8).jsonに一本化）
+            return null;
         }
 
         public override OutputBase CreateOutputHTML()

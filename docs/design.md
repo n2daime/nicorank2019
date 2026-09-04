@@ -118,6 +118,24 @@
 
 ---
 
+## タグ出力の再設計（Issue #27・2026-09）
+
+### Context
+
+- 実利用者から「カテゴリ名と FavoriteTag が重複する」「ロックタグは3つだけ欲しい時と全部欲しい時がある」と要望があった
+- 文字コード違いの出力群（SJIS / DB登録用CSV）は旧連携方式の名残で、現行は `result_DB登録用(UTF8).json` に一本化済みのため存在理由が消滅していた
+- `FavoriteTags` は `HashSet<string>` で出力順が不定だったため、「最大3つ」の切り取りが決定的にならない問題があった
+
+### Decisions
+
+- **収集は無制限・制限は出力側**: `FavoriteTagReader` の件数上限を廃止し全件補完する。ファイル別の出し分け（`rank.txt` のみ3件）は `NrmOutput` の上限パラメータで行う
+- **カテゴリ重複の除外は出力側ヘルパー**（`Ranking.GetDisplayTags()`）: `UserInfoReader` が後段でカテゴリを補完するため、収集時点ではカテゴリ未確定の動画がある。最終カテゴリで判定する出力側が完全。DB格納値は重複のまま残ることを許容
+- **順序保障のため `List<string>` 化**: 影響は宣言・初期化・マージ・3箇所の `Add`（重複判定化）のみ。DB・履歴内の既存 JSON は配列形式のため互換性あり
+- **SJIS・DB登録用CSV の生成停止**: `CreateOutputCSV` の設定からSJIS除外、`CreateOutputCSV_rankDB`（週刊。SPは継承、中間は既にnull）を `null` 化。`frmMainSyukei` はnull安全のため無変更。`ResultCsvRankDB` クラスは温存
+- **中間集計は外部取得なし**（`isLocalOnly`）: `FavoriteTagReader` にフラグを追加し、中間集計のみ `UpdateTumbInfo` を呼ばずキャッシュ参照で補完する。週刊/SPは先行オプション（`GenreInfoReader`/`UserInfoReader`/`MovieInfoReader`）が確保するため現状維持
+
+---
+
 ## 実装済みの設計判断（要点）
 
 詳細は `docs/knowledge/db.md`・`docs/knowledge/testing.md` を参照。
