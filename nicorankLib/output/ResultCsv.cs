@@ -76,9 +76,8 @@ namespace nicorankLib.output
                     "コメントランク","コメント数","マイリストランク","登録数","いいねランク","いいね数","前回ランク","前回ポイント",
                     "コメント補正","コメントポイント","運営ポイントランク","運営ポイント",
                     "ユーザーID","ユーザー名","ユーザーアイコン","マイリスト補正","マイリストポイント",
-                    "再生補正","再生ポイント","いいねポイント","ポイント全体補正"
+                    "再生補正","再生ポイント","いいねポイント","ポイント全体補正","人気のタグ"
                 };
-                //headerData.Add("人気のタグ");
                 csvDataList.Add(headerData);
 
                 //動画の数だけループ
@@ -186,6 +185,9 @@ namespace nicorankLib.output
 
                         //ポイント全体補正
                         rowData.Add($"{wRank.HoseiAllPoint:F2}");
+
+                        //人気のタグ（全件カンマ結合。CsvUtilが文字列列を""で囲む）
+                        rowData.Add(editEscape(string.Join(",", wRank.GetDisplayTags())));
 
                         csvDataList.Add(rowData);
 

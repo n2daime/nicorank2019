@@ -75,7 +75,10 @@ namespace nicorankLib.SnapShot
                 File.Delete(DataSource);
             }
 
-            using (ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl())
+            // 注入された接続は呼び出し側の所有物のため破棄しない。自前生成分のみ破棄する
+            bool ownsDbCtrl = _dbCtrlOverride == null;
+            ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl();
+            try
             {
 
                 System.IO.File.Create(DataSource).Dispose();
@@ -120,6 +123,13 @@ namespace nicorankLib.SnapShot
                     return false;
                 }
             }
+            finally
+            {
+                if (ownsDbCtrl)
+                {
+                    dbCtrl.Dispose();
+                }
+            }
             return true;
         }
 
@@ -127,9 +137,11 @@ namespace nicorankLib.SnapShot
         {
             try
             {
-                using (ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl())
+                // 注入された接続は呼び出し側の所有物のため破棄しない。自前生成分のみ破棄する
+                bool ownsDbCtrl = _dbCtrlOverride == null;
+                ISQLiteCtrl dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl();
+                try
                 {
- 
                     if (!dbCtrl.Open(DataSource))
                     {
                         return false;
@@ -209,6 +221,13 @@ namespace nicorankLib.SnapShot
                         }
                     }
                 }
+            finally
+            {
+                if (ownsDbCtrl)
+                {
+                    dbCtrl.Dispose();
+                }
+            }
             }
             catch (Exception ex)
             {

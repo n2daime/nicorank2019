@@ -33,13 +33,13 @@ namespace nicorankLib.api
 
         protected ISQLiteCtrl _dbCtrlOverride;
 
-        public bool OpenDB()
+        public virtual bool OpenDB()
         {
             dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl();
             return dbCtrl.Open(DATA_SROURCE);
         }
 
-        public void CloseDB()
+        public virtual void CloseDB()
         {
             dbCtrl?.Close();
             dbCtrl = null;
@@ -53,9 +53,9 @@ namespace nicorankLib.api
         /// <param name="rankingList"></param>
         /// <param name="targetDate">データがなし→更新、古いデータであれば更新する</param>
         /// <returns></returns>
-        public bool UpdateTumbInfo(IReadOnlyList<Ranking> rankingList, DateTime? targetDate)
+        public virtual bool UpdateTumbInfo(IReadOnlyList<Ranking> rankingList, DateTime? targetDate)
         {
-            if (!dbCtrl.IsOpen)
+            if (dbCtrl?.IsOpen != true)
             {
                 return false;
             }
@@ -247,6 +247,65 @@ namespace nicorankLib.api
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// タグロックされているタグ一覧を取得する（取得専責。ネットワークアクセスなし）
+        /// FavoriteTagReader の補完用。最新取得日の行を参照し、lock="1" のタグを定義順に返す。
+        /// 行なし・Status非ok・パース失敗・タグロックなしの場合は空リストを返す（補完不可）。
+        /// </summary>
+        /// <param name="id">動画ID</param>
+        /// <returns>lock="1" のタグ（定義順）</returns>
+        public virtual List<string> GetLockedTags(string id)
+        {
+            var lockedTags = new List<string>();
+            try
+            {
+                if (dbCtrl?.IsOpen != true)
+                {
+                    return lockedTags;
+                }
+                using (var aCmd = dbCtrl.Connection.CreateCommand())
+                {
+                    // 同一IDが複数取得日で存在する場合は最新の行を使う
+                    aCmd.CommandText =
+                        @" SELECT XML FROM NicovideoThumb
+                           Where ID = @ID ORDER BY 取得日 DESC LIMIT 1";
+                    aCmd.Parameters.AddWithValue("@ID", id);
+                    using (var reader = aCmd.ExecuteReader())
+                    {
+                        if (!reader.Read())
+                        {
+                            return lockedTags;
+                        }
+                        ThumbinfoBase thumbinfo;
+                        try
+                        {
+                            thumbinfo = XmlSerializerUtil.Deserialize<ThumbinfoBase>(reader["XML"].ToString());
+                        }
+                        catch
+                        {
+                            return lockedTags;
+                        }
+                        if (thumbinfo == null || thumbinfo.Status != "ok" || thumbinfo.Thumb?.Tags?.Tag == null)
+                        {
+                            return lockedTags;
+                        }
+                        foreach (var tag in thumbinfo.Thumb.Tags.Tag)
+                        {
+                            if (tag.Lock == "1" && !string.IsNullOrWhiteSpace(tag.Text))
+                            {
+                                lockedTags.Add(tag.Text.Trim());
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                return lockedTags;
+            }
+            return lockedTags;
         }
 
         /// <summary>
