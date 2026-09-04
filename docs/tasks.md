@@ -35,6 +35,7 @@
 ### ニコ動APIのリクエスト組み立てを型付きリクエストへ変更
 
 > GitHub issue #19 対応。詳細は `docs/specs.md`「API 仕様」と issue を参照。
+> 背景：将来的な CLI 操作等での外部検索条件指定の下地として、Get パラメータ直書きの技術負債を解消する。スナップショット API v2 を優先度高、nvapi は横展開程度（優先度低）で実施する。
 
 #### 1. スナップショット検索 API（優先度高・nicorankLib/SnapShot/SnapShotAnalyze.cs）
 

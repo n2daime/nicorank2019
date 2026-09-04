@@ -275,6 +275,7 @@
     <Compile Include="Settings.cs" />
     <Compile Include="SnapShot\SnapController.cs" />
     <Compile Include="SnapShot\SnapShotAnalyze.cs" />
+    <Compile Include="SnapShot\SnapShotRequest.cs" />
     <Compile Include="Analyze\model\EAnalyzeMode.cs" />
     <Compile Include="Analyze\Option\Ext\UserInfoReader.cs" />
     <Compile Include="Factory\ModeFactoryBase.cs" />
