@@ -219,6 +219,18 @@ namespace nicorank2019.frm
             return true;
         }
 
+        /// <summary>
+        /// タグ条件でEnter確定したら件数確認を実行する
+        /// </summary>
+        private void tbTagCondition_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.SuppressKeyPress = true;
+                btnTagSearch.PerformClick();
+            }
+        }
+
         private async void btnTagSearch_Click(object sender, EventArgs e)
         {
             if (!TryBuildTagSearchQuery(out TagSearchQuery query, out string buildError))

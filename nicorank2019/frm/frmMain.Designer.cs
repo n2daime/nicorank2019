@@ -490,6 +490,7 @@
             this.tbTagCondition.Size = new System.Drawing.Size(799, 22);
             this.tbTagCondition.TabIndex = 0;
             this.tbTagCondition.Text = "タグ1&タグ2|タグ3*";
+            this.tbTagCondition.KeyDown += new System.Windows.Forms.KeyEventHandler(this.tbTagCondition_KeyDown);
             // 
             // tabPageSyukei
             // 
