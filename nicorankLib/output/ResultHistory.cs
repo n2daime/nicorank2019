@@ -62,7 +62,7 @@ namespace nicorankLib.output
 
         /// <summary>
         /// NicoranHistory.dbを最新の構成に更新する（冪等）。集計開始時に司令塔から呼ばれる。
-        /// いいね列の追加＋旧SPデータ削除＋既存JSONの空文字化＋VACUUM＋DBVersion記録を行う。
+        /// いいね列の追加＋旧SPデータ削除＋JSON列DROP＋VACUUM＋DBVersion記録を行う。
         /// </summary>
         /// <returns>正常終了時true、失敗時false</returns>
         public bool EnsureMigrated()
@@ -187,7 +187,7 @@ namespace nicorankLib.output
             switch (version)
             {
                 case 0:
-                    // ベース：いいね列追加＋旧SPデータ削除＋既存JSON空文字化（トランザクション化）
+                    // ベース：いいね列追加＋旧SPデータ削除＋JSON列DROP（トランザクション化）
                     // VACUUMはトランザクション内で実行できないため除外し、確定後に実行する
                     aCmd.Transaction = (SqliteTransaction)aCmd.Connection.BeginTransaction();
                     try
@@ -202,9 +202,8 @@ namespace nicorankLib.output
                         aCmd.CommandText = "DELETE FROM LastResultInfo WHERE 種別 = @種別;";
                         aCmd.ExecuteNonQuery();
                         aCmd.Parameters.Clear();
-                        // 肥大化対策：既存JSONを空文字化する。読み側はJSON列を使わないため動作不変
-                        aCmd.CommandText = "UPDATE LastResult SET JSON = '' WHERE JSON IS NOT NULL AND JSON <> '';";
-                        aCmd.ExecuteNonQuery();
+                        // 肥大化対策：JSON列を削除する。読み側はJSON列を使わないため動作不変
+                        DropJsonColumn(aCmd);
                         aCmd.Transaction.Commit();
                     }
                     catch (Exception ex)
@@ -227,6 +226,32 @@ namespace nicorankLib.output
                     // 未定義は取りこぼし防止のため失敗させる
                     ErrLog.GetInstance().Write($"未対応のDBバージョンです。(ResultHistory::MigrateToVersion Ver={version})");
                     return false;
+            }
+        }
+
+        /// <summary>
+        /// JSON列があれば削除する（なければ何もしない）。失敗時は呼び出し側でロールバックされる。
+        /// </summary>
+        private static void DropJsonColumn(SqliteCommand aCmd)
+        {
+            bool isJsonColumnExist = false;
+            aCmd.CommandText = "PRAGMA table_info('LastResult');";
+            using (var reader = aCmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    if (reader["name"].ToString().Equals("JSON"))
+                    {
+                        isJsonColumnExist = true;
+                        break;
+                    }
+                }
+                reader.Close();
+            }
+            if (isJsonColumnExist)
+            {
+                aCmd.CommandText = "ALTER TABLE LastResult DROP COLUMN JSON;";
+                aCmd.ExecuteNonQuery();
             }
         }
 
@@ -390,16 +415,16 @@ namespace nicorankLib.output
                 sqlCmd.Parameters.AddWithValue("@集計日", DateConvert.Time2String(this.syuukeiBi, false));
                 sqlCmd.Parameters.AddWithValue("@種別", this.Mode.ToString());
                 sqlCmd.CommandText =
-                                @"INSERT INTO LastResult( 
-                                '種別' , '集計日' , 'ID' , 
-                                'タイトル' ,'総合ランク' , 'ポイント' ,
-                                '再生数' , 'コメント数' , 'マイリスト数' ,
-                                '累計再生数' , '累計コメント数' , '累計マイリスト数' , 'JSON'  ,'いいね数', '累計いいね数')
-                                  VALUES( 
-                                @種別 , @集計日 , @ID , 
-                                @タイトル ,@総合ランク , @ポイント ,
-                                @再生数 , @コメント数 , @マイリスト数 ,
-                                @累計再生数 , @累計コメント数 , @累計マイリスト数 , @JSON ,@いいね数, @累計いいね数);";
+                                 @"INSERT INTO LastResult( 
+                                 '種別' , '集計日' , 'ID' , 
+                                 'タイトル' ,'総合ランク' , 'ポイント' ,
+                                 '再生数' , 'コメント数' , 'マイリスト数' ,
+                                 '累計再生数' , '累計コメント数' , '累計マイリスト数' ,'いいね数', '累計いいね数')
+                                   VALUES( 
+                                 @種別 , @集計日 , @ID , 
+                                 @タイトル ,@総合ランク , @ポイント ,
+                                 @再生数 , @コメント数 , @マイリスト数 ,
+                                 @累計再生数 , @累計コメント数 , @累計マイリスト数 ,@いいね数, @累計いいね数);";
 
 
                 foreach (var rank in rankingList)
@@ -418,8 +443,6 @@ namespace nicorankLib.output
                     sqlCmd.Parameters.AddWithValue("@累計再生数", rank.CountPlayTotal);
                     sqlCmd.Parameters.AddWithValue("@累計コメント数", rank.CountCommentTotal);
                     sqlCmd.Parameters.AddWithValue("@累計マイリスト数", rank.CountMyListTotal);
-                    // 肥大化対策：JSON列は空文字で登録する（読み側はJSON列を使わないため動作不変）
-                    sqlCmd.Parameters.AddWithValue("@JSON", string.Empty);
                     sqlCmd.Parameters.AddWithValue("@いいね数", rank.CountLike);
                     sqlCmd.Parameters.AddWithValue("@累計いいね数", rank.CountLikeTotal);
 

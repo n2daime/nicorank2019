@@ -53,7 +53,7 @@ UnitTest/
 | `UnitTestRanking` | 6 | PointTotal/HoseiAllPoint の補正計算（VOCACOLE2023実測、補正なし、sqrt、削除動画、ゼロ、境界値 0.25〜1.0） |
 | `UnitTestSnapShotRequest` | 12 | SnapShotRequest の URL 生成（1000フィルタ有無・`_context`・`%2B`・旧URL等価・日本語Q・クランプ・ゼロlimit・`_offset`上限・targets省略・jsonFilter・null回帰。Issue #19） |
 | `UnitTestApiUrlBuilder` | 7 | ApiUrlBuilder のクエリ組み立て（日本語tag・tag省略形状・null/空・null値・`?`付きベース・nullベース例外。Issue #19） |
-| `UnitTestDbMigrationCoordinator` | 12 | 司令塔の全成功・失敗時中断・null例外、RankingHistory/ResultHistoryのDBVersion確保・JSON空文字化・冪等・記録Verが新しい場合の無変更・移行失敗時のロールバック・前提テーブルなし時の無変更（Issue #28） |
+| `UnitTestDbMigrationCoordinator` | 12 | 司令塔の全成功・失敗時中断・null例外、RankingHistory/ResultHistoryのDBVersion確保・JSON列DROP・SP行削除・冪等・記録Verが新しい場合の無変更・最古スキーマ対応（Issue #28） |
 
 ## テストパターン
 

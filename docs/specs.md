@@ -176,7 +176,7 @@
 
 - 対象は `LogOfficial.db` / `NicoranHistory.db` の2DBのみ（ニコ動仕様変更で構成が変わり得るDB）。各DBに `DBVersion` テーブル（`Ver` INTEGER）を持ち、旧DB（テーブルなし）はVer0扱いとする
 - 集計開始時（`frmMainSyukei.AnalyzeAsync`・DBオープン直後・公式DB更新前）に `DbMigrationCoordinator` が各DB担当クラスに更新を指示する。1件でも失敗したら集計を中断する
-- Ver0の内容：いいね列追加＋旧SP種別行の削除（`LastResult` / `LastResultInfo`。旧SP集計の残骸。SPはCSV経路でDBを使わない）＋JSON空文字化＋VACUUM
+- Ver0の内容：いいね列追加＋旧SP種別行の削除（`LastResult` / `LastResultInfo`。旧SP集計の残骸。SPはCSV経路でDBを使わない）＋JSON列DROP＋VACUUM。DROP失敗時はフォールバックなしで集計中断する
 - `Dailylog.db` / `ApiXML.db` はキャッシュ扱い（最悪作り直し）のためバージョン管理の対象外とする
 - `result_DB登録用(UTF8).json` の FavoriteTag は見直しなし（全件仕様を維持）
 
@@ -187,7 +187,7 @@
 ### History / LastResult / LastResultInfo（NicoranHistory.db）
 
 - `History`: 動画ごとの過去ランクイン履歴（長期動画判定の材料）
-- `LastResult`: 前回の集計結果（種別=モード名、集計日。JSON列は空文字で登録する。肥大化対策・Issue #28。読み側は総合ランク・ポイントのみ参照のため動作不変）
+- `LastResult`: 前回の集計結果（種別=モード名、集計日。JSON列はVer0移行でDROP済み。読み側は総合ランク・ポイントのみ参照のため動作不変）
 - `LastResultInfo`: 前回集計時の設定 XML（`Config.GetXMLString()`）
 - `DBVersion`: DB構成バージョン（`Ver` INTEGER。旧DBはテーブルなし→Ver0扱い。初回更新時にVer=0で1行追加。以後の構成変更時は+1）
 

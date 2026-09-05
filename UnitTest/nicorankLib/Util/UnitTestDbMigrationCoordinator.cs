@@ -215,11 +215,23 @@ namespace UnitTest.nicorankLib.Util
                     Assert.IsTrue(found);
                 }
 
-                // JSONが空文字化されている
+                // JSON列が削除されている
                 using (var cmd = db.Connection.CreateCommand())
                 {
-                    cmd.CommandText = "SELECT JSON FROM LastResult WHERE ID='sm1';";
-                    Assert.AreEqual(string.Empty, cmd.ExecuteScalar().ToString());
+                    cmd.CommandText = "PRAGMA table_info('LastResult');";
+                    bool found = false;
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            if (reader["name"].ToString().Equals("JSON"))
+                            {
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                    Assert.IsFalse(found);
                 }
 
                 // 旧SPデータが両テーブルから削除され、Weekly行は残っている
@@ -281,7 +293,7 @@ namespace UnitTest.nicorankLib.Util
             }
         }
         [TestMethod]
-        public void ResultHistoryは移行失敗時に中間状態を残さない()
+        public void ResultHistoryはJSON列なしの最古スキーマでも移行できる()
         {
             using (var db = TestDbHelper.CreateInMemoryDb())
             {
@@ -294,11 +306,11 @@ namespace UnitTest.nicorankLib.Util
                     cmd.ExecuteNonQuery();
                 }
 
-                // JSON列がないためUPDATEが失敗する
+                // JSON列なしはDROPスキップで成功する
                 var resultHistory = new ResultHistory(EAnalyzeMode.Weekly, db);
-                Assert.IsFalse(resultHistory.EnsureMigrated());
+                Assert.IsTrue(resultHistory.EnsureMigrated());
 
-                // ロールバックによりいいね列は追加されていない
+                // いいね列は追加されている
                 using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "PRAGMA table_info('LastResult');";
@@ -314,13 +326,13 @@ namespace UnitTest.nicorankLib.Util
                             }
                         }
                     }
-                    Assert.IsFalse(found);
+                    Assert.IsTrue(found);
                 }
 
-                // バージョン未記録（再実行でリトライできる）
+                // バージョン記録あり
                 using (var cmd = db.Connection.CreateCommand())
                 {
-                    cmd.CommandText = "SELECT COUNT(*) FROM DBVersion;";
+                    cmd.CommandText = "SELECT Ver FROM DBVersion LIMIT 1;";
                     Assert.AreEqual(0L, cmd.ExecuteScalar());
                 }
 
