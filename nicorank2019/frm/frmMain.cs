@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -246,7 +247,8 @@ namespace nicorank2019.frm
                 return;
             }
             _tagCountOverLimit = false;
-            btnAnalyzeTag.Enabled = true;
+            // 未入力ならランキング計算は押せない
+            btnAnalyzeTag.Enabled = !string.IsNullOrWhiteSpace(tbTagCondition.Text);
             lblTagWarn.Visible = false;
             lblTagCount.Text = "検索件数: 未確認（上限50000件）";
         }
@@ -326,6 +328,22 @@ namespace nicorank2019.frm
                 MessageBox.Show(buildError, "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+            // スナップショットDBは必須（差分計算に使う）。前回結果CSVのみ任意
+            if (!IsExistingFile(tbAnalyzeDB_Tag.Text))
+            {
+                MessageBox.Show("集計日のDBを指定してください", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (!IsExistingFile(tbBaseDB_Tag.Text))
+            {
+                MessageBox.Show("基準日のDBを指定してください", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (!string.IsNullOrWhiteSpace(tbLastResult_Tag.Text) && !File.Exists(tbLastResult_Tag.Text.Trim()))
+            {
+                MessageBox.Show("前回結果のファイルが見つかりません", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             // 実行前に件数確認し、上限超過時は集計しない（ボタンも押せなくする）
             btnAnalyzeTag.Enabled = false;
             long? totalCount;
@@ -361,11 +379,16 @@ namespace nicorank2019.frm
             _tagExecuteContext = new TagExecuteContext()
             {
                 Query = query,
-                AnalyzeDB = tbAnalyzeDB_Tag.Text,
-                BaseDB = tbBaseDB_Tag.Text,
-                LastResult = tbLastResult_Tag.Text
+                AnalyzeDB = tbAnalyzeDB_Tag.Text.Trim(),
+                BaseDB = tbBaseDB_Tag.Text.Trim(),
+                LastResult = tbLastResult_Tag.Text.Trim()
             };
             await ExecuteAnalyzeAsync(btnAnalyzeTag);
+        }
+
+        private static bool IsExistingFile(string path)
+        {
+            return !string.IsNullOrWhiteSpace(path) && File.Exists(path.Trim());
         }
 
         private void chkDateFilter_CheckedChanged(object sender, EventArgs e)

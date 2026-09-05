@@ -138,6 +138,7 @@
             // 
             // btnAnalyzeTag
             // 
+            this.btnAnalyzeTag.Enabled = false;
             this.btnAnalyzeTag.Location = new System.Drawing.Point(425, 800);
             this.btnAnalyzeTag.Margin = new System.Windows.Forms.Padding(4);
             this.btnAnalyzeTag.Name = "btnAnalyzeTag";
@@ -293,7 +294,6 @@
             this.cmbContentType.Name = "cmbContentType";
             this.cmbContentType.Size = new System.Drawing.Size(159, 23);
             this.cmbContentType.TabIndex = 13;
-            this.cmbContentType.SelectedIndex = 0;
             this.cmbContentType.SelectedIndexChanged += new System.EventHandler(this.TagCondition_Changed);
             // 
             // lblContentType
@@ -497,7 +497,6 @@
             this.tbTagCondition.Name = "tbTagCondition";
             this.tbTagCondition.Size = new System.Drawing.Size(799, 22);
             this.tbTagCondition.TabIndex = 0;
-            this.tbTagCondition.Text = "タグ1&タグ2|タグ3*";
             this.tbTagCondition.TextChanged += new System.EventHandler(this.TagCondition_Changed);
             this.tbTagCondition.KeyDown += new System.Windows.Forms.KeyEventHandler(this.tbTagCondition_KeyDown);
             // 
