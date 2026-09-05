@@ -15,16 +15,6 @@
 
 ## 未完了タスク
 
-### ランキングJSON肥大化対策（#28）
-
-> #27 の全件補完で肥大化が進行した件の対策。方針確定済み。
-> DBVersionは LogOfficial.db／NicoranHistory.db の2DBに限定（ニコ動仕様変更で構成が変わり得るDB）。
-> Dailylog.db／ApiXML.db はキャッシュ扱い（最悪作り直し）のためバージョン管理なし。
-
-- [ ] 28.1 FavoriteTag見直しなし確定（コード不変・文書確定のみ）
-- [ ] 28.2 LastResult.JSON列のDROP（新規INSERT除外＋既存DROP）＋旧SP種別行の削除（LastResult/LastResultInfo）
-- [ ] 28.3 DBVersion導入（2DB・Ver=0開始）＋集計開始時の司令塔（DbMigrationCoordinator）による更新指示（失敗時中断・VACUUM含む。bat配布は自動移行で代替し見送り）
-
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。
@@ -46,6 +36,7 @@
 
 | タスク | 完了日 | 主な成果物 |
 |---|---|---|
+| ランキングJSON肥大化対策(#28)✅ | 2026-09-05 | LastResult.JSON列DROP（INSERT除外＋Ver0移行でDROP）・旧SP種別行削除（両テーブル約11万行）・DBVersion導入（2DB・Ver0・逐次適用）・DbMigrationCoordinator新設（集計開始時指示・失敗時中断）・UnitTest12件追加（計136件）・specs/design/knowledge更新 |
 | result(UTF8).csv不要列削除(#29)✅ | 2026-09-05 | TextUtil動的検出化（新旧両対応・ColLmt廃止・いいね対応・タグOption・マイリストポイント含む8列は再計算のため読取対象外）・ResultCsvRankDB削除（Factory枠まで）・ResultCsv30列新順化（人気タグ4列目・運営2列削除）・UnitTest5件追加（計124件）・fixture余分列修正・specs/design/knowledge更新 |
 | 人気タグのタグロック補完(#27)✅ | 2026-09-04 | GetLockedTags新設・全件補完・FavoriteTags List化・GetDisplayTags・TSV系上限3・UTF8/JSON全件・SJIS/DB登録用CSV停止・isLocalOnly・所有権全10箇所対応、UnitTest25件追加（計119件）、specs/design/knowledge更新 |
 | ニコ動APIのリクエスト組み立てを型付きリクエストへ変更(#19) | 2026-09-04 | SnapShotRequest・ApiUrlBuilder新設、nvapi辞書化、UnitTest19件追加（計94件）、specs/design更新 |

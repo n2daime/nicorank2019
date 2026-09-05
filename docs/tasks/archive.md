@@ -242,3 +242,26 @@
   - reviewerレビュー＋再レビュー＋差分レビューの計3回: 必須指摘なしでマージ可判定。低指摘の見送り分（タグ往復非対称）は理由をコミットメッセージに記録
   - ユーザー実行確認: 実利用者の意見聴取後にマージOK（出力内容変更のため）
 - **残課題**: なし（`Roundtrip` テストの `read.PointMyList == 0` は仕様の固定化。将来CSV由来の `PointMyList` を使う機能追加時は前提から見直すこと。現状そのような呼出はなし）
+
+---
+
+## 2026-09-05 ランキングJSON肥大化対策（#28）
+
+- **Issue**: https://github.com/n2daime/nicorank2019/issues/28
+- **ブランチ**: `feature/t28-dbversion-migration` → `develop` に `--no-ff` でマージ（51218ec）。マージ後にfeatureブランチ削除
+- **背景**: #27のタグ全件補完で `LastResult.JSON`（全件シリアライズ保存）が肥大化。読み側（`LastRankReader`）は総合ランク・ポイントのみ参照のため削減可能だった。旧SP集計の残骸約11万行も残存
+- **実施内容**:
+  - `LastResult.JSON列をDROP`（新規INSERT除外＋Ver0移行で `DROP COLUMN`。当初は空文字化→ユーザー指示でDROPに強化。失敗時はフォールバックなしで中断）
+  - 旧SP種別行を削除（`LastResult` / `LastResultInfo` 両テーブル。SPは `CreateHistory()=null`＋CSV経路のためDB不使用）
+  - `DBVersion` 導入（LogOfficial / NicoranHistoryの2DBに限定。`Ver` INTEGER・Ver0開始。未記録DBはVer0から順に適用し未定義は失敗。Dailylog / ApiXMLはキャッシュ扱いで対象外）
+  - 司令塔 `DbMigrationCoordinator` 新設（`nicorankLib/Util`）＋`IDbMigratable`。集計開始時（`AnalyzeAsync`・Open直後・公式DB更新前）に指示し、失敗時は中断（fail-fast）。実処理は各クラスに委譲
+  - Ver0移行のDDL＋DMLはトランザクション化（VACUUMは不可のため確定後に実行。バージョン記録は成功確定後のTxn外書き込み）。FavoriteTag見直しなし（コード不変）。bat配布は自動移行で代替し見送り
+  - ユーザー指摘対応：コメントと実装の乖離（Ver=0記録→逐次適用に作り替え）、復旧機構の質問→移行Txn化、前提確認の位置→ループ外＋理由コメント化
+- **設計判断**（詳細は `design.md` のIssue #28節）:
+  - 前提条件（テーブル存在）と移行手順を分離。ダウングレード（記録Ver＞現在値）は無変更成功。VACUUMはVer0移行時の1回のみ
+  - `RankingHistory.Open` は注入済み開接続を再利用（テスト容易性。本番経路不変）
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 全136件PASS（既存124＋新規12。内訳: 司令塔4・Ranking移行3・Nicoran移行5。EXIT CODE 0）、`dotnet build nicorank2019.sln` 成功・警告0
+  - reviewerレビュー＋再レビュー: 必須（高・中）指摘を全解消（createRankingDateTableのRollback・Ranking前提確認）。再レビューでマージ可判定。低指摘の見送り分（二重Open・CreateDBVersionTable改名）は理由をコミットメッセージに記録
+  - ユーザー実行確認: コードチェックOK（reviewer前実施）・実環境確認OK後にマージ
+- **残課題**: `RankingHistory.Open` の二重呼び出し所有権・`TestDbHelper.CreateDBVersionTable` のSnapshot用スキーマ名・移行処理のMigrator分離（バージョン増加時の肥大化対策。`design.md` 将来検討に記録）。いずれも本タスクでは見送り
