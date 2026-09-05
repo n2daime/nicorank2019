@@ -169,6 +169,7 @@
 - **移行手順はトランザクション化（VACUUM除く）**: Ver0移行のDDL＋UPDATEをBEGIN/COMMITで包み、失敗時はロールバックする。バージョン記録は成功確定後のトランザクション外書き込みとし、業務データとの巻き戻り連鎖を起こさない（pitfalls項目17との整合）。VACUUMはトランザクション不可のため確定後に実行し、失敗時は未記録→再実行でリトライする
 - **新規INSERTは列維持・空文字**: `LastResult` のJSON列は残し空文字で登録する（`PRAGMA table_info` 互換維持）。`Execute()` 内の旧判定ブロックはヘルパー抽出して温存する（直接Execute呼びの互換性維持）
 - **FavoriteTag見直しなし**: #27の収集無制限・出力側制限の分離が完成しているためコード不変とする
+- **Ver0で旧SP種別行を削除（LastResult＋LastResultInfo）**: 旧SP集計が残した約11万行の残骸。SPは `CreateHistory()=null`＋前回順位CSV経路のためDB不使用で、新規書き込みもWeeklyのみ。種別指定は `EAnalyzeMode.SP.ToString()` のパラメータ化（ダブルクォート直書き回避）
 - **`RankingHistory.Open` は注入済みの開接続を再利用**: テスト容易性のため。注入なしの本番経路は従来どおりファイルを開くため動作不変
 
 ### 将来検討（今回対応外）

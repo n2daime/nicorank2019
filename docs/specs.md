@@ -176,6 +176,7 @@
 
 - 対象は `LogOfficial.db` / `NicoranHistory.db` の2DBのみ（ニコ動仕様変更で構成が変わり得るDB）。各DBに `DBVersion` テーブル（`Ver` INTEGER）を持ち、旧DB（テーブルなし）はVer0扱いとする
 - 集計開始時（`frmMainSyukei.AnalyzeAsync`・DBオープン直後・公式DB更新前）に `DbMigrationCoordinator` が各DB担当クラスに更新を指示する。1件でも失敗したら集計を中断する
+- Ver0の内容：いいね列追加＋旧SP種別行の削除（`LastResult` / `LastResultInfo`。旧SP集計の残骸。SPはCSV経路でDBを使わない）＋JSON空文字化＋VACUUM
 - `Dailylog.db` / `ApiXML.db` はキャッシュ扱い（最悪作り直し）のためバージョン管理の対象外とする
 - `result_DB登録用(UTF8).json` の FavoriteTag は見直しなし（全件仕様を維持）
 

@@ -62,7 +62,7 @@ namespace nicorankLib.output
 
         /// <summary>
         /// NicoranHistory.dbを最新の構成に更新する（冪等）。集計開始時に司令塔から呼ばれる。
-        /// いいね列の追加＋既存JSONの空文字化＋VACUUM＋DBVersion記録を行う。
+        /// いいね列の追加＋旧SPデータ削除＋既存JSONの空文字化＋VACUUM＋DBVersion記録を行う。
         /// </summary>
         /// <returns>正常終了時true、失敗時false</returns>
         public bool EnsureMigrated()
@@ -82,7 +82,7 @@ namespace nicorankLib.output
                     // 前提条件（全バージョン共通）。移行手順ではないためループ外で確認する
                     if (!AreHistoryTablesExist(aCmd))
                     {
-                        StatusLog.WriteLine($"{ DATASOURCE }にHistory/LastResultテーブルがありません。");
+                        StatusLog.WriteLine($"{ DATASOURCE }にHistory/LastResult/LastResultInfoテーブルがありません。");
                         return false;
                     }
                     // 未記録=旧DBはVer0から順に適用する。未定義バージョンは失敗させる
@@ -114,12 +114,12 @@ namespace nicorankLib.output
         }
 
         /// <summary>
-        /// History/LastResultテーブルの存在確認。
+        /// History/LastResult/LastResultInfoテーブルの存在確認。
         /// </summary>
         private static bool AreHistoryTablesExist(SqliteCommand aCmd)
         {
-            aCmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE TYPE='table' AND name IN ('History','LastResult');";
-            return Convert.ToInt64(aCmd.ExecuteScalar()) >= 2;
+            aCmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE TYPE='table' AND name IN ('History','LastResult','LastResultInfo');";
+            return Convert.ToInt64(aCmd.ExecuteScalar()) >= 3;
         }
 
         /// <summary>
@@ -187,12 +187,21 @@ namespace nicorankLib.output
             switch (version)
             {
                 case 0:
-                    // ベース：いいね列追加＋既存JSON空文字化（トランザクション化）
+                    // ベース：いいね列追加＋旧SPデータ削除＋既存JSON空文字化（トランザクション化）
                     // VACUUMはトランザクション内で実行できないため除外し、確定後に実行する
                     aCmd.Transaction = (SqliteTransaction)aCmd.Connection.BeginTransaction();
                     try
                     {
                         EnsureLikeColumns(aCmd);
+                        // 旧SP集計の残骸を削除する。SPはCSV経路でDBを使わないため動作不変
+                        StatusLog.WriteLine("使用していないSPデータを削除しています...");
+                        aCmd.Parameters.Clear();
+                        aCmd.Parameters.AddWithValue("@種別", EAnalyzeMode.SP.ToString());
+                        aCmd.CommandText = "DELETE FROM LastResult WHERE 種別 = @種別;";
+                        aCmd.ExecuteNonQuery();
+                        aCmd.CommandText = "DELETE FROM LastResultInfo WHERE 種別 = @種別;";
+                        aCmd.ExecuteNonQuery();
+                        aCmd.Parameters.Clear();
                         // 肥大化対策：既存JSONを空文字化する。読み側はJSON列を使わないため動作不変
                         aCmd.CommandText = "UPDATE LastResult SET JSON = '' WHERE JSON IS NOT NULL AND JSON <> '';";
                         aCmd.ExecuteNonQuery();

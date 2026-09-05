@@ -22,7 +22,7 @@
 > Dailylog.db／ApiXML.db はキャッシュ扱い（最悪作り直し）のためバージョン管理なし。
 
 - [ ] 28.1 FavoriteTag見直しなし確定（コード不変・文書確定のみ）
-- [ ] 28.2 LastResult.JSON の空文字登録化（新規INSERT＋既存UPDATE）
+- [ ] 28.2 LastResult.JSON の空文字登録化（新規INSERT＋既存UPDATE）＋旧SP種別行の削除（LastResult/LastResultInfo）
 - [ ] 28.3 DBVersion導入（2DB・Ver=0開始）＋集計開始時の司令塔（DbMigrationCoordinator）による更新指示（失敗時中断・VACUUM含む。bat配布は自動移行で代替し見送り）
 
 ### テスト拡充（集計ロジック）

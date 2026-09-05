@@ -24,7 +24,7 @@
 ### NicoranHistory.db
 
 - **History**: 動画ごとの過去ランクイン履歴 → 長期動画判定（TyokiHantei）の材料
-- **LastResult**: 前回の集計結果（種別=モード名、集計日）。JSON列は空文字で登録（Issue #28。LastRankReaderは総合ランク・ポイントのみ参照）。LastRankReader が前回順位を参照
+- **LastResult**: 前回の集計結果（種別=モード名、集計日）。JSON列は空文字で登録（Issue #28。LastRankReaderは総合ランク・ポイントのみ参照）。旧SP種別行はVer0移行で削除済み。LastRankReader が前回順位を参照
 - **LastResultInfo**: 前回集計時の設定 XML（`Config.GetXMLString()`）
 - **DBVersion**: `Ver` INTEGER（旧DBはテーブルなし→Ver0扱い。集計開始時の自動移行でVer=0を1行追加。以後の構成変更時は+1）
 

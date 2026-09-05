@@ -158,6 +158,7 @@ namespace UnitTest.nicorankLib.Util
             {
                 TestDbHelper.CreateLastResultTable(db);
                 TestDbHelper.CreateHistoryTable(db);
+                TestDbHelper.CreateLastResultInfoTable(db);
                 using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "CREATE TABLE DBVersion (Ver INTEGER); INSERT INTO DBVersion (Ver) VALUES (99);";
@@ -181,7 +182,16 @@ namespace UnitTest.nicorankLib.Util
             {
                 TestDbHelper.CreateLastResultTableWithoutLikeColumns(db);
                 TestDbHelper.CreateHistoryTableWithoutLikeColumn(db);
+                TestDbHelper.CreateLastResultInfoTable(db);
                 TestDbHelper.InsertLastResultData(db, "Weekly", 20200101, "sm1", 3, 300, "{\"ID\":\"sm1\"}");
+                TestDbHelper.InsertLastResultData(db, "SP", 20200101, "smSP", 1, 100, "{\"ID\":\"smSP\"}");
+                using (var cmd = db.Connection.CreateCommand())
+                {
+                    cmd.CommandText = "INSERT INTO LastResultInfo(種別, 集計日, XML) VALUES('Weekly', 20200101, '<xml/>');";
+                    cmd.ExecuteNonQuery();
+                    cmd.CommandText = "INSERT INTO LastResultInfo(種別, 集計日, XML) VALUES('SP', 20200101, '<xml/>');";
+                    cmd.ExecuteNonQuery();
+                }
 
                 var resultHistory = new ResultHistory(EAnalyzeMode.Weekly, db);
                 Assert.IsTrue(resultHistory.EnsureMigrated());
@@ -210,6 +220,28 @@ namespace UnitTest.nicorankLib.Util
                 {
                     cmd.CommandText = "SELECT JSON FROM LastResult WHERE ID='sm1';";
                     Assert.AreEqual(string.Empty, cmd.ExecuteScalar().ToString());
+                }
+
+                // 旧SPデータが両テーブルから削除され、Weekly行は残っている
+                using (var cmd = db.Connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM LastResult WHERE 種別='SP';";
+                    Assert.AreEqual(0L, cmd.ExecuteScalar());
+                }
+                using (var cmd = db.Connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM LastResult WHERE 種別='Weekly';";
+                    Assert.AreEqual(1L, cmd.ExecuteScalar());
+                }
+                using (var cmd = db.Connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM LastResultInfo WHERE 種別='SP';";
+                    Assert.AreEqual(0L, cmd.ExecuteScalar());
+                }
+                using (var cmd = db.Connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM LastResultInfo WHERE 種別='Weekly';";
+                    Assert.AreEqual(1L, cmd.ExecuteScalar());
                 }
 
                 // 読み側のSQL（LastRankReaderと同一形）が動く
@@ -255,6 +287,7 @@ namespace UnitTest.nicorankLib.Util
             {
                 TestDbHelper.CreateLastResultTableWithoutJsonColumn(db);
                 TestDbHelper.CreateHistoryTableWithoutLikeColumn(db);
+                TestDbHelper.CreateLastResultInfoTable(db);
                 using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "INSERT INTO LastResult(種別, 集計日, ID) VALUES('Weekly', 20200101, 'sm1');";
