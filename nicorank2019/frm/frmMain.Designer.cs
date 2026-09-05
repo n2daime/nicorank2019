@@ -293,6 +293,8 @@
             this.cmbContentType.Name = "cmbContentType";
             this.cmbContentType.Size = new System.Drawing.Size(159, 23);
             this.cmbContentType.TabIndex = 13;
+            this.cmbContentType.SelectedIndex = 0;
+            this.cmbContentType.SelectedIndexChanged += new System.EventHandler(this.TagCondition_Changed);
             // 
             // lblContentType
             // 
@@ -312,6 +314,7 @@
             this.dtEnd.Name = "dtEnd";
             this.dtEnd.Size = new System.Drawing.Size(199, 22);
             this.dtEnd.TabIndex = 11;
+            this.dtEnd.ValueChanged += new System.EventHandler(this.TagCondition_Changed);
             // 
             // dtStart
             // 
@@ -321,6 +324,7 @@
             this.dtStart.Name = "dtStart";
             this.dtStart.Size = new System.Drawing.Size(199, 22);
             this.dtStart.TabIndex = 10;
+            this.dtStart.ValueChanged += new System.EventHandler(this.TagCondition_Changed);
             // 
             // chkDateFilter
             // 
@@ -353,6 +357,7 @@
             this.tbCommentMin.TabIndex = 7;
             this.tbCommentMin.Text = "0";
             this.tbCommentMin.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.tbCommentMin.TextChanged += new System.EventHandler(this.TagCondition_Changed);
             // 
             // lblCommentMin
             // 
@@ -373,6 +378,7 @@
             this.tbLikeMin.TabIndex = 5;
             this.tbLikeMin.Text = "0";
             this.tbLikeMin.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.tbLikeMin.TextChanged += new System.EventHandler(this.TagCondition_Changed);
             // 
             // lblLikeMin
             // 
@@ -393,6 +399,7 @@
             this.tbMylistMin.TabIndex = 3;
             this.tbMylistMin.Text = "0";
             this.tbMylistMin.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.tbMylistMin.TextChanged += new System.EventHandler(this.TagCondition_Changed);
             // 
             // lblMylistMin
             // 
@@ -413,6 +420,7 @@
             this.tbViewMin.TabIndex = 1;
             this.tbViewMin.Text = "0";
             this.tbViewMin.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.tbViewMin.TextChanged += new System.EventHandler(this.TagCondition_Changed);
             // 
             // lblViewMin
             // 
@@ -490,6 +498,7 @@
             this.tbTagCondition.Size = new System.Drawing.Size(799, 22);
             this.tbTagCondition.TabIndex = 0;
             this.tbTagCondition.Text = "タグ1&タグ2|タグ3*";
+            this.tbTagCondition.TextChanged += new System.EventHandler(this.TagCondition_Changed);
             this.tbTagCondition.KeyDown += new System.Windows.Forms.KeyEventHandler(this.tbTagCondition_KeyDown);
             // 
             // tabPageSyukei

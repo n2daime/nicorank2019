@@ -38,6 +38,8 @@ namespace nicorank2019.frm
             public string LastResult;
         }
         private TagExecuteContext _tagExecuteContext = null;
+        // 直近の件数確認で上限超過だったか（超過時はランキング計算ボタンを押せなくする）
+        private bool _tagCountOverLimit = false;
 
         public frmMain()
         {
@@ -230,6 +232,26 @@ namespace nicorank2019.frm
         }
 
         /// <summary>
+        /// 検索条件の変更で件数表示を未確認に戻し、ランキング計算ボタンを押せるようにする
+        /// </summary>
+        private void TagCondition_Changed(object sender, EventArgs e)
+        {
+            ResetTagCountState();
+        }
+
+        private void ResetTagCountState()
+        {
+            if (!_tagMockLoaded)
+            {
+                return;
+            }
+            _tagCountOverLimit = false;
+            btnAnalyzeTag.Enabled = true;
+            lblTagWarn.Visible = false;
+            lblTagCount.Text = "検索件数: 未確認（上限50000件）";
+        }
+
+        /// <summary>
         /// タグ条件でEnter確定したら件数確認を実行する
         /// </summary>
         private void tbTagCondition_KeyDown(object sender, KeyEventArgs e)
@@ -239,6 +261,36 @@ namespace nicorank2019.frm
                 e.SuppressKeyPress = true;
                 btnTagSearch.PerformClick();
             }
+        }
+
+        /// <summary>
+        /// 件数確認して上限超過なら実行ボタンを押せなくする。超過でなければ件数を返す
+        /// </summary>
+        /// <returns>集計に進める件数。進めない場合（超過・取得失敗）は null</returns>
+        private async Task<long?> CheckTagCountAsync(TagSearchQuery query)
+        {
+            var analyzer = new TagRankAnalyze(DateTime.Now, query);
+            long count = 0;
+            bool ok = await Task.Run(() => analyzer.GetTotalCount(out count));
+            if (!ok)
+            {
+                _tagCountOverLimit = false;
+                lblTagCount.Text = "検索件数: 取得失敗";
+                MessageBox.Show("検索件数の取得に失敗しました。ネットワークと条件を確認してください", "検索エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return null;
+            }
+            lblTagCount.Text = $"検索件数: {count} 件";
+            if (count > TagRankAnalyze.MaxTotalCount)
+            {
+                _tagCountOverLimit = true;
+                lblTagWarn.Text = $"検索結果が多すぎます。({count}件) {TagRankAnalyze.MaxTotalCount}件以下になるように条件を追加して下さい";
+                lblTagWarn.Visible = true;
+                btnAnalyzeTag.Enabled = false;
+                return null;
+            }
+            _tagCountOverLimit = false;
+            lblTagWarn.Visible = false;
+            return count;
         }
 
         private async void btnTagSearch_Click(object sender, EventArgs e)
@@ -254,21 +306,7 @@ namespace nicorank2019.frm
                 lblTagCount.Text = "検索件数: 取得中...";
                 lblTagWarn.Visible = false;
 
-                var analyzer = new TagRankAnalyze(DateTime.Now, query);
-                long totalCount = 0;
-                bool ok = await Task.Run(() => analyzer.GetTotalCount(out totalCount));
-                if (!ok)
-                {
-                    lblTagCount.Text = "検索件数: 取得失敗";
-                    MessageBox.Show("検索件数の取得に失敗しました。ネットワークと条件を確認してください", "検索エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-                lblTagCount.Text = $"検索件数: {totalCount} 件";
-                if (totalCount > TagRankAnalyze.MaxTotalCount)
-                {
-                    lblTagWarn.Text = $"検索結果が多すぎます。({totalCount}件) {TagRankAnalyze.MaxTotalCount}件以下になるように条件を追加して下さい";
-                    lblTagWarn.Visible = true;
-                }
+                await CheckTagCountAsync(query);
             }
             catch (Exception ex)
             {
@@ -288,6 +326,32 @@ namespace nicorank2019.frm
                 MessageBox.Show(buildError, "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+            // 実行前に件数確認し、上限超過時は集計しない（ボタンも押せなくする）
+            btnAnalyzeTag.Enabled = false;
+            long? totalCount;
+            try
+            {
+                totalCount = await CheckTagCountAsync(query);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(GetExceptionMessages(ex), "システムエラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                btnAnalyzeTag.Enabled = true;
+                return;
+            }
+            if (!totalCount.HasValue)
+            {
+                if (_tagCountOverLimit)
+                {
+                    MessageBox.Show(lblTagWarn.Text, "検索エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                else
+                {
+                    btnAnalyzeTag.Enabled = true;
+                }
+                return;
+            }
+            btnAnalyzeTag.Enabled = true;
             if (!SavePointCalcPanel())
             {
                 MessageBox.Show("ポイント計算の入力値が不正です", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -309,6 +373,7 @@ namespace nicorank2019.frm
             bool enabled = chkDateFilter.Checked;
             dtStart.Enabled = enabled;
             dtEnd.Enabled = enabled;
+            ResetTagCountState();
         }
 
         // ポイント計算パネルを集計タブとタグタブで付け替える（タグ選択時はTAGRANK値に切り替える）
