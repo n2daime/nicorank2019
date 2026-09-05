@@ -89,14 +89,14 @@ namespace nicorankLib.Analyze.Official
             {
                 return false;
             }
-            // 前提条件（全バージョン共通）。移行手順ではないためループ外で確認する
-            if (!IsRankingTableExist())
-            {
-                StatusLog.WriteLine($"{DB.LOG_OFFICEIAL}にRankingテーブルがありません。");
-                return false;
-            }
             try
             {
+                // 前提条件（全バージョン共通）。移行手順ではないためループ外で確認する
+                if (!IsRankingTableExist())
+                {
+                    StatusLog.WriteLine($"{DB.LOG_OFFICEIAL}にRankingテーブルがありません。");
+                    return false;
+                }
                 // 未記録=旧DBはVer0から順に適用する。未定義バージョンは失敗させる
                 long ver = GetDbVersion();
                 while (ver < DbCurrentVersion)
