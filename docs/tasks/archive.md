@@ -205,3 +205,63 @@
   - reviewerレビュー＋2回の再レビュー: 必須（高・中）指摘を全解消（注入NicoApiのOpenDB非対称・nullガード2件）。再レビューでマージ可判定。低指摘の見送り分は理由をコミットメッセージに記録
   - ユーザー実行確認: コードレビューOK・マージ指示あり（出力内容変更のため）
 - **残課題**: Issue #28（ランキングJSON肥大化対策: FavoriteTag見直し＋LastResult.JSON空文字化。外部システムと協議中。今回は対応せず）
+
+---
+
+## 2026-09-04 プレリリース v20260904_nicorank_preview（nicorank2019のみ）
+
+- **タグ**: `v20260904_nicorank_preview`（main `b303db3`。annotated tag が main HEAD を指すことを確認済み）
+- **GitHub Release（Pre-release）**: https://github.com/n2daime/nicorank2019/releases/tag/v20260904_nicorank_preview
+- **成果物**: `nicorank2019_20260904.zip`（パターンA ホワイトリストのみ: exe / exe.config / nicorank.xml.org / lib 4件 + runtimes 3種）。`nicorank_SnapShot` の配布なし
+- **含まれる変更**: #25（ビルド警告対処）/ #22（NicoApi残存Clear漏れ修正）/ #19（型付きリクエスト化）/ #27（人気タグ全件補完・出力仕様変更）。#28は対象外
+- **検証**:
+  - `develop` で `dotnet test` 119件 PASS（EXIT CODE 0）、`dotnet build nicorank2019.sln -c Release --no-incremental` 成功・警告0（EXIT CODE 0）
+  - main 上で lib 配置（4件 + runtimes 3種）・`exe.config` の `loadFromRemoteSources`・`依存ファイル/nicorank.xml` と `bin\Release\nicorank.xml` のハッシュ一致を確認
+  - zip ホワイトリスト照合（不要ファイル混入なし）
+  - タグが main HEAD を指すこと・`git diff main develop --stat` が空であることを確認
+- **実機集計確認**: ユーザー指示で簡易化のため省略（#19 daily比較・#25週刊中間SP・#27出力確認で代替）。Releaseノートに検証フィールドは記載なし
+- **備考**: ソリューションビルドの初回は `nicorank2019.exe` 常駐＋VS による `bin\Release` ロックで `MSB3021/MSB3027` 失敗。VS終了後に再実行して成功。Releaseノートは `--notes-file` 方式、冒頭にプレリリース（動作確認用）の一文あり
+
+---
+
+## 2026-09-05 result(UTF8).csv不要列削除（#29）
+
+- **Issue**: https://github.com/n2daime/nicorank2019/issues/29
+- **ブランチ**: `feature/t29-result-csv-cleanup` → `develop` に `--no-ff` でマージ（5e41fbd）。マージ後にfeatureブランチ削除
+- **実装**:
+  - `TextUtil.ReadCsv` を列番号固定switch＋`hoseiari`ハック＋`ColLmt`から、ヘッダー名→辞書の動的検出に変更。新旧両対応（旧CSVの運営・補正あり、タグなしも読める）。`ColLmt` 廃止（`LastRankCsvReader` の第3引数削除）。いいねランク/いいね数に新規対応。人気タグはOption（なければ空リスト、あればカンマ区切り）。ユーザーアイコンは旧名エイリアス対応
+  - 読み取らない列: 運営2列（古すぎる）、マイリストポイントを含む補正系・ポイント内訳8列（再計算するため）。マイリストポイントは当初読取対象だったがユーザー指示で除外に変更
+  - `ResultCsvRankDB.cs` 削除＋csproj参照削除＋`ModeFactoryBase.CreateOutputCSV_rankDB` 抽象とWeekly/Tyukanのoverride＋`frmMainSyukei` 列挙1行を削除（いずれもnull返却のみだったため実効出力数は不変）
+  - `ResultCsv` を30列新順化（人気タグを最終列→4列目へ移動、運営2列削除、マイリストポイント23列目単独化。ヘッダー名は省略なし）
+- **設計判断**（詳細は `design.md` のIssue #29節）:
+  - 欠落列は既定値（数値0・総合ランク空→9999999・文字列空・タグなし→空リスト）で吸収。`PointTotal` キャッシュ（`workPointTotal`）により `LastRankCsvReader` の「当時のPointTotalを使う」動作は維持
+  - 出力するが読まない列（マイリストポイント含む8列）は再計算パターンで統一。タグ往復非対称（出力はカテゴリ除外済み表示値）は旧実装から同一のため見送り
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 全124件PASS（既存119＋新規5。内訳: FixtureValues・列順入替/欠落既定値・アイコン別名・ヘッダー30列完全一致・出力→読取ラウンドトリップ。EXIT CODE 0）、`dotnet build nicorank2019.sln` 成功
+  - 副産物: 旧fixture `test_ranking.csv` のデータ行に空列が1つ余分にある潜在バグ（ヘッダー31列に対しデータ32列。旧テストは値検証なしで素通り）を新テストで検出・修正
+  - reviewerレビュー＋再レビュー＋差分レビューの計3回: 必須指摘なしでマージ可判定。低指摘の見送り分（タグ往復非対称）は理由をコミットメッセージに記録
+  - ユーザー実行確認: 実利用者の意見聴取後にマージOK（出力内容変更のため）
+- **残課題**: なし（`Roundtrip` テストの `read.PointMyList == 0` は仕様の固定化。将来CSV由来の `PointMyList` を使う機能追加時は前提から見直すこと。現状そのような呼出はなし）
+
+---
+
+## 2026-09-05 ランキングJSON肥大化対策（#28）
+
+- **Issue**: https://github.com/n2daime/nicorank2019/issues/28
+- **ブランチ**: `feature/t28-dbversion-migration` → `develop` に `--no-ff` でマージ（51218ec）。マージ後にfeatureブランチ削除
+- **背景**: #27のタグ全件補完で `LastResult.JSON`（全件シリアライズ保存）が肥大化。読み側（`LastRankReader`）は総合ランク・ポイントのみ参照のため削減可能だった。旧SP集計の残骸約11万行も残存
+- **実施内容**:
+  - `LastResult.JSON列をDROP`（新規INSERT除外＋Ver0移行で `DROP COLUMN`。当初は空文字化→ユーザー指示でDROPに強化。失敗時はフォールバックなしで中断）
+  - 旧SP種別行を削除（`LastResult` / `LastResultInfo` 両テーブル。SPは `CreateHistory()=null`＋CSV経路のためDB不使用）
+  - `DBVersion` 導入（LogOfficial / NicoranHistoryの2DBに限定。`Ver` INTEGER・Ver0開始。未記録DBはVer0から順に適用し未定義は失敗。Dailylog / ApiXMLはキャッシュ扱いで対象外）
+  - 司令塔 `DbMigrationCoordinator` 新設（`nicorankLib/Util`）＋`IDbMigratable`。集計開始時（`AnalyzeAsync`・Open直後・公式DB更新前）に指示し、失敗時は中断（fail-fast）。実処理は各クラスに委譲
+  - Ver0移行のDDL＋DMLはトランザクション化（VACUUMは不可のため確定後に実行。バージョン記録は成功確定後のTxn外書き込み）。FavoriteTag見直しなし（コード不変）。bat配布は自動移行で代替し見送り
+  - ユーザー指摘対応：コメントと実装の乖離（Ver=0記録→逐次適用に作り替え）、復旧機構の質問→移行Txn化、前提確認の位置→ループ外＋理由コメント化
+- **設計判断**（詳細は `design.md` のIssue #28節）:
+  - 前提条件（テーブル存在）と移行手順を分離。ダウングレード（記録Ver＞現在値）は無変更成功。VACUUMはVer0移行時の1回のみ
+  - `RankingHistory.Open` は注入済み開接続を再利用（テスト容易性。本番経路不変）
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 全136件PASS（既存124＋新規12。内訳: 司令塔4・Ranking移行3・Nicoran移行5。EXIT CODE 0）、`dotnet build nicorank2019.sln` 成功・警告0
+  - reviewerレビュー＋再レビュー: 必須（高・中）指摘を全解消（createRankingDateTableのRollback・Ranking前提確認）。再レビューでマージ可判定。低指摘の見送り分（二重Open・CreateDBVersionTable改名）は理由をコミットメッセージに記録
+  - ユーザー実行確認: コードチェックOK（reviewer前実施）・実環境確認OK後にマージ
+- **残課題**: `RankingHistory.Open` の二重呼び出し所有権・`TestDbHelper.CreateDBVersionTable` のSnapshot用スキーマ名・移行処理のMigrator分離（バージョン増加時の肥大化対策。`design.md` 将来検討に記録）。いずれも本タスクでは見送り

@@ -26,7 +26,7 @@
 
 - 収集: LogOfficial.db の `人気のタグ`（最新集計日）に加え、ApiXML.db（NicovideoThumb・最新取得日）の `lock="1"` タグを定義順に全件補完する（件数上限なし、重複除外）。行なし・Status非ok・パース失敗は素通り。対象は UserEnd 以内 or カテゴリ1位。中間集計は `isLocalOnly` のため外部取得を行わずキャッシュ参照のみ
 - `Ranking.FavoriteTags` は `List<string>` で挿入順を保持する（人気タグ→タグロック定義順）
-- 出力: `Ranking.GetDisplayTags()` が挿入順のままカテゴリ名と同名のタグを除外する（`Trim` 後完全一致。空カテゴリは除外なし）。ファイル別の件数制限は `NrmOutput` の上限パラメータで行う（TSV系は3件。`result(UTF8).csv`・`result_DB登録用(UTF8).json` のみ全件）
+- 出力: `Ranking.GetDisplayTags()` が挿入順のままカテゴリ名と同名のタグを除外する（`Trim` 後完全一致。空カテゴリは除外なし）。ファイル別の件数制限は `NrmOutput` の上限パラメータで行う（TSV系は3件。`result(UTF8).csv`・`result_DB登録用(UTF8).json` のみ全件）。Issue #28で見直しなしを確定し全件仕様を維持する
 
 ### 差分集計と so 新着偽造判定（SabunReader）
 
@@ -47,7 +47,7 @@
 - 紹介順位 = `Config.Rank`（既定 20 位）+ 長期動画（門番）の数だけ拡張
 - ED枠: 紹介枠の次から `RankED` までをサムネイル形式で紹介（情報提供は `rankED.txt`）
 
-### モードごとの出力（frmMainSyukei.AnalyzeAsync が 12 種を順次 Execute）
+### モードごとの出力（frmMainSyukei.AnalyzeAsync が 11 種を順次 Execute）
 
 | 出力 | 週刊（Weekly） | 中間（Tyukan） | SP（SP） |
 |---|---|---|---|
@@ -57,7 +57,6 @@
 | `CreateNRMRank1000()`（`rank{UserNum}.txt` / `rank1000.txt`） | ✅ rank{UserNum}.txt・タグ最大3件 | ✅ **rank1000.txt（固定0〜1000）・タグ最大3件** | ✅ rank{UserNum}.txt・タグ最大3件 |
 | `CreateNRMRankED()`（`rankED.txt`） | ✅ タグ最大3件 | ✅ | ✅ |
 | `CreateOutputCSV()`（result CSV） | ✅ result(UTF8).csv のみ | ✅ | ✅ |
-| `CreateOutputCSV_rankDB()`（DB登録用 CSV） | —（null・生成停止） | —（null） | —（null・継承） |
 | `CreateOutputHTML()` | **未実装（null）** | 未実装（null） | 未実装（null） |
 | `CreateOutputMovieIconGet()`（`queue.irv`） | ✅ | —（null） | ✅ |
 | `CreateOutputUserIconGet()`（`queue_UserIcon.irv`） | ✅ | —（null） | ✅ |
@@ -138,7 +137,7 @@
 | ファイル | クラス | 内容 |
 |---|---|---|
 | `rank.txt` / `rankED.txt` / `rank{UserNum}.txt` / `rank1000.txt` | NrmOutput（タグ最大3件） | 紹介枠 TSV（ID/投稿日/タイトル/再生時間/総合ランク/ポイント/カテゴリ/各ランク・数/前回ランク/補正値/ユーザー情報/人気タグ）。TSV・クォートなし。全件タグは `result(UTF8).csv`・`result_DB登録用(UTF8).json` のみ |
-| `result(UTF8).csv` | ResultCsv | 集計結果全件 CSV。ヘッダー31列（30列＋最終列「人気のタグ」・全件カンマ結合）。文字列は `"` 囲み、`"`→`”` 置換 |
+| `result(UTF8).csv` | ResultCsv | 集計結果全件 CSV。ヘッダー30列（ID/投稿日/タイトル/人気のタグ/再生時間/総合ランク/ポイント/カテゴリランク/カテゴリ/再生ランク/再生数/コメントランク/コメント数/マイリストランク/登録数/いいねランク/いいね数/前回ランク/前回ポイント/ユーザーID/ユーザー名/ユーザーアイコン/マイリストポイント/コメント補正/コメントポイント/マイリスト補正/再生補正/再生ポイント/いいねポイント/ポイント全体補正）。人気のタグは4列目・全件カンマ結合。文字列は `"` 囲み、`"`→`”` 置換 |
 | `result_DB登録用(UTF8).json` | ResultJsonRankDB | DB 登録用 JSON（Newtonsoft.Json シリアライズ、Formatting.None。変更なし） |
 | `queue.irv` | ResultImagegetMovieIcon | 動画アイコン DL キュー（ED枠まで） |
 | `queue_UserIcon.irv` | ResultImagegetUserIcon | ユーザーアイコン DL キュー（全件） |
@@ -173,6 +172,14 @@
 
 `集計日` / `Ver` 等。メンテナンス日判定（`CheckMaintananceDay`）に使用。初期値 20190610。
 
+### DB構成バージョン管理（Issue #28）
+
+- 対象は `LogOfficial.db` / `NicoranHistory.db` の2DBのみ（ニコ動仕様変更で構成が変わり得るDB）。各DBに `DBVersion` テーブル（`Ver` INTEGER）を持ち、旧DB（テーブルなし）はVer0扱いとする
+- 集計開始時（`frmMainSyukei.AnalyzeAsync`・DBオープン直後・公式DB更新前）に `DbMigrationCoordinator` が各DB担当クラスに更新を指示する。1件でも失敗したら集計を中断する
+- Ver0の内容：いいね列追加＋旧SP種別行の削除（`LastResult` / `LastResultInfo`。旧SP集計の残骸。SPはCSV経路でDBを使わない）＋JSON列DROP＋VACUUM。DROP失敗時はフォールバックなしで集計中断する
+- `Dailylog.db` / `ApiXML.db` はキャッシュ扱い（最悪作り直し）のためバージョン管理の対象外とする
+- `result_DB登録用(UTF8).json` の FavoriteTag は見直しなし（全件仕様を維持）
+
 ### Dailylog テーブル（Dailylog.db）
 
 中間集計用の日別集計結果。`集計日` / `種別` 等。いいね関連フィールドが無ければ ALTER TABLE で自動追加。
@@ -180,8 +187,9 @@
 ### History / LastResult / LastResultInfo（NicoranHistory.db）
 
 - `History`: 動画ごとの過去ランクイン履歴（長期動画判定の材料）
-- `LastResult`: 前回の集計結果（種別=モード名、集計日。JSON 列にランキング全体を保存）
+- `LastResult`: 前回の集計結果（種別=モード名、集計日。JSON列はVer0移行でDROP済み。読み側は総合ランク・ポイントのみ参照のため動作不変）
 - `LastResultInfo`: 前回集計時の設定 XML（`Config.GetXMLString()`）
+- `DBVersion`: DB構成バージョン（`Ver` INTEGER。旧DBはテーブルなし→Ver0扱い。初回更新時にVer=0で1行追加。以後の構成変更時は+1）
 
 ### SnapShot DB（LogSnapshot{yyyyMMdd}.db）
 

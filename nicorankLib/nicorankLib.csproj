@@ -298,7 +298,6 @@
     <Compile Include="Common\NicoRankXml.cs" />
     <Compile Include="output\OutputBase.cs" />
     <Compile Include="output\ResultCsv.cs" />
-    <Compile Include="output\ResultCsvRankDB.cs" />
     <Compile Include="output\ResultHistory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Util\DateConvert.cs" />
@@ -307,6 +306,8 @@
     <Compile Include="Util\InternetUtil.cs" />
     <Compile Include="Util\IStatusLogWriter.cs" />
     <Compile Include="Util\ISQLiteCtrl.cs" />
+    <Compile Include="Util\IDbMigratable.cs" />
+    <Compile Include="Util\DbMigrationCoordinator.cs" />
     <Compile Include="Util\RegLib.cs" />
     <Compile Include="Util\SQLiteCtrl.cs" />
     <Compile Include="Util\StatusLog.cs" />

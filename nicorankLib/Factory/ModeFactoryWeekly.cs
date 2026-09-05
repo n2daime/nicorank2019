@@ -136,12 +136,6 @@ namespace nicorankLib.Factory
             return output;
         }
 
-        public override OutputBase CreateOutputCSV_rankDB()
-        {
-            // DB登録用CSVは出力しない（連携はresult_DB登録用(UTF8).jsonに一本化）
-            return null;
-        }
-
         public override OutputBase CreateOutputHTML()
         {
             //未実装

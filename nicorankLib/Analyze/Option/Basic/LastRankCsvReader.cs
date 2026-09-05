@@ -47,8 +47,8 @@ namespace nicorankLib.Analyze.Option
                 //先週のランキングを集計する
                 StatusLog.WriteLine($"{this.LastResultCsvFile} から前回順位を取得しています...");
 
-                //ポイント取得までCSVを読み取る
-                TextUtil.ReadCsv(this.LastResultCsvFile, out Dictionary<string,Ranking> lastRankList,6);//6列目(総合ランク、ポイント）まで読めばOK
+                //前回結果CSVを読み取る（カラム名から動的に検出するため全列読取でよい）
+                TextUtil.ReadCsv(this.LastResultCsvFile, out Dictionary<string, Ranking> lastRankList);
 
                 //Parallel.ForEach(rakingList, new ParallelOptions() { MaxDegreeOfParallelism = config.ThreadMax }, wRank =>
                 foreach(var wRank in rakingList)

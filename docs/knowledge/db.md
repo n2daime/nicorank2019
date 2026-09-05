@@ -18,23 +18,27 @@
   - 集計日は主キーの一部（同一動画の日別履歴）。いいね数は ALTER TABLE で自動追加（無い場合のみ）
 - **Movie**: 動画の基本情報（Ranking と JOIN して使用）
 - **RankingDate**: 集計日とメンテナンスフラグ。`CheckMaintananceDay` でメンテ日判定。初期値 20190610
-- 更新フロー: `UpdateOfficialRankingDB()` が RankingDate の `Max(集計日)+1` から今日までを日別取得。データ 0 件の日はメンテナンス日として登録（UI で確認）
+- **DBVersion**: `Ver` INTEGER（Issue #28。旧DBはテーブルなし→Ver0扱い。集計開始時の自動移行でVer=0を1行追加）
+- 更新フロー: 集計開始時に `DbMigrationCoordinator` が LogOfficial→NicoranHistory の順に更新確認（失敗時は中断）→ `UpdateOfficialRankingDB()` が RankingDate の `Max(集計日)+1` から今日までを日別取得。データ 0 件の日はメンテナンス日として登録（UI で確認）
 
 ### NicoranHistory.db
 
 - **History**: 動画ごとの過去ランクイン履歴 → 長期動画判定（TyokiHantei）の材料
-- **LastResult**: 前回の集計結果（種別=モード名、集計日）。JSON 列にランキング全体を保存。LastRankReader が前回順位を参照
+- **LastResult**: 前回の集計結果（種別=モード名、集計日）。JSON列はVer0移行でDROP済み（読み側は総合ランク・ポイントのみ参照）。旧SP種別行はVer0移行で削除済み。LastRankReader が前回順位を参照
 - **LastResultInfo**: 前回集計時の設定 XML（`Config.GetXMLString()`）
+- **DBVersion**: `Ver` INTEGER（旧DBはテーブルなし→Ver0扱い。集計開始時の自動移行でVer=0を1行追加。以後の構成変更時は+1）
 
 ### ApiXML.db
 
 - **NicovideoThumb**: 動画 ID / 取得日 / Status（ok=1 / その他 0）/ XML（getthumbinfo の生XML）
 - 取得日（`MAX(取得日)`）が指定日より古いものだけ更新対象
+- キャッシュ扱いのためDBVersion管理の対象外（Issue #28。最悪作り直しで対応）
 
 ### Dailylog.db
 
 - **Dailylog**: 日別集計結果（ID / 集計日 / 再生数 / コメント数 / マイリスト数 / いいね数 等）。中間集計が日別に INSERT → 期間合計（SUM GROUP BY）で中間ランキング生成
 - いいね関連フィールドが無ければ ALTER TABLE で自動追加
+- キャッシュ扱いのためDBVersion管理の対象外（Issue #28。最悪作り直しで対応）
 
 ### LogSnapshot{yyyyMMdd}.db
 
