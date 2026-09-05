@@ -137,18 +137,15 @@ namespace nicorank2019.frm
         /// <returns></returns>
         private ModeFactoryBase GetModeFactory()
         {
-            if (tabPageOut.SelectedTab == tabPageTag)
+            // 集計スレッドから呼ばれるためコントロールには触れない。実行ボタンが退避した条件を使う
+            if (_tagExecuteContext != null)
             {
-                if (_currentTagQuery == null)
-                {
-                    return null;
-                }
                 var tagFactory = new ModeFactoryTagRank();
                 tagFactory.SetInputFile(
-                    tbAnalyzeDB_Tag.Text
-                    ,tbBaseDB_Tag.Text
-                    ,_currentTagQuery
-                    ,tbLastResult_Tag.Text);
+                    _tagExecuteContext.AnalyzeDB
+                    ,_tagExecuteContext.BaseDB
+                    ,_tagExecuteContext.Query
+                    ,_tagExecuteContext.LastResult);
                 return tagFactory;
             }
             else if (rbWeekly.Checked)

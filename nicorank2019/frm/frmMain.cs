@@ -27,8 +27,17 @@ namespace nicorank2019.frm
         private bool _tagMockLoaded = false;
         private System.Drawing.Point _panel3SyukeiLocation;
         private bool _switchingTab = false;
-        // タグ検索集計の実行時に使う検索条件（実行ボタンで検証済みのもの）
-        private TagSearchQuery _currentTagQuery = null;
+        /// <summary>
+        /// タグ検索集計の実行条件（UIスレッドで退避。集計スレッドからはコントロールに触れないため）
+        /// </summary>
+        private class TagExecuteContext
+        {
+            public TagSearchQuery Query;
+            public string AnalyzeDB;
+            public string BaseDB;
+            public string LastResult;
+        }
+        private TagExecuteContext _tagExecuteContext = null;
 
         public frmMain()
         {
@@ -74,6 +83,7 @@ namespace nicorank2019.frm
                 MessageBox.Show("ポイント計算の入力値が不正です", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+            _tagExecuteContext = null;
             await ExecuteAnalyzeAsync(btnAnalyze);
         }
 
@@ -283,7 +293,14 @@ namespace nicorank2019.frm
                 MessageBox.Show("ポイント計算の入力値が不正です", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            _currentTagQuery = query;
+            // 集計スレッドからはコントロールに触れないため、UIスレッドで値を退避する
+            _tagExecuteContext = new TagExecuteContext()
+            {
+                Query = query,
+                AnalyzeDB = tbAnalyzeDB_Tag.Text,
+                BaseDB = tbBaseDB_Tag.Text,
+                LastResult = tbLastResult_Tag.Text
+            };
             await ExecuteAnalyzeAsync(btnAnalyzeTag);
         }
 

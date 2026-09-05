@@ -475,12 +475,12 @@
             // lblTagExample
             // 
             this.lblTagExample.AutoSize = true;
-            this.lblTagExample.Location = new System.Drawing.Point(11, 55);
+            this.lblTagExample.Location = new System.Drawing.Point(13, 51);
             this.lblTagExample.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblTagExample.Name = "lblTagExample";
-            this.lblTagExample.Size = new System.Drawing.Size(354, 15);
+            this.lblTagExample.Size = new System.Drawing.Size(363, 15);
             this.lblTagExample.TabIndex = 1;
-            this.lblTagExample.Text = "例: タグ1&タグ2|タグ3*  (*なし=完全一致 *あり=部分一致)";
+            this.lblTagExample.Text = "例: タグ1&&タグ2|タグ3*  (*なし=完全一致 *あり=部分一致)";
             // 
             // tbTagCondition
             // 
