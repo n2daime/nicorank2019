@@ -78,77 +78,46 @@
             this.tabPageOut = new System.Windows.Forms.TabControl();
             this.label19 = new System.Windows.Forms.Label();
             this.dtPLastweekDay = new System.Windows.Forms.DateTimePicker();
-            this.tabPageTagA = new System.Windows.Forms.TabPage();
-            this.lblTagTitleA = new System.Windows.Forms.Label();
-            this.tbTagConditionA = new System.Windows.Forms.TextBox();
-            this.btnTagSearchA = new System.Windows.Forms.Button();
-            this.lblTagCountA = new System.Windows.Forms.Label();
-            this.lblTagWarnA = new System.Windows.Forms.Label();
-            this.lblViewMinA = new System.Windows.Forms.Label();
-            this.tbViewMinA = new System.Windows.Forms.TextBox();
-            this.lblMylistMinA = new System.Windows.Forms.Label();
-            this.tbMylistMinA = new System.Windows.Forms.TextBox();
-            this.lblLikeMinA = new System.Windows.Forms.Label();
-            this.tbLikeMinA = new System.Windows.Forms.TextBox();
-            this.lblCommentMinA = new System.Windows.Forms.Label();
-            this.tbCommentMinA = new System.Windows.Forms.TextBox();
-            this.lblStartDateA = new System.Windows.Forms.Label();
-            this.dtStartA = new System.Windows.Forms.DateTimePicker();
-            this.lblWaveA = new System.Windows.Forms.Label();
-            this.dtEndA = new System.Windows.Forms.DateTimePicker();
-            this.lblContentTypeA = new System.Windows.Forms.Label();
-            this.cmbContentTypeA = new System.Windows.Forms.ComboBox();
-            this.lblDbTitleA = new System.Windows.Forms.Label();
-            this.lblBaseDBA = new System.Windows.Forms.Label();
-            this.tbBaseDB_TagA = new System.Windows.Forms.TextBox();
-            this.btnBaseDB_TagA = new System.Windows.Forms.Button();
-            this.lblAnalyzeDBA = new System.Windows.Forms.Label();
-            this.tbAnalyzeDB_TagA = new System.Windows.Forms.TextBox();
-            this.btnAnalyzeDB_TagA = new System.Windows.Forms.Button();
-            this.lblLastResultA = new System.Windows.Forms.Label();
-            this.tbLastResult_TagA = new System.Windows.Forms.TextBox();
-            this.btnLastResult_TagA = new System.Windows.Forms.Button();
-            this.btnAnalyzeTagA = new System.Windows.Forms.Button();
-            this.tabPageTagB = new System.Windows.Forms.TabPage();
-            this.grpTagB = new System.Windows.Forms.GroupBox();
-            this.tbTagConditionB = new System.Windows.Forms.TextBox();
-            this.lblTagExampleB = new System.Windows.Forms.Label();
-            this.btnTagSearchB = new System.Windows.Forms.Button();
-            this.lblTagCountB = new System.Windows.Forms.Label();
-            this.lblTagWarnB = new System.Windows.Forms.Label();
-            this.grpFilterB = new System.Windows.Forms.GroupBox();
-            this.lblViewMinB = new System.Windows.Forms.Label();
-            this.tbViewMinB = new System.Windows.Forms.TextBox();
-            this.lblMylistMinB = new System.Windows.Forms.Label();
-            this.tbMylistMinB = new System.Windows.Forms.TextBox();
-            this.lblLikeMinB = new System.Windows.Forms.Label();
-            this.tbLikeMinB = new System.Windows.Forms.TextBox();
-            this.lblCommentMinB = new System.Windows.Forms.Label();
-            this.tbCommentMinB = new System.Windows.Forms.TextBox();
-            this.lblStartDateB = new System.Windows.Forms.Label();
-            this.dtStartB = new System.Windows.Forms.DateTimePicker();
-            this.dtEndB = new System.Windows.Forms.DateTimePicker();
-            this.lblContentTypeB = new System.Windows.Forms.Label();
-            this.cmbContentTypeB = new System.Windows.Forms.ComboBox();
-            this.grpDbB = new System.Windows.Forms.GroupBox();
-            this.tbBaseDB_TagB = new System.Windows.Forms.TextBox();
-            this.btnBaseDB_TagB = new System.Windows.Forms.Button();
-            this.tbAnalyzeDB_TagB = new System.Windows.Forms.TextBox();
-            this.btnAnalyzeDB_TagB = new System.Windows.Forms.Button();
-            this.tbLastResult_TagB = new System.Windows.Forms.TextBox();
-            this.btnLastResult_TagB = new System.Windows.Forms.Button();
-            this.btnAnalyzeTagB = new System.Windows.Forms.Button();
+            this.tabPageTag = new System.Windows.Forms.TabPage();
+            this.grpTag = new System.Windows.Forms.GroupBox();
+            this.tbTagCondition = new System.Windows.Forms.TextBox();
+            this.lblTagExample = new System.Windows.Forms.Label();
+            this.btnTagSearch = new System.Windows.Forms.Button();
+            this.lblTagCount = new System.Windows.Forms.Label();
+            this.lblTagWarn = new System.Windows.Forms.Label();
+            this.grpFilter = new System.Windows.Forms.GroupBox();
+            this.lblViewMin = new System.Windows.Forms.Label();
+            this.tbViewMin = new System.Windows.Forms.TextBox();
+            this.lblMylistMin = new System.Windows.Forms.Label();
+            this.tbMylistMin = new System.Windows.Forms.TextBox();
+            this.lblLikeMin = new System.Windows.Forms.Label();
+            this.tbLikeMin = new System.Windows.Forms.TextBox();
+            this.lblCommentMin = new System.Windows.Forms.Label();
+            this.tbCommentMin = new System.Windows.Forms.TextBox();
+            this.lblStartDate = new System.Windows.Forms.Label();
+            this.chkDateFilter = new System.Windows.Forms.CheckBox();
+            this.dtStart = new System.Windows.Forms.DateTimePicker();
+            this.dtEnd = new System.Windows.Forms.DateTimePicker();
+            this.lblContentType = new System.Windows.Forms.Label();
+            this.cmbContentType = new System.Windows.Forms.ComboBox();
+            this.grpDb = new System.Windows.Forms.GroupBox();
+            this.tbBaseDB_Tag = new System.Windows.Forms.TextBox();
+            this.btnBaseDB_Tag = new System.Windows.Forms.Button();
+            this.tbAnalyzeDB_Tag = new System.Windows.Forms.TextBox();
+            this.btnAnalyzeDB_Tag = new System.Windows.Forms.Button();
+            this.tbLastResult_Tag = new System.Windows.Forms.TextBox();
+            this.btnLastResult_Tag = new System.Windows.Forms.Button();
+            this.btnAnalyzeTag = new System.Windows.Forms.Button();
             this.tabPage2.SuspendLayout();
             this.tabPageSyukei.SuspendLayout();
             this.panel3.SuspendLayout();
             this.panelSP.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.tabPageOut.SuspendLayout();
-            this.tabPageTagA.SuspendLayout();
-            this.tabPageTagB.SuspendLayout();
-            this.grpTagB.SuspendLayout();
-            this.grpFilterB.SuspendLayout();
-            this.grpDbB.SuspendLayout();
+            this.tabPageTag.SuspendLayout();
+            this.grpTag.SuspendLayout();
+            this.grpFilter.SuspendLayout();
+            this.grpDb.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabPage2
@@ -632,604 +601,316 @@
             this.rbWeekly.TabStop = true;
             this.rbWeekly.Text = "週間";
             this.rbWeekly.UseVisualStyleBackColor = true;
-            this.rbWeekly.CheckedChanged += new System.EventHandler(this.rbWeekly_CheckedChanged);
-            // tabPageTagA
             //
-            this.tabPageTagA.BackColor = System.Drawing.SystemColors.Control;
-            this.tabPageTagA.Controls.Add(this.btnAnalyzeTagA);
-            this.tabPageTagA.Controls.Add(this.btnLastResult_TagA);
-            this.tabPageTagA.Controls.Add(this.tbLastResult_TagA);
-            this.tabPageTagA.Controls.Add(this.lblLastResultA);
-            this.tabPageTagA.Controls.Add(this.btnAnalyzeDB_TagA);
-            this.tabPageTagA.Controls.Add(this.tbAnalyzeDB_TagA);
-            this.tabPageTagA.Controls.Add(this.lblAnalyzeDBA);
-            this.tabPageTagA.Controls.Add(this.btnBaseDB_TagA);
-            this.tabPageTagA.Controls.Add(this.tbBaseDB_TagA);
-            this.tabPageTagA.Controls.Add(this.lblBaseDBA);
-            this.tabPageTagA.Controls.Add(this.lblDbTitleA);
-            this.tabPageTagA.Controls.Add(this.cmbContentTypeA);
-            this.tabPageTagA.Controls.Add(this.lblContentTypeA);
-            this.tabPageTagA.Controls.Add(this.dtEndA);
-            this.tabPageTagA.Controls.Add(this.lblWaveA);
-            this.tabPageTagA.Controls.Add(this.dtStartA);
-            this.tabPageTagA.Controls.Add(this.lblStartDateA);
-            this.tabPageTagA.Controls.Add(this.tbCommentMinA);
-            this.tabPageTagA.Controls.Add(this.lblCommentMinA);
-            this.tabPageTagA.Controls.Add(this.tbLikeMinA);
-            this.tabPageTagA.Controls.Add(this.lblLikeMinA);
-            this.tabPageTagA.Controls.Add(this.tbMylistMinA);
-            this.tabPageTagA.Controls.Add(this.lblMylistMinA);
-            this.tabPageTagA.Controls.Add(this.tbViewMinA);
-            this.tabPageTagA.Controls.Add(this.lblViewMinA);
-            this.tabPageTagA.Controls.Add(this.lblTagWarnA);
-            this.tabPageTagA.Controls.Add(this.lblTagCountA);
-            this.tabPageTagA.Controls.Add(this.btnTagSearchA);
-            this.tabPageTagA.Controls.Add(this.tbTagConditionA);
-            this.tabPageTagA.Controls.Add(this.lblTagTitleA);
-            this.tabPageTagA.Location = new System.Drawing.Point(4, 22);
-            this.tabPageTagA.Name = "tabPageTagA";
-            this.tabPageTagA.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageTagA.Size = new System.Drawing.Size(828, 635);
-            this.tabPageTagA.TabIndex = 2;
-            this.tabPageTagA.Text = "タグ検索A(案)";
-            this.tabPageTagA.UseVisualStyleBackColor = true;
+            // tabPageTag
             //
-            // lblTagTitleA
+            this.tabPageTag.BackColor = System.Drawing.SystemColors.Control;
+            this.tabPageTag.Controls.Add(this.btnAnalyzeTag);
+            this.tabPageTag.Controls.Add(this.grpDb);
+            this.tabPageTag.Controls.Add(this.grpFilter);
+            this.tabPageTag.Controls.Add(this.grpTag);
+            this.tabPageTag.Location = new System.Drawing.Point(4, 22);
+            this.tabPageTag.Name = "tabPageTag";
+            this.tabPageTag.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPageTag.Size = new System.Drawing.Size(828, 635);
+            this.tabPageTag.TabIndex = 3;
+            this.tabPageTag.Text = "タグ検索集計";
+            this.tabPageTag.UseVisualStyleBackColor = true;
             //
-            this.lblTagTitleA.AutoSize = true;
-            this.lblTagTitleA.Location = new System.Drawing.Point(8, 8);
-            this.lblTagTitleA.Name = "lblTagTitleA";
-            this.lblTagTitleA.Size = new System.Drawing.Size(420, 12);
-            this.lblTagTitleA.TabIndex = 0;
-            this.lblTagTitleA.Text = "タグ条件 (例: タグ1&タグ2|タグ3*  *なし=完全一致 *あり=部分一致)【モック】";
+            // grpTag
             //
-            // tbTagConditionA
+            this.grpTag.Controls.Add(this.lblTagWarn);
+            this.grpTag.Controls.Add(this.lblTagCount);
+            this.grpTag.Controls.Add(this.btnTagSearch);
+            this.grpTag.Controls.Add(this.lblTagExample);
+            this.grpTag.Controls.Add(this.tbTagCondition);
+            this.grpTag.Location = new System.Drawing.Point(8, 8);
+            this.grpTag.Name = "grpTag";
+            this.grpTag.Size = new System.Drawing.Size(806, 120);
+            this.grpTag.TabIndex = 0;
+            this.grpTag.TabStop = false;
+            this.grpTag.Text = "1. タグ条件";
             //
-            this.tbTagConditionA.Location = new System.Drawing.Point(8, 24);
-            this.tbTagConditionA.Name = "tbTagConditionA";
-            this.tbTagConditionA.Size = new System.Drawing.Size(620, 19);
-            this.tbTagConditionA.TabIndex = 1;
-            this.tbTagConditionA.Text = "タグ1&タグ2|タグ3*";
+            // tbTagCondition
             //
-            // btnTagSearchA
+            this.tbTagCondition.Location = new System.Drawing.Point(10, 20);
+            this.tbTagCondition.Name = "tbTagCondition";
+            this.tbTagCondition.Size = new System.Drawing.Size(600, 19);
+            this.tbTagCondition.TabIndex = 0;
+            this.tbTagCondition.Text = "タグ1&タグ2|タグ3*";
             //
-            this.btnTagSearchA.Location = new System.Drawing.Point(634, 22);
-            this.btnTagSearchA.Name = "btnTagSearchA";
-            this.btnTagSearchA.Size = new System.Drawing.Size(75, 23);
-            this.btnTagSearchA.TabIndex = 2;
-            this.btnTagSearchA.Text = "件数確認";
-            this.btnTagSearchA.UseVisualStyleBackColor = true;
-            this.btnTagSearchA.Click += new System.EventHandler(this.btnTagSearchA_Click);
+            // lblTagExample
             //
-            // lblTagCountA
+            this.lblTagExample.AutoSize = true;
+            this.lblTagExample.Location = new System.Drawing.Point(8, 44);
+            this.lblTagExample.Name = "lblTagExample";
+            this.lblTagExample.Size = new System.Drawing.Size(320, 12);
+            this.lblTagExample.TabIndex = 1;
+            this.lblTagExample.Text = "例: タグ1&タグ2|タグ3*  (*なし=完全一致 *あり=部分一致)";
             //
-            this.lblTagCountA.AutoSize = true;
-            this.lblTagCountA.Location = new System.Drawing.Point(8, 48);
-            this.lblTagCountA.Name = "lblTagCountA";
-            this.lblTagCountA.Size = new System.Drawing.Size(210, 12);
-            this.lblTagCountA.TabIndex = 3;
-            this.lblTagCountA.Text = "検索件数: 未確認（上限50000件）";
+            // btnTagSearch
             //
-            // lblTagWarnA
+            this.btnTagSearch.Location = new System.Drawing.Point(616, 18);
+            this.btnTagSearch.Name = "btnTagSearch";
+            this.btnTagSearch.Size = new System.Drawing.Size(75, 23);
+            this.btnTagSearch.TabIndex = 2;
+            this.btnTagSearch.Text = "件数確認";
+            this.btnTagSearch.UseVisualStyleBackColor = true;
+            this.btnTagSearch.Click += new System.EventHandler(this.btnTagSearch_Click);
             //
-            this.lblTagWarnA.AutoSize = true;
-            this.lblTagWarnA.ForeColor = System.Drawing.Color.Red;
-            this.lblTagWarnA.Location = new System.Drawing.Point(8, 64);
-            this.lblTagWarnA.Name = "lblTagWarnA";
-            this.lblTagWarnA.Size = new System.Drawing.Size(470, 12);
-            this.lblTagWarnA.TabIndex = 4;
-            this.lblTagWarnA.Text = "検索結果が多すぎます。(123456件) 50000件以下になるように条件を追加して下さい";
+            // lblTagCount
             //
-            // lblViewMinA
+            this.lblTagCount.AutoSize = true;
+            this.lblTagCount.Location = new System.Drawing.Point(8, 64);
+            this.lblTagCount.Name = "lblTagCount";
+            this.lblTagCount.Size = new System.Drawing.Size(210, 12);
+            this.lblTagCount.TabIndex = 3;
+            this.lblTagCount.Text = "検索件数: 未確認（上限50000件）";
             //
-            this.lblViewMinA.AutoSize = true;
-            this.lblViewMinA.Location = new System.Drawing.Point(8, 88);
-            this.lblViewMinA.Name = "lblViewMinA";
-            this.lblViewMinA.Size = new System.Drawing.Size(53, 12);
-            this.lblViewMinA.TabIndex = 5;
-            this.lblViewMinA.Text = "再生下限";
+            // lblTagWarn
             //
-            // tbViewMinA
+            this.lblTagWarn.AutoSize = true;
+            this.lblTagWarn.ForeColor = System.Drawing.Color.Red;
+            this.lblTagWarn.Location = new System.Drawing.Point(8, 84);
+            this.lblTagWarn.Name = "lblTagWarn";
+            this.lblTagWarn.Size = new System.Drawing.Size(470, 12);
+            this.lblTagWarn.TabIndex = 4;
+            this.lblTagWarn.Text = "検索結果が多すぎます。(123456件) 50000件以下になるように条件を追加して下さい";
             //
-            this.tbViewMinA.Location = new System.Drawing.Point(65, 85);
-            this.tbViewMinA.Name = "tbViewMinA";
-            this.tbViewMinA.Size = new System.Drawing.Size(80, 19);
-            this.tbViewMinA.TabIndex = 6;
-            this.tbViewMinA.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            // grpFilter
             //
-            // lblMylistMinA
+            this.grpFilter.Controls.Add(this.cmbContentType);
+            this.grpFilter.Controls.Add(this.lblContentType);
+            this.grpFilter.Controls.Add(this.dtEnd);
+            this.grpFilter.Controls.Add(this.dtStart);
+            this.grpFilter.Controls.Add(this.chkDateFilter);
+            this.grpFilter.Controls.Add(this.lblStartDate);
+            this.grpFilter.Controls.Add(this.tbCommentMin);
+            this.grpFilter.Controls.Add(this.lblCommentMin);
+            this.grpFilter.Controls.Add(this.tbLikeMin);
+            this.grpFilter.Controls.Add(this.lblLikeMin);
+            this.grpFilter.Controls.Add(this.tbMylistMin);
+            this.grpFilter.Controls.Add(this.lblMylistMin);
+            this.grpFilter.Controls.Add(this.tbViewMin);
+            this.grpFilter.Controls.Add(this.lblViewMin);
+            this.grpFilter.Location = new System.Drawing.Point(8, 134);
+            this.grpFilter.Name = "grpFilter";
+            this.grpFilter.Size = new System.Drawing.Size(806, 130);
+            this.grpFilter.TabIndex = 1;
+            this.grpFilter.TabStop = false;
+            this.grpFilter.Text = "2. 絞り込み（下限0=指定なし）";
             //
-            this.lblMylistMinA.AutoSize = true;
-            this.lblMylistMinA.Location = new System.Drawing.Point(155, 88);
-            this.lblMylistMinA.Name = "lblMylistMinA";
-            this.lblMylistMinA.Size = new System.Drawing.Size(65, 12);
-            this.lblMylistMinA.TabIndex = 7;
-            this.lblMylistMinA.Text = "マイリス下限";
+            // lblViewMin
             //
-            // tbMylistMinA
+            this.lblViewMin.AutoSize = true;
+            this.lblViewMin.Location = new System.Drawing.Point(10, 26);
+            this.lblViewMin.Name = "lblViewMin";
+            this.lblViewMin.Size = new System.Drawing.Size(53, 12);
+            this.lblViewMin.TabIndex = 0;
+            this.lblViewMin.Text = "再生下限";
             //
-            this.tbMylistMinA.Location = new System.Drawing.Point(224, 85);
-            this.tbMylistMinA.Name = "tbMylistMinA";
-            this.tbMylistMinA.Size = new System.Drawing.Size(80, 19);
-            this.tbMylistMinA.TabIndex = 8;
-            this.tbMylistMinA.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            // tbViewMin
             //
-            // lblLikeMinA
+            this.tbViewMin.Location = new System.Drawing.Point(80, 23);
+            this.tbViewMin.Name = "tbViewMin";
+            this.tbViewMin.Size = new System.Drawing.Size(100, 19);
+            this.tbViewMin.TabIndex = 1;
+            this.tbViewMin.Text = "0";
+            this.tbViewMin.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             //
-            this.lblLikeMinA.AutoSize = true;
-            this.lblLikeMinA.Location = new System.Drawing.Point(314, 88);
-            this.lblLikeMinA.Name = "lblLikeMinA";
-            this.lblLikeMinA.Size = new System.Drawing.Size(62, 12);
-            this.lblLikeMinA.TabIndex = 9;
-            this.lblLikeMinA.Text = "いいね下限";
+            // lblMylistMin
             //
-            // tbLikeMinA
+            this.lblMylistMin.AutoSize = true;
+            this.lblMylistMin.Location = new System.Drawing.Point(200, 26);
+            this.lblMylistMin.Name = "lblMylistMin";
+            this.lblMylistMin.Size = new System.Drawing.Size(65, 12);
+            this.lblMylistMin.TabIndex = 2;
+            this.lblMylistMin.Text = "マイリス下限";
             //
-            this.tbLikeMinA.Location = new System.Drawing.Point(380, 85);
-            this.tbLikeMinA.Name = "tbLikeMinA";
-            this.tbLikeMinA.Size = new System.Drawing.Size(80, 19);
-            this.tbLikeMinA.TabIndex = 10;
-            this.tbLikeMinA.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            // tbMylistMin
             //
-            // lblCommentMinA
+            this.tbMylistMin.Location = new System.Drawing.Point(270, 23);
+            this.tbMylistMin.Name = "tbMylistMin";
+            this.tbMylistMin.Size = new System.Drawing.Size(100, 19);
+            this.tbMylistMin.TabIndex = 3;
+            this.tbMylistMin.Text = "0";
+            this.tbMylistMin.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             //
-            this.lblCommentMinA.AutoSize = true;
-            this.lblCommentMinA.Location = new System.Drawing.Point(470, 88);
-            this.lblCommentMinA.Name = "lblCommentMinA";
-            this.lblCommentMinA.Size = new System.Drawing.Size(62, 12);
-            this.lblCommentMinA.TabIndex = 11;
-            this.lblCommentMinA.Text = "コメント下限";
+            // lblLikeMin
             //
-            // tbCommentMinA
+            this.lblLikeMin.AutoSize = true;
+            this.lblLikeMin.Location = new System.Drawing.Point(390, 26);
+            this.lblLikeMin.Name = "lblLikeMin";
+            this.lblLikeMin.Size = new System.Drawing.Size(62, 12);
+            this.lblLikeMin.TabIndex = 4;
+            this.lblLikeMin.Text = "いいね下限";
             //
-            this.tbCommentMinA.Location = new System.Drawing.Point(536, 85);
-            this.tbCommentMinA.Name = "tbCommentMinA";
-            this.tbCommentMinA.Size = new System.Drawing.Size(80, 19);
-            this.tbCommentMinA.TabIndex = 12;
-            this.tbCommentMinA.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            // tbLikeMin
             //
-            // lblStartDateA
+            this.tbLikeMin.Location = new System.Drawing.Point(460, 23);
+            this.tbLikeMin.Name = "tbLikeMin";
+            this.tbLikeMin.Size = new System.Drawing.Size(100, 19);
+            this.tbLikeMin.TabIndex = 5;
+            this.tbLikeMin.Text = "0";
+            this.tbLikeMin.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             //
-            this.lblStartDateA.AutoSize = true;
-            this.lblStartDateA.Location = new System.Drawing.Point(8, 114);
-            this.lblStartDateA.Name = "lblStartDateA";
-            this.lblStartDateA.Size = new System.Drawing.Size(41, 12);
-            this.lblStartDateA.TabIndex = 13;
-            this.lblStartDateA.Text = "投稿日";
+            // lblCommentMin
             //
-            // dtStartA
+            this.lblCommentMin.AutoSize = true;
+            this.lblCommentMin.Location = new System.Drawing.Point(580, 26);
+            this.lblCommentMin.Name = "lblCommentMin";
+            this.lblCommentMin.Size = new System.Drawing.Size(62, 12);
+            this.lblCommentMin.TabIndex = 6;
+            this.lblCommentMin.Text = "コメント下限";
             //
-            this.dtStartA.Location = new System.Drawing.Point(55, 110);
-            this.dtStartA.Name = "dtStartA";
-            this.dtStartA.Size = new System.Drawing.Size(150, 19);
-            this.dtStartA.TabIndex = 14;
+            // tbCommentMin
             //
-            // lblWaveA
+            this.tbCommentMin.Location = new System.Drawing.Point(650, 23);
+            this.tbCommentMin.Name = "tbCommentMin";
+            this.tbCommentMin.Size = new System.Drawing.Size(100, 19);
+            this.tbCommentMin.TabIndex = 7;
+            this.tbCommentMin.Text = "0";
+            this.tbCommentMin.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             //
-            this.lblWaveA.AutoSize = true;
-            this.lblWaveA.Location = new System.Drawing.Point(211, 114);
-            this.lblWaveA.Name = "lblWaveA";
-            this.lblWaveA.Size = new System.Drawing.Size(17, 12);
-            this.lblWaveA.TabIndex = 15;
-            this.lblWaveA.Text = "～";
+            // lblStartDate
             //
-            // dtEndA
+            this.lblStartDate.AutoSize = true;
+            this.lblStartDate.Location = new System.Drawing.Point(10, 60);
+            this.lblStartDate.Name = "lblStartDate";
+            this.lblStartDate.Size = new System.Drawing.Size(41, 12);
+            this.lblStartDate.TabIndex = 8;
+            this.lblStartDate.Text = "投稿日";
             //
-            this.dtEndA.Location = new System.Drawing.Point(234, 110);
-            this.dtEndA.Name = "dtEndA";
-            this.dtEndA.Size = new System.Drawing.Size(150, 19);
-            this.dtEndA.TabIndex = 16;
+            // chkDateFilter
             //
-            // lblContentTypeA
+            this.chkDateFilter.AutoSize = true;
+            this.chkDateFilter.Location = new System.Drawing.Point(60, 59);
+            this.chkDateFilter.Name = "chkDateFilter";
+            this.chkDateFilter.Size = new System.Drawing.Size(72, 16);
+            this.chkDateFilter.TabIndex = 9;
+            this.chkDateFilter.Text = "絞り込む";
+            this.chkDateFilter.UseVisualStyleBackColor = true;
+            this.chkDateFilter.CheckedChanged += new System.EventHandler(this.chkDateFilter_CheckedChanged);
             //
-            this.lblContentTypeA.AutoSize = true;
-            this.lblContentTypeA.Location = new System.Drawing.Point(394, 114);
-            this.lblContentTypeA.Name = "lblContentTypeA";
-            this.lblContentTypeA.Size = new System.Drawing.Size(29, 12);
-            this.lblContentTypeA.TabIndex = 17;
-            this.lblContentTypeA.Text = "種別";
+            // dtStart
             //
-            // cmbContentTypeA
+            this.dtStart.Enabled = false;
+            this.dtStart.Location = new System.Drawing.Point(140, 56);
+            this.dtStart.Name = "dtStart";
+            this.dtStart.Size = new System.Drawing.Size(150, 19);
+            this.dtStart.TabIndex = 10;
             //
-            this.cmbContentTypeA.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbContentTypeA.FormattingEnabled = true;
-            this.cmbContentTypeA.Items.AddRange(new object[] {
+            // dtEnd
+            //
+            this.dtEnd.Enabled = false;
+            this.dtEnd.Location = new System.Drawing.Point(300, 56);
+            this.dtEnd.Name = "dtEnd";
+            this.dtEnd.Size = new System.Drawing.Size(150, 19);
+            this.dtEnd.TabIndex = 11;
+            //
+            // lblContentType
+            //
+            this.lblContentType.AutoSize = true;
+            this.lblContentType.Location = new System.Drawing.Point(460, 60);
+            this.lblContentType.Name = "lblContentType";
+            this.lblContentType.Size = new System.Drawing.Size(29, 12);
+            this.lblContentType.TabIndex = 12;
+            this.lblContentType.Text = "種別";
+            //
+            // cmbContentType
+            //
+            this.cmbContentType.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbContentType.FormattingEnabled = true;
+            this.cmbContentType.Items.AddRange(new object[] {
             "指定なし",
             "long",
             "short"});
-            this.cmbContentTypeA.Location = new System.Drawing.Point(429, 110);
-            this.cmbContentTypeA.Name = "cmbContentTypeA";
-            this.cmbContentTypeA.Size = new System.Drawing.Size(120, 20);
-            this.cmbContentTypeA.TabIndex = 18;
-            //
-            // lblDbTitleA
-            //
-            this.lblDbTitleA.AutoSize = true;
-            this.lblDbTitleA.Location = new System.Drawing.Point(8, 140);
-            this.lblDbTitleA.Name = "lblDbTitleA";
-            this.lblDbTitleA.Size = new System.Drawing.Size(260, 12);
-            this.lblDbTitleA.TabIndex = 19;
-            this.lblDbTitleA.Text = "スナップショットDB指定 (SP同様・nicorank_SnapShot製)";
-            //
-            // lblBaseDBA
-            //
-            this.lblBaseDBA.AutoSize = true;
-            this.lblBaseDBA.Location = new System.Drawing.Point(8, 160);
-            this.lblBaseDBA.Name = "lblBaseDBA";
-            this.lblBaseDBA.Size = new System.Drawing.Size(29, 12);
-            this.lblBaseDBA.TabIndex = 20;
-            this.lblBaseDBA.Text = "基準";
-            //
-            // tbBaseDB_TagA
-            //
-            this.tbBaseDB_TagA.Location = new System.Drawing.Point(55, 157);
-            this.tbBaseDB_TagA.Name = "tbBaseDB_TagA";
-            this.tbBaseDB_TagA.Size = new System.Drawing.Size(560, 19);
-            this.tbBaseDB_TagA.TabIndex = 21;
-            //
-            // btnBaseDB_TagA
-            //
-            this.btnBaseDB_TagA.Location = new System.Drawing.Point(621, 155);
-            this.btnBaseDB_TagA.Name = "btnBaseDB_TagA";
-            this.btnBaseDB_TagA.Size = new System.Drawing.Size(75, 23);
-            this.btnBaseDB_TagA.TabIndex = 22;
-            this.btnBaseDB_TagA.Text = "参照";
-            this.btnBaseDB_TagA.UseVisualStyleBackColor = true;
-            this.btnBaseDB_TagA.Click += new System.EventHandler(this.btnBaseDB_TagA_Click);
-            //
-            // lblAnalyzeDBA
-            //
-            this.lblAnalyzeDBA.AutoSize = true;
-            this.lblAnalyzeDBA.Location = new System.Drawing.Point(8, 186);
-            this.lblAnalyzeDBA.Name = "lblAnalyzeDBA";
-            this.lblAnalyzeDBA.Size = new System.Drawing.Size(41, 12);
-            this.lblAnalyzeDBA.TabIndex = 23;
-            this.lblAnalyzeDBA.Text = "集計日";
-            //
-            // tbAnalyzeDB_TagA
-            //
-            this.tbAnalyzeDB_TagA.Location = new System.Drawing.Point(55, 183);
-            this.tbAnalyzeDB_TagA.Name = "tbAnalyzeDB_TagA";
-            this.tbAnalyzeDB_TagA.Size = new System.Drawing.Size(560, 19);
-            this.tbAnalyzeDB_TagA.TabIndex = 24;
-            //
-            // btnAnalyzeDB_TagA
-            //
-            this.btnAnalyzeDB_TagA.Location = new System.Drawing.Point(621, 181);
-            this.btnAnalyzeDB_TagA.Name = "btnAnalyzeDB_TagA";
-            this.btnAnalyzeDB_TagA.Size = new System.Drawing.Size(75, 23);
-            this.btnAnalyzeDB_TagA.TabIndex = 25;
-            this.btnAnalyzeDB_TagA.Text = "参照";
-            this.btnAnalyzeDB_TagA.UseVisualStyleBackColor = true;
-            this.btnAnalyzeDB_TagA.Click += new System.EventHandler(this.btnAnalyzeDB_TagA_Click);
-            //
-            // lblLastResultA
-            //
-            this.lblLastResultA.AutoSize = true;
-            this.lblLastResultA.Location = new System.Drawing.Point(8, 212);
-            this.lblLastResultA.Name = "lblLastResultA";
-            this.lblLastResultA.Size = new System.Drawing.Size(90, 12);
-            this.lblLastResultA.TabIndex = 26;
-            this.lblLastResultA.Text = "前回結果(任意)";
-            //
-            // tbLastResult_TagA
-            //
-            this.tbLastResult_TagA.Location = new System.Drawing.Point(104, 209);
-            this.tbLastResult_TagA.Name = "tbLastResult_TagA";
-            this.tbLastResult_TagA.Size = new System.Drawing.Size(511, 19);
-            this.tbLastResult_TagA.TabIndex = 27;
-            //
-            // btnLastResult_TagA
-            //
-            this.btnLastResult_TagA.Location = new System.Drawing.Point(621, 207);
-            this.btnLastResult_TagA.Name = "btnLastResult_TagA";
-            this.btnLastResult_TagA.Size = new System.Drawing.Size(75, 23);
-            this.btnLastResult_TagA.TabIndex = 28;
-            this.btnLastResult_TagA.Text = "参照";
-            this.btnLastResult_TagA.UseVisualStyleBackColor = true;
-            this.btnLastResult_TagA.Click += new System.EventHandler(this.btnLastResult_TagA_Click);
-            //
-            // btnAnalyzeTagA
-            //
-            this.btnAnalyzeTagA.Location = new System.Drawing.Point(329, 250);
-            this.btnAnalyzeTagA.Name = "btnAnalyzeTagA";
-            this.btnAnalyzeTagA.Size = new System.Drawing.Size(139, 39);
-            this.btnAnalyzeTagA.TabIndex = 29;
-            this.btnAnalyzeTagA.Text = "ランキング計算";
-            this.btnAnalyzeTagA.UseVisualStyleBackColor = true;
-            this.btnAnalyzeTagA.Click += new System.EventHandler(this.btnAnalyzeTagA_Click);
-            //
-            // tabPageTagB
-            //
-            this.tabPageTagB.BackColor = System.Drawing.SystemColors.Control;
-            this.tabPageTagB.Controls.Add(this.btnAnalyzeTagB);
-            this.tabPageTagB.Controls.Add(this.grpDbB);
-            this.tabPageTagB.Controls.Add(this.grpFilterB);
-            this.tabPageTagB.Controls.Add(this.grpTagB);
-            this.tabPageTagB.Location = new System.Drawing.Point(4, 22);
-            this.tabPageTagB.Name = "tabPageTagB";
-            this.tabPageTagB.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageTagB.Size = new System.Drawing.Size(828, 635);
-            this.tabPageTagB.TabIndex = 3;
-            this.tabPageTagB.Text = "タグ検索B(案)";
-            this.tabPageTagB.UseVisualStyleBackColor = true;
-            //
-            // grpTagB
-            //
-            this.grpTagB.Controls.Add(this.lblTagWarnB);
-            this.grpTagB.Controls.Add(this.lblTagCountB);
-            this.grpTagB.Controls.Add(this.btnTagSearchB);
-            this.grpTagB.Controls.Add(this.lblTagExampleB);
-            this.grpTagB.Controls.Add(this.tbTagConditionB);
-            this.grpTagB.Location = new System.Drawing.Point(8, 8);
-            this.grpTagB.Name = "grpTagB";
-            this.grpTagB.Size = new System.Drawing.Size(806, 120);
-            this.grpTagB.TabIndex = 0;
-            this.grpTagB.TabStop = false;
-            this.grpTagB.Text = "1. タグ条件【モック】";
-            //
-            // tbTagConditionB
-            //
-            this.tbTagConditionB.Location = new System.Drawing.Point(10, 20);
-            this.tbTagConditionB.Name = "tbTagConditionB";
-            this.tbTagConditionB.Size = new System.Drawing.Size(600, 19);
-            this.tbTagConditionB.TabIndex = 0;
-            this.tbTagConditionB.Text = "タグ1&タグ2|タグ3*";
-            //
-            // lblTagExampleB
-            //
-            this.lblTagExampleB.AutoSize = true;
-            this.lblTagExampleB.Location = new System.Drawing.Point(8, 44);
-            this.lblTagExampleB.Name = "lblTagExampleB";
-            this.lblTagExampleB.Size = new System.Drawing.Size(320, 12);
-            this.lblTagExampleB.TabIndex = 1;
-            this.lblTagExampleB.Text = "例: タグ1&タグ2|タグ3*  (*なし=完全一致 *あり=部分一致)";
-            //
-            // btnTagSearchB
-            //
-            this.btnTagSearchB.Location = new System.Drawing.Point(616, 18);
-            this.btnTagSearchB.Name = "btnTagSearchB";
-            this.btnTagSearchB.Size = new System.Drawing.Size(75, 23);
-            this.btnTagSearchB.TabIndex = 2;
-            this.btnTagSearchB.Text = "件数確認";
-            this.btnTagSearchB.UseVisualStyleBackColor = true;
-            this.btnTagSearchB.Click += new System.EventHandler(this.btnTagSearchB_Click);
-            //
-            // lblTagCountB
-            //
-            this.lblTagCountB.AutoSize = true;
-            this.lblTagCountB.Location = new System.Drawing.Point(8, 64);
-            this.lblTagCountB.Name = "lblTagCountB";
-            this.lblTagCountB.Size = new System.Drawing.Size(210, 12);
-            this.lblTagCountB.TabIndex = 3;
-            this.lblTagCountB.Text = "検索件数: 未確認（上限50000件）";
-            //
-            // lblTagWarnB
-            //
-            this.lblTagWarnB.AutoSize = true;
-            this.lblTagWarnB.ForeColor = System.Drawing.Color.Red;
-            this.lblTagWarnB.Location = new System.Drawing.Point(8, 84);
-            this.lblTagWarnB.Name = "lblTagWarnB";
-            this.lblTagWarnB.Size = new System.Drawing.Size(470, 12);
-            this.lblTagWarnB.TabIndex = 4;
-            this.lblTagWarnB.Text = "検索結果が多すぎます。(123456件) 50000件以下になるように条件を追加して下さい";
-            //
-            // grpFilterB
-            //
-            this.grpFilterB.Controls.Add(this.cmbContentTypeB);
-            this.grpFilterB.Controls.Add(this.lblContentTypeB);
-            this.grpFilterB.Controls.Add(this.dtEndB);
-            this.grpFilterB.Controls.Add(this.dtStartB);
-            this.grpFilterB.Controls.Add(this.lblStartDateB);
-            this.grpFilterB.Controls.Add(this.tbCommentMinB);
-            this.grpFilterB.Controls.Add(this.lblCommentMinB);
-            this.grpFilterB.Controls.Add(this.tbLikeMinB);
-            this.grpFilterB.Controls.Add(this.lblLikeMinB);
-            this.grpFilterB.Controls.Add(this.tbMylistMinB);
-            this.grpFilterB.Controls.Add(this.lblMylistMinB);
-            this.grpFilterB.Controls.Add(this.tbViewMinB);
-            this.grpFilterB.Controls.Add(this.lblViewMinB);
-            this.grpFilterB.Location = new System.Drawing.Point(8, 134);
-            this.grpFilterB.Name = "grpFilterB";
-            this.grpFilterB.Size = new System.Drawing.Size(806, 130);
-            this.grpFilterB.TabIndex = 1;
-            this.grpFilterB.TabStop = false;
-            this.grpFilterB.Text = "2. 絞り込み（任意）";
-            //
-            // lblViewMinB
-            //
-            this.lblViewMinB.AutoSize = true;
-            this.lblViewMinB.Location = new System.Drawing.Point(10, 26);
-            this.lblViewMinB.Name = "lblViewMinB";
-            this.lblViewMinB.Size = new System.Drawing.Size(53, 12);
-            this.lblViewMinB.TabIndex = 0;
-            this.lblViewMinB.Text = "再生下限";
-            //
-            // tbViewMinB
-            //
-            this.tbViewMinB.Location = new System.Drawing.Point(80, 23);
-            this.tbViewMinB.Name = "tbViewMinB";
-            this.tbViewMinB.Size = new System.Drawing.Size(100, 19);
-            this.tbViewMinB.TabIndex = 1;
-            this.tbViewMinB.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            //
-            // lblMylistMinB
-            //
-            this.lblMylistMinB.AutoSize = true;
-            this.lblMylistMinB.Location = new System.Drawing.Point(200, 26);
-            this.lblMylistMinB.Name = "lblMylistMinB";
-            this.lblMylistMinB.Size = new System.Drawing.Size(65, 12);
-            this.lblMylistMinB.TabIndex = 2;
-            this.lblMylistMinB.Text = "マイリス下限";
-            //
-            // tbMylistMinB
-            //
-            this.tbMylistMinB.Location = new System.Drawing.Point(270, 23);
-            this.tbMylistMinB.Name = "tbMylistMinB";
-            this.tbMylistMinB.Size = new System.Drawing.Size(100, 19);
-            this.tbMylistMinB.TabIndex = 3;
-            this.tbMylistMinB.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            //
-            // lblLikeMinB
-            //
-            this.lblLikeMinB.AutoSize = true;
-            this.lblLikeMinB.Location = new System.Drawing.Point(390, 26);
-            this.lblLikeMinB.Name = "lblLikeMinB";
-            this.lblLikeMinB.Size = new System.Drawing.Size(62, 12);
-            this.lblLikeMinB.TabIndex = 4;
-            this.lblLikeMinB.Text = "いいね下限";
-            //
-            // tbLikeMinB
-            //
-            this.tbLikeMinB.Location = new System.Drawing.Point(460, 23);
-            this.tbLikeMinB.Name = "tbLikeMinB";
-            this.tbLikeMinB.Size = new System.Drawing.Size(100, 19);
-            this.tbLikeMinB.TabIndex = 5;
-            this.tbLikeMinB.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            //
-            // lblCommentMinB
-            //
-            this.lblCommentMinB.AutoSize = true;
-            this.lblCommentMinB.Location = new System.Drawing.Point(580, 26);
-            this.lblCommentMinB.Name = "lblCommentMinB";
-            this.lblCommentMinB.Size = new System.Drawing.Size(62, 12);
-            this.lblCommentMinB.TabIndex = 6;
-            this.lblCommentMinB.Text = "コメント下限";
-            //
-            // tbCommentMinB
-            //
-            this.tbCommentMinB.Location = new System.Drawing.Point(650, 23);
-            this.tbCommentMinB.Name = "tbCommentMinB";
-            this.tbCommentMinB.Size = new System.Drawing.Size(100, 19);
-            this.tbCommentMinB.TabIndex = 7;
-            this.tbCommentMinB.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            //
-            // lblStartDateB
-            //
-            this.lblStartDateB.AutoSize = true;
-            this.lblStartDateB.Location = new System.Drawing.Point(10, 60);
-            this.lblStartDateB.Name = "lblStartDateB";
-            this.lblStartDateB.Size = new System.Drawing.Size(89, 12);
-            this.lblStartDateB.TabIndex = 8;
-            this.lblStartDateB.Text = "投稿日 開始～終了";
-            //
-            // dtStartB
-            //
-            this.dtStartB.Location = new System.Drawing.Point(110, 56);
-            this.dtStartB.Name = "dtStartB";
-            this.dtStartB.Size = new System.Drawing.Size(150, 19);
-            this.dtStartB.TabIndex = 9;
-            //
-            // dtEndB
-            //
-            this.dtEndB.Location = new System.Drawing.Point(270, 56);
-            this.dtEndB.Name = "dtEndB";
-            this.dtEndB.Size = new System.Drawing.Size(150, 19);
-            this.dtEndB.TabIndex = 10;
-            //
-            // lblContentTypeB
-            //
-            this.lblContentTypeB.AutoSize = true;
-            this.lblContentTypeB.Location = new System.Drawing.Point(440, 60);
-            this.lblContentTypeB.Name = "lblContentTypeB";
-            this.lblContentTypeB.Size = new System.Drawing.Size(29, 12);
-            this.lblContentTypeB.TabIndex = 11;
-            this.lblContentTypeB.Text = "種別";
-            //
-            // cmbContentTypeB
-            //
-            this.cmbContentTypeB.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbContentTypeB.FormattingEnabled = true;
-            this.cmbContentTypeB.Items.AddRange(new object[] {
-            "指定なし",
-            "long",
-            "short"});
-            this.cmbContentTypeB.Location = new System.Drawing.Point(480, 56);
-            this.cmbContentTypeB.Name = "cmbContentTypeB";
-            this.cmbContentTypeB.Size = new System.Drawing.Size(120, 20);
-            this.cmbContentTypeB.TabIndex = 12;
-            //
-            // grpDbB
-            //
-            this.grpDbB.Controls.Add(this.btnLastResult_TagB);
-            this.grpDbB.Controls.Add(this.tbLastResult_TagB);
-            this.grpDbB.Controls.Add(this.btnAnalyzeDB_TagB);
-            this.grpDbB.Controls.Add(this.tbAnalyzeDB_TagB);
-            this.grpDbB.Controls.Add(this.btnBaseDB_TagB);
-            this.grpDbB.Controls.Add(this.tbBaseDB_TagB);
-            this.grpDbB.Location = new System.Drawing.Point(8, 270);
-            this.grpDbB.Name = "grpDbB";
-            this.grpDbB.Size = new System.Drawing.Size(806, 130);
-            this.grpDbB.TabIndex = 2;
-            this.grpDbB.TabStop = false;
-            this.grpDbB.Text = "3. スナップショットDB・前回結果（前回は任意）";
-            //
-            // tbBaseDB_TagB
-            //
-            this.tbBaseDB_TagB.Location = new System.Drawing.Point(10, 22);
-            this.tbBaseDB_TagB.Name = "tbBaseDB_TagB";
-            this.tbBaseDB_TagB.Size = new System.Drawing.Size(600, 19);
-            this.tbBaseDB_TagB.TabIndex = 0;
-            //
-            // btnBaseDB_TagB
-            //
-            this.btnBaseDB_TagB.Location = new System.Drawing.Point(616, 20);
-            this.btnBaseDB_TagB.Name = "btnBaseDB_TagB";
-            this.btnBaseDB_TagB.Size = new System.Drawing.Size(75, 23);
-            this.btnBaseDB_TagB.TabIndex = 1;
-            this.btnBaseDB_TagB.Text = "参照(基準)";
-            this.btnBaseDB_TagB.UseVisualStyleBackColor = true;
-            this.btnBaseDB_TagB.Click += new System.EventHandler(this.btnBaseDB_TagB_Click);
-            //
-            // tbAnalyzeDB_TagB
-            //
-            this.tbAnalyzeDB_TagB.Location = new System.Drawing.Point(10, 50);
-            this.tbAnalyzeDB_TagB.Name = "tbAnalyzeDB_TagB";
-            this.tbAnalyzeDB_TagB.Size = new System.Drawing.Size(600, 19);
-            this.tbAnalyzeDB_TagB.TabIndex = 2;
-            //
-            // btnAnalyzeDB_TagB
-            //
-            this.btnAnalyzeDB_TagB.Location = new System.Drawing.Point(616, 48);
-            this.btnAnalyzeDB_TagB.Name = "btnAnalyzeDB_TagB";
-            this.btnAnalyzeDB_TagB.Size = new System.Drawing.Size(75, 23);
-            this.btnAnalyzeDB_TagB.TabIndex = 3;
-            this.btnAnalyzeDB_TagB.Text = "参照(集計日)";
-            this.btnAnalyzeDB_TagB.UseVisualStyleBackColor = true;
-            this.btnAnalyzeDB_TagB.Click += new System.EventHandler(this.btnAnalyzeDB_TagB_Click);
-            //
-            // tbLastResult_TagB
-            //
-            this.tbLastResult_TagB.Location = new System.Drawing.Point(10, 78);
-            this.tbLastResult_TagB.Name = "tbLastResult_TagB";
-            this.tbLastResult_TagB.Size = new System.Drawing.Size(600, 19);
-            this.tbLastResult_TagB.TabIndex = 4;
-            //
-            // btnLastResult_TagB
-            //
-            this.btnLastResult_TagB.Location = new System.Drawing.Point(616, 76);
-            this.btnLastResult_TagB.Name = "btnLastResult_TagB";
-            this.btnLastResult_TagB.Size = new System.Drawing.Size(75, 23);
-            this.btnLastResult_TagB.TabIndex = 5;
-            this.btnLastResult_TagB.Text = "参照(前回任意)";
-            this.btnLastResult_TagB.UseVisualStyleBackColor = true;
-            this.btnLastResult_TagB.Click += new System.EventHandler(this.btnLastResult_TagB_Click);
-            //
-            // btnAnalyzeTagB
-            //
-            this.btnAnalyzeTagB.Location = new System.Drawing.Point(337, 410);
-            this.btnAnalyzeTagB.Name = "btnAnalyzeTagB";
-            this.btnAnalyzeTagB.Size = new System.Drawing.Size(139, 39);
-            this.btnAnalyzeTagB.TabIndex = 3;
-            this.btnAnalyzeTagB.Text = "ランキング計算";
-            this.btnAnalyzeTagB.UseVisualStyleBackColor = true;
-            this.btnAnalyzeTagB.Click += new System.EventHandler(this.btnAnalyzeTagB_Click);
+            this.cmbContentType.Location = new System.Drawing.Point(495, 56);
+            this.cmbContentType.Name = "cmbContentType";
+            this.cmbContentType.Size = new System.Drawing.Size(120, 20);
+            this.cmbContentType.TabIndex = 13;
+            this.cmbContentType.SelectedIndex = 0;
+            //
+            // grpDb
+            //
+            this.grpDb.Controls.Add(this.btnLastResult_Tag);
+            this.grpDb.Controls.Add(this.tbLastResult_Tag);
+            this.grpDb.Controls.Add(this.btnAnalyzeDB_Tag);
+            this.grpDb.Controls.Add(this.tbAnalyzeDB_Tag);
+            this.grpDb.Controls.Add(this.btnBaseDB_Tag);
+            this.grpDb.Controls.Add(this.tbBaseDB_Tag);
+            this.grpDb.Location = new System.Drawing.Point(8, 270);
+            this.grpDb.Name = "grpDb";
+            this.grpDb.Size = new System.Drawing.Size(806, 130);
+            this.grpDb.TabIndex = 2;
+            this.grpDb.TabStop = false;
+            this.grpDb.Text = "3. スナップショットDB・前回結果（前回は任意）";
+            //
+            // tbBaseDB_Tag
+            //
+            this.tbBaseDB_Tag.Location = new System.Drawing.Point(10, 22);
+            this.tbBaseDB_Tag.Name = "tbBaseDB_Tag";
+            this.tbBaseDB_Tag.Size = new System.Drawing.Size(600, 19);
+            this.tbBaseDB_Tag.TabIndex = 0;
+            //
+            // btnBaseDB_Tag
+            //
+            this.btnBaseDB_Tag.Location = new System.Drawing.Point(616, 20);
+            this.btnBaseDB_Tag.Name = "btnBaseDB_Tag";
+            this.btnBaseDB_Tag.Size = new System.Drawing.Size(75, 23);
+            this.btnBaseDB_Tag.TabIndex = 1;
+            this.btnBaseDB_Tag.Text = "参照(基準)";
+            this.btnBaseDB_Tag.UseVisualStyleBackColor = true;
+            this.btnBaseDB_Tag.Click += new System.EventHandler(this.btnBaseDB_Tag_Click);
+            //
+            // tbAnalyzeDB_Tag
+            //
+            this.tbAnalyzeDB_Tag.Location = new System.Drawing.Point(10, 50);
+            this.tbAnalyzeDB_Tag.Name = "tbAnalyzeDB_Tag";
+            this.tbAnalyzeDB_Tag.Size = new System.Drawing.Size(600, 19);
+            this.tbAnalyzeDB_Tag.TabIndex = 2;
+            //
+            // btnAnalyzeDB_Tag
+            //
+            this.btnAnalyzeDB_Tag.Location = new System.Drawing.Point(616, 48);
+            this.btnAnalyzeDB_Tag.Name = "btnAnalyzeDB_Tag";
+            this.btnAnalyzeDB_Tag.Size = new System.Drawing.Size(75, 23);
+            this.btnAnalyzeDB_Tag.TabIndex = 3;
+            this.btnAnalyzeDB_Tag.Text = "参照(集計日)";
+            this.btnAnalyzeDB_Tag.UseVisualStyleBackColor = true;
+            this.btnAnalyzeDB_Tag.Click += new System.EventHandler(this.btnAnalyzeDB_Tag_Click);
+            //
+            // tbLastResult_Tag
+            //
+            this.tbLastResult_Tag.Location = new System.Drawing.Point(10, 78);
+            this.tbLastResult_Tag.Name = "tbLastResult_Tag";
+            this.tbLastResult_Tag.Size = new System.Drawing.Size(600, 19);
+            this.tbLastResult_Tag.TabIndex = 4;
+            //
+            // btnLastResult_Tag
+            //
+            this.btnLastResult_Tag.Location = new System.Drawing.Point(616, 76);
+            this.btnLastResult_Tag.Name = "btnLastResult_Tag";
+            this.btnLastResult_Tag.Size = new System.Drawing.Size(75, 23);
+            this.btnLastResult_Tag.TabIndex = 5;
+            this.btnLastResult_Tag.Text = "参照(前回任意)";
+            this.btnLastResult_Tag.UseVisualStyleBackColor = true;
+            this.btnLastResult_Tag.Click += new System.EventHandler(this.btnLastResult_Tag_Click);
+            //
+            // btnAnalyzeTag
+            //
+            this.btnAnalyzeTag.Location = new System.Drawing.Point(337, 410);
+            this.btnAnalyzeTag.Name = "btnAnalyzeTag";
+            this.btnAnalyzeTag.Size = new System.Drawing.Size(139, 39);
+            this.btnAnalyzeTag.TabIndex = 3;
+            this.btnAnalyzeTag.Text = "ランキング計算";
+            this.btnAnalyzeTag.UseVisualStyleBackColor = true;
+            this.btnAnalyzeTag.Click += new System.EventHandler(this.btnAnalyzeTag_Click);
             //
             // tabPageOut
             //
             this.tabPageOut.Controls.Add(this.tabPageSyukei);
-            this.tabPageOut.Controls.Add(this.tabPageTagA);
-            this.tabPageOut.Controls.Add(this.tabPageTagB);
+            this.tabPageOut.Controls.Add(this.tabPageTag);
             this.tabPageOut.Controls.Add(this.tabPage2);
             this.tabPageOut.Location = new System.Drawing.Point(-3, 4);
             this.tabPageOut.Name = "tabPageOut";
@@ -1271,15 +952,13 @@
             this.panelSP.PerformLayout();
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
-            this.tabPageTagA.ResumeLayout(false);
-            this.tabPageTagA.PerformLayout();
-            this.grpTagB.ResumeLayout(false);
-            this.grpTagB.PerformLayout();
-            this.grpFilterB.ResumeLayout(false);
-            this.grpFilterB.PerformLayout();
-            this.grpDbB.ResumeLayout(false);
-            this.grpDbB.PerformLayout();
-            this.tabPageTagB.ResumeLayout(false);
+            this.grpTag.ResumeLayout(false);
+            this.grpTag.PerformLayout();
+            this.grpFilter.ResumeLayout(false);
+            this.grpFilter.PerformLayout();
+            this.grpDb.ResumeLayout(false);
+            this.grpDb.PerformLayout();
+            this.tabPageTag.ResumeLayout(false);
             this.tabPageOut.ResumeLayout(false);
             this.ResumeLayout(false);
 
@@ -1337,66 +1016,36 @@
         private System.Windows.Forms.ComboBox cmbHoseiPointAll;
         private System.Windows.Forms.Label label19;
         private System.Windows.Forms.DateTimePicker dtPLastweekDay;
-        private System.Windows.Forms.TabPage tabPageTagA;
-        private System.Windows.Forms.Label lblTagTitleA;
-        private System.Windows.Forms.TextBox tbTagConditionA;
-        private System.Windows.Forms.Button btnTagSearchA;
-        private System.Windows.Forms.Label lblTagCountA;
-        private System.Windows.Forms.Label lblTagWarnA;
-        private System.Windows.Forms.Label lblViewMinA;
-        private System.Windows.Forms.TextBox tbViewMinA;
-        private System.Windows.Forms.Label lblMylistMinA;
-        private System.Windows.Forms.TextBox tbMylistMinA;
-        private System.Windows.Forms.Label lblLikeMinA;
-        private System.Windows.Forms.TextBox tbLikeMinA;
-        private System.Windows.Forms.Label lblCommentMinA;
-        private System.Windows.Forms.TextBox tbCommentMinA;
-        private System.Windows.Forms.Label lblStartDateA;
-        private System.Windows.Forms.DateTimePicker dtStartA;
-        private System.Windows.Forms.Label lblWaveA;
-        private System.Windows.Forms.DateTimePicker dtEndA;
-        private System.Windows.Forms.Label lblContentTypeA;
-        private System.Windows.Forms.ComboBox cmbContentTypeA;
-        private System.Windows.Forms.Label lblDbTitleA;
-        private System.Windows.Forms.Label lblBaseDBA;
-        private System.Windows.Forms.TextBox tbBaseDB_TagA;
-        private System.Windows.Forms.Button btnBaseDB_TagA;
-        private System.Windows.Forms.Label lblAnalyzeDBA;
-        private System.Windows.Forms.TextBox tbAnalyzeDB_TagA;
-        private System.Windows.Forms.Button btnAnalyzeDB_TagA;
-        private System.Windows.Forms.Label lblLastResultA;
-        private System.Windows.Forms.TextBox tbLastResult_TagA;
-        private System.Windows.Forms.Button btnLastResult_TagA;
-        private System.Windows.Forms.Button btnAnalyzeTagA;
-        private System.Windows.Forms.TabPage tabPageTagB;
-        private System.Windows.Forms.GroupBox grpTagB;
-        private System.Windows.Forms.TextBox tbTagConditionB;
-        private System.Windows.Forms.Label lblTagExampleB;
-        private System.Windows.Forms.Button btnTagSearchB;
-        private System.Windows.Forms.Label lblTagCountB;
-        private System.Windows.Forms.Label lblTagWarnB;
-        private System.Windows.Forms.GroupBox grpFilterB;
-        private System.Windows.Forms.Label lblViewMinB;
-        private System.Windows.Forms.TextBox tbViewMinB;
-        private System.Windows.Forms.Label lblMylistMinB;
-        private System.Windows.Forms.TextBox tbMylistMinB;
-        private System.Windows.Forms.Label lblLikeMinB;
-        private System.Windows.Forms.TextBox tbLikeMinB;
-        private System.Windows.Forms.Label lblCommentMinB;
-        private System.Windows.Forms.TextBox tbCommentMinB;
-        private System.Windows.Forms.Label lblStartDateB;
-        private System.Windows.Forms.DateTimePicker dtStartB;
-        private System.Windows.Forms.DateTimePicker dtEndB;
-        private System.Windows.Forms.Label lblContentTypeB;
-        private System.Windows.Forms.ComboBox cmbContentTypeB;
-        private System.Windows.Forms.GroupBox grpDbB;
-        private System.Windows.Forms.TextBox tbBaseDB_TagB;
-        private System.Windows.Forms.Button btnBaseDB_TagB;
-        private System.Windows.Forms.TextBox tbAnalyzeDB_TagB;
-        private System.Windows.Forms.Button btnAnalyzeDB_TagB;
-        private System.Windows.Forms.TextBox tbLastResult_TagB;
-        private System.Windows.Forms.Button btnLastResult_TagB;
-        private System.Windows.Forms.Button btnAnalyzeTagB;
+        private System.Windows.Forms.TabPage tabPageTag;
+        private System.Windows.Forms.GroupBox grpTag;
+        private System.Windows.Forms.TextBox tbTagCondition;
+        private System.Windows.Forms.Label lblTagExample;
+        private System.Windows.Forms.Button btnTagSearch;
+        private System.Windows.Forms.Label lblTagCount;
+        private System.Windows.Forms.Label lblTagWarn;
+        private System.Windows.Forms.GroupBox grpFilter;
+        private System.Windows.Forms.Label lblViewMin;
+        private System.Windows.Forms.TextBox tbViewMin;
+        private System.Windows.Forms.Label lblMylistMin;
+        private System.Windows.Forms.TextBox tbMylistMin;
+        private System.Windows.Forms.Label lblLikeMin;
+        private System.Windows.Forms.TextBox tbLikeMin;
+        private System.Windows.Forms.Label lblCommentMin;
+        private System.Windows.Forms.TextBox tbCommentMin;
+        private System.Windows.Forms.Label lblStartDate;
+        private System.Windows.Forms.CheckBox chkDateFilter;
+        private System.Windows.Forms.DateTimePicker dtStart;
+        private System.Windows.Forms.DateTimePicker dtEnd;
+        private System.Windows.Forms.Label lblContentType;
+        private System.Windows.Forms.ComboBox cmbContentType;
+        private System.Windows.Forms.GroupBox grpDb;
+        private System.Windows.Forms.TextBox tbBaseDB_Tag;
+        private System.Windows.Forms.Button btnBaseDB_Tag;
+        private System.Windows.Forms.TextBox tbAnalyzeDB_Tag;
+        private System.Windows.Forms.Button btnAnalyzeDB_Tag;
+        private System.Windows.Forms.TextBox tbLastResult_Tag;
+        private System.Windows.Forms.Button btnLastResult_Tag;
+        private System.Windows.Forms.Button btnAnalyzeTag;
     }
 }
 
