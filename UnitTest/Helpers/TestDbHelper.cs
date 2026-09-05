@@ -133,6 +133,99 @@ namespace UnitTest.Helpers
             }
         }
 
+        public static void CreateLastResultTableWithoutLikeColumns(ISQLiteCtrl dbCtrl)
+        {
+            // いいね列追加前の旧スキーマ再現用
+            using (var cmd = dbCtrl.Connection.CreateCommand())
+            {
+                cmd.CommandText = @"
+                    CREATE TABLE IF NOT EXISTS LastResult (
+                        種別 TEXT,
+                        集計日 INTEGER,
+                        ID TEXT,
+                        タイトル TEXT,
+                        総合ランク INTEGER,
+                        ポイント INTEGER,
+                        再生数 INTEGER,
+                        コメント数 INTEGER,
+                        マイリスト数 INTEGER,
+                        累計再生数 INTEGER,
+                        累計コメント数 INTEGER,
+                        累計マイリスト数 INTEGER,
+                        JSON TEXT
+                    )";
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        public static void CreateHistoryTableWithoutLikeColumn(ISQLiteCtrl dbCtrl)
+        {
+            // いいね列追加前の旧スキーマ再現用
+            using (var cmd = dbCtrl.Connection.CreateCommand())
+            {
+                cmd.CommandText = @"
+                    CREATE TABLE IF NOT EXISTS History (
+                        集計日 INTEGER,
+                        ID TEXT,
+                        総合ランク INTEGER,
+                        ポイント INTEGER,
+                        再生数 INTEGER,
+                        コメント数 INTEGER,
+                        マイリスト数 INTEGER
+                    )";
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        public static void InsertLastResultData(ISQLiteCtrl dbCtrl, string syubetsu, int syuukeiBi, string id, long rankTotal, long point, string json)
+        {
+            using (var cmd = dbCtrl.Connection.CreateCommand())
+            {
+                cmd.CommandText = @"INSERT INTO LastResult(種別, 集計日, ID, タイトル, 総合ランク, ポイント,
+                                    再生数, コメント数, マイリスト数, 累計再生数, 累計コメント数, 累計マイリスト数, JSON)
+                                    VALUES(@種別, @集計日, @ID, @タイトル, @総合ランク, @ポイント,
+                                    @再生数, @コメント数, @マイリスト数, @累計再生数, @累計コメント数, @累計マイリスト数, @JSON)";
+                cmd.Parameters.AddWithValue("@種別", syubetsu);
+                cmd.Parameters.AddWithValue("@集計日", syuukeiBi);
+                cmd.Parameters.AddWithValue("@ID", id);
+                cmd.Parameters.AddWithValue("@タイトル", "タイトル_" + id);
+                cmd.Parameters.AddWithValue("@総合ランク", rankTotal);
+                cmd.Parameters.AddWithValue("@ポイント", point);
+                cmd.Parameters.AddWithValue("@再生数", 100);
+                cmd.Parameters.AddWithValue("@コメント数", 10);
+                cmd.Parameters.AddWithValue("@マイリスト数", 5);
+                cmd.Parameters.AddWithValue("@累計再生数", 1000);
+                cmd.Parameters.AddWithValue("@累計コメント数", 100);
+                cmd.Parameters.AddWithValue("@累計マイリスト数", 50);
+                cmd.Parameters.AddWithValue("@JSON", json);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        public static void CreateLastResultTableWithoutJsonColumn(ISQLiteCtrl dbCtrl)
+        {
+            // JSON列もいいね列もない最古スキーマ再現用（ロールバック検証用）
+            using (var cmd = dbCtrl.Connection.CreateCommand())
+            {
+                cmd.CommandText = @"
+                    CREATE TABLE IF NOT EXISTS LastResult (
+                        種別 TEXT,
+                        集計日 INTEGER,
+                        ID TEXT,
+                        タイトル TEXT,
+                        総合ランク INTEGER,
+                        ポイント INTEGER,
+                        再生数 INTEGER,
+                        コメント数 INTEGER,
+                        マイリスト数 INTEGER,
+                        累計再生数 INTEGER,
+                        累計コメント数 INTEGER,
+                        累計マイリスト数 INTEGER
+                    )";
+                cmd.ExecuteNonQuery();
+            }
+        }
+
         public static void CreateDailylogTable(ISQLiteCtrl dbCtrl)
         {
             using (var cmd = dbCtrl.Connection.CreateCommand())

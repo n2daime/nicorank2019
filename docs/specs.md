@@ -26,7 +26,7 @@
 
 - 収集: LogOfficial.db の `人気のタグ`（最新集計日）に加え、ApiXML.db（NicovideoThumb・最新取得日）の `lock="1"` タグを定義順に全件補完する（件数上限なし、重複除外）。行なし・Status非ok・パース失敗は素通り。対象は UserEnd 以内 or カテゴリ1位。中間集計は `isLocalOnly` のため外部取得を行わずキャッシュ参照のみ
 - `Ranking.FavoriteTags` は `List<string>` で挿入順を保持する（人気タグ→タグロック定義順）
-- 出力: `Ranking.GetDisplayTags()` が挿入順のままカテゴリ名と同名のタグを除外する（`Trim` 後完全一致。空カテゴリは除外なし）。ファイル別の件数制限は `NrmOutput` の上限パラメータで行う（TSV系は3件。`result(UTF8).csv`・`result_DB登録用(UTF8).json` のみ全件）
+- 出力: `Ranking.GetDisplayTags()` が挿入順のままカテゴリ名と同名のタグを除外する（`Trim` 後完全一致。空カテゴリは除外なし）。ファイル別の件数制限は `NrmOutput` の上限パラメータで行う（TSV系は3件。`result(UTF8).csv`・`result_DB登録用(UTF8).json` のみ全件）。Issue #28で見直しなしを確定し全件仕様を維持する
 
 ### 差分集計と so 新着偽造判定（SabunReader）
 
@@ -172,6 +172,13 @@
 
 `集計日` / `Ver` 等。メンテナンス日判定（`CheckMaintananceDay`）に使用。初期値 20190610。
 
+### DB構成バージョン管理（Issue #28）
+
+- 対象は `LogOfficial.db` / `NicoranHistory.db` の2DBのみ（ニコ動仕様変更で構成が変わり得るDB）。各DBに `DBVersion` テーブル（`Ver` INTEGER）を持ち、旧DB（テーブルなし）はVer0扱いとする
+- 集計開始時（`frmMainSyukei.AnalyzeAsync`・DBオープン直後・公式DB更新前）に `DbMigrationCoordinator` が各DB担当クラスに更新を指示する。1件でも失敗したら集計を中断する
+- `Dailylog.db` / `ApiXML.db` はキャッシュ扱い（最悪作り直し）のためバージョン管理の対象外とする
+- `result_DB登録用(UTF8).json` の FavoriteTag は見直しなし（全件仕様を維持）
+
 ### Dailylog テーブル（Dailylog.db）
 
 中間集計用の日別集計結果。`集計日` / `種別` 等。いいね関連フィールドが無ければ ALTER TABLE で自動追加。
@@ -179,8 +186,9 @@
 ### History / LastResult / LastResultInfo（NicoranHistory.db）
 
 - `History`: 動画ごとの過去ランクイン履歴（長期動画判定の材料）
-- `LastResult`: 前回の集計結果（種別=モード名、集計日。JSON 列にランキング全体を保存）
+- `LastResult`: 前回の集計結果（種別=モード名、集計日。JSON列は空文字で登録する。肥大化対策・Issue #28。読み側は総合ランク・ポイントのみ参照のため動作不変）
 - `LastResultInfo`: 前回集計時の設定 XML（`Config.GetXMLString()`）
+- `DBVersion`: DB構成バージョン（`Ver` INTEGER。旧DBはテーブルなし→Ver0扱い。初回更新時にVer=0で1行追加。以後の構成変更時は+1）
 
 ### SnapShot DB（LogSnapshot{yyyyMMdd}.db）
 

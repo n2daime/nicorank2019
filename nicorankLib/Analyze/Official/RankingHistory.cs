@@ -15,9 +15,14 @@ using System.Windows.Forms;
 
 namespace nicorankLib.Analyze.Official
 {
-    public class RankingHistory:IDisposable
+    public class RankingHistory : IDisposable, IDbMigratable
     {
         protected const string DBFILE_NAME = DB.LOG_OFFICEIAL;
+
+        /// <summary>
+        /// DB構成バージョンの現在値。構成変更時に+1する。
+        /// </summary>
+        public const long DbCurrentVersion = 0;
 
         protected ISQLiteCtrl dbCtrlOfficial = null;
 
@@ -40,6 +45,12 @@ namespace nicorankLib.Analyze.Official
             Close();
             dbCtrlOfficial = _dbCtrlOverride ?? new SQLiteCtrl();
 
+            if (dbCtrlOfficial.IsOpen)
+            {
+                // 注入済みの開いた接続（テスト）はそのまま使う
+                return true;
+            }
+
             var dbFile = Path.Combine(Directory.GetCurrentDirectory(), DBFILE_NAME);
 
             if (!dbCtrlOfficial.Open(dbFile))
@@ -61,6 +72,112 @@ namespace nicorankLib.Analyze.Official
                 dbCtrlOfficial.Close();
             }
             dbCtrlOfficial = null;
+        }
+
+        /// <summary>
+        /// 司令塔向けの対象DB。
+        /// </summary>
+        public string TargetDb => DBFILE_NAME;
+
+        /// <summary>
+        /// LogOfficial.dbを最新の構成に更新する（冪等）。集計開始時に司令塔から呼ばれる。
+        /// </summary>
+        /// <returns>正常終了時true、失敗時false</returns>
+        public bool EnsureMigrated()
+        {
+            if (dbCtrlOfficial == null || !dbCtrlOfficial.IsOpen)
+            {
+                return false;
+            }
+            try
+            {
+                // 未記録=旧DBはVer0から順に適用する。未定義バージョンは失敗させる
+                long ver = GetDbVersion();
+                while (ver < DbCurrentVersion)
+                {
+                    ver++;
+                    if (!MigrateToVersion(ver))
+                    {
+                        return false;
+                    }
+                    SetDbVersion(ver);
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                var errLog = ErrLog.GetInstance();
+                errLog.Write($"{DB.LOG_OFFICEIAL}更新でエラー発生。(RankingHistory::EnsureMigrated)");
+                errLog.Write(ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 未記録時の番兵。Ver0から順に適用するための起点。
+        /// </summary>
+        private const long DbNoVersion = -1;
+
+        /// <summary>
+        /// 記録済みバージョンを取得する。未記録時はDbNoVersionを返す。
+        /// </summary>
+        private long GetDbVersion()
+        {
+            using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
+            {
+                aCmd.CommandText = "CREATE TABLE IF NOT EXISTS DBVersion (Ver INTEGER);";
+                aCmd.ExecuteNonQuery();
+
+                aCmd.CommandText = "SELECT Ver FROM DBVersion LIMIT 1;";
+                using (var reader = aCmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return Convert.ToInt64(reader["Ver"]);
+                    }
+                }
+            }
+            return DbNoVersion;
+        }
+
+        /// <summary>
+        /// 指定バージョンへの移行を行う。将来のバージョン追加時はここにcaseを足す。
+        /// </summary>
+        private bool MigrateToVersion(long version)
+        {
+            switch (version)
+            {
+                case 0:
+                    // ベース：メンテナンス日管理テーブルの確保
+                    return createRankingDateTable();
+                default:
+                    // 未定義は取りこぼし防止のため失敗させる
+                    ErrLog.GetInstance().Write($"{DB.LOG_OFFICEIAL}更新でエラー発生。(RankingHistory::MigrateToVersion 未対応Ver={version})");
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// バージョンを記録する（初回はINSERT、以後はUPDATE）。
+        /// </summary>
+        private void SetDbVersion(long version)
+        {
+            using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
+            {
+                aCmd.CommandText = "SELECT COUNT(*) FROM DBVersion;";
+                bool hasRow = Convert.ToInt64(aCmd.ExecuteScalar()) > 0;
+                if (hasRow)
+                {
+                    aCmd.CommandText = "UPDATE DBVersion SET Ver = @Ver;";
+                }
+                else
+                {
+                    aCmd.CommandText = "INSERT INTO DBVersion (Ver) VALUES (@Ver);";
+                }
+                aCmd.Parameters.Clear();
+                aCmd.Parameters.AddWithValue("@Ver", version);
+                aCmd.ExecuteNonQuery();
+            }
         }
 
         /// <summary>

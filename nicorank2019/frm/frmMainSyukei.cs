@@ -1,4 +1,5 @@
 ﻿using nicorank2019.frm;
+using nicorankLib.Analyze.model;
 using nicorankLib.Analyze.Official;
 using nicorankLib.Common;
 using nicorankLib.Factory;
@@ -123,7 +124,18 @@ namespace nicorank2019.frm
                     }
                     else
                     {
-                        if (!history.UpdateOfficialRankingDB())
+                        // 集計開始時に各DBの更新確認を指示する（失敗時は中断）
+                        var migrationCoordinator = new DbMigrationCoordinator(new List<IDbMigratable>
+                        {
+                            history,
+                            // モードは移行処理に無関係のためWeeklyを仮指定する
+                            new ResultHistory(EAnalyzeMode.Weekly)
+                        });
+                        if (!migrationCoordinator.EnsureAllAtAnalyzeStart())
+                        {
+                            returnVal = false;
+                        }
+                        else if (!history.UpdateOfficialRankingDB())
                         {
                             returnVal = false;
                         }
