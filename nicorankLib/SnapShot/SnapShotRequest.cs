@@ -39,6 +39,14 @@ namespace nicorankLib.SnapShot
         public DateTime StartLt { get; set; }
         /// <summary>再生数フィルタ下限（filters[viewCounter][gte]）。nullでフィルタ無し</summary>
         public long? MinViewCounter { get; set; } = ViewCounterThreshold;
+        /// <summary>マイリスト数フィルタ下限（filters[mylistCounter][gte]）。nullでフィルタ無し</summary>
+        public long? MinMylistCounter { get; set; } = null;
+        /// <summary>いいね数フィルタ下限（filters[likeCounter][gte]）。nullでフィルタ無し</summary>
+        public long? MinLikeCounter { get; set; } = null;
+        /// <summary>コメント数フィルタ下限（filters[commentCounter][gte]）。nullでフィルタ無し</summary>
+        public long? MinCommentCounter { get; set; } = null;
+        /// <summary>動画種別フィルタ（filters[contentType][0]）。null・空でフィルタ無し（long/shortのみ有効）</summary>
+        public string ContentType { get; set; } = null;
         /// <summary>複雑フィルタ用JSON文字列（公式の jsonFilter。URLエンコード前の生JSON）。将来拡張口で現行フローは未使用</summary>
         public string JsonFilterJson { get; set; } = null;
         /// <summary>ソート順</summary>
@@ -67,6 +75,53 @@ namespace nicorankLib.SnapShot
                 Limit = limit,
                 Offset = offset,
                 MinViewCounter = limit1000 ? (long?)ViewCounterThreshold : null
+            };
+        }
+
+        /// <summary>タグ検索で日付フィルタを使わない場合の中立の開始日（全動画を含む）</summary>
+        public static readonly DateTime NeutralStartGte = new DateTime(2000, 1, 1);
+        /// <summary>タグ検索で日付フィルタを使わない場合の中立の終了日（全動画を含む）</summary>
+        public static readonly DateTime NeutralStartLt = new DateTime(2100, 1, 1);
+
+        /// <summary>
+        /// タグ検索のリクエストを生成する（TagRankAnalyze 用）。
+        /// タグ条件は jsonFilter、数値・日付・種別は filters[] の実証済み記法で指定する。
+        /// </summary>
+        /// <param name="jsonFilterJson">タグ条件の jsonFilter（TagConditionParser 製）</param>
+        /// <param name="viewMin">再生数下限（0以下でフィルタ無し）</param>
+        /// <param name="mylistMin">マイリスト数下限（0以下でフィルタ無し）</param>
+        /// <param name="likeMin">いいね数下限（0以下でフィルタ無し）</param>
+        /// <param name="commentMin">コメント数下限（0以下でフィルタ無し）</param>
+        /// <param name="startGte">投稿期間の開始日</param>
+        /// <param name="startLt">投稿期間の終了日</param>
+        /// <param name="contentType">動画種別（long/short。それ以外はフィルタ無し）</param>
+        /// <param name="limit">取得件数</param>
+        /// <param name="offset">取得オフセット</param>
+        public static SnapShotRequest CreateTagSearch(string jsonFilterJson, long viewMin, long mylistMin, long likeMin, long commentMin,
+            DateTime startGte, DateTime startLt, string contentType, int limit, long offset)
+        {
+            string validContentType = null;
+            if (contentType == "long" || contentType == "short")
+            {
+                validContentType = contentType;
+            }
+            return new SnapShotRequest
+            {
+                Q = "",
+                Targets = null,
+                Fields = DefaultFields,
+                StartGte = startGte.Date,
+                StartLt = startLt.Date,
+                MinViewCounter = viewMin > 0 ? (long?)viewMin : null,
+                MinMylistCounter = mylistMin > 0 ? (long?)mylistMin : null,
+                MinLikeCounter = likeMin > 0 ? (long?)likeMin : null,
+                MinCommentCounter = commentMin > 0 ? (long?)commentMin : null,
+                ContentType = validContentType,
+                JsonFilterJson = jsonFilterJson,
+                Sort = DefaultSort,
+                Limit = limit,
+                Offset = offset,
+                Context = DefaultContext
             };
         }
 
@@ -100,6 +155,22 @@ namespace nicorankLib.SnapShot
             if (MinViewCounter.HasValue)
             {
                 AppendParam(query, "filters[viewCounter][gte]", MinViewCounter.Value.ToString(CultureInfo.InvariantCulture));
+            }
+            if (MinMylistCounter.HasValue)
+            {
+                AppendParam(query, "filters[mylistCounter][gte]", MinMylistCounter.Value.ToString(CultureInfo.InvariantCulture));
+            }
+            if (MinLikeCounter.HasValue)
+            {
+                AppendParam(query, "filters[likeCounter][gte]", MinLikeCounter.Value.ToString(CultureInfo.InvariantCulture));
+            }
+            if (MinCommentCounter.HasValue)
+            {
+                AppendParam(query, "filters[commentCounter][gte]", MinCommentCounter.Value.ToString(CultureInfo.InvariantCulture));
+            }
+            if (!string.IsNullOrEmpty(ContentType))
+            {
+                AppendParam(query, "filters[contentType][0]", ContentType);
             }
             if (!string.IsNullOrEmpty(JsonFilterJson))
             {

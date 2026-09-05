@@ -250,6 +250,7 @@
     <Compile Include="Analyze\Input\Json\JsonReaderTotal.cs" />
     <Compile Include="Analyze\Input\Json\JsonReaderWeekly.cs" />
     <Compile Include="Analyze\Input\SPAnalyze.cs" />
+    <Compile Include="Analyze\Input\TagRankAnalyze.cs" />
     <Compile Include="Analyze\model\DB.cs" />
     <Compile Include="Analyze\Option\Basic\BasicOptionBase.cs" />
     <Compile Include="Analyze\Option\Ext\FavoriteTagReader.cs" />
@@ -266,6 +267,7 @@
     <Compile Include="Factory\ModeFactoryWeekly.cs" />
     <Compile Include="Analyze\Option\Ext\TyokiHantei.cs" />
     <Compile Include="Factory\ModeFactroySP.cs" />
+    <Compile Include="Factory\ModeFactoryTagRank.cs" />
     <Compile Include="output\ResultJsonRankDB.cs" />
     <Compile Include="Properties\Settings.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -276,6 +278,8 @@
     <Compile Include="SnapShot\SnapController.cs" />
     <Compile Include="SnapShot\SnapShotAnalyze.cs" />
     <Compile Include="SnapShot\SnapShotRequest.cs" />
+    <Compile Include="SnapShot\TagConditionParser.cs" />
+    <Compile Include="SnapShot\TagSearchQuery.cs" />
     <Compile Include="Analyze\model\EAnalyzeMode.cs" />
     <Compile Include="Analyze\Option\Ext\UserInfoReader.cs" />
     <Compile Include="Factory\ModeFactoryBase.cs" />
