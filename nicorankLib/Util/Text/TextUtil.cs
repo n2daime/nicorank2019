@@ -273,12 +273,6 @@ namespace nicorankLib.Util.Text
                             }
                             wRank.UserImageURL = userIcon ?? string.Empty;
 
-                            //"マイリストポイント"（新旧CSVはポイント列と併せて持つ前提。ポイント列なし時は初回CalcPointで再計算値に置き換わる）
-                            if (headerIndex.ContainsKey("マイリストポイント"))
-                            {
-                                wRank.PointMyList = getInt("マイリストポイント");
-                            }
-
                             //"人気のタグ"（Option。なければ空リスト、あればカンマ区切り）
                             wRank.FavoriteTags = new List<string>();
                             var tagsStr = getCol("人気のタグ");
@@ -296,7 +290,7 @@ namespace nicorankLib.Util.Text
 
                             //読み取り不要な列は無視する:
                             // "運営ポイントランク","運営ポイント"（情報が古すぎる）
-                            // "コメント補正","コメントポイント","マイリスト補正","再生補正","再生ポイント","いいねポイント","ポイント全体補正"（再計算するため）
+                            // "マイリストポイント","コメント補正","コメントポイント","マイリスト補正","再生補正","再生ポイント","いいねポイント","ポイント全体補正"（再計算するため）
                             // "動画URL","サムネイルURL","補正値"（旧列。互換のため無視）
 
                             rankingList.Add(wRank);

@@ -336,7 +336,7 @@ namespace UnitTest.nicorankLib.output
                 Assert.AreEqual(original.Category, read.Category);
                 Assert.AreEqual(original.RankTotal, read.RankTotal);
                 Assert.AreEqual(original.PointTotal, read.PointTotal);
-                Assert.AreEqual(original.PointMyList, read.PointMyList);
+                Assert.AreEqual(0, read.PointMyList); // マイリストポイントは読取対象外（再計算するため）のため既定値
                 Assert.AreEqual(original.CountPlay, read.CountPlay);
                 Assert.AreEqual(original.CountComment, read.CountComment);
                 Assert.AreEqual(original.CountMyList, read.CountMyList);

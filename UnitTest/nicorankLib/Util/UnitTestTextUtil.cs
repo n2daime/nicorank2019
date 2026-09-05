@@ -53,7 +53,7 @@ namespace UnitTest.nicorankLib.Util
             var rank = rankingMap["sm40422969"];
             Assert.AreEqual(1, rank.RankTotal);
             Assert.AreEqual(10000, rank.PointTotal);
-            Assert.AreEqual(80000, rank.PointMyList);
+            Assert.AreEqual(0, rank.PointMyList); // マイリストポイントは読取対象外（再計算するため）
             Assert.AreEqual(100000, rank.CountPlay);
             Assert.AreEqual(500, rank.CountComment);
             Assert.AreEqual(2000, rank.CountMyList);

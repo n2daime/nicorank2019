@@ -145,7 +145,7 @@ AnalyzeRank():
 | `RegLib` | 正規表現置換ラッパー |
 | `UIConfig` | シングルトン。SilentMode（既定 true）/ LocalXml。`GetWch` は SilentMode なら既定値 |
 | `Text/CsvUtil` | CSV/TSV 書き込み・読み込み（TextFieldParser） |
-| `Text/TextUtil` | テキスト読み書き。文字コード自動判別（JIS/EUC/SJIS/UTF8/Unicode/ASCII）。`ReadCsv` はカラム名から動的に検出して Ranking リスト/辞書に変換（新旧両対応・人気タグはOption・補正系と運営列は読取対象外。ファイル不在時は false + 空 List） |
+| `Text/TextUtil` | テキスト読み書き。文字コード自動判別（JIS/EUC/SJIS/UTF8/Unicode/ASCII）。`ReadCsv` はカラム名から動的に検出して Ranking リスト/辞書に変換（新旧両対応・人気タグはOption・マイリストポイントを含む補正系・ポイント内訳と運営列は読取対象外。ファイル不在時は false + 空 List） |
 | `Text/XmlSerializerUtil` | XmlSerializer ラッパー |
 
 ## 依存関係の要点（new の一覧）
