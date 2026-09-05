@@ -15,6 +15,12 @@
 
 ## 未完了タスク
 
+### タグ検索ランキング（#30）
+
+- [ ] 30.1 静的モック2〜3案（新TabPage「タグ検索集計」・Designerのみ・動作なし）で配置確定
+- [ ] 30.2 TagConditionParser＋CreateTagSearch＋TagRankAnalyze＋TAGRANK＋ModeFactoryTagRank＋UI配線
+- [ ] 30.3 specs/design更新・UnitTest・reviewer・ユーザー実行確認・マージ
+
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。

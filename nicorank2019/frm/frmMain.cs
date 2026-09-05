@@ -136,6 +136,57 @@ namespace nicorank2019.frm
             OpenFileDialogNicoran(this.tbLastResult, "result.csv|*.csv", "Open File");
         }
 
+        // タグ検索モック用（動作なし・配置確認用）
+        private void btnBaseDB_TagA_Click(object sender, EventArgs e)
+        {
+            OpenFileDialogNicoran(this.tbBaseDB_TagA, "SnapShotDB|*.db", "Open File");
+        }
+
+        private void btnAnalyzeDB_TagA_Click(object sender, EventArgs e)
+        {
+            OpenFileDialogNicoran(this.tbAnalyzeDB_TagA, "SnapShotDB|*.db", "Open File");
+        }
+
+        private void btnLastResult_TagA_Click(object sender, EventArgs e)
+        {
+            OpenFileDialogNicoran(this.tbLastResult_TagA, "result.csv|*.csv", "Open File");
+        }
+
+        private void btnTagSearchA_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("モックのため件数確認は未実行です", "確認", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void btnAnalyzeTagA_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("モックのため集計しません", "確認", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void btnBaseDB_TagB_Click(object sender, EventArgs e)
+        {
+            OpenFileDialogNicoran(this.tbBaseDB_TagB, "SnapShotDB|*.db", "Open File");
+        }
+
+        private void btnAnalyzeDB_TagB_Click(object sender, EventArgs e)
+        {
+            OpenFileDialogNicoran(this.tbAnalyzeDB_TagB, "SnapShotDB|*.db", "Open File");
+        }
+
+        private void btnLastResult_TagB_Click(object sender, EventArgs e)
+        {
+            OpenFileDialogNicoran(this.tbLastResult_TagB, "result.csv|*.csv", "Open File");
+        }
+
+        private void btnTagSearchB_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("モックのため件数確認は未実行です", "確認", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void btnAnalyzeTagB_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("モックのため集計しません", "確認", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
         protected void OpenFileDialogNicoran(TextBox textBox, string filter, string caption)
         {
             using (OpenFileDialog fileDialog = new OpenFileDialog())
