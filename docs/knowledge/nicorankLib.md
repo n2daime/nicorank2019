@@ -61,7 +61,8 @@ AnalyzeRank():
 
 `RankingHistory.cs` — LogOfficial.db（公式過去ランキング DB）の更新・参照。`IDisposable`。
 
-- `Open()` / `Close()`: LogOfficial を開閉
+- `Open()` / `Close()`: LogOfficial を開閉（注入済みの開接続は再利用）
+- `EnsureMigrated()`（`IDbMigratable`）: RankingDate確保＋DBVersion（Ver INTEGER・Ver0開始）確保。集計開始時に司令塔から呼ばれる
 - `UpdateOfficialRankingDB()`: RankingDate の `Max(集計日)+1`（初期値 20190610）から今日までを日別に取得・登録。0 件の日はメンテナンス日として登録（UI で確認）
 - `CheckMaintananceDay(DateTime)`: RankingDate でメンテ日判定
 - `CheckSoMovieNeedSabun(id, baseTime)`: 公式チャンネル動画（so）の差分取得判定。過去ランキング既出なら差分データ、なければ `ranking = null`（差分なし）。DB 非オープン・例外時は false
@@ -109,7 +110,7 @@ AnalyzeRank():
 | `ResultImagegetBase`（abstract） | 画像 DL キュー出力基底（.irv 形式） |
 | `ResultImagegetMovieIcon` | `queue.irv`（動画サムネイル、ED枠まで） |
 | `ResultImagegetUserIcon` | `queue_UserIcon.irv`（ユーザーアイコン、全件） |
-| `ResultHistory` | NicoranHistory.db へ登録（History / LastResult / LastResultInfo） |
+| `ResultHistory` | NicoranHistory.db へ登録（History / LastResult / LastResultInfo）。LastResultのJSON列はVer0移行でDROP済みのためINSERT対象外（Issue #28）。`EnsureMigrated()`（`IDbMigratable`）は集計開始時に旧スキーマ移行＋SP行削除＋JSON列DROP＋VACUUM＋DBVersion確保 |
 
 出力先は `Output/`（`ModeFactoryBase.OUTPUTDIR`、カレントディレクトリ相対・固定）。実行順は `ModeFactoryBase.AnalyzeRank()` 内で生成した各 OutputBase の `Execute()` を順次呼ぶ。
 
@@ -138,6 +139,8 @@ AnalyzeRank():
 | `SQLiteCtrl : ISQLiteCtrl, IDisposable` | SQLite 接続管理（`Microsoft.Data.Sqlite 10.0.11` + `SQLitePCLRaw 2.1.12`）。`Open()`（`Data Source="<path>";Pooling=False;Default Timeout=30` 文字列構築 + PRAGMA 4種・失敗時継続。`lib` 集約で `probing`）/ `OpenInMemory()`（`Data Source=:memory:`）/ `Close()` / `Dispose()`。`Connection` は `SqliteConnection` 型 |
 | `ApiUrlBuilder` | GETクエリ付きURL組み立ての静的ヘルパー（Issue #19）。キーはそのまま・値は `EscapeDataString`、`?`/`&` 切替、null/空対応 |
 | `ISQLiteCtrl` | SQLite 操作の抽象化（`SqliteConnection` 公開。テストでインメモリ実装に差し替え） |
+| `IDbMigratable` | 集計開始時のDB更新確認IF（`TargetDb` / `EnsureMigrated()`。実処理は各DB担当クラスが持つ。Issue #28） |
+| `DbMigrationCoordinator` | 集計開始時の更新指示の司令塔（`EnsureAllAtAnalyzeStart()`。失敗時は中断。具象には依存しない。Issue #28） |
 | `StatusLog` | 静的。`IStatusLogWriter` を注入するプラグイン方式（UI 側が実装を注入。未設定なら何も出さない） |
 | `ErrLog` | シングルトン。`nicorankerr.log` に追記（UTF8）。`Close()` で非 SilentMode ならキー入力待ち |
 | `DateConvert` | 日付 ↔ 文字列（yyyyMMdd / yyyyMMddHHmmss）変換 |

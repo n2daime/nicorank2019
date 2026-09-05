@@ -17,11 +17,13 @@
 
 ### ランキングJSON肥大化対策（#28）
 
-> 外部システムとの協議中のため着手不可。#27 の全件補完で肥大化が進行した件の対策 backlog。
+> #27 の全件補完で肥大化が進行した件の対策。方針確定済み。
+> DBVersionは LogOfficial.db／NicoranHistory.db の2DBに限定（ニコ動仕様変更で構成が変わり得るDB）。
+> Dailylog.db／ApiXML.db はキャッシュ扱い（最悪作り直し）のためバージョン管理なし。
 
-- [ ] 28.1 外部システムとの協議結果を反映した FavoriteTag フィールド仕様の確定
-- [ ] 28.2 LastResult.JSON の空文字登録化
-- [ ] 28.3 移行用batファイルの配布手順の整備
+- [ ] 28.1 FavoriteTag見直しなし確定（コード不変・文書確定のみ）
+- [ ] 28.2 LastResult.JSON列のDROP（新規INSERT除外＋既存DROP）＋旧SP種別行の削除（LastResult/LastResultInfo）
+- [ ] 28.3 DBVersion導入（2DB・Ver=0開始）＋集計開始時の司令塔（DbMigrationCoordinator）による更新指示（失敗時中断・VACUUM含む。bat配布は自動移行で代替し見送り）
 
 ### テスト拡充（集計ロジック）
 

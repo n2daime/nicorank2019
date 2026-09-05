@@ -306,6 +306,8 @@
     <Compile Include="Util\InternetUtil.cs" />
     <Compile Include="Util\IStatusLogWriter.cs" />
     <Compile Include="Util\ISQLiteCtrl.cs" />
+    <Compile Include="Util\IDbMigratable.cs" />
+    <Compile Include="Util\DbMigrationCoordinator.cs" />
     <Compile Include="Util\RegLib.cs" />
     <Compile Include="Util\SQLiteCtrl.cs" />
     <Compile Include="Util\StatusLog.cs" />
