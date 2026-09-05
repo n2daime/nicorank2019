@@ -15,12 +15,6 @@
 
 ## 未完了タスク
 
-### result(UTF8).csv不要列削除（#29）
-
-- [ ] 29.1 TextUtil.csをカラム名動的検出化（新旧両対応・ColLmt廃止・いいね列対応・人気タグOption）
-- [ ] 29.2 ResultCsvRankDB削除＋FactoryのCreateOutputCSV_rankDBまで全削除
-- [ ] 29.3 ResultCsvを30列新順化（人気タグ4列目・運営2列削除・省略なしヘッダー）
-
 ### ランキングJSON肥大化対策（#28）
 
 > 外部システムとの協議中のため着手不可。#27 の全件補完で肥大化が進行した件の対策 backlog。
@@ -50,6 +44,7 @@
 
 | タスク | 完了日 | 主な成果物 |
 |---|---|---|
+| result(UTF8).csv不要列削除(#29)✅ | 2026-09-05 | TextUtil動的検出化（新旧両対応・ColLmt廃止・いいね対応・タグOption・マイリストポイント含む8列は再計算のため読取対象外）・ResultCsvRankDB削除（Factory枠まで）・ResultCsv30列新順化（人気タグ4列目・運営2列削除）・UnitTest5件追加（計124件）・fixture余分列修正・specs/design/knowledge更新 |
 | 人気タグのタグロック補完(#27)✅ | 2026-09-04 | GetLockedTags新設・全件補完・FavoriteTags List化・GetDisplayTags・TSV系上限3・UTF8/JSON全件・SJIS/DB登録用CSV停止・isLocalOnly・所有権全10箇所対応、UnitTest25件追加（計119件）、specs/design/knowledge更新 |
 | ニコ動APIのリクエスト組み立てを型付きリクエストへ変更(#19) | 2026-09-04 | SnapShotRequest・ApiUrlBuilder新設、nvapi辞書化、UnitTest19件追加（計94件）、specs/design更新 |
 | 単体テストでDB操作のビジネスロジック問題を検出できるようにする(#22) | 2026-09-03 | NicoApi残存Clear漏れ2件修正、UnitTestDbCommandReuse新設6件（計75件）、pitfalls項目17・testing/structure更新 |

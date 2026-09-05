@@ -221,3 +221,24 @@
   - タグが main HEAD を指すこと・`git diff main develop --stat` が空であることを確認
 - **実機集計確認**: ユーザー指示で簡易化のため省略（#19 daily比較・#25週刊中間SP・#27出力確認で代替）。Releaseノートに検証フィールドは記載なし
 - **備考**: ソリューションビルドの初回は `nicorank2019.exe` 常駐＋VS による `bin\Release` ロックで `MSB3021/MSB3027` 失敗。VS終了後に再実行して成功。Releaseノートは `--notes-file` 方式、冒頭にプレリリース（動作確認用）の一文あり
+
+---
+
+## 2026-09-05 result(UTF8).csv不要列削除（#29）
+
+- **Issue**: https://github.com/n2daime/nicorank2019/issues/29
+- **ブランチ**: `feature/t29-result-csv-cleanup` → `develop` に `--no-ff` でマージ（5e41fbd）。マージ後にfeatureブランチ削除
+- **実装**:
+  - `TextUtil.ReadCsv` を列番号固定switch＋`hoseiari`ハック＋`ColLmt`から、ヘッダー名→辞書の動的検出に変更。新旧両対応（旧CSVの運営・補正あり、タグなしも読める）。`ColLmt` 廃止（`LastRankCsvReader` の第3引数削除）。いいねランク/いいね数に新規対応。人気タグはOption（なければ空リスト、あればカンマ区切り）。ユーザーアイコンは旧名エイリアス対応
+  - 読み取らない列: 運営2列（古すぎる）、マイリストポイントを含む補正系・ポイント内訳8列（再計算するため）。マイリストポイントは当初読取対象だったがユーザー指示で除外に変更
+  - `ResultCsvRankDB.cs` 削除＋csproj参照削除＋`ModeFactoryBase.CreateOutputCSV_rankDB` 抽象とWeekly/Tyukanのoverride＋`frmMainSyukei` 列挙1行を削除（いずれもnull返却のみだったため実効出力数は不変）
+  - `ResultCsv` を30列新順化（人気タグを最終列→4列目へ移動、運営2列削除、マイリストポイント23列目単独化。ヘッダー名は省略なし）
+- **設計判断**（詳細は `design.md` のIssue #29節）:
+  - 欠落列は既定値（数値0・総合ランク空→9999999・文字列空・タグなし→空リスト）で吸収。`PointTotal` キャッシュ（`workPointTotal`）により `LastRankCsvReader` の「当時のPointTotalを使う」動作は維持
+  - 出力するが読まない列（マイリストポイント含む8列）は再計算パターンで統一。タグ往復非対称（出力はカテゴリ除外済み表示値）は旧実装から同一のため見送り
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 全124件PASS（既存119＋新規5。内訳: FixtureValues・列順入替/欠落既定値・アイコン別名・ヘッダー30列完全一致・出力→読取ラウンドトリップ。EXIT CODE 0）、`dotnet build nicorank2019.sln` 成功
+  - 副産物: 旧fixture `test_ranking.csv` のデータ行に空列が1つ余分にある潜在バグ（ヘッダー31列に対しデータ32列。旧テストは値検証なしで素通り）を新テストで検出・修正
+  - reviewerレビュー＋再レビュー＋差分レビューの計3回: 必須指摘なしでマージ可判定。低指摘の見送り分（タグ往復非対称）は理由をコミットメッセージに記録
+  - ユーザー実行確認: 実利用者の意見聴取後にマージOK（出力内容変更のため）
+- **残課題**: なし（`Roundtrip` テストの `read.PointMyList == 0` は仕様の固定化。将来CSV由来の `PointMyList` を使う機能追加時は前提から見直すこと。現状そのような呼出はなし）
