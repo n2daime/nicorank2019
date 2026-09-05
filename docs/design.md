@@ -179,6 +179,26 @@
 
 ---
 
+## タグ検索ランキングの追加（Issue #30）
+
+### Context
+
+- SPモード相当の集計を、テキストの動画IDリストではなくスナップショットv2の検索結果で行いたい
+- 検索条件は暫定でタグ式＋数値下限4種＋投稿日＋種別に絞る。ポイント計算はTAGRANK節（SP同型）で切り替え、節がなければ週間設定を使う
+- UIは「タグ検索集計」タブを新設し、ポイント計算パネルは集計タブと共有する
+
+### Decisions
+
+- **入力のみ差し替え・差分以降はSP流用**: `TagRankAnalyze : InputBase` がライブ検索でID列を生成し、`SnapShotSabunReader`・`LastRankCsvReader`（任意）・`FavoriteTagReader`・`RankingAnalyze` パイプライン・7種出力はSP流用とする。新規 `ModeFactoryTagRank : ModeFactoryWeekly` は `CreateAnalyzer` / `CreateHistory(null)` / `CreateOutputJson_rankDB` のみoverrideする（SPの継承構成に倣う）
+- **タグ式は `&`/`|`/`*` の単一フィールド**: `&`=AND優先・`|`=OR・括弧なし。`*`なし=`tagsExact`・あり=`tags` とし `*` 自体は除去する。`TagConditionParser` が `equal`/`and`/`or` の jsonFilter に変換する（string経路。Issue #19 の拡張口を使用）
+- **数値・日付・種別は `filters[]` の実証済み記法**: jsonFilterの `range`（from/to必須可否が未検証）を避け、`filters[カウンタ][gte]`・`filters[startTime][gte/lt]`・`filters[contentType][0]` を使う。日付フィルタOFF時は中立期間（2000-01-01〜2100-01-01）で検索する。`q` は空・`targets` は不使用
+- **5万件の自主規制は件数取得で判定**: `_limit=0` で `totalCount` を取得し、超過時は集計せず通知する（スナップショット取得側の5万で期間短縮する方式ではなく中断方式）。ページングは100件×4並列でIDを重複除去・ID順にする
+- **TAGRANK節は節単位切替**: `Config.UseTagRank`（`IsTagRank && TAGRANK節あり`）で分岐し、節がなければ週間設定にフォールバックする。項目単位の補完はしない。OFFSET系は共通のためTAGRANK節に含めない
+- **共有パネルは実行時付け替え＋相対配置**: `panel3` の実体は1つのままタブ切替で親を付け替える（複製方式は同期ずれの温床のため不採用）。固定座標はAutoScaleの対象外でずれるため、`grpDb.Bottom` 基準の相対配置にする。タブ切替時はパネル値の保存（旧モード）→モード切替→読込（新モード）を行い、不正値があれば切替を中断して元のタブに戻す
+- **いいね倍率の保存漏れを修正**: 従来の書戻しは `CALC_LIKE` を保存していなかった（表示のみ）。TAGRANK対応で全モード共通の `SavePointCalcPanel` に一本化する際に保存対象に加える。振る舞い変更として記録する
+
+---
+
 ## 実装済みの設計判断（要点）
 
 詳細は `docs/knowledge/db.md`・`docs/knowledge/testing.md` を参照。

@@ -51,6 +51,40 @@ namespace nicorank2019.frm
                 //サポートしていない
                 return;
             }
+            LoadPointCalcPanel();
+
+            panelSP.Enabled = config.IsSP;
+
+            SetEnableAnalyzeDay();
+
+        }
+
+        /// <summary>
+        /// タグ検索モードを選択する（タグタブ表示時）
+        /// </summary>
+        private void SelectTagMode()
+        {
+            var config = Config.GetInstance();
+            config.IsSP = false;
+            config.IsTagRank = true;
+            LoadPointCalcPanel();
+        }
+
+        /// <summary>
+        /// 集計タブのモードに戻す（ラジオボタンに従う）
+        /// </summary>
+        private void SelectSyukeiMode()
+        {
+            Config.GetInstance().IsTagRank = false;
+            SelectMode();
+        }
+
+        /// <summary>
+        /// ポイント計算パネルの表示値を現在のモード設定から読み込む
+        /// </summary>
+        private void LoadPointCalcPanel()
+        {
+            var config = Config.GetInstance();
             tbCalcMylist.Text = config.CalcMyList.ToString();
             tbCalcPlay.Text = config.CalcPlay.ToString();
             tbCalcComment.Text = config.CalcComment.ToString();
@@ -63,11 +97,38 @@ namespace nicorank2019.frm
             cmbHoseiPointAll.SelectedIndex = config.CalcPointAllKind;
 
             tbUserInfoNum.Text = config.UserNum.ToString();
+        }
 
-            panelSP.Enabled = config.IsSP;
+        /// <summary>
+        /// ポイント計算パネルの入力値を現在のモード設定に書き戻す
+        /// </summary>
+        /// <returns>入力値がすべて有効なら true</returns>
+        private bool SavePointCalcPanel()
+        {
+            var config = Config.GetInstance();
 
-            SetEnableAnalyzeDay();
+            if (!double.TryParse(tbCalcMylist.Text, out double calcMylist)) { return false; }
+            if (!double.TryParse(tbCalcPlay.Text, out double calcPlay)) { return false; }
+            if (!double.TryParse(tbCalcComment.Text, out double calcComment)) { return false; }
+            if (!double.TryParse(tbCalcLike.Text, out double calcLike)) { return false; }
+            if (!double.TryParse(tbHoseiCommentUnderLimit.Text, out double underLimit)) { return false; }
+            if (!int.TryParse(tbUserInfoNum.Text, out int userNum)) { return false; }
+            if (cmbHoseiMylist.SelectedIndex < 0 || cmbHoseiPlay.SelectedIndex < 0
+                || cmbHoseiComment.SelectedIndex < 0 || cmbHoseiPointAll.SelectedIndex < 0) { return false; }
 
+            config.CalcMyList = calcMylist;
+            config.CalcPlay = calcPlay;
+            config.CalcComment = calcComment;
+            config.CalcLike = calcLike;
+
+            config.CalcMyListKind = cmbHoseiMylist.SelectedIndex;
+            config.CalcPlayKind = cmbHoseiPlay.SelectedIndex;
+            config.CalcCommentKind = cmbHoseiComment.SelectedIndex;
+            config.CalcCommentUnderLimit = underLimit;
+            config.CalcPointAllKind = cmbHoseiPointAll.SelectedIndex;
+
+            config.UserNum = userNum;
+            return true;
         }
 
         /// <summary>
@@ -76,7 +137,17 @@ namespace nicorank2019.frm
         /// <returns></returns>
         private ModeFactoryBase GetModeFactory()
         {
-            if (rbWeekly.Checked)
+            if (tabPageOut.SelectedTab == tabPageTag)
+            {
+                var tagFactory = new ModeFactoryTagRank();
+                tagFactory.SetInputFile(
+                    tbAnalyzeDB_Tag.Text
+                    ,tbBaseDB_Tag.Text
+                    ,_currentTagQuery
+                    ,tbLastResult_Tag.Text);
+                return tagFactory;
+            }
+            else if (rbWeekly.Checked)
             {
                 var factory = new ModeFactoryWeekly();
                 factory.SetTargetTime(dtPAnalyzeDay.Value);
@@ -142,13 +213,21 @@ namespace nicorank2019.frm
                         else
                         {
                             this.MainFactory = GetModeFactory();
-                            this.MainFactory.CreateAnalyzer();
-
-                            if (!MainFactory.AnalyzeRank())
+                            if (this.MainFactory == null)
                             {
+                                StatusLog.WriteLine("集計モードを特定できません");
                                 returnVal = false;
                             }
-                            StatusLog.WriteLine("集計成功");
+                            else
+                            {
+                                this.MainFactory.CreateAnalyzer();
+
+                                if (!MainFactory.AnalyzeRank())
+                                {
+                                    returnVal = false;
+                                }
+                                StatusLog.WriteLine("集計成功");
+                            }
                         }
                     }
                     history.Close();
