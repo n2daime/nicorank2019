@@ -15,6 +15,12 @@
 
 ## 未完了タスク
 
+### result(UTF8).csv不要列削除（#29）
+
+- [ ] 29.1 TextUtil.csをカラム名動的検出化（新旧両対応・ColLmt廃止・いいね列対応・人気タグOption）
+- [ ] 29.2 ResultCsvRankDB削除＋FactoryのCreateOutputCSV_rankDBまで全削除
+- [ ] 29.3 ResultCsvを30列新順化（人気タグ4列目・運営2列削除・省略なしヘッダー）
+
 ### ランキングJSON肥大化対策（#28）
 
 > 外部システムとの協議中のため着手不可。#27 の全件補完で肥大化が進行した件の対策 backlog。
