@@ -298,7 +298,6 @@
     <Compile Include="Common\NicoRankXml.cs" />
     <Compile Include="output\OutputBase.cs" />
     <Compile Include="output\ResultCsv.cs" />
-    <Compile Include="output\ResultCsvRankDB.cs" />
     <Compile Include="output\ResultHistory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Util\DateConvert.cs" />

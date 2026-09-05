@@ -98,13 +98,12 @@ namespace nicorankLib.Util.Text
         }
 
         /// <summary>
-        /// CSVファイルを読み込む
+        /// CSVファイルを読み込む（カラム名から動的に検出。新旧両対応）
         /// </summary>
         /// <param name="csvpath"></param>
         /// <param name="rankingList"></param>
-        /// <param name="ColLmt"></param>
         /// <returns></returns>
-        public static bool ReadCsv(string csvpath, out List<Ranking> rankingList, long ColLmt = -1)
+        public static bool ReadCsv(string csvpath, out List<Ranking> rankingList)
         {
 
             rankingList = new List<Ranking>();
@@ -123,11 +122,16 @@ namespace nicorankLib.Util.Text
                     return true;
                 }
 
-                bool hoseiari = false;
-                // ヘッダーのチェック
-                if (rowDataList[0].Any(str => str == "補正値"))
+                //ヘッダーからカラム名→列番号を動的に検出する
+                var headerIndex = new Dictionary<string, int>();
+                var headerRow = rowDataList[0];
+                for (int i = 0; i < headerRow.Length; i++)
                 {
-                    hoseiari = true;
+                    var colName = headerRow[i]?.Trim();
+                    if (!string.IsNullOrEmpty(colName) && !headerIndex.ContainsKey(colName))
+                    {
+                        headerIndex[colName] = i;
+                    }
                 }
 
                 //ヘッダーを除く
@@ -145,113 +149,156 @@ namespace nicorankLib.Util.Text
                         }
                         else
                         {
-                            long colIdx = 0;
-
                             Ranking wRank = new Ranking();
-                            foreach (var strRow in cols)
+
+                            //カラム名から値を取得する。列がなければnullを返す
+                            Func<string, string> getCol = (colName) =>
                             {
-                                if (colIdx == 6 && !hoseiari)
+                                if (headerIndex.TryGetValue(colName, out int idx) && idx < cols.Length)
                                 {
-                                    colIdx++;
+                                    return cols[idx];
                                 }
-
-                                switch (colIdx)
+                                return null;
+                            };
+                            //数値カラムの取得（列なし→既定値0。総合ランクのみ空→9999999は呼出側で判定）
+                            Func<string, int> getInt = (colName) =>
+                            {
+                                var strRow = getCol(colName);
+                                if (strRow == null)
                                 {
-                                    case 0://"ID",
-                                        wRank.ID = strRow;
-                                        break;
-                                    case 1://"投稿日" 2017年10月15日 20：00：00 投稿
-                                        try
-                                        {
-                                            var workStrTime = RegLib.RegExpRep(strRow, @"([:：\s])|(投稿)", "");
-                                            wRank.Date = DateTime.ParseExact(workStrTime, "yyyy年MM月dd日HHmmss", null); 
-                                        }
-                                        catch (Exception )
-                                        {
-                                        }
-                                        break;
-                                    case 2://"タイトル"
-                                        wRank.Title = strRow;
-                                        break;
-                                    case 3://"再生時間",
-                                        wRank.PlayTime = strRow;
-                                        break;
-                                    case 4://"総合ランク",
-                                        if (string.IsNullOrWhiteSpace(strRow))
-                                        {
-                                            wRank.RankTotal = 9999999;
-                                        }
-                                        else
-                                        {
-                                            wRank.RankTotal = nicorank_stoi(strRow, lineIdx, colIdx);
-                                        }
-                                        break;
-                                    case 5://"ポイント",
-                                        wRank.PointTotal = nicorank_stoi(strRow, lineIdx, colIdx);
-                                        break;
-                                    case 6://補正値
-                                        break;
-                                    case 7://"カテゴリランク",
-                                        wRank.RankCategory = nicorank_stoi(strRow, lineIdx, colIdx);
-                                        break;
-                                    case 8://"カテゴリ",
-                                        wRank.Category = strRow;
-                                        break;
-                                    case 9://"再生ランク",
-                                        wRank.RankPlay = nicorank_stoi(strRow, lineIdx, colIdx);
-                                        break;
-                                    case 10://"再生数",
-                                        wRank.CountPlay = nicorank_stoi(strRow, lineIdx, colIdx);
-                                        break;
-                                    case 11://"コメントランク",
-                                        wRank.RankComment = nicorank_stoi(strRow, lineIdx, colIdx);
-                                        break;
-                                    case 12://"コメント数",
-                                        wRank.CountComment = nicorank_stoi(strRow, lineIdx, colIdx);
-                                        break;
-                                    case 13://"マイリストランク",
-                                        wRank.RankMyList = nicorank_stoi(strRow, lineIdx, colIdx);
-                                        break;
-                                    case 14://"登録数",
-                                        wRank.CountMyList = nicorank_stoi(strRow, lineIdx, colIdx);
-                                        break;
-                                    case 15://"前回ランク",
-                                        {
-                                            //第8位とかの表記になってるので、数字だけを抽出する
-                                            var parseStr = RegLib.RegExpRep(strRow, @"[^\d]*", "");
-                                            wRank.LastRank = nicorank_stoi(parseStr, lineIdx, colIdx);
-                                        }
-                                        break;
-                                    case 16://"前回ポイント",
-                                        wRank.LastPoint = nicorank_stoi(strRow, lineIdx, colIdx);
-                                        break;
-                                    case 17://"動画URL",
-                                        break;
-                                    case 18://"サムネイルURL"
-                                        break;
-                                    case 19://"運営ポイントランク",
-                                        break;
-                                    case 20://"運営ポイント"
-                                        break;
-                                    case 21://"ユーザーID"
-                                        wRank.UserID = strRow;
-                                        break;
-                                    case 22://"ユーザー名"
-                                        wRank.UserName = strRow;
-                                        break;
-                                    case 23://"ユーザーアイコンファイル"
-                                        wRank.UserImageURL = strRow;
-                                        break;
-                                    default:
-                                        break;
+                                    return 0;
                                 }
-                                colIdx++;
+                                int colIdxForLog = headerIndex.TryGetValue(colName, out int idx) ? idx : -1;
+                                return nicorank_stoi(strRow, lineIdx, colIdxForLog);
+                            };
 
-                                if (ColLmt != -1 && ColLmt <= colIdx)
+                            //"ID"
+                            wRank.ID = getCol("ID") ?? string.Empty;
+
+                            //"投稿日" 2017年10月15日 20：00：00 投稿
+                            var dateStr = getCol("投稿日");
+                            if (!string.IsNullOrEmpty(dateStr))
+                            {
+                                try
                                 {
-                                    break;
+                                    var workStrTime = RegLib.RegExpRep(dateStr, @"([:：\s])|(投稿)", "");
+                                    wRank.Date = DateTime.ParseExact(workStrTime, "yyyy年MM月dd日HHmmss", null);
+                                }
+                                catch (Exception)
+                                {
                                 }
                             }
+
+                            //"タイトル"
+                            wRank.Title = getCol("タイトル") ?? string.Empty;
+
+                            //"再生時間"
+                            wRank.PlayTime = getCol("再生時間") ?? string.Empty;
+
+                            //"総合ランク"
+                            var rankTotalStr = getCol("総合ランク");
+                            if (rankTotalStr == null || string.IsNullOrWhiteSpace(rankTotalStr))
+                            {
+                                wRank.RankTotal = 9999999;
+                            }
+                            else
+                            {
+                                int colIdxForLog = headerIndex.TryGetValue("総合ランク", out int idx) ? idx : -1;
+                                wRank.RankTotal = nicorank_stoi(rankTotalStr, lineIdx, colIdxForLog);
+                            }
+
+                            //"ポイント"
+                            if (headerIndex.ContainsKey("ポイント"))
+                            {
+                                wRank.PointTotal = getInt("ポイント");
+                            }
+
+                            //"カテゴリランク"
+                            wRank.RankCategory = getInt("カテゴリランク");
+
+                            //"カテゴリ"
+                            wRank.Category = getCol("カテゴリ") ?? string.Empty;
+
+                            //"再生ランク"
+                            wRank.RankPlay = getInt("再生ランク");
+
+                            //"再生数"
+                            wRank.CountPlay = getInt("再生数");
+
+                            //"コメントランク"
+                            wRank.RankComment = getInt("コメントランク");
+
+                            //"コメント数"
+                            wRank.CountComment = getInt("コメント数");
+
+                            //"マイリストランク"
+                            wRank.RankMyList = getInt("マイリストランク");
+
+                            //"登録数"
+                            wRank.CountMyList = getInt("登録数");
+
+                            //"いいねランク"
+                            wRank.RankLike = getInt("いいねランク");
+
+                            //"いいね数"
+                            wRank.CountLike = getInt("いいね数");
+
+                            //"前回ランク"
+                            var lastRankStr = getCol("前回ランク");
+                            if (lastRankStr != null)
+                            {
+                                //第8位とかの表記になってるので、数字だけを抽出する
+                                var parseStr = RegLib.RegExpRep(lastRankStr, @"[^\d]*", "");
+                                int colIdxForLog = headerIndex.TryGetValue("前回ランク", out int idx) ? idx : -1;
+                                wRank.LastRank = nicorank_stoi(parseStr, lineIdx, colIdxForLog);
+                            }
+
+                            //"前回ポイント"
+                            if (headerIndex.ContainsKey("前回ポイント"))
+                            {
+                                wRank.LastPoint = getInt("前回ポイント");
+                            }
+
+                            //"ユーザーID"
+                            wRank.UserID = getCol("ユーザーID") ?? string.Empty;
+
+                            //"ユーザー名"
+                            wRank.UserName = getCol("ユーザー名") ?? string.Empty;
+
+                            //"ユーザーアイコン"（旧名"ユーザーアイコンファイル"も許容）
+                            var userIcon = getCol("ユーザーアイコン");
+                            if (userIcon == null)
+                            {
+                                userIcon = getCol("ユーザーアイコンファイル");
+                            }
+                            wRank.UserImageURL = userIcon ?? string.Empty;
+
+                            //"マイリストポイント"
+                            if (headerIndex.ContainsKey("マイリストポイント"))
+                            {
+                                wRank.PointMyList = getInt("マイリストポイント");
+                            }
+
+                            //"人気のタグ"（Option。なければ空リスト、あればカンマ区切り）
+                            wRank.FavoriteTags = new List<string>();
+                            var tagsStr = getCol("人気のタグ");
+                            if (!string.IsNullOrWhiteSpace(tagsStr))
+                            {
+                                foreach (var tag in tagsStr.Split(','))
+                                {
+                                    var workTag = tag?.Trim();
+                                    if (!string.IsNullOrEmpty(workTag) && !wRank.FavoriteTags.Contains(workTag))
+                                    {
+                                        wRank.FavoriteTags.Add(workTag);
+                                    }
+                                }
+                            }
+
+                            //読み取り不要な列は無視する:
+                            // "運営ポイントランク","運営ポイント"（情報が古すぎる）
+                            // "コメント補正","コメントポイント","マイリスト補正","再生補正","再生ポイント","いいねポイント","ポイント全体補正"（再計算するため）
+                            // "動画URL","サムネイルURL","補正値"（旧列。互換のため無視）
+
                             rankingList.Add(wRank);
                         }
                     }
@@ -280,12 +327,11 @@ namespace nicorankLib.Util.Text
         /// </summary>
         /// <param name="csvpath"></param>
         /// <param name="rankingmap"></param>
-        /// <param name="ColLmt"></param>
         /// <returns></returns>
-        public static bool ReadCsv(string csvpath, out Dictionary<string, Ranking> rankingmap, long ColLmt = -1)
+        public static bool ReadCsv(string csvpath, out Dictionary<string, Ranking> rankingmap)
         {
 
-            if (!TextUtil.ReadCsv(csvpath, out List<Ranking> rankingList, ColLmt))
+            if (!TextUtil.ReadCsv(csvpath, out List<Ranking> rankingList))
             {
                 rankingmap = new Dictionary<string, Ranking>();
                 return false;

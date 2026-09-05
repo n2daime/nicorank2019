@@ -69,14 +69,14 @@ namespace nicorankLib.output
                 //CSVに書き込むためのデータリスト
                 var csvDataList = new List<List<object>>(rankingList.Count);
 
-                //ヘッダー
+                //ヘッダー（30列。省略なし）
                 var headerData = new List<object>() {
-                    "ID","投稿日","タイトル","再生時間",
+                    "ID","投稿日","タイトル","人気のタグ","再生時間",
                     "総合ランク","ポイント","カテゴリランク","カテゴリ","再生ランク","再生数",
                     "コメントランク","コメント数","マイリストランク","登録数","いいねランク","いいね数","前回ランク","前回ポイント",
-                    "コメント補正","コメントポイント","運営ポイントランク","運営ポイント",
-                    "ユーザーID","ユーザー名","ユーザーアイコン","マイリスト補正","マイリストポイント",
-                    "再生補正","再生ポイント","いいねポイント","ポイント全体補正","人気のタグ"
+                    "ユーザーID","ユーザー名","ユーザーアイコン","マイリストポイント",
+                    "コメント補正","コメントポイント","マイリスト補正",
+                    "再生補正","再生ポイント","いいねポイント","ポイント全体補正"
                 };
                 csvDataList.Add(headerData);
 
@@ -88,10 +88,12 @@ namespace nicorankLib.output
                         // 列データ
                         var rowData = new List<object>(headerData.Count);
 
-                        //"ID","投稿日","タイトル","再生時間",
+                        //"ID","投稿日","タイトル","人気のタグ","再生時間",
                         rowData.Add(wRank.ID);
                         rowData.Add(wRank.Date.ToString("yyyy年MM月dd日 HH：mm：ss 投稿"));
                         rowData.Add( getTitle( wRank ) );
+                        //人気のタグ（全件カンマ結合。CsvUtilが文字列列を""で囲む）
+                        rowData.Add(editEscape(string.Join(",", wRank.GetDisplayTags())));
                         rowData.Add(wRank.PlayTime);
 
                         //"総合ランク","ポイント","カテゴリランク","カテゴリ","再生ランク","再生数"
@@ -123,21 +125,6 @@ namespace nicorankLib.output
                             rowData.Add($"第{wRank.LastRank}位");
                             rowData.Add(wRank.LastPoint);
                         }
-                        //"コメント補正","コメントポイント",
-                        if (wRank.CountComment == 0)
-                        {
-                            rowData.Add("1.000000");
-                            rowData.Add(0);
-                        }
-                        else
-                        {
-                            rowData.Add($"{wRank.HoseiComment:F6}");
-                            rowData.Add(wRank.PointComment);
-                        }
-
-                        //"運営ポイントランク","運営ポイント",
-                        rowData.Add(null);//未対応
-                        rowData.Add(null);//未対応
 
                         //"ユーザーID","ユーザー名","ユーザーアイコン",
                         rowData.Add(wRank.UserID);
@@ -157,16 +144,29 @@ namespace nicorankLib.output
                                 rowData.Add($"{wRank.UserID}.jpg");
                             }
                         }
-                        //"マイリスト補正","マイリストポイント",
-                        if (wRank.CountMyList == 0)
+                        //"マイリストポイント"
+                        rowData.Add(wRank.PointMyList);
+
+                        //"コメント補正","コメントポイント",
+                        if (wRank.CountComment == 0)
                         {
                             rowData.Add("1.000000");
                             rowData.Add(0);
                         }
                         else
                         {
+                            rowData.Add($"{wRank.HoseiComment:F6}");
+                            rowData.Add(wRank.PointComment);
+                        }
+
+                        //"マイリスト補正"
+                        if (wRank.CountMyList == 0)
+                        {
+                            rowData.Add("1.000000");
+                        }
+                        else
+                        {
                             rowData.Add($"{wRank.HoseiMylist:F6}");
-                            rowData.Add(wRank.PointMyList);
                         }
 
                         //"再生補正","再生ポイント"
@@ -185,9 +185,6 @@ namespace nicorankLib.output
 
                         //ポイント全体補正
                         rowData.Add($"{wRank.HoseiAllPoint:F2}");
-
-                        //人気のタグ（全件カンマ結合。CsvUtilが文字列列を""で囲む）
-                        rowData.Add(editEscape(string.Join(",", wRank.GetDisplayTags())));
 
                         csvDataList.Add(rowData);
 
