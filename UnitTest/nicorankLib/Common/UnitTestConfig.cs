@@ -133,5 +133,25 @@ namespace UnitTest.nicorankLib.Common
                 TestConfigBuilder.ResetInstance();
             }
         }
+
+        [TestMethod]
+        public void TestConfigTagRank_PartialSection_FallsBackToWeekly()
+        {
+            try
+            {
+                TestConfigBuilder.LoadFromXmlString(string.Format(XmlBase, "<TAGRANK><RANK Num=\"30\" Tyouki=\"0\"/></TAGRANK>"));
+                var config = Config.GetInstance();
+                config.IsSP = false;
+                config.IsTagRank = true;
+
+                Assert.AreEqual(20, config.Rank);
+                Assert.AreEqual(40, config.CalcMyList);
+            }
+            finally
+            {
+                Config.GetInstance().IsTagRank = false;
+                TestConfigBuilder.ResetInstance();
+            }
+        }
     }
 }

@@ -244,9 +244,14 @@ namespace nicorank2019.frm
                 lblTagCount.Text = $"検索件数: {totalCount} 件";
                 if (totalCount > TagRankAnalyze.MaxTotalCount)
                 {
-                    lblTagWarn.Text = $"検索結果が多すぎます。({totalCount}件) 50000件以下になるように条件を追加して下さい";
+                    lblTagWarn.Text = $"検索結果が多すぎます。({totalCount}件) {TagRankAnalyze.MaxTotalCount}件以下になるように条件を追加して下さい";
                     lblTagWarn.Visible = true;
                 }
+            }
+            catch (Exception ex)
+            {
+                lblTagCount.Text = "検索件数: 取得失敗";
+                MessageBox.Show(GetExceptionMessages(ex), "システムエラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {

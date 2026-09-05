@@ -59,8 +59,14 @@ namespace nicorankLib.SnapShot
                     string field = FieldTagsExact;
                     if (term.Contains("*"))
                     {
+                        // * は末尾1文字のみ許可する（部分一致指定）。中間・複数は誤指定として却下する
+                        if (!term.EndsWith("*") || term.IndexOf('*') != term.Length - 1)
+                        {
+                            error = "「*」はタグの末尾に1つだけ指定できます";
+                            return false;
+                        }
                         field = FieldTags;
-                        term = term.Replace("*", "").Trim();
+                        term = term.Substring(0, term.Length - 1).Trim();
                     }
                     if (term.Length == 0)
                     {

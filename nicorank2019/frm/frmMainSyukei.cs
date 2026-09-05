@@ -139,6 +139,10 @@ namespace nicorank2019.frm
         {
             if (tabPageOut.SelectedTab == tabPageTag)
             {
+                if (_currentTagQuery == null)
+                {
+                    return null;
+                }
                 var tagFactory = new ModeFactoryTagRank();
                 tagFactory.SetInputFile(
                     tbAnalyzeDB_Tag.Text
@@ -218,16 +222,16 @@ namespace nicorank2019.frm
                                 StatusLog.WriteLine("集計モードを特定できません");
                                 returnVal = false;
                             }
-                            else
+                            else if (!this.MainFactory.CreateAnalyzer())
                             {
-                                this.MainFactory.CreateAnalyzer();
-
-                                if (!MainFactory.AnalyzeRank())
-                                {
-                                    returnVal = false;
-                                }
-                                StatusLog.WriteLine("集計成功");
+                                StatusLog.WriteLine("集計の準備に失敗しました");
+                                returnVal = false;
                             }
+                            else if (!MainFactory.AnalyzeRank())
+                            {
+                                returnVal = false;
+                            }
+                            StatusLog.WriteLine("集計成功");
                         }
                     }
                     history.Close();

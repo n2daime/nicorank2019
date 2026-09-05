@@ -53,9 +53,17 @@ namespace nicorankLib.Common
         public bool IsTagRank = false;
 
         /// <summary>
-        /// TAGRANK節を使うか（節単位切替。節がなければ週間設定にフォールバックする）
+        /// TAGRANK節を使うか（節単位切替。節なし・項目欠落があれば週間設定にフォールバックする）
         /// </summary>
-        private bool UseTagRank { get { return IsTagRank && xml != null && xml.TAGRANK != null; } }
+        private bool UseTagRank
+        {
+            get
+            {
+                return IsTagRank && xml != null && xml.TAGRANK != null
+                    && xml.TAGRANK.RANK != null && xml.TAGRANK.RANKED != null
+                    && xml.TAGRANK.POINT != null && xml.TAGRANK.UserInfo != null;
+            }
+        }
 
         /// <summary>
         /// マイリストの倍率

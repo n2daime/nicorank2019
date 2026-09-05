@@ -128,5 +128,16 @@ namespace UnitTest.nicorankLib.Analyze.Input
 
             Assert.IsFalse(ok);
         }
+
+        [TestMethod]
+        public void AnalyzeRank_NullQuery_ReturnsFalse()
+        {
+            var analyzer = new StubTagRankAnalyze(null);
+
+            Assert.IsFalse(analyzer.AnalyzeRank(out List<Ranking> list));
+            Assert.AreEqual(0, list.Count);
+            Assert.IsFalse(analyzer.GetTotalCount(out long total));
+            Assert.AreEqual(0, total);
+        }
     }
 }

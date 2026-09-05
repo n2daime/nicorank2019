@@ -76,5 +76,15 @@ namespace UnitTest.nicorankLib.SnapShot
             Assert.IsFalse(TagConditionParser.TryParse("*", out _, out string error3));
             Assert.IsFalse(string.IsNullOrEmpty(error3));
         }
+
+        [TestMethod]
+        public void StarNotAtEnd_Fails()
+        {
+            Assert.IsFalse(TagConditionParser.TryParse("A*B", out _, out string error1));
+            Assert.IsFalse(string.IsNullOrEmpty(error1));
+
+            Assert.IsFalse(TagConditionParser.TryParse("A**", out _, out string error2));
+            Assert.IsFalse(string.IsNullOrEmpty(error2));
+        }
     }
 }

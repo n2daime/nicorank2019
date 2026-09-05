@@ -36,6 +36,11 @@ namespace nicorankLib.Analyze.Input
         {
             rakingList = new List<Ranking>();
 
+            if (Query == null)
+            {
+                StatusLog.WriteLine("検索条件が設定されていません");
+                return false;
+            }
             if (!TagConditionParser.TryParse(Query.TagCondition, out string jsonFilter, out string error))
             {
                 StatusLog.WriteLine(error);
@@ -48,7 +53,7 @@ namespace nicorankLib.Analyze.Input
             StatusLog.WriteLine($"タグ検索のヒット件数: {totalCount} 件");
             if (totalCount > MaxTotalCount)
             {
-                StatusLog.WriteLine($"検索結果が多すぎます。({totalCount}件) 50000件以下になるように条件を追加して下さい");
+                StatusLog.WriteLine($"検索結果が多すぎます。({totalCount}件) {MaxTotalCount}件以下になるように条件を追加して下さい");
                 return false;
             }
             var ids = CollectContentIds(jsonFilter, totalCount);
@@ -71,6 +76,11 @@ namespace nicorankLib.Analyze.Input
         public bool GetTotalCount(out long totalCount)
         {
             totalCount = 0;
+            if (Query == null)
+            {
+                StatusLog.WriteLine("検索条件が設定されていません");
+                return false;
+            }
             if (!TagConditionParser.TryParse(Query.TagCondition, out string jsonFilter, out string parseError))
             {
                 StatusLog.WriteLine(parseError);
