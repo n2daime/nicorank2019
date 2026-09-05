@@ -40,7 +40,6 @@ namespace nicorankLib.Factory
         public abstract OutputBase CreateNRMRankED();
         public abstract OutputBase CreateNRMRank1000();
 
-        public abstract OutputBase CreateOutputCSV_rankDB();
         public abstract OutputBase CreateOutputJson_rankDB();
 
         /// <summary>

@@ -96,11 +96,6 @@ namespace nicorankLib.Factory
             return output;
         }
 
-        public override OutputBase CreateOutputCSV_rankDB()
-        {
-            return null;
-        }
-
         public override OutputBase CreateOutputHTML()
         {
             //未実装

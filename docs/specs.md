@@ -47,7 +47,7 @@
 - 紹介順位 = `Config.Rank`（既定 20 位）+ 長期動画（門番）の数だけ拡張
 - ED枠: 紹介枠の次から `RankED` までをサムネイル形式で紹介（情報提供は `rankED.txt`）
 
-### モードごとの出力（frmMainSyukei.AnalyzeAsync が 12 種を順次 Execute）
+### モードごとの出力（frmMainSyukei.AnalyzeAsync が 11 種を順次 Execute）
 
 | 出力 | 週刊（Weekly） | 中間（Tyukan） | SP（SP） |
 |---|---|---|---|
@@ -57,7 +57,6 @@
 | `CreateNRMRank1000()`（`rank{UserNum}.txt` / `rank1000.txt`） | ✅ rank{UserNum}.txt・タグ最大3件 | ✅ **rank1000.txt（固定0〜1000）・タグ最大3件** | ✅ rank{UserNum}.txt・タグ最大3件 |
 | `CreateNRMRankED()`（`rankED.txt`） | ✅ タグ最大3件 | ✅ | ✅ |
 | `CreateOutputCSV()`（result CSV） | ✅ result(UTF8).csv のみ | ✅ | ✅ |
-| `CreateOutputCSV_rankDB()`（DB登録用 CSV） | —（null・生成停止） | —（null） | —（null・継承） |
 | `CreateOutputHTML()` | **未実装（null）** | 未実装（null） | 未実装（null） |
 | `CreateOutputMovieIconGet()`（`queue.irv`） | ✅ | —（null） | ✅ |
 | `CreateOutputUserIconGet()`（`queue_UserIcon.irv`） | ✅ | —（null） | ✅ |
@@ -138,7 +137,7 @@
 | ファイル | クラス | 内容 |
 |---|---|---|
 | `rank.txt` / `rankED.txt` / `rank{UserNum}.txt` / `rank1000.txt` | NrmOutput（タグ最大3件） | 紹介枠 TSV（ID/投稿日/タイトル/再生時間/総合ランク/ポイント/カテゴリ/各ランク・数/前回ランク/補正値/ユーザー情報/人気タグ）。TSV・クォートなし。全件タグは `result(UTF8).csv`・`result_DB登録用(UTF8).json` のみ |
-| `result(UTF8).csv` | ResultCsv | 集計結果全件 CSV。ヘッダー31列（30列＋最終列「人気のタグ」・全件カンマ結合）。文字列は `"` 囲み、`"`→`”` 置換 |
+| `result(UTF8).csv` | ResultCsv | 集計結果全件 CSV。ヘッダー30列（ID/投稿日/タイトル/人気のタグ/再生時間/総合ランク/ポイント/カテゴリランク/カテゴリ/再生ランク/再生数/コメントランク/コメント数/マイリストランク/登録数/いいねランク/いいね数/前回ランク/前回ポイント/ユーザーID/ユーザー名/ユーザーアイコン/マイリストポイント/コメント補正/コメントポイント/マイリスト補正/再生補正/再生ポイント/いいねポイント/ポイント全体補正）。人気のタグは4列目・全件カンマ結合。文字列は `"` 囲み、`"`→`”` 置換 |
 | `result_DB登録用(UTF8).json` | ResultJsonRankDB | DB 登録用 JSON（Newtonsoft.Json シリアライズ、Formatting.None。変更なし） |
 | `queue.irv` | ResultImagegetMovieIcon | 動画アイコン DL キュー（ED枠まで） |
 | `queue_UserIcon.irv` | ResultImagegetUserIcon | ユーザーアイコン DL キュー（全件） |

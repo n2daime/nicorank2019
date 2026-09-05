@@ -152,7 +152,6 @@ namespace nicorank2019.frm
                         MainFactory.CreateNRMRank1000(),
                         MainFactory.CreateNRMRankED(),
                         MainFactory.CreateOutputCSV(),
-                        MainFactory.CreateOutputCSV_rankDB(),
                         MainFactory.CreateOutputHTML(),
                         MainFactory.CreateOutputMovieIconGet(),
                         MainFactory.CreateOutputUserIconGet(),

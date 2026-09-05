@@ -131,8 +131,25 @@
 - **収集は無制限・制限は出力側**: `FavoriteTagReader` の件数上限を廃止し全件補完する。TSV系の3件制限は `NrmOutput` の上限パラメータで行う（`result(UTF8).csv`・`result_DB登録用(UTF8).json` はそれぞれ全件仕様）
 - **カテゴリ重複の除外は出力側ヘルパー**（`Ranking.GetDisplayTags()`）: `UserInfoReader` が後段でカテゴリを補完するため、収集時点ではカテゴリ未確定の動画がある。最終カテゴリで判定する出力側が完全。DB格納値は重複のまま残ることを許容
 - **順序保障のため `List<string>` 化**: 影響は宣言・初期化・マージ・3箇所の `Add`（重複判定化）のみ。DB・履歴内の既存 JSON は配列形式のため互換性あり
-- **SJIS・DB登録用CSV の生成停止**: `CreateOutputCSV` の設定からSJIS除外、`CreateOutputCSV_rankDB`（週刊。SPは継承、中間は既にnull）を `null` 化。`frmMainSyukei` はnull安全のため無変更。`ResultCsvRankDB` クラスは温存
+- **SJIS・DB登録用CSV の生成停止**: `CreateOutputCSV` の設定からSJIS除外、`CreateOutputCSV_rankDB`（週刊。SPは継承、中間は既にnull）を `null` 化。`frmMainSyukei` はnull安全のため無変更。`ResultCsvRankDB` クラスは温存（Issue #29で削除）
 - **中間集計は外部取得なし**（`isLocalOnly`）: `FavoriteTagReader` にフラグを追加し、中間集計のみ `UpdateTumbInfo` を呼ばずキャッシュ参照で補完する。週刊/SPは先行オプション（`GenreInfoReader`/`UserInfoReader`/`MovieInfoReader`）が確保するため現状維持
+
+---
+
+## result(UTF8).csv不要列削除（Issue #29）
+
+### Context
+
+- `result(UTF8).csv` に運営ポイント系（情報が古すぎる）と補正内訳の一部が残り、列数・順序の見直しが必要になった
+- `TextUtil.ReadCsv` が列番号固定のため、列削除・順序変更のたびに読取が壊れる技術負債があった
+- `ResultCsvRankDB` は生成停止後もクラス・Factoryのnull枠だけが残っていた
+
+### Decisions
+
+- **TextUtilはカラム名から動的に検出**: ヘッダー行を辞書化し、欠落列は既定値（数値0・総合ランク空→9999999・タグなし→空リスト）で吸収する。新旧両対応とし、旧CSV（運営・補正あり、タグなし）も読める。`ColLmt` は動的化で不要になるため廃止し、`LastRankCsvReader` の第3引数を削除する
+- **読み取らない列**: 運営2列は古すぎるため、マイリストポイントを含む補正系・ポイント内訳8列は再計算するため読まない。出力列のうち読取対象に残すのは人気タグのみ（カンマ区切りでリスト化）
+- **ResultCsvは30列新順**: 人気タグを4列目（タイトルの後）に移動し、運営2列を削除する。マイリストポイントは23列目に単独配置し、マイリスト補正は26列目に残す。ヘッダー名は省略しない
+- **ResultCsvRankDBはFactoryまで全削除**: クラス・csproj参照に加え、`ModeFactoryBase.CreateOutputCSV_rankDB` 抽象と派生override、`frmMainSyukei` の列挙1行を削除する（いずれもnull返却のみだったため実効出力数は不変）
 
 ---
 
