@@ -166,7 +166,7 @@
             this.grpDb.Size = new System.Drawing.Size(1075, 160);
             this.grpDb.TabIndex = 2;
             this.grpDb.TabStop = false;
-            this.grpDb.Text = "3. スナップショットDB・前回結果（*は任意）";
+            this.grpDb.Text = "3. スナップショットDB・前回結果（基準・前回は任意）";
             // 
             // label20
             // 

@@ -194,6 +194,7 @@
 - **数値・日付・種別は `filters[]` の実証済み記法**: jsonFilterの `range`（from/to必須可否が未検証）を避け、`filters[カウンタ][gte]`・`filters[startTime][gte/lt]`・`filters[contentType][0]` を使う。日付フィルタOFF時は中立期間（2000-01-01〜2100-01-01）で検索する。`q` は空・`targets` は不使用
 - **5万件の自主規制は件数取得で判定**: `_limit=0` で `totalCount` を取得し、超過時は集計せず通知する（スナップショット取得側の5万で期間短縮する方式ではなく中断方式）。ページングは100件×4並列でIDを重複除去・ID順にする
 - **TAGRANK節は節単位切替**: `Config.UseTagRank`（`IsTagRank && TAGRANK節あり`）で分岐し、節がなければ週間設定にフォールバックする。項目単位の補完はしない。OFFSET系は共通のためTAGRANK節に含めない
+- **基準なし時は SnapShotSabunReader を使わない**: 差分なし専用の `TagRankTotalReader : BasicOptionBase`（AnalyzeDBのみ→`Total` 取得→`MovieInfoReader` 補完→全件 `Count=Total`。差分ループを持たない）を新設し、`ModeFactoryTagRank` でBase有無で分岐する（なし時は `BaseDay = TargetDay`）。SP共用クラスにTagRank専用分岐を入れない。空DBダミー案は不採用（`BaseTime` の置き方で古動画の误删・タグ範囲肥大が起き、分岐明示より見通しが悪いため）
 - **共有パネルは実行時付け替え＋相対配置**: `panel3` の実体は1つのままタブ切替で親を付け替える（複製方式は同期ずれの温床のため不採用）。固定座標はAutoScaleの対象外でずれるため、`grpDb.Bottom` 基準の相対配置にする。タブ切替時はパネル値の保存（旧モード）→モード切替→読込（新モード）を行い、不正値があれば切替を中断して元のタブに戻す
 - **いいね倍率の保存漏れを修正**: 従来の書戻しは `CALC_LIKE` を保存していなかった（表示のみ）。TAGRANK対応で全モード共通の `SavePointCalcPanel` に一本化する際に保存対象に加える。振る舞い変更として記録する
 

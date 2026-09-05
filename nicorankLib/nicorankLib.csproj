@@ -259,6 +259,7 @@
     <Compile Include="Analyze\Option\Basic\MovieInfoReader.cs" />
     <Compile Include="Analyze\Option\Basic\SabunReader.cs" />
     <Compile Include="Analyze\Option\Basic\SnapShotSabunReader.cs" />
+    <Compile Include="Analyze\Option\Basic\TagRankTotalReader.cs" />
     <Compile Include="Analyze\Option\Ext\IExtOptionBase.cs" />
     <Compile Include="Analyze\Option\Basic\LastRankCsvReader.cs" />
     <Compile Include="Analyze\Option\Basic\GenreInfoReader.cs" />

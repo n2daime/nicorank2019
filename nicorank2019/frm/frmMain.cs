@@ -328,15 +328,15 @@ namespace nicorank2019.frm
                 MessageBox.Show(buildError, "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            // スナップショットDBは必須（差分計算に使う）。前回結果CSVのみ任意
+            // 集計日DBは必須。基準日DBと前回結果CSVは任意（基準なしは差分なしで累積値を使う）
             if (!IsExistingFile(tbAnalyzeDB_Tag.Text))
             {
                 MessageBox.Show("集計日のDBを指定してください", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            if (!IsExistingFile(tbBaseDB_Tag.Text))
+            if (!string.IsNullOrWhiteSpace(tbBaseDB_Tag.Text) && !File.Exists(tbBaseDB_Tag.Text.Trim()))
             {
-                MessageBox.Show("基準日のDBを指定してください", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("基準日のDBファイルが見つかりません", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
             if (!string.IsNullOrWhiteSpace(tbLastResult_Tag.Text) && !File.Exists(tbLastResult_Tag.Text.Trim()))

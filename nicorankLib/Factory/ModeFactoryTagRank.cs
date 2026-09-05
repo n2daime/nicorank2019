@@ -14,10 +14,11 @@ namespace nicorankLib.Factory
     /// タグ検索集計モードのファクトリ。SPモード相当の出力・差分方式で、
     /// 入力のみスナップショットv2のライブ検索（TagRankAnalyze）に差し替える。
     /// 前回結果CSVは任意（未指定なら前回順位なし）。
+    /// 基準日DBは任意（未指定なら差分なしで累積値をそのまま使う）。
     /// </summary>
     public class ModeFactoryTagRank : ModeFactoryWeekly
     {
-        public const Analyze.model.EAnalyzeMode AnalyzeMode = Analyze.model.EAnalyzeMode.TagRank;
+        public new const Analyze.model.EAnalyzeMode AnalyzeMode = Analyze.model.EAnalyzeMode.TagRank;
 
         public string AnalyzeDB;
         public string BaseDB;
@@ -34,23 +35,43 @@ namespace nicorankLib.Factory
 
         public override bool CreateAnalyzer()
         {
-            var snapShotSabunReader = new SnapShotSabunReader(
-                AnalyzeDB, BaseDB);
-
-            if (!snapShotSabunReader.Open())
+            BasicOptionBase totalOrSabunReader;
+            DateTime analyzeTime;
+            if (string.IsNullOrWhiteSpace(BaseDB))
             {
-                return false;
+                // 基準日DBなしは差分なし。累積値をそのまま使う
+                var totalReader = new TagRankTotalReader(AnalyzeDB);
+                if (!totalReader.Open())
+                {
+                    return false;
+                }
+                analyzeTime = totalReader.AnalyzeTime;
+                TargetDay = analyzeTime;
+                BaseDay = analyzeTime;
+                totalOrSabunReader = totalReader;
             }
-            TargetDay = snapShotSabunReader.AnalyzeTime;
-            BaseDay = snapShotSabunReader.BaseTime;
+            else
+            {
+                var snapShotSabunReader = new SnapShotSabunReader(
+                    AnalyzeDB, BaseDB);
+
+                if (!snapShotSabunReader.Open())
+                {
+                    return false;
+                }
+                analyzeTime = snapShotSabunReader.AnalyzeTime;
+                TargetDay = snapShotSabunReader.AnalyzeTime;
+                BaseDay = snapShotSabunReader.BaseTime;
+                totalOrSabunReader = snapShotSabunReader;
+            }
 
             // ランキングのベースはタグ検索の結果ID列から取得する
-            var inputBase = new TagRankAnalyze(snapShotSabunReader.AnalyzeTime, Query);
+            var inputBase = new TagRankAnalyze(analyzeTime, Query);
 
             //集計に必要なオプションを作成する
             var options = new List<BasicOptionBase>()
             {
-                snapShotSabunReader                                 //差分計算
+                totalOrSabunReader                                 //差分計算（基準なし時は累積値）
             };
             if (!string.IsNullOrWhiteSpace(LastResultCsvFile))
             {
