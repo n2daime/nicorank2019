@@ -21,6 +21,10 @@ namespace nicorank2019.frm
 
         protected ModeFactoryBase MainFactory;
 
+        // タグ検索モック用：ポイント計算パネル(panel3)のタブ間付け替え状態
+        private bool _tagMockLoaded = false;
+        private System.Drawing.Point _panel3SyukeiLocation;
+
         public frmMain()
         {
             InitializeComponent();
@@ -33,6 +37,8 @@ namespace nicorank2019.frm
             try
             {
                 SelectMode();
+                _panel3SyukeiLocation = panel3.Location;
+                _tagMockLoaded = true;
             }
             catch (Exception ex)
             {
@@ -167,6 +173,34 @@ namespace nicorank2019.frm
             bool enabled = chkDateFilter.Checked;
             dtStart.Enabled = enabled;
             dtEnd.Enabled = enabled;
+        }
+
+        // タグ検索モック用：ポイント計算パネルを集計タブとタグタブで付け替える
+        // 固定座標はAutoScaleの対象外でずれるため、スケール済みのコントロールを基準に相対配置する
+        private void tabPageOut_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (!_tagMockLoaded)
+            {
+                return;
+            }
+            if (tabPageOut.SelectedTab == tabPageTag)
+            {
+                tabPageTag.SuspendLayout();
+                panel3.Parent = tabPageTag;
+                int margin = grpDb.Left;
+                panel3.Location = new System.Drawing.Point(margin, grpDb.Bottom + 8);
+                panel3.Width = tabPageTag.ClientSize.Width - margin * 2;
+                btnAnalyzeTag.Location = new System.Drawing.Point(
+                    (tabPageTag.ClientSize.Width - btnAnalyzeTag.Width) / 2,
+                    panel3.Bottom + 8);
+                tabPageTag.ResumeLayout(false);
+                tabPageTag.PerformLayout();
+            }
+            else if (tabPageOut.SelectedTab == tabPageSyukei)
+            {
+                panel3.Parent = tabPageSyukei;
+                panel3.Location = _panel3SyukeiLocation;
+            }
         }
 
         protected void OpenFileDialogNicoran(TextBox textBox, string filter, string caption)
