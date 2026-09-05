@@ -265,3 +265,14 @@
   - reviewerレビュー＋再レビュー: 必須（高・中）指摘を全解消（createRankingDateTableのRollback・Ranking前提確認）。再レビューでマージ可判定。低指摘の見送り分（二重Open・CreateDBVersionTable改名）は理由をコミットメッセージに記録
   - ユーザー実行確認: コードチェックOK（reviewer前実施）・実環境確認OK後にマージ
 - **残課題**: `RankingHistory.Open` の二重呼び出し所有権・`TestDbHelper.CreateDBVersionTable` のSnapshot用スキーマ名・移行処理のMigrator分離（バージョン増加時の肥大化対策。`design.md` 将来検討に記録）。いずれも本タスクでは見送り
+
+---
+
+## 2026-09-05 リリース実績 v20260905_nicorank
+
+- **Release**: https://github.com/n2daime/nicorank2019/releases/tag/v20260905_nicorank（タグはmain HEADを指すことを確認）
+- **範囲**: v20260904_nicorank_preview → develop（#29 result csv不要列削除＋#28 JSON肥大化対策）
+- **成果物**: `nicorank2019_20260905.zip` / `nicorank_SnapShot_20260905.zip` / `nicorank_oldlog_20260905.zip`（ホワイトリスト方式で作成・内容検証済み。DB・設定本体・pdb・Outputなし）
+- **検証**: `dotnet restore`＋`dotnet test` 136件PASS、MSBuild Releaseビルド成功・警告0、`loadFromRemoteSources` 両config確認、`nicorank.xml` 一致（SHA256）、bin/Release lib 4件＋runtimes 3種確認。実機集計は#28・#29のユーザー実行確認でカバー
+- **判明した問題**: なし（zip内容検証スクリプトの正規表現が `runtimeconfig.json` に誤検出するiskeあり。ホワイトリスト品のため問題なし。次回は `config\.json$` の前方不一致に注意）
+- **同期**: main → develop を `--no-ff` でバックマージ（32ef15a）。`git diff main develop --stat` 空を確認
