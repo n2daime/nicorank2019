@@ -1,6 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using nicorankLib.Analyze.model;
 using nicorankLib.output;
+using nicorankLib.Util.Text;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -232,6 +233,120 @@ namespace UnitTest.nicorankLib.output
                 Assert.IsTrue(content.Contains("人気のタグ"));
                 Assert.IsTrue(content.Contains("\"演奏してみた\""));
                 Assert.IsFalse(content.Contains("\"音楽,演奏してみた\""));
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [TestMethod]
+        public void TestResultCsv_Header30ColumnsExact()
+        {
+            var tempDir = Path.Combine(Path.GetTempPath(), "UnitTest_ResultCsvHeader_" + System.Guid.NewGuid().ToString("N"));
+            try
+            {
+                var csv = new ResultCsv();
+                csv.SetOutput(tempDir, new List<ResultCsv.CsvConfig>
+                {
+                    new ResultCsv.CsvConfig { csvName = "test_result.csv", isUnicode = true, isOverwrite = true }
+                });
+
+                Assert.IsTrue(csv.Execute(CreateTestRankingList()));
+                Assert.IsTrue(CsvUtil.Read(Path.Combine(tempDir, "test_result.csv"), out List<string[]> rows));
+                Assert.IsTrue(rows.Count >= 1);
+
+                var expected = new[]
+                {
+                    "ID","投稿日","タイトル","人気のタグ","再生時間",
+                    "総合ランク","ポイント","カテゴリランク","カテゴリ","再生ランク","再生数",
+                    "コメントランク","コメント数","マイリストランク","登録数","いいねランク","いいね数","前回ランク","前回ポイント",
+                    "ユーザーID","ユーザー名","ユーザーアイコン","マイリストポイント",
+                    "コメント補正","コメントポイント","マイリスト補正",
+                    "再生補正","再生ポイント","いいねポイント","ポイント全体補正"
+                };
+                CollectionAssert.AreEqual(expected, rows[0]);
+                Assert.AreEqual(30, rows[0].Length);
+                Assert.AreEqual("人気のタグ", rows[0][3]);
+                Assert.IsFalse(new List<string>(rows[0]).Contains("運営ポイントランク"));
+                Assert.IsFalse(new List<string>(rows[0]).Contains("運営ポイント"));
+                if (rows.Count >= 2)
+                {
+                    Assert.AreEqual(30, rows[1].Length);
+                }
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+        }
+
+        [TestMethod]
+        public void TestResultCsv_Roundtrip()
+        {
+            var tempDir = Path.Combine(Path.GetTempPath(), "UnitTest_ResultCsvRoundtrip_" + System.Guid.NewGuid().ToString("N"));
+            try
+            {
+                var csv = new ResultCsv();
+                csv.SetOutput(tempDir, new List<ResultCsv.CsvConfig>
+                {
+                    new ResultCsv.CsvConfig { csvName = "test_result.csv", isUnicode = true, isOverwrite = true }
+                });
+
+                var rankingList = new List<Ranking>
+                {
+                    new Ranking
+                    {
+                        ID = "sm12345678",
+                        Title = "ラウンドトリップ動画",
+                        Date = new DateTime(2023, 5, 6, 12, 34, 56),
+                        PlayTime = "10分00秒",
+                        RankTotal = 7,
+                        RankCategory = 3,
+                        RankPlay = 4,
+                        RankComment = 5,
+                        RankMyList = 6,
+                        RankLike = 8,
+                        CountPlay = 20000,
+                        CountComment = 300,
+                        CountMyList = 500,
+                        CountLike = 400,
+                        Category = "ゲーム",
+                        FavoriteTags = new List<string> { "実況", "攻略" },
+                        LastRank = 8,
+                        LastPoint = 12345,
+                        UserID = "user9",
+                        UserName = "ユーザー九"
+                    }
+                };
+
+                Assert.IsTrue(csv.Execute(rankingList));
+
+                var csvPath = Path.Combine(tempDir, "test_result.csv");
+                Assert.IsTrue(TextUtil.ReadCsv(csvPath, out List<Ranking> readList));
+                Assert.AreEqual(1, readList.Count);
+
+                var original = rankingList[0];
+                var read = readList[0];
+                Assert.AreEqual(original.ID, read.ID);
+                Assert.AreEqual(original.Title, read.Title);
+                Assert.AreEqual(original.Date, read.Date);
+                Assert.AreEqual(original.Category, read.Category);
+                Assert.AreEqual(original.RankTotal, read.RankTotal);
+                Assert.AreEqual(original.PointTotal, read.PointTotal);
+                Assert.AreEqual(original.PointMyList, read.PointMyList);
+                Assert.AreEqual(original.CountPlay, read.CountPlay);
+                Assert.AreEqual(original.CountComment, read.CountComment);
+                Assert.AreEqual(original.CountMyList, read.CountMyList);
+                Assert.AreEqual(original.CountLike, read.CountLike);
+                Assert.AreEqual(original.RankLike, read.RankLike);
+                Assert.AreEqual(original.LastRank, read.LastRank);
+                Assert.AreEqual(original.LastPoint, read.LastPoint);
+                Assert.AreEqual(original.UserID, read.UserID);
+                Assert.AreEqual(original.UserName, read.UserName);
+                CollectionAssert.AreEqual(new List<string> { "実況", "攻略" }, read.FavoriteTags);
             }
             finally
             {

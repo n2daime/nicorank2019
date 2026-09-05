@@ -180,7 +180,7 @@ namespace nicorankLib.output
                             rowData.Add($"{wRank.HoseiPlay:F6}");
                             rowData.Add(wRank.PointPlay);
                         }
-                        //"いいねポイント
+                        //"いいねポイント"
                         rowData.Add(wRank.PointLike);
 
                         //ポイント全体補正

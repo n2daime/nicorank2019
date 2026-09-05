@@ -160,7 +160,7 @@ namespace nicorankLib.Util.Text
                                 }
                                 return null;
                             };
-                            //数値カラムの取得（列なし→既定値0。総合ランクのみ空→9999999は呼出側で判定）
+                            //数値カラムの取得（列なし→既定値0。総合ランクの空→9999999は下記で判定）
                             Func<string, int> getInt = (colName) =>
                             {
                                 var strRow = getCol(colName);
@@ -273,7 +273,7 @@ namespace nicorankLib.Util.Text
                             }
                             wRank.UserImageURL = userIcon ?? string.Empty;
 
-                            //"マイリストポイント"
+                            //"マイリストポイント"（新旧CSVはポイント列と併せて持つ前提。ポイント列なし時は初回CalcPointで再計算値に置き換わる）
                             if (headerIndex.ContainsKey("マイリストポイント"))
                             {
                                 wRank.PointMyList = getInt("マイリストポイント");
