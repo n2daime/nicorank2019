@@ -71,6 +71,23 @@ namespace UnitTest.nicorankLib.Util
         }
 
         [TestMethod]
+        public void RankingHistoryはRankingテーブルなしならfalseを返し何も変更しない()
+        {
+            using (var db = TestDbHelper.CreateInMemoryDb())
+            {
+                var history = new RankingHistory(db);
+                Assert.IsTrue(history.Open());
+
+                Assert.IsFalse(history.EnsureMigrated());
+                using (var cmd = db.Connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE TYPE='table' AND name='DBVersion';";
+                    Assert.AreEqual(0L, cmd.ExecuteScalar());
+                }
+            }
+        }
+
+        [TestMethod]
         public void RankingHistoryはDBVersionをVer0で作成し冪等である()
         {
             using (var db = TestDbHelper.CreateInMemoryDb())

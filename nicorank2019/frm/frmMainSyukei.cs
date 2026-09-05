@@ -128,7 +128,7 @@ namespace nicorank2019.frm
                         var migrationCoordinator = new DbMigrationCoordinator(new List<IDbMigratable>
                         {
                             history,
-                            // モードは移行処理に無関係のためWeeklyを仮指定する
+                            // モードは移行処理に無関係のためWeeklyを仮指定する。将来の移行処理もMode依存禁止
                             new ResultHistory(EAnalyzeMode.Weekly)
                         });
                         if (!migrationCoordinator.EnsureAllAtAnalyzeStart())

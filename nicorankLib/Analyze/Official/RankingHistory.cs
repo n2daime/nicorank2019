@@ -89,6 +89,12 @@ namespace nicorankLib.Analyze.Official
             {
                 return false;
             }
+            // 前提条件（全バージョン共通）。移行手順ではないためループ外で確認する
+            if (!IsRankingTableExist())
+            {
+                StatusLog.WriteLine($"{DB.LOG_OFFICEIAL}にRankingテーブルがありません。");
+                return false;
+            }
             try
             {
                 // 未記録=旧DBはVer0から順に適用する。未定義バージョンは失敗させる
@@ -117,6 +123,18 @@ namespace nicorankLib.Analyze.Official
         /// 未記録時の番兵。Ver0から順に適用するための起点。
         /// </summary>
         private const long DbNoVersion = -1;
+
+        /// <summary>
+        /// Rankingテーブルの存在確認。
+        /// </summary>
+        private bool IsRankingTableExist()
+        {
+            using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
+            {
+                aCmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE TYPE='table' AND name='Ranking';";
+                return Convert.ToInt64(aCmd.ExecuteScalar()) > 0;
+            }
+        }
 
         /// <summary>
         /// 記録済みバージョンを取得する。未記録時はDbNoVersionを返す。
@@ -637,7 +655,7 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
                 }
                 catch (Exception ex)
                 {
-                    aCmd.Transaction.Rollback();
+                    try { aCmd.Transaction?.Rollback(); } catch { }
 
                     var errLog = ErrLog.GetInstance();
                     errLog.Write($"{DB.LOG_OFFICEIAL}更新でエラー発生。(RankingHistory::updateOfficialRankingDB_Daily)");
@@ -659,6 +677,7 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
             {
                 return false;
             }
+            SqliteTransaction transaction = null;
             try
             {
                 using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
@@ -685,7 +704,8 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
 
                     //存在しないので作成する
                     //トランザクションの開始
-                    aCmd.Transaction = (SqliteTransaction)dbCtrlOfficial.Connection.BeginTransaction();
+                    transaction = (SqliteTransaction)dbCtrlOfficial.Connection.BeginTransaction();
+                    aCmd.Transaction = transaction;
 
                     aCmd.CommandText =
                         @"CREATE TABLE RankingDate (
@@ -712,11 +732,13 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
                     aCmd.ExecuteNonQuery();
 
                     aCmd.Transaction.Commit();
+                    aCmd.Transaction = null;
                 }
 
             }
             catch (Exception ex)
             {
+                try { transaction?.Rollback(); } catch { }
                 var errLog = ErrLog.GetInstance();
                 errLog.Write($"{ DB.LOG_OFFICEIAL}更新でエラー発生。(RankingHistory::createRankingDateTable)");
                 errLog.Write(ex);

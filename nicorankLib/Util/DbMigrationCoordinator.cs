@@ -13,7 +13,7 @@ namespace nicorankLib.Util
         /// <summary>
         /// コンストラクタ。
         /// </summary>
-        /// <param name="migratables">更新指示先（実行順）。LogOfficial→NicoranHistoryの順で渡すこと</param>
+        /// <param name="migratables">更新指示先。順序不問（各移行は独立）。現状はLogOfficial→NicoranHistoryの順で渡す</param>
         public DbMigrationCoordinator(IReadOnlyList<IDbMigratable> migratables)
         {
             this.migratables = migratables ?? throw new ArgumentNullException(nameof(migratables));

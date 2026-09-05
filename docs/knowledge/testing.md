@@ -9,7 +9,7 @@ dotnet test UnitTest/UnitTest.csproj
 
 - 環境: **.NET Framework 4.8 ターゲットだが .NET 10 SDK でビルド・実行**（Windows）
 - テストフレームワーク: MSTest 3.5.2 / モック: Moq 4.20.72
-- 全 **135 件**のテストが PASS
+- 全 **136 件**のテストが PASS
 
 ## 構成
 
@@ -24,7 +24,7 @@ UnitTest/
 │   ├── TestConfigBuilder.cs  # Config の非公開フィールドをリフレクションで書き換えるテスト用ビルダー
 │   └── UnitTestTestDbHelper.cs
 └── nicorankLib/
-    ├── Util/       UnitTestSQLiteCtrl(12) / DbQuery(10) / DbWrite(9) / DbSchema(8) / DbError(4) / DbCommandReuse(6) / StatusLog(3) / TextUtil(3) / ApiUrlBuilder(7) / DbMigrationCoordinator(11)
+    ├── Util/       UnitTestSQLiteCtrl(12) / DbQuery(10) / DbWrite(9) / DbSchema(8) / DbError(4) / DbCommandReuse(6) / StatusLog(3) / TextUtil(3) / ApiUrlBuilder(7) / DbMigrationCoordinator(12)
     ├── Common/     UnitTestConfig(4)
     ├── output/     UnitTestOutput(6)
     ├── SnapShot/   UnitTestSnapShotRequest(12)
@@ -53,7 +53,7 @@ UnitTest/
 | `UnitTestRanking` | 6 | PointTotal/HoseiAllPoint の補正計算（VOCACOLE2023実測、補正なし、sqrt、削除動画、ゼロ、境界値 0.25〜1.0） |
 | `UnitTestSnapShotRequest` | 12 | SnapShotRequest の URL 生成（1000フィルタ有無・`_context`・`%2B`・旧URL等価・日本語Q・クランプ・ゼロlimit・`_offset`上限・targets省略・jsonFilter・null回帰。Issue #19） |
 | `UnitTestApiUrlBuilder` | 7 | ApiUrlBuilder のクエリ組み立て（日本語tag・tag省略形状・null/空・null値・`?`付きベース・nullベース例外。Issue #19） |
-| `UnitTestDbMigrationCoordinator` | 11 | 司令塔の全成功・失敗時中断・null例外、RankingHistory/ResultHistoryのDBVersion確保・JSON空文字化・冪等・記録Verが新しい場合の無変更・移行失敗時のロールバック（Issue #28） |
+| `UnitTestDbMigrationCoordinator` | 12 | 司令塔の全成功・失敗時中断・null例外、RankingHistory/ResultHistoryのDBVersion確保・JSON空文字化・冪等・記録Verが新しい場合の無変更・移行失敗時のロールバック・前提テーブルなし時の無変更（Issue #28） |
 
 ## テストパターン
 

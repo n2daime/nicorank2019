@@ -210,6 +210,7 @@ namespace nicorankLib.output
                         aCmd.Transaction = null;
                     }
                     StatusLog.WriteLine($"{DATASOURCE}を最適化しています...");
+                    // 確定済みデータの最適化。失敗時はバージョン未記録のため再実行でリトライできる
                     aCmd.CommandText = "VACUUM;";
                     aCmd.ExecuteNonQuery();
                     return true;
@@ -297,7 +298,7 @@ namespace nicorankLib.output
                         catch (Exception ex)
                         {
                             ErrLog.GetInstance().Write(ex);
-                            aCmd.Transaction.Rollback();
+                            try { aCmd.Transaction?.Rollback(); } catch { }
                             return false;
                         }
                     }
