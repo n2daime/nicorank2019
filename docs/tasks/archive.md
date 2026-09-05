@@ -275,4 +275,4 @@
 - **成果物**: `nicorank2019_20260905.zip` / `nicorank_SnapShot_20260905.zip` / `nicorank_oldlog_20260905.zip`（ホワイトリスト方式で作成・内容検証済み。DB・設定本体・pdb・Outputなし）
 - **検証**: `dotnet restore`＋`dotnet test` 136件PASS、MSBuild Releaseビルド成功・警告0、`loadFromRemoteSources` 両config確認、`nicorank.xml` 一致（SHA256）、bin/Release lib 4件＋runtimes 3種確認。実機集計は#28・#29のユーザー実行確認でカバー
 - **判明した問題**: なし（zip内容検証スクリプトの正規表現が `runtimeconfig.json` に誤検出するiskeあり。ホワイトリスト品のため問題なし。次回は `config\.json$` の前方不一致に注意）
-- **同期**: main → develop を `--no-ff` でバックマージ（32ef15a）。`git diff main develop --stat` 空を確認
+- **同期**: main → develop を `--no-ff` でバックマージ（32ef15a）。バックマージ直後は `git diff main develop --stat` 空を確認。本エントリ追記によりdevelopが1件先行（前回リリースと同様の運用）
