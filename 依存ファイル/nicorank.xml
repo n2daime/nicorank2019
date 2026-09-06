@@ -47,6 +47,26 @@
 		<CheckDateOver>20170701</CheckDateOver>
 	</SP>
 	
+	<TAGRANK>
+		<!-- タグ検索モード専用設定（SPと同じ項目。節がなければ週間設定を使う）-->
+		<POINT>
+			<!--マイリストの倍率-->
+			<CALC_MYLIST>20</CALC_MYLIST>
+			<!--再生の倍率-->
+			<CALC_PLAY>1</CALC_PLAY>
+			<!--コメントの倍率-->
+			<CALC_COMMENT>1</CALC_COMMENT>
+			<!--いいね数の倍率-->
+			<CALC_LIKE>20</CALC_LIKE>				
+		</POINT>
+		<RANK   Num="30" Tyouki="0"/>
+		<RANKED Num="200" />
+		<UserInfo Num="1000" />
+		
+		<!-- タグ検索では前回結果CSVが任意のため未使用 -->
+		<CheckDateOver></CheckDateOver>
+	</TAGRANK>
+	
 	<!-- コメントポイント補正を行うか？ -->
 	<!-- 0-しない -->
 	<!-- 1- 補正＝（再生＋マイリスト＋コメント＊N）／（再生＋マイリスト＋コメント）-->

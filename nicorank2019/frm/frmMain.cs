@@ -1,14 +1,17 @@
 ﻿using nicorank2019.frm;
+using nicorankLib.Analyze.Input;
 using nicorankLib.Analyze.Official;
 using nicorankLib.Common;
 using nicorankLib.Factory;
 using nicorankLib.output;
+using nicorankLib.SnapShot;
 using nicorankLib.Util;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,6 +23,24 @@ namespace nicorank2019.frm
     {
 
         protected ModeFactoryBase MainFactory;
+
+        // ポイント計算パネル(panel3)のタブ間付け替え状態
+        private bool _tagMockLoaded = false;
+        private System.Drawing.Point _panel3SyukeiLocation;
+        private bool _switchingTab = false;
+        /// <summary>
+        /// タグ検索集計の実行条件（UIスレッドで退避。集計スレッドからはコントロールに触れないため）
+        /// </summary>
+        private class TagExecuteContext
+        {
+            public TagSearchQuery Query;
+            public string AnalyzeDB;
+            public string BaseDB;
+            public string LastResult;
+        }
+        private TagExecuteContext _tagExecuteContext = null;
+        // 直近の件数確認で上限超過だったか（超過時はランキング計算ボタンを押せなくする）
+        private bool _tagCountOverLimit = false;
 
         public frmMain()
         {
@@ -33,6 +54,10 @@ namespace nicorank2019.frm
             try
             {
                 SelectMode();
+                _panel3SyukeiLocation = panel3.Location;
+                lblTagCount.Text = "検索件数: 未確認（上限50000件）";
+                lblTagWarn.Visible = false;
+                _tagMockLoaded = true;
             }
             catch (Exception ex)
             {
@@ -56,24 +81,23 @@ namespace nicorank2019.frm
 
         private async void btnAnalyze_Click(object sender, EventArgs e)
         {
+            if (!SavePointCalcPanel())
+            {
+                MessageBox.Show("ポイント計算の入力値が不正です", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            _tagExecuteContext = null;
+            await ExecuteAnalyzeAsync(btnAnalyze);
+        }
+
+        /// <summary>
+        /// 集計を実行して結果を報告する（集計タブ・タグタブ共通）
+        /// </summary>
+        private async Task ExecuteAnalyzeAsync(Button execButton)
+        {
             try
             {
-                btnAnalyze.Enabled = false;
-
-                var config = Config.GetInstance();
-
-                config.CalcMyList = double.Parse( tbCalcMylist.Text);
-                config.CalcPlay = double.Parse(tbCalcPlay.Text);
-                config.CalcComment = double.Parse(tbCalcComment.Text);
-
-                config.CalcMyListKind = cmbHoseiMylist.SelectedIndex;
-                config.CalcPlayKind = cmbHoseiPlay.SelectedIndex;
-                config.CalcCommentKind = cmbHoseiComment.SelectedIndex;
-                config.CalcCommentUnderLimit = double.Parse(tbHoseiCommentUnderLimit.Text);
-                config.CalcPointAllKind = cmbHoseiPointAll.SelectedIndex;
-
-                config.UserNum= int.Parse(tbUserInfoNum.Text);
-
+                execButton.Enabled = false;
 
                 bool result = await AnalyzeAsync();
                 if (!result)
@@ -95,7 +119,7 @@ namespace nicorank2019.frm
             }
             finally
             {
-                btnAnalyze.Enabled = true;
+                execButton.Enabled = true;
             }
         }
 
@@ -134,6 +158,294 @@ namespace nicorank2019.frm
         private void btnLastResult_Click(object sender, EventArgs e)
         {
             OpenFileDialogNicoran(this.tbLastResult, "result.csv|*.csv", "Open File");
+        }
+
+        // タグ検索集計のファイル選択
+        private void btnBaseDB_Tag_Click(object sender, EventArgs e)
+        {
+            OpenFileDialogNicoran(this.tbBaseDB_Tag, "SnapShotDB|*.db", "Open File");
+        }
+
+        private void btnAnalyzeDB_Tag_Click(object sender, EventArgs e)
+        {
+            OpenFileDialogNicoran(this.tbAnalyzeDB_Tag, "SnapShotDB|*.db", "Open File");
+        }
+
+        private void btnLastResult_Tag_Click(object sender, EventArgs e)
+        {
+            OpenFileDialogNicoran(this.tbLastResult_Tag, "result.csv|*.csv", "Open File");
+        }
+
+        /// <summary>
+        /// タグタブの入力値から検索条件を組み立てる
+        /// </summary>
+        private bool TryBuildTagSearchQuery(out TagSearchQuery query, out string error)
+        {
+            query = null;
+            if (string.IsNullOrWhiteSpace(tbTagCondition.Text))
+            {
+                error = "タグ条件を入力してください";
+                return false;
+            }
+            if (!TryParseMin(tbViewMin, "再生", out long viewMin, out error)) { return false; }
+            if (!TryParseMin(tbMylistMin, "マイリス", out long mylistMin, out error)) { return false; }
+            if (!TryParseMin(tbLikeMin, "いいね", out long likeMin, out error)) { return false; }
+            if (!TryParseMin(tbCommentMin, "コメント", out long commentMin, out error)) { return false; }
+            if (chkDateFilter.Checked && dtEnd.Value.Date <= dtStart.Value.Date)
+            {
+                error = "投稿日の終了日は開始日より後にしてください";
+                return false;
+            }
+            string contentType = null;
+            if (cmbContentType.SelectedIndex == 1) { contentType = "long"; }
+            else if (cmbContentType.SelectedIndex == 2) { contentType = "short"; }
+            query = new TagSearchQuery()
+            {
+                TagCondition = tbTagCondition.Text.Trim(),
+                ViewMin = viewMin,
+                MylistMin = mylistMin,
+                LikeMin = likeMin,
+                CommentMin = commentMin,
+                UseDateFilter = chkDateFilter.Checked,
+                StartGte = dtStart.Value.Date,
+                StartLt = dtEnd.Value.Date,
+                ContentType = contentType
+            };
+            error = null;
+            return true;
+        }
+
+        private bool TryParseMin(TextBox textBox, string name, out long value, out string error)
+        {
+            value = 0;
+            error = null;
+            string text = textBox.Text.Trim();
+            if (text == string.Empty)
+            {
+                return true;
+            }
+            if (!long.TryParse(text, out value) || value < 0)
+            {
+                error = $"{name}下限は0以上の整数で入力してください";
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 検索条件の変更で件数表示を未確認に戻し、ランキング計算ボタンを押せるようにする
+        /// </summary>
+        private void TagCondition_Changed(object sender, EventArgs e)
+        {
+            ResetTagCountState();
+        }
+
+        private void ResetTagCountState()
+        {
+            if (!_tagMockLoaded)
+            {
+                return;
+            }
+            _tagCountOverLimit = false;
+            // 未入力ならランキング計算は押せない
+            btnAnalyzeTag.Enabled = !string.IsNullOrWhiteSpace(tbTagCondition.Text);
+            lblTagWarn.Visible = false;
+            lblTagCount.Text = "検索件数: 未確認（上限50000件）";
+        }
+
+        /// <summary>
+        /// タグ条件でEnter確定したら件数確認を実行する
+        /// </summary>
+        private void tbTagCondition_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.SuppressKeyPress = true;
+                btnTagSearch.PerformClick();
+            }
+        }
+
+        /// <summary>
+        /// 件数確認して上限超過なら実行ボタンを押せなくする。超過でなければ件数を返す
+        /// </summary>
+        /// <returns>集計に進める件数。進めない場合（超過・取得失敗）は null</returns>
+        private async Task<long?> CheckTagCountAsync(TagSearchQuery query)
+        {
+            var analyzer = new TagRankAnalyze(DateTime.Now, query);
+            long count = 0;
+            bool ok = await Task.Run(() => analyzer.GetTotalCount(out count));
+            if (!ok)
+            {
+                _tagCountOverLimit = false;
+                lblTagCount.Text = "検索件数: 取得失敗";
+                MessageBox.Show("検索件数の取得に失敗しました。ネットワークと条件を確認してください", "検索エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return null;
+            }
+            lblTagCount.Text = $"検索件数: {count} 件";
+            if (count > TagRankAnalyze.MaxTotalCount)
+            {
+                _tagCountOverLimit = true;
+                lblTagWarn.Text = $"検索結果が多すぎます。({count}件) {TagRankAnalyze.MaxTotalCount}件以下になるように条件を追加して下さい";
+                lblTagWarn.Visible = true;
+                btnAnalyzeTag.Enabled = false;
+                return null;
+            }
+            _tagCountOverLimit = false;
+            lblTagWarn.Visible = false;
+            return count;
+        }
+
+        private async void btnTagSearch_Click(object sender, EventArgs e)
+        {
+            if (!TryBuildTagSearchQuery(out TagSearchQuery query, out string buildError))
+            {
+                MessageBox.Show(buildError, "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            try
+            {
+                btnTagSearch.Enabled = false;
+                lblTagCount.Text = "検索件数: 取得中...";
+                lblTagWarn.Visible = false;
+
+                await CheckTagCountAsync(query);
+            }
+            catch (Exception ex)
+            {
+                lblTagCount.Text = "検索件数: 取得失敗";
+                MessageBox.Show(GetExceptionMessages(ex), "システムエラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                btnTagSearch.Enabled = true;
+            }
+        }
+
+        private async void btnAnalyzeTag_Click(object sender, EventArgs e)
+        {
+            if (!TryBuildTagSearchQuery(out TagSearchQuery query, out string buildError))
+            {
+                MessageBox.Show(buildError, "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            // 集計日DBは必須。基準日DBと前回結果CSVは任意（基準なしは差分なしで累積値を使う）
+            if (!IsExistingFile(tbAnalyzeDB_Tag.Text))
+            {
+                MessageBox.Show("集計日のDBを指定してください", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (!string.IsNullOrWhiteSpace(tbBaseDB_Tag.Text) && !File.Exists(tbBaseDB_Tag.Text.Trim()))
+            {
+                MessageBox.Show("基準日のDBファイルが見つかりません", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (!string.IsNullOrWhiteSpace(tbLastResult_Tag.Text) && !File.Exists(tbLastResult_Tag.Text.Trim()))
+            {
+                MessageBox.Show("前回結果のファイルが見つかりません", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            // 実行前に件数確認し、上限超過時は集計しない（ボタンも押せなくする）
+            btnAnalyzeTag.Enabled = false;
+            long? totalCount;
+            try
+            {
+                totalCount = await CheckTagCountAsync(query);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(GetExceptionMessages(ex), "システムエラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                btnAnalyzeTag.Enabled = true;
+                return;
+            }
+            if (!totalCount.HasValue)
+            {
+                if (_tagCountOverLimit)
+                {
+                    MessageBox.Show(lblTagWarn.Text, "検索エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                else
+                {
+                    btnAnalyzeTag.Enabled = true;
+                }
+                return;
+            }
+            btnAnalyzeTag.Enabled = true;
+            if (!SavePointCalcPanel())
+            {
+                MessageBox.Show("ポイント計算の入力値が不正です", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            // 集計スレッドからはコントロールに触れないため、UIスレッドで値を退避する
+            _tagExecuteContext = new TagExecuteContext()
+            {
+                Query = query,
+                AnalyzeDB = tbAnalyzeDB_Tag.Text.Trim(),
+                BaseDB = tbBaseDB_Tag.Text.Trim(),
+                LastResult = tbLastResult_Tag.Text.Trim()
+            };
+            await ExecuteAnalyzeAsync(btnAnalyzeTag);
+        }
+
+        private static bool IsExistingFile(string path)
+        {
+            return !string.IsNullOrWhiteSpace(path) && File.Exists(path.Trim());
+        }
+
+        private void chkDateFilter_CheckedChanged(object sender, EventArgs e)
+        {
+            bool enabled = chkDateFilter.Checked;
+            dtStart.Enabled = enabled;
+            dtEnd.Enabled = enabled;
+            ResetTagCountState();
+        }
+
+        // ポイント計算パネルを集計タブとタグタブで付け替える（タグ選択時はTAGRANK値に切り替える）
+        // 固定座標はAutoScaleの対象外でずれるため、スケール済みのコントロールを基準に相対配置する
+        private void tabPageOut_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (!_tagMockLoaded || _switchingTab)
+            {
+                return;
+            }
+            if (tabPageOut.SelectedTab == tabPageTag)
+            {
+                if (!SavePointCalcPanel())
+                {
+                    MessageBox.Show("ポイント計算の入力値が不正です", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    RevertTabSelection(tabPageSyukei);
+                    return;
+                }
+                SelectTagMode();
+                tabPageTag.SuspendLayout();
+                panel3.Parent = tabPageTag;
+                int margin = grpDb.Left;
+                panel3.Location = new System.Drawing.Point(margin, grpDb.Bottom + 8);
+                panel3.Width = tabPageTag.ClientSize.Width - margin * 2;
+                btnAnalyzeTag.Location = new System.Drawing.Point(
+                    (tabPageTag.ClientSize.Width - btnAnalyzeTag.Width) / 2,
+                    panel3.Bottom + 8);
+                tabPageTag.ResumeLayout(false);
+                tabPageTag.PerformLayout();
+            }
+            else if (tabPageOut.SelectedTab == tabPageSyukei)
+            {
+                if (!SavePointCalcPanel())
+                {
+                    MessageBox.Show("ポイント計算の入力値が不正です", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    RevertTabSelection(tabPageTag);
+                    return;
+                }
+                SelectSyukeiMode();
+                panel3.Parent = tabPageSyukei;
+                panel3.Location = _panel3SyukeiLocation;
+            }
+        }
+
+        private void RevertTabSelection(TabPage page)
+        {
+            _switchingTab = true;
+            tabPageOut.SelectedTab = page;
+            _switchingTab = false;
         }
 
         protected void OpenFileDialogNicoran(TextBox textBox, string filter, string caption)

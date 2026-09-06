@@ -28,6 +28,8 @@ namespace nicorankLib.Common
         public POINT POINT { get; set; }
         [XmlElement(ElementName = "SP")]
         public SP SP { get; set; }
+        [XmlElement(ElementName = "TAGRANK")]
+        public TAGRANK TAGRANK { get; set; }
         [XmlElement(ElementName = "COMMENT_OFFSET")]
         public COMMENT_OFFSET COMMENT_OFFSET { get; set; }
         [XmlElement(ElementName = "MYLIST_OFFSET")]
@@ -79,6 +81,21 @@ namespace nicorankLib.Common
 
     [XmlRoot(ElementName = "SP")]
     public class SP
+    {
+        [XmlElement(ElementName = "POINT")]
+        public POINT POINT { get; set; }
+        [XmlElement(ElementName = "RANK")]
+        public RANK RANK { get; set; }
+        [XmlElement(ElementName = "RANKED")]
+        public RANKED RANKED { get; set; }
+        [XmlElement(ElementName = "UserInfo")]
+        public UserInfoXml UserInfo { get; set; }
+        [XmlElement(ElementName = "CheckDateOver")]
+        public string CheckDateOver { get; set; }
+    }
+
+    [XmlRoot(ElementName = "TAGRANK")]
+    public class TAGRANK
     {
         [XmlElement(ElementName = "POINT")]
         public POINT POINT { get; set; }

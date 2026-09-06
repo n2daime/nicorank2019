@@ -29,7 +29,7 @@ UnitTest ──→ nicorankLib
 ```
 nicorank_SnapShot ──(引数あり)→ SnapController（コンソールモード）┐
                  └──(引数なし)→ Form1（UI）                     ├→ nicorankLib コア
-nicorank2019 ──→ frmMain → ModeFactory(Weekly/Tyukan/SP) ──────┘
+nicorank2019 ──→ frmMain → ModeFactory(Weekly/Tyukan/SP/TagRank) ──────┘
 nicorank_oldlog ──(net8.0 別系統)──→ NicoRankiApi → old-ranking/ へ JSON 保存
 UnitTest ──→ nicorankLib を net48 で直接テスト（インメモリ SQLite）
 ```
@@ -51,6 +51,7 @@ UnitTest ──→ nicorankLib を net48 で直接テスト（インメモリ SQ
 | Weekly | `ModeFactoryWeekly` | `JsonReaderWeekly` | SabunReader / LastRankReader / GenreInfoReader / FavoriteTagReader / UserInfoReader / TyokiHantei | メンテ日は中間集計で代替 |
 | Tyukan | `ModeFactoryTyukan` | `TyukanAnalyze` | LastRankReader / FavoriteTagReader | TyokiHantei なし。履歴DB登録なし |
 | SP | `ModeFactroySP`（Weekly 継承） | `SPAnalyze`（IDリスト） | SnapShotSabunReader / LastRankCsvReader / FavoriteTagReader | スナップショットDB差分方式 |
+| TagRank | `ModeFactoryTagRank`（Weekly 継承・SP相当） | `TagRankAnalyze`（snapshot v2ライブ検索のID列） | SnapShotSabunReader（Baseあり）/ TagRankTotalReader（Baseなし）/ LastRankCsvReader（任意）/ FavoriteTagReader | タグ検索集計。前回CSV・基準DBは任意 |
 
 ## 主要クラスと責務（集計フロー順）
 

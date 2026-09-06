@@ -15,27 +15,27 @@ namespace nicorankLib.Common
         /// <summary>
         /// ランキングは何位から紹介するか
         /// </summary>
-        public int Rank { get { return IsSP? xml.SP.RANK.Num : xml.RANK.Num;  } set { } }
+        public int Rank { get { if (UseTagRank) { return xml.TAGRANK.RANK.Num; } return IsSP ? xml.SP.RANK.Num : xml.RANK.Num; } set { } }
 
         /// <summary>
         /// rankEDに掲載する動画数 例 週間は120 SPは400
         /// </summary>
-        public int RankED { get { return IsSP ? xml.SP.RANKED.Num : xml.RANKED.Num; } set { } }
+        public int RankED { get { if (UseTagRank) { return xml.TAGRANK.RANKED.Num; } return IsSP ? xml.SP.RANKED.Num : xml.RANKED.Num; } set { } }
 
         /// <summary>
         /// UserInfo/Iconを取得する動画数。長期は考慮しないので単純指定
         /// </summary>
-        public int UserNum { get { return IsSP ? xml.SP.UserInfo.Num : xml.UserInfo.Num; } set { if (IsSP) { xml.SP.UserInfo.Num = value; } else { xml.UserInfo.Num = value; } } }
+        public int UserNum { get { if (UseTagRank) { return xml.TAGRANK.UserInfo.Num; } return IsSP ? xml.SP.UserInfo.Num : xml.UserInfo.Num; } set { if (UseTagRank) { xml.TAGRANK.UserInfo.Num = value; } else if (IsSP) { xml.SP.UserInfo.Num = value; } else { xml.UserInfo.Num = value; } } }
 
         /// <summary>
         /// Tyouki=1 History.csvで長期動画補正あり
         /// </summary>
-        public bool IsTyouki { get { return IsSP ? xml.SP.RANK.Tyouki : xml.RANK.Tyouki; } set { } }
+        public bool IsTyouki { get { if (UseTagRank) { return xml.TAGRANK.RANK.Tyouki; } return IsSP ? xml.SP.RANK.Tyouki : xml.RANK.Tyouki; } set { } }
 
         /// <summary>
         /// lastresultSP.csvチェック用。前回SPの”集計日”を指定すること
         /// </summary>
-        public string CheckDateOver { get { return xml.SP.CheckDateOver; } set { } }
+        public string CheckDateOver { get { if (UseTagRank && xml.TAGRANK.CheckDateOver != null) { return xml.TAGRANK.CheckDateOver; } return xml.SP.CheckDateOver; } set { } }
 
         /// <summary>
         /// ED用アイコンのDL先指定
@@ -48,24 +48,42 @@ namespace nicorankLib.Common
         public bool IsSP = false;
 
         /// <summary>
+        /// タグ検索用の集計かどうか（TAGRANK節がなければ週間設定を使う）
+        /// </summary>
+        public bool IsTagRank = false;
+
+        /// <summary>
+        /// TAGRANK節を使うか（節単位切替。節なし・項目欠落があれば週間設定にフォールバックする）
+        /// </summary>
+        private bool UseTagRank
+        {
+            get
+            {
+                return IsTagRank && xml != null && xml.TAGRANK != null
+                    && xml.TAGRANK.RANK != null && xml.TAGRANK.RANKED != null
+                    && xml.TAGRANK.POINT != null && xml.TAGRANK.UserInfo != null;
+            }
+        }
+
+        /// <summary>
         /// マイリストの倍率
         /// </summary>
-        public double CalcMyList { get { return IsSP ? xml.SP.POINT.CALC_MYLIST : xml.POINT.CALC_MYLIST; } set { if (IsSP) { xml.SP.POINT.CALC_MYLIST = value; } else { xml.POINT.CALC_MYLIST = value; } } }
+        public double CalcMyList { get { if (UseTagRank) { return xml.TAGRANK.POINT.CALC_MYLIST; } return IsSP ? xml.SP.POINT.CALC_MYLIST : xml.POINT.CALC_MYLIST; } set { if (UseTagRank) { xml.TAGRANK.POINT.CALC_MYLIST = value; } else if (IsSP) { xml.SP.POINT.CALC_MYLIST = value; } else { xml.POINT.CALC_MYLIST = value; } } }
 
         /// <summary>
         /// コメントの倍率
         /// </summary>
-        public double CalcComment { get { return IsSP ? xml.SP.POINT.CALC_COMMENT : xml.POINT.CALC_COMMENT; } set { if (IsSP) { xml.SP.POINT.CALC_COMMENT = value; } else { xml.POINT.CALC_COMMENT = value; } } }
+        public double CalcComment { get { if (UseTagRank) { return xml.TAGRANK.POINT.CALC_COMMENT; } return IsSP ? xml.SP.POINT.CALC_COMMENT : xml.POINT.CALC_COMMENT; } set { if (UseTagRank) { xml.TAGRANK.POINT.CALC_COMMENT = value; } else if (IsSP) { xml.SP.POINT.CALC_COMMENT = value; } else { xml.POINT.CALC_COMMENT = value; } } }
 
         /// <summary>
         /// 再生の倍率
         /// </summary>
-        public double CalcPlay { get { return IsSP ? xml.SP.POINT.CALC_PLAY : xml.POINT.CALC_PLAY; } set { if (IsSP) { xml.SP.POINT.CALC_PLAY = value; } else { xml.POINT.CALC_PLAY = value; } } }
+        public double CalcPlay { get { if (UseTagRank) { return xml.TAGRANK.POINT.CALC_PLAY; } return IsSP ? xml.SP.POINT.CALC_PLAY : xml.POINT.CALC_PLAY; } set { if (UseTagRank) { xml.TAGRANK.POINT.CALC_PLAY = value; } else if (IsSP) { xml.SP.POINT.CALC_PLAY = value; } else { xml.POINT.CALC_PLAY = value; } } }
 
         /// <summary>
         /// いいねの倍率
         /// </summary>
-        public double CalcLike { get { return IsSP ? xml.SP.POINT.CALC_LIKE : xml.POINT.CALC_LIKE; } set { if (IsSP) { xml.SP.POINT.CALC_LIKE = value; } else { xml.POINT.CALC_LIKE = value; } } }
+        public double CalcLike { get { if (UseTagRank) { return xml.TAGRANK.POINT.CALC_LIKE; } return IsSP ? xml.SP.POINT.CALC_LIKE : xml.POINT.CALC_LIKE; } set { if (UseTagRank) { xml.TAGRANK.POINT.CALC_LIKE = value; } else if (IsSP) { xml.SP.POINT.CALC_LIKE = value; } else { xml.POINT.CALC_LIKE = value; } } }
 
         /// <summary>
         /// コメントポイント補正を行うか？
