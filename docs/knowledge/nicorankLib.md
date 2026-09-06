@@ -30,6 +30,7 @@ nicorankLib/
 | `ModeFactoryWeekly` | 週間集計。メンテ日は `RankingHistory.CheckMaintananceDay` で中間集計に代替。BasicOption: HiddenMovieDelete → SabunReader → LastRankReader → GenreInfoReader。ExtOption: FavoriteTagReader → UserInfoReader → TyokiHantei |
 | `ModeFactoryTyukan` | 中間集計。TyokiHantei = null、履歴DB登録なし。`CreateNRMRank1000` は固定 1000 位 |
 | `ModeFactroySP` | **ファイル名タイポは元コードのまま**。`ModeFactoryWeekly` 継承。4種の入力ファイルを `SetInputFile` で設定（analyzeDB / baseDB / movieList / 前回結果CSV） |
+| `ModeFactoryTagRank` | タグ検索集計。`ModeFactoryWeekly` 継承・SP相当（履歴null・7種出力）。`TagRankAnalyze`＋Base有無で `SnapShotSabunReader` / `TagRankTotalReader` を切替。前回CSV・基準DBは任意 |
 
 ## Analyze / RankingAnalyze
 
@@ -55,6 +56,7 @@ AnalyzeRank():
 | `JsonReaderDaily` / `Weekly` / `Monthly` / `Total` | 種別ごと。Weekly は直近の月曜まで遡る、Monthly は直近の1日まで |
 | `GenreAnalyze` | 「演奏してみた」ジャンル特化入力。LogOfficial.db の Movie と Ranking を JOIN |
 | `SPAnalyze` | SP 用。動画 ID リスト（改行区切り）を読み込み Ranking リスト化 |
+| `TagRankAnalyze` | タグ検索用。snapshot v2 ライブ検索でID列を生成（件数→5万判定→100件×4並列→重複除去・ID順）。差分は後段の SabunReader / TotalReader が行う |
 | `TyukanAnalyze` | 中間集計。`Dailylog.db` を使用。対象日リスト（メンテ日除外）を日別に `JsonReaderDaily` + `SabunReader` で集計し Dailylog に INSERT → 期間合計で中間ランキング生成 |
 
 ## Analyze/Official
@@ -82,6 +84,7 @@ AnalyzeRank():
 | `GenreInfoReader` | カテゴリ不明の動画を NicoApi で補完 |
 | `MovieInfoReader` | NicoApi で動画情報（タイトル・投稿日）を取得 |
 | `SnapShotSabunReader` | SP 集計の中核。スナップショット DB 2本（AnalyzeDB/BaseDB）の累積値差分を計算。`IDisposable` |
+| `TagRankTotalReader` | タグ検索の基準DBなし専用。AnalyzeDBの累積値をそのまま集計値にする（差分なし）。`IDisposable` |
 
 ### Ext（順位計算後に実行、`bool AnalyzeRank(List<Ranking>)`）
 
@@ -94,7 +97,7 @@ AnalyzeRank():
 ## Analyze/model
 
 - `Ranking` — 集計結果1件。`CalcPoint()`（ポイント計算、キャッシュ付き）・`PointCalcReset()`・`MergeRankingList`・`IsChannel`（`so` 始まり）。計算式の詳細は `../specs.md` セクション2
-- `EAnalyzeMode` — Weekly / SP / Tyukan / Daily / Mothly（タイポ）/ Unknown
+- `EAnalyzeMode` — Weekly / SP / Tyukan / Daily / Mothly（タイポ）/ TagRank / Unknown
 - `DB` — DB ファイルパス定数（`LOG_OFFICEIAL` / `NiCORAN_HISTORY` / `LOG_SNAPSHOT`）
 - `RankGenreJson` / `RankLogJson` — 公式ランキング JSON のデシリアライズ用モデル（`JsonReaderBase` / `RankApi2Json` で使用）
 
@@ -123,13 +126,16 @@ AnalyzeRank():
 
 - `SnapController` — スナップショット一括取得エントリ。20070306 から現在まで 15 日間隔でループ。直近1年以内は 1000 再生制限なし URL、それ以前は制限あり URL。10000 件ごとに `SnapShotDB.RegistDB`
 - `SnapShotAnalyze` — snapshot API リクエスト構築・並列ページング（4 並列）。総件数 5 万超なら期間を狭めて再試行。`":null"` → `":0"` 置換
-- `SnapShotRequest` — スナップショット検索API v2 の型付きリクエスト（Issue #19）。`q/targets/fields/filters/jsonFilter/_sort/_limit/_offset/_context` を保持し値のみ `EscapeDataString` で URL 生成。`_context` 既定 `WeeklyNicoranProgram`、`_limit/_offset` クランプ
+- `SnapShotRequest` — スナップショット検索API v2 の型付きリクエスト（Issue #19）。`q/targets/fields/filters/jsonFilter/_sort/_limit/_offset/_context` を保持し値のみ `EscapeDataString` で URL 生成。`_context` 既定 `WeeklyNicoranProgram`、`_limit/_offset` クランプ。`CreateTagSearch` はタグ検索用（jsonFilter＋数値・日付・種別を `filters[]` で指定。Issue #30）
+- `TagConditionParser` — タグ条件式（`A&B|C*`）を jsonFilter に変換（Issue #30）。`*` は末尾1文字のみ許可
+- `TagSearchQuery` — タグ検索条件の受け渡し用 DTO（Issue #30）
 - `SnapShotDB` — `LogSnapshot{yyyyMMdd}.db` の作成・登録（5000件バッチコミット・INSERT OR IGNORE・パラメータ再利用）。`ISQLiteCtrl` 注入可。旧 JSON ファイル読込（`GetJsonData`）も保持
 - `SnapShotJson` — レスポンス POCO
 
 ## Common
 
-- `Config` — **シングルトン**。`nicorank.xml` を `NicoRankXml` にデシリアライズして保持。ほぼ全クラスから参照。`IsSP` フラグで RANK/RANKED/UserInfo/POINT が SP 用 XML 節に切り替わる
+- `Config` — **シングルトン**。`nicorank.xml` を `NicoRankXml` にデシリアライズして保持。ほぼ全クラスから参照。`IsSP` フラグで RANK/RANKED/UserInfo/POINT が SP 用 XML 節に切り替わる。`IsTagRank` で TAGRANK 節に切り替わる（節なし・項目欠落は週間フォールバック。Issue #30）
+- `NicoRankXml` — nicorank.xml の POCO 群（`TAGRANK` は SP 同型。Issue #30）
 - `NicoRankXml` — nicorank.xml の POCO 群
 
 ## Util

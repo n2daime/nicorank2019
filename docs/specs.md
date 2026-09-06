@@ -128,7 +128,7 @@
 | `ICONDL_PATH` | — | ローカル設定 | ED用アイコン DL 先 |
 | `POINT` | `CALC_MYLIST` / `CALC_PLAY` / `CALC_COMMENT` / `CALC_LIKE` | 40/1/1/10（SP 20/1/1/20） | 各ポイント倍率 |
 | `SP.CheckDateOver` | — | 20170701 | lastresultSP.csv チェック用（前回 SP の集計日） |
-| `TAGRANK`（POINT/RANK/RANKED/UserInfo/CheckDateOver） | — | SP同値（CheckDateOverは未使用・空） | タグ検索モード専用設定。節がなければ週間設定を使う。OFFSET系は共通のため含まない |
+| `TAGRANK`（POINT/RANK/RANKED/UserInfo/CheckDateOver） | — | RANK 30/Tyouki 0・RANKED 200・POINTはSP同値・UserInfo 1000・CheckDateOverは未使用（空） | タグ検索モード専用設定。節がなければ週間設定を使う。OFFSET系は共通のため含まない |
 | `COMMENT_OFFSET` | `Mode` / `UnderLimit` | 2 / 0.01 | コメント補正モード・下限 |
 | `MYLIST_OFFSET` | `Mode` | 1 | マイリスト補正モード |
 | `PLAY_OFFSET` | `Mode` | 2 | 再生補正モード |

@@ -276,3 +276,30 @@
 - **検証**: `dotnet restore`＋`dotnet test` 136件PASS、MSBuild Releaseビルド成功・警告0、`loadFromRemoteSources` 両config確認、`nicorank.xml` 一致（SHA256）、bin/Release lib 4件＋runtimes 3種確認。実機集計は#28・#29のユーザー実行確認でカバー
 - **判明した問題**: なし（zip内容検証スクリプトの正規表現が `runtimeconfig.json` に誤検出するiskeあり。ホワイトリスト品のため問題なし。次回は `config\.json$` の前方不一致に注意）
 - **同期**: main → develop を `--no-ff` でバックマージ（32ef15a）。バックマージ直後は `git diff main develop --stat` 空を確認。本エントリ追記によりdevelopが1件先行（前回リリースと同様の運用）
+
+---
+
+## 2026-09-06 タグ検索ランキング (#30)
+
+- **Issue**: https://github.com/n2daime/nicorank2019/issues/30
+- **ブランチ**: `feature/t30-tagrank-search` → `develop` に `--no-ff` でマージ。ブランチ削除済み
+- **背景**: SPモード相当の集計をテキストの動画IDリストではなく、スナップショットv2のライブ検索結果で行う。新タブ「タグ検索集計」を追加し、ポイント計算パネルは集計タブと共有する
+- **実装内容**:
+  - UI: 新TabPage「タグ検索集計」（1.タグ条件→2.絞り込み→3.DB・前回結果→共有係数パネル→実行ボタン）。係数パネル（`panel3`）は実体1つのままタブ切替で付け替え＋`grpDb` 基準の相対配置（AutoScaleずれ対策）。下限初期値0（0=指定なし）・種別「指定なし」・投稿日はチェックボックスONで入力可。タグ条件のEnter確定で件数確認を実行。上限超過時は実行ボタンを押せなくし、条件変更で復帰。未入力時は実行不可
+  - `TagConditionParser`（`nicorankLib/SnapShot`）: `タグ1&タグ2|タグ3*` → jsonFilter（`&`=AND優先・`|`=OR・`*`なし=`tagsExact`・`*`あり=`tags`、` *`は末尾1文字のみ許可）
+  - `SnapShotRequest.CreateTagSearch`: タグはjsonFilter、数値下限4種・日付・種別は `filters[]` 実証済み記法。`q` 空・`targets` 不使用。下限0・日付OFF（中立期間2000-01-01〜2100-01-01）・種別「指定なし」は指定なし
+  - `TagRankAnalyze`（`Analyze/Input`）: 件数取得→5万超過時は中断通知→100件×4並列ページング→ID重複除去・ID順。`MaxTotalCount` 定数化
+  - `TagRankTotalReader`（`Analyze/Option/Basic`）: 基準日DBなし専用（AnalyzeDBのみ→Total取得→MovieInfo補完→全件 `Count=Total`）。SP共用クラスに手を入れないための新設（空DBダミー案は不採用）
+  - `ModeFactoryTagRank`（`Factory`）: Base有無で分岐（なし時は `BaseDay=TargetDay`）。SP相当の7種出力・履歴なし・前回CSV任意。`EAnalyzeMode.TagRank` 追加
+  - `NicoRankXml.TAG RANK`＋`Config.IsTagRank`（節単位フォールバック。項目欠落があれば週間設定）＋`依存ファイル/nicorank.xml` にTAGRANK節（SP同値）
+  - UI実行配線: タブ切替時の係数値 保存→切替→読込（不正値は切替中断）。集計スレッドからはコントロールに触れないため実行条件を `TagExecuteContext` に退避（クロススレッド例外対策）。係数 Load/Save 抽出＋`CALC_LIKE` 保存漏れ修正（従来は表示のみ）。`GetModeFactory` null・`CreateAnalyzer` false のガード追加
+- **設計判断**（詳細は `design.md` のIssue #30節）: 入力のみ差し替え・差分以降はSP流用。数値・日付・種別は `filters[]` 実証済み記法（jsonFilterのrangeは未検証のため回避）。5万規制は件数取得で中断方式。TAGRANK節は節単位切替・OFFSET系は共通
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 全165件PASS（既存136＋新規29。EXIT CODE 0）、`dotnet build nicorank2019.sln` 成功・警告0
+  - reviewerレビュー×2＋再レビュー: 中4件（`*`位置検証・TAGRANK部分欠落NRE・Query null防御・CreateAnalyzer戻り値無視）を修正、再レビューでマージ可判定。低指摘の見送り分は理由をコミットメッセージに記録
+  - ユーザー実行確認: 新DBでタグ検索件数と集計対象件数がほぼ一致することを確認後にマージ
+  - 別件切り分け（実装なし）: 当初900→90件不一致は集計実装ではなくDB側の問題と特定。2024-08-30〜2026-09-04の取得コード不具合（`flgLimit1000` 無視の常時1000制限）で作られたDBは全期間1000以上のみ。`再生数 < 1000` が0件なら旧DB。再取得で解消確認済み（低再生行1008313件）
+- **残課題**: `AnalyzeAsync` の無条件「集計成功」ログ・`TagRankAnalyze` 0件成功の扱い・辞書式ID順・`_tagMockLoaded` 命名（いずれも別Issue化推奨。低指摘見送り分）
+- **リリースノート原稿**（リリース時に転記）:
+  - タグ検索集計を使う方へ：スナップショットDBは最新版を推奨（旧DBは総合・SP集計に支障なし。タグ検索には不十分）。目安：`SELECT COUNT(*) FROM Ranking WHERE 再生数 < 1000;` が0件なら旧DB（2026-09-04より前の取得分）
+  - トラブルシューティング（件数不一致時）: 1. 1000再生フィルタ（1年超の古動画は1000以上のみ収録が仕様）2. DBの鮮度（作成日より後の投稿は未収録）3. DB作成時のエラー（前回と比べファイルサイズが著しく小さい場合は再取得）

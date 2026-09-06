@@ -59,8 +59,8 @@
 			<!--いいね数の倍率-->
 			<CALC_LIKE>20</CALC_LIKE>				
 		</POINT>
-		<RANK   Num="100" Tyouki="0"/>
-		<RANKED Num="400" />
+		<RANK   Num="30" Tyouki="0"/>
+		<RANKED Num="200" />
 		<UserInfo Num="1000" />
 		
 		<!-- タグ検索では前回結果CSVが任意のため未使用 -->

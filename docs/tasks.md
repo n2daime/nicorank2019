@@ -15,12 +15,6 @@
 
 ## 未完了タスク
 
-### タグ検索ランキング（#30）
-
-- [ ] 30.1 静的モック2〜3案（新TabPage「タグ検索集計」・Designerのみ・動作なし）で配置確定
-- [ ] 30.2 TagConditionParser＋CreateTagSearch＋TagRankAnalyze＋TAGRANK＋ModeFactoryTagRank＋UI配線
-- [ ] 30.3 specs/design更新・UnitTest・reviewer・ユーザー実行確認・マージ
-
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。
@@ -41,6 +35,8 @@
 ## 完了済みタスク（履歴）
 
 | タスク | 完了日 | 主な成果物 |
+|---|---|---|
+| タグ検索ランキング(#30)✅ | 2026-09-06 | タグ検索集計タブ（共有係数パネル・件数確認・Enter確定・上限超過時実行不可）・TagConditionParser（A&B\|C*→jsonFilter）・CreateTagSearch・TagRankAnalyze（5万判定・100件×4並列）・TagRankTotalReader（基準なし時）・ModeFactoryTagRank（SP相当・前回CSV任意・基準DB任意）・TAGRANK節（節単位フォールバック）・UnitTest29件追加（計165件）・specs/design/knowledge更新 |
 |---|---|---|
 | ランキングJSON肥大化対策(#28)✅ | 2026-09-05 | LastResult.JSON列DROP（INSERT除外＋Ver0移行でDROP）・旧SP種別行削除（両テーブル約11万行）・DBVersion導入（2DB・Ver0・逐次適用）・DbMigrationCoordinator新設（集計開始時指示・失敗時中断）・UnitTest12件追加（計136件）・specs/design/knowledge更新 |
 | result(UTF8).csv不要列削除(#29)✅ | 2026-09-05 | TextUtil動的検出化（新旧両対応・ColLmt廃止・いいね対応・タグOption・マイリストポイント含む8列は再計算のため読取対象外）・ResultCsvRankDB削除（Factory枠まで）・ResultCsv30列新順化（人気タグ4列目・運営2列削除）・UnitTest5件追加（計124件）・fixture余分列修正・specs/design/knowledge更新 |
