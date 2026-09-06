@@ -13,6 +13,7 @@ namespace nicorankLib.Analyze.model
         Tyukan,
         Daily,
         Mothly,
+        TagRank,
         Unknown
     }
 

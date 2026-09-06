@@ -15,6 +15,7 @@
 | 週刊（Weekly） | 公式週間ランキング JSON | 週次集計の本体。先週差分・長期判定あり |
 | 中間（Tyukan） | 日次ランキング JSON + Dailylog | 土日に行う仮集計。メンテ日を除外して日別集計→期間合計 |
 | SP（SP） | 動画IDリスト + スナップショットDB差分 | 半期/年間 SP 動画用 |
+| タグ検索（TagRank） | スナップショットv2ライブ検索のID列 + スナップショットDB差分 | SP相当の出力・差分方式。前回CSV任意 |
 
 ### 週刊集計の入力分岐
 
@@ -42,6 +43,16 @@
 - 総合順位（PointTotal 降順）/ 再生順位 / コメント順位 / マイリスト順位 / いいね順位 / カテゴリ順位
 - 6 種類の計算は `Task.Run` で並列実行（`RankingAnalyze.calcRanking`）。
 
+### タグ検索集計の入力（TagRank・Issue #30）
+
+- タグ条件式は `タグ1&タグ2|タグ3*` 形式。`&` は AND（優先）・`|` は OR・括弧なし。`*` なしは `tagsExact` 完全一致、`*` ありは `tags` 部分一致（`*` 自体は除去）。空条件・空トークンは入力エラー
+- タグ条件は `jsonFilter`（`equal` / `and` / `or`）に変換する。数値下限4種（再生/マイリス/いいね/コメント）・投稿日範囲・種別（long/short）は `filters[]` の実証済み記法で指定する。`q` は空・`targets` は不使用
+- 数値下限の 0・空欄、日付フィルタOFF、種別「指定なし」はいずれも「指定なし」。日付フィルタOFF時は中立期間（2000-01-01〜2100-01-01）で検索する
+- 件数取得（`_limit=0`）でヒット件数を確認し、5万件超過時は集計せず「検索結果が多すぎます。(xxx件) 50000件以下になるように条件を追加して下さい」と通知する。取得は100件ページングを4並列で行い、IDは重複除去・ID順にする
+- 前回結果CSVは任意。未指定なら前回順位なし、指定ありならSP同様に前回順位を付与する
+- 基準日DBは任意。未指定なら差分なしで集計日DBの累積値をそのまま集計値にする（`Count = Total`）。指定ありならSP同様に差分計算する。基準なし時の `BaseDay` は `TargetDay` と同値にする
+- 出力はSPと同一（履歴登録・長期判定なしの7種。上書き）
+
 ### 紹介枠（GetRank）
 
 - 紹介順位 = `Config.Rank`（既定 20 位）+ 長期動画（門番）の数だけ拡張
@@ -65,6 +76,7 @@
 
 - 実効出力は **週刊 9 種 / 中間 4 種（NRM×3 + CSV）/ SP 7 種**（HTML・WORK は未実装のまま。null を除く実数）
 - SP は `ModeFactoryWeekly` 継承。履歴登録・長期判定なし（`CreateHistory` は override で null）
+- タグ検索は `ModeFactoryTagRank`（`ModeFactoryWeekly` 継承・SP相当）。出力はSPと同一7種で上書き。履歴登録・長期判定なし。前回CSVは任意
 - 中間の `CreateNRMRank1000` は `rank1000.txt` に固定 1000 位（週刊/SP は `rank{UserNum}.txt`）
 - `result(SJIS).csv` / `result_DB登録用(UTF8).csv` / `result_DB登録用(SJIS).csv` は生成停止（他システム連携は `result_DB登録用(UTF8).json` に一本化したため。Issue #27）
 
@@ -106,7 +118,7 @@
 
 ### nicorank.xml の全設定項目
 
-`nicorank.xml` は `Config`（シングルトン）が読み込む唯一の設定ファイル。カレントディレクトリに配置（ビルド時は「依存ファイル/」からコピー）。SP モード時は `SP` 節の値に切り替わる。
+`nicorank.xml` は `Config`（シングルトン）が読み込む唯一の設定ファイル。カレントディレクトリに配置（ビルド時は「依存ファイル/」からコピー）。SP モード時は `SP` 節、タグ検索モード時は `TAGRANK` 節の値に切り替わる（節がなければ週間設定を使う）。
 
 | 要素 | 属性 | 現在値 | 意味 |
 |---|---|---|---|
@@ -116,6 +128,7 @@
 | `ICONDL_PATH` | — | ローカル設定 | ED用アイコン DL 先 |
 | `POINT` | `CALC_MYLIST` / `CALC_PLAY` / `CALC_COMMENT` / `CALC_LIKE` | 40/1/1/10（SP 20/1/1/20） | 各ポイント倍率 |
 | `SP.CheckDateOver` | — | 20170701 | lastresultSP.csv チェック用（前回 SP の集計日） |
+| `TAGRANK`（POINT/RANK/RANKED/UserInfo/CheckDateOver） | — | SP同値（CheckDateOverは未使用・空） | タグ検索モード専用設定。節がなければ週間設定を使う。OFFSET系は共通のため含まない |
 | `COMMENT_OFFSET` | `Mode` / `UnderLimit` | 2 / 0.01 | コメント補正モード・下限 |
 | `MYLIST_OFFSET` | `Mode` | 1 | マイリスト補正モード |
 | `PLAY_OFFSET` | `Mode` | 2 | 再生補正モード |
