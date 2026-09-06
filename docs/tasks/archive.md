@@ -283,7 +283,7 @@
 
 - **Release**: https://github.com/n2daime/nicorank2019/releases/tag/v20260906_tagrank（プレリリース。タグはmain HEADを指すことを確認）
 - **範囲**: v20260905_nicorank → develop（#30 タグ検索ランキングのみ）
-- **成果物**: `nicorank2019_20260906.zip` のみ（nicorank2019.exe / exe.config / nicorank.xml.org(TAGRANK節入り) / lib 4件＋runtimes 3種。DB・設定本体・pdb・Outputなし。SnapShot/oldlogは無変更のため添付なし）
+- **成果物**: `nicorank2019_20260906.zip`（nicorank2019.exe / exe.config / nicorank.xml.org(TAGRANK節入り) / lib 4件＋runtimes 3種）に加え、最新DB作成導線として `nicorank_SnapShot_20260906.zip`（exe / exe.config / lib。コード無変更・Releaseビルド成果物をホワイトリスト方式で圧縮）を後から追加添付。いずれもDB・設定本体・pdb・Outputなし。oldlogは無変更のため添付なし
 - **検証**: `dotnet test` 165件PASS、ソリューションDebugビルド＋Releaseビルド成功・警告0、`loadFromRemoteSources` 確認、`nicorank.xml` 一致（SHA256。PostBuild xcopy未反映のため手動コピーで解消）。ユーザー実行確認はタグ検索のみ（新DBで件数一致）。週間/中間/SPの回帰実行は本リリース前に実施
 - **判明した問題**: なし
 - **同期**: main → develop を `--no-ff` でバックマージ。バックマージ直後は `git diff main develop --stat` 空を確認。本エントリ追記によりdevelopが1件先行（前回リリースと同様の運用）
