@@ -35,12 +35,12 @@ namespace UnitTest.nicorankLib.Analyze.Official
         }
 
         [TestMethod]
-        public void Ver1でSoHistoryを作成しso最新行だけ移行する()
+        public void Ver1で境界より古いso行だけSoHistoryに退避する()
         {
             using (var db = TestDbHelper.CreateInMemoryDb())
             {
                 TestDbHelper.CreateRankingTable(db);
-                // so1は新旧2件→最新だけ移行、so2は1件、sm1は対象外
+                // 最新20210101起点→境界は20200102。退避対象は境界未満のみ
                 TestDbHelper.InsertRankingData(db, "so1", 20200101, 100, 10, 5, 2);
                 TestDbHelper.InsertRankingData(db, "so1", 20210101, 200, 20, 10, 4);
                 TestDbHelper.InsertRankingData(db, "so2", 20210101, 300, 30, 15, 6);
@@ -51,18 +51,18 @@ namespace UnitTest.nicorankLib.Analyze.Official
                 Assert.IsTrue(history.EnsureMigrated());
 
                 Assert.IsTrue(TableExists(db, "SoHistory"));
-                // so2件＋sm除外
-                Assert.AreEqual(2L, ScalarLong(db, "SELECT COUNT(*) FROM SoHistory;"));
+                // so1の古い行だけ退避。境界当日以降の行・smは対象外
+                Assert.AreEqual(1L, ScalarLong(db, "SELECT COUNT(*) FROM SoHistory;"));
                 Assert.AreEqual(0L, ScalarLong(db, "SELECT COUNT(*) FROM SoHistory WHERE ID='sm1';"));
-                // so1は最新の集計日・数値
+                Assert.AreEqual(0L, ScalarLong(db, "SELECT COUNT(*) FROM SoHistory WHERE ID='so2';"));
                 using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT 集計日, 再生数 FROM SoHistory WHERE ID='so1';";
                     using (var reader = cmd.ExecuteReader())
                     {
                         Assert.IsTrue(reader.Read());
-                        Assert.AreEqual(20210101, Convert.ToInt32(reader["集計日"]));
-                        Assert.AreEqual(200L, Convert.ToInt64(reader["再生数"]));
+                        Assert.AreEqual(20200101, Convert.ToInt32(reader["集計日"]));
+                        Assert.AreEqual(100L, Convert.ToInt64(reader["再生数"]));
                     }
                 }
             }
@@ -241,10 +241,10 @@ namespace UnitTest.nicorankLib.Analyze.Official
         }
 
         /// <summary>
-        /// 日次更新相当：当日分のSoHistory足し替え＋古い分の削除が同一トランザクションで確定すること。
+        /// 日次更新相当：消える行のSoHistory拾い上げ＋古い分の削除が同一トランザクションで確定すること。
         /// updateOfficialRankingDB_Daily自体はネットワーク依存のため、内部処理をリフレクションで直接呼ぶ。
         /// </summary>
-        private static void CallRefreshSoHistoryAndPrune(ISQLiteCtrl db, long analyzeDate)
+        private static void CallRefreshSoHistoryAndPrune(ISQLiteCtrl db)
         {
             using (var cmd = db.Connection.CreateCommand())
             {
@@ -255,7 +255,7 @@ namespace UnitTest.nicorankLib.Analyze.Official
                     Assert.IsNotNull(method);
                     var history = new RankingHistory(db);
                     Assert.IsTrue(history.Open());
-                    method.Invoke(history, new object[] { cmd, analyzeDate });
+                    method.Invoke(history, new object[] { cmd });
                     cmd.Transaction.Commit();
                 }
                 catch
@@ -271,7 +271,7 @@ namespace UnitTest.nicorankLib.Analyze.Official
         }
 
         [TestMethod]
-        public void 日次更新で当日soがSoHistoryに入り古い日が消える()
+        public void 日次更新で消えるso行を拾い当日分はSoHistoryに入れない()
         {
             using (var db = TestDbHelper.CreateInMemoryDb())
             {
@@ -281,32 +281,64 @@ namespace UnitTest.nicorankLib.Analyze.Official
                 // 最新20210101起点→境界は20200102。0101は消え、0102・当日が残る
                 TestDbHelper.InsertRankingData(db, "soOld", 20200101, 100, 10, 5, 2);
                 TestDbHelper.InsertRankingData(db, "smCut", 20200102, 100, 10, 5, 2);
-                TestDbHelper.InsertRankingData(db, "so1", 20210101, 200, 20, 10, 4);
+                TestDbHelper.InsertRankingData(db, "soToday", 20210101, 200, 20, 10, 4);
                 TestDbHelper.InsertRankingDateData(db, 20200101);
                 TestDbHelper.InsertRankingDateData(db, 20200102);
                 TestDbHelper.InsertRankingDateData(db, 20210101);
-                // 事前の古いSoHistory行は当日値で上書きされること
-                TestDbHelper.InsertSoHistoryData(db, "so1", 20200101, 111, 11, 6, 3);
+                // 事前の古いSoHistory行は消去行で上書きされること
+                TestDbHelper.InsertSoHistoryData(db, "soOld", 20191201, 111, 11, 6, 3);
 
-                CallRefreshSoHistoryAndPrune(db, 20210101);
+                CallRefreshSoHistoryAndPrune(db);
 
-                // 当日soがSoHistoryに足される（上書き）
+                // 消えるsoOld行がSoHistoryに拾われる（上書き）
+                using (var cmd = db.Connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT 集計日, 再生数 FROM SoHistory WHERE ID='soOld';";
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        Assert.IsTrue(reader.Read());
+                        Assert.AreEqual(20200101, Convert.ToInt32(reader["集計日"]));
+                        Assert.AreEqual(100L, Convert.ToInt64(reader["再生数"]));
+                    }
+                }
+                // 当日分・smはSoHistoryに混ざらない
+                Assert.AreEqual(0L, ScalarLong(db, "SELECT COUNT(*) FROM SoHistory WHERE ID='soToday';"));
+                Assert.AreEqual(0L, ScalarLong(db, "SELECT COUNT(*) FROM SoHistory WHERE ID='smCut';"));
+                // 古い日だけ消える
+                Assert.AreEqual(0L, ScalarLong(db, "SELECT COUNT(*) FROM Ranking WHERE 集計日=20200101;"));
+                Assert.AreEqual(1L, ScalarLong(db, "SELECT COUNT(*) FROM Ranking WHERE 集計日=20200102;"));
+                Assert.AreEqual(1L, ScalarLong(db, "SELECT COUNT(*) FROM Ranking WHERE 集計日=20210101;"));
+            }
+        }
+
+        [TestMethod]
+        public void 日次更新でSoHistoryより古い消去行では上書きしない()
+        {
+            using (var db = TestDbHelper.CreateInMemoryDb())
+            {
+                TestDbHelper.CreateRankingTable(db);
+                TestDbHelper.CreateRankingDateTable(db);
+                TestDbHelper.CreateSoHistoryTable(db);
+                TestDbHelper.InsertRankingData(db, "so1", 20200101, 100, 10, 5, 2);
+                TestDbHelper.InsertRankingDateData(db, 20200101);
+                TestDbHelper.InsertRankingDateData(db, 20210101);
+                // 入っている日付より新しい消去行だけ置き換えるため、仮に新しい行が入っていれば残る
+                TestDbHelper.InsertSoHistoryData(db, "so1", 20200105, 555, 55, 33, 11);
+
+                CallRefreshSoHistoryAndPrune(db);
+
                 using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT 集計日, 再生数 FROM SoHistory WHERE ID='so1';";
                     using (var reader = cmd.ExecuteReader())
                     {
                         Assert.IsTrue(reader.Read());
-                        Assert.AreEqual(20210101, Convert.ToInt32(reader["集計日"]));
-                        Assert.AreEqual(200L, Convert.ToInt64(reader["再生数"]));
+                        Assert.AreEqual(20200105, Convert.ToInt32(reader["集計日"]));
+                        Assert.AreEqual(555L, Convert.ToInt64(reader["再生数"]));
                     }
                 }
-                // smはSoHistoryに混ざらない
-                Assert.AreEqual(0L, ScalarLong(db, "SELECT COUNT(*) FROM SoHistory WHERE ID='smCut';"));
-                // 古い日だけ消える
+                // 消去自体は行われる
                 Assert.AreEqual(0L, ScalarLong(db, "SELECT COUNT(*) FROM Ranking WHERE 集計日=20200101;"));
-                Assert.AreEqual(1L, ScalarLong(db, "SELECT COUNT(*) FROM Ranking WHERE 集計日=20200102;"));
-                Assert.AreEqual(1L, ScalarLong(db, "SELECT COUNT(*) FROM Ranking WHERE 集計日=20210101;"));
             }
         }
 
@@ -325,7 +357,7 @@ namespace UnitTest.nicorankLib.Analyze.Official
                 TestDbHelper.InsertRankingDateData(db, 20200101);
                 TestDbHelper.InsertRankingDateData(db, 20210101);
 
-                CallRefreshSoHistoryAndPrune(db, 20210101);
+                CallRefreshSoHistoryAndPrune(db);
 
                 Assert.AreEqual(1L, ScalarLong(db, "SELECT COUNT(*) FROM Ranking;"));
                 Assert.AreEqual(1L, ScalarLong(db, "SELECT COUNT(*) FROM Ranking WHERE ID='smC';"));

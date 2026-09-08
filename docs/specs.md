@@ -32,7 +32,7 @@
 ### 差分集計と so 新着偽造判定（SabunReader・Issue #31）
 
 - 差分は LogOfficial.db の過去ランキングから取得する（`CheckSoMovieNeedSabun` / `GetRankingSabunDataLogOfficial`）。過去ログにデータがなければ差分なし
-- `CheckSoMovieNeedSabun` は `Ranking` に見つからない場合 `SoHistory`（so動画のIDごとに最新1件）の差分元で補う。どちらにもなければ差分なし。`SoHistory` 表自体がない旧DBでも新着扱いで正常終了する。`SoHistory` は最新1件のため基準日より新しい値になることがある（差分は小さめに出る方向で、新着誤除外にはならない）
+- `CheckSoMovieNeedSabun` は `Ranking` に見つからない場合 `SoHistory`（消えた行のうち最新の差分元）で補う。どちらにもなければ差分なし。`SoHistory` 表自体がない旧DBでも新着扱いで正常終了する。`SoHistory` の日付は保持境界より古いため、基準日以前の値になることが保証される。読み取りは2クエリ逐次（`Ranking` 優先・なければ `SoHistory`。結合・VIEW化は見送り）
 - 過去ログに差分が取れない so 動画（公式チャンネル）は ID 番号で新着判定する:
   - so + 数値が **40000000 未満 → 新着偽造**（非公開→再公開で過去にランクイン済みとみなし、`isDelete` で集計対象外）
   - **40000000 以上 → 新着**として通常集計
@@ -183,8 +183,8 @@
 ### SoHistory テーブル（LogOfficial.db・Issue #31）
 
 列: `ID`（so動画ID・主キー）/ `集計日`（INTEGER・yyyyMMdd）/ `再生数` / `コメント数` / `マイリスト数` / `いいね数`
-- so動画のIDごとに最新1件だけ保持する差分元。`Ranking` の古い分を消しても再公開チェックができるようにする
-- 日次更新時に当日分のso動画で足し替え、Ver1移行時に全so動画の最新行を初期移行する
+- `Ranking` から消えた行のうち最新のものだけ保持する差分元。消す直前に拾い、入っている日付より新しい消去行だけ置き換える。当日分は `Ranking` に残るため拾わない
+- 日次更新時に消去行を拾い、Ver1移行時に保持境界より古い行の最新を初期退避する（境界当日以降は退避しない）
 
 ### Movie テーブル（LogOfficial.db・Issue #31で廃止）
 

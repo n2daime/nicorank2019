@@ -196,9 +196,10 @@ namespace nicorankLib.Analyze.Official
         }
 
         /// <summary>
-        /// Ver1移行：SoHistoryの作成＋so最新行の初期移行＋古いRankingの削除＋Movie廃止＋最適化。
+        /// Ver1移行：SoHistoryの作成＋消える行の初期退避＋古いRankingの削除＋Movie廃止＋最適化。
+        /// SoHistoryにはRankingから消えた行のうち最新のものだけを入れる（prune駆動）。
         /// データ量が多いため一括トランザクションにせず、日付区切りで少しずつ確定する。
-        /// どの段階もやり直し可能（SoHistory移行はREPLACE、削除とDROPはIF EXISTS系）。
+        /// どの段階もやり直し可能（退避はIGNORE・条件付き置換、削除とDROPはIF EXISTS系）。
         /// バージョン記録は全工程の成功後に呼び出し側が行う。
         /// </summary>
         private bool MigrateToVersion1()
@@ -208,11 +209,12 @@ namespace nicorankLib.Analyze.Official
                 EnsureSoHistoryTable();
                 EnsureRankingDateIndex();
 
-                BackfillSoHistory();
+                long? cutoff = GetRetentionCutoff();
+                BackfillSoHistory(cutoff);
 
                 DropMovieTableIfExists();
 
-                if (!PruneOldRankingsChunked())
+                if (!PruneOldRankingsChunked(cutoff))
                 {
                     return false;
                 }
@@ -268,16 +270,24 @@ namespace nicorankLib.Analyze.Official
         }
 
         /// <summary>
-        /// 全so動画の最新1件をSoHistoryに移す。新しい集計日から順に登録し、
-        /// 登録済みIDは無視するため最新1件が残る（再実行時も同結果で冪等）。
+        /// 消える行（保持境界より古い）のうち、so動画の最新1件をSoHistoryに退避する。
+        /// 新しい集計日から順に登録し、登録済みIDは無視するため境界より古い最新1件が残る
+        /// （再実行時も同結果で冪等）。境界当日以降の行はRankingに残るため退避しない。
         /// 1回分の確定を小さくするため集計日区切りで少しずつ入れる。
         /// </summary>
-        private void BackfillSoHistory()
+        /// <param name="cutoff">保持境界（この値未満を退避・削除）。データがなければnull</param>
+        private void BackfillSoHistory(long? cutoff)
         {
+            if (!cutoff.HasValue)
+            {
+                return;
+            }
+
             var targetDates = new List<long>();
             using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
             {
-                aCmd.CommandText = "SELECT DISTINCT 集計日 FROM Ranking WHERE ID LIKE 'so%' ORDER BY 集計日 DESC;";
+                aCmd.CommandText = "SELECT DISTINCT 集計日 FROM Ranking WHERE ID LIKE 'so%' AND 集計日 < @Cutoff ORDER BY 集計日 DESC;";
+                aCmd.Parameters.AddWithValue("@Cutoff", cutoff.Value);
                 using (var reader = aCmd.ExecuteReader())
                 {
                     while (reader.Read())
@@ -330,10 +340,10 @@ namespace nicorankLib.Analyze.Official
         /// <summary>
         /// 保持境界より古いRankingを集計日区切りで少しずつ消す。境界当日は残す。
         /// </summary>
+        /// <param name="cutoff">保持境界（この値未満を削除）。データがなければnull</param>
         /// <returns>正常終了時true、失敗時false</returns>
-        private bool PruneOldRankingsChunked()
+        private bool PruneOldRankingsChunked(long? cutoff)
         {
-            long? cutoff = GetRetentionCutoff();
             if (!cutoff.HasValue)
             {
                 // データがなければ消すものなし
@@ -486,9 +496,9 @@ namespace nicorankLib.Analyze.Official
 
                     if (ranking == null && SoHistoryExists())
                     {
-                        // 1年保持で古いRankingが消えている場合、SoHistoryの最新1件を差分元にする。
-                        // SoHistoryは基準日より新しい値になることがあるが、差分は小さめに出る方向のため
-                        // 新着誤除外にはならない。なければ新着扱い（ranking=nullのまま）
+                        // 1年保持で古いRankingが消えている場合、SoHistory（消えた行のうち最新）を差分元にする。
+                        // SoHistoryの日付は保持境界より古いため、基準日以前の値になることが保証される。
+                        // なければ新着扱い（ranking=nullのまま）
                         aCmd.Parameters.Clear();
                         aCmd.CommandText =
                             $"select 再生数, コメント数, マイリスト数, いいね数 from {SoHistoryTable} " +
@@ -895,9 +905,9 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
 
                     if (!isMaintenance)
                     {
-                        // 当日分のso動画でSoHistoryを足し替え、古いRankingを消す。
+                        // 消える行をSoHistoryに拾ってから古いRankingを消す。
                         // 同一日次トランザクションに同梱する（日次単位は維持する）
-                        RefreshSoHistoryAndPrune(aCmd, analyzeDate);
+                        RefreshSoHistoryAndPrune(aCmd);
                     }
 
 
@@ -917,12 +927,14 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
         }
 
         /// <summary>
-        /// 当日分のso動画でSoHistoryを足し替え、保持境界より古いRankingを消す。
+        /// 消える行（保持境界より古い）のうちso動画をSoHistoryに拾ってから、古いRankingを消す。
+        /// SoHistoryには消えた行のうち最新のものだけを残す（入っている日付より新しい消去行だけ置き換える）。
+        /// 当日分の上書きはしない（当日分はRankingに残るため差分元として不要で、置き換えると
+        /// 基準日より新しい値になり再公開チェックが効かなくなる）。
         /// 日次トランザクションの中から呼ぶ（VACUUMはしない）。
         /// </summary>
         /// <param name="aCmd">日次トランザクション実行中のコマンド</param>
-        /// <param name="analyzeDate">当日（yyyyMMdd）。SoHistory足し替えの対象日</param>
-        private void RefreshSoHistoryAndPrune(SqliteCommand aCmd, long analyzeDate)
+        private void RefreshSoHistoryAndPrune(SqliteCommand aCmd)
         {
             // SoHistoryがなければ作る（移行前のDBで日次更新だけ走った場合の保険）
             aCmd.CommandText =
@@ -939,19 +951,23 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
             aCmd.CommandText = $"CREATE INDEX IF NOT EXISTS {RankingDateIndex} ON Ranking (集計日);";
             aCmd.ExecuteNonQuery();
 
-            // 当日登録したso動画の分だけSoHistoryを最新化する（当日が最新のため置き換えでよい）
-            aCmd.CommandText =
-                $"INSERT OR REPLACE INTO {SoHistoryTable} (ID, 集計日, 再生数, コメント数, マイリスト数, いいね数) " +
-                "SELECT ID, 集計日, 再生数, コメント数, マイリスト数, いいね数 FROM Ranking " +
-                "WHERE 集計日 = @Today AND ID LIKE 'so%';";
-            aCmd.Parameters.Clear();
-            aCmd.Parameters.AddWithValue("@Today", analyzeDate);
-            aCmd.ExecuteNonQuery();
-
             // 保持境界より古い分を消す（境界当日は残す）。1日分ずつのため1文で足りる
             long? cutoff = GetRetentionCutoffInTransaction(aCmd);
             if (cutoff.HasValue)
             {
+                // 消す直前にso動画の分だけ拾う。入っている日付より新しい消去行だけ置き換える
+                aCmd.CommandText =
+                    $"INSERT INTO {SoHistoryTable} (ID, 集計日, 再生数, コメント数, マイリスト数, いいね数) " +
+                    "SELECT ID, 集計日, 再生数, コメント数, マイリスト数, いいね数 FROM Ranking " +
+                    "WHERE 集計日 < @Cutoff AND ID LIKE 'so%' " +
+                    "ON CONFLICT(ID) DO UPDATE SET " +
+                    "集計日=excluded.集計日, 再生数=excluded.再生数, コメント数=excluded.コメント数, " +
+                    "マイリスト数=excluded.マイリスト数, いいね数=excluded.いいね数 " +
+                    $"WHERE excluded.集計日 > {SoHistoryTable}.集計日;";
+                aCmd.Parameters.Clear();
+                aCmd.Parameters.AddWithValue("@Cutoff", cutoff.Value);
+                aCmd.ExecuteNonQuery();
+
                 aCmd.CommandText = "DELETE FROM Ranking WHERE 集計日 < @Cutoff;";
                 aCmd.Parameters.Clear();
                 aCmd.Parameters.AddWithValue("@Cutoff", cutoff.Value);

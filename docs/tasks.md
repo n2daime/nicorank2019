@@ -23,6 +23,7 @@
 - [ ] 3.2 日次prune（日次txn維持・同日txnに同梱・VACUUMなし）＋CheckSoMovieNeedSabunのSoHistoryフォールバック
 - [ ] 3.3 Movie整理（削除キー確定・デッドコード削除範囲確定）
 - [ ] 3.4 specs/design/knowledge更新・単体テスト追加・reviewerレビュー・ユーザー実行確認（マージは保留）
+- [ ] 3.5 実DBの破損対応（2026-09-08試行でRanking表の一部破損を検出・integrity_checkで確定。復旧手順確立後に移行再試行。破損時の案内文改善を含む）
 
 ### テスト拡充（集計ロジック）
 
