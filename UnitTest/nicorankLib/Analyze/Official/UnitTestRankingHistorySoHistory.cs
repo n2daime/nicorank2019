@@ -285,15 +285,24 @@ namespace UnitTest.nicorankLib.Analyze.Official
                 TestDbHelper.InsertRankingDateData(db, 20200101);
                 TestDbHelper.InsertRankingDateData(db, 20200102);
                 TestDbHelper.InsertRankingDateData(db, 20210101);
+                // 事前の古いSoHistory行は当日値で上書きされること
+                TestDbHelper.InsertSoHistoryData(db, "so1", 20200101, 111, 11, 6, 3);
 
                 CallRefreshSoHistoryAndPrune(db, 20210101);
 
-                // 当日soがSoHistoryに足される
+                // 当日soがSoHistoryに足される（上書き）
                 using (var cmd = db.Connection.CreateCommand())
                 {
-                    cmd.CommandText = "SELECT 再生数 FROM SoHistory WHERE ID='so1';";
-                    Assert.AreEqual(200L, cmd.ExecuteScalar());
+                    cmd.CommandText = "SELECT 集計日, 再生数 FROM SoHistory WHERE ID='so1';";
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        Assert.IsTrue(reader.Read());
+                        Assert.AreEqual(20210101, Convert.ToInt32(reader["集計日"]));
+                        Assert.AreEqual(200L, Convert.ToInt64(reader["再生数"]));
+                    }
                 }
+                // smはSoHistoryに混ざらない
+                Assert.AreEqual(0L, ScalarLong(db, "SELECT COUNT(*) FROM SoHistory WHERE ID='smCut';"));
                 // 古い日だけ消える
                 Assert.AreEqual(0L, ScalarLong(db, "SELECT COUNT(*) FROM Ranking WHERE 集計日=20200101;"));
                 Assert.AreEqual(1L, ScalarLong(db, "SELECT COUNT(*) FROM Ranking WHERE 集計日=20200102;"));

@@ -208,7 +208,6 @@ namespace nicorankLib.Analyze.Official
                 EnsureSoHistoryTable();
                 EnsureRankingDateIndex();
 
-                StatusLog.WriteLine("公式動画の差分元を退避しています...");
                 BackfillSoHistory();
 
                 DropMovieTableIfExists();
