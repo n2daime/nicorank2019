@@ -17,7 +17,9 @@
 - **Ranking**: `ID` / `集計日`（INTEGER・yyyyMMdd）/ `再生数` / `コメント数` / `マイリスト数` / `いいね数` / `人気のタグ`（JSON文字列）
   - 実スキーマは `PRIMARY KEY(ID, 集計日)`（同一動画の日別履歴）。コード内に `CREATE TABLE Ranking` はなく持込みDBが前提。ID点照会は複合PKのインデックス経路を使う
   - いいね数は ALTER TABLE で自動追加（無い場合のみ）
-- **Movie**: 削除・非表示動画専用の記録（通常動画は `Ranking` へ、削除動画のみ `Movie` へ登録）。読み側は `GenreAnalyze` のみで現在は呼出元なし
+  - 直近の保持期間分だけ残し、古い日は日次更新時に削除する（境界当日は残す）。境界は `RankingDate` のMAX起点。`集計日` の索引（prune用）を恒久化している
+- **SoHistory**: `ID`（so動画ID・主キー）/ `集計日` / `再生数` / `コメント数` / `マイリスト数` / `いいね数`（Issue #31）。soのIDごとに最新1件だけ保持する差分元
+- **Movie**: Issue #31で廃止（Ver1移行でDROP）。廃止後にファイル内の表が残っていても読み書きされない（消してもよい）
 - **RankingDate**: 集計日とメンテナンスフラグ。`CheckMaintananceDay` でメンテ日判定＋更新再開位置のしおり（`Max(集計日)+1` から日別取得）。初期値 20190610
 - **DBVersion**: `Ver` INTEGER（Issue #28。旧DBはテーブルなし→Ver0扱い。集計開始時の自動移行でVer=0を1行追加）
 - 更新フロー: 集計開始時に `DbMigrationCoordinator` が LogOfficial→NicoranHistory の順に更新確認（失敗時は中断）→ `UpdateOfficialRankingDB()` が RankingDate の `Max(集計日)+1` から今日までを日別取得。データ 0 件の日はメンテナンス日として登録（UI で確認）

@@ -29,9 +29,10 @@
 - `Ranking.FavoriteTags` は `List<string>` で挿入順を保持する（人気タグ→タグロック定義順）
 - 出力: `Ranking.GetDisplayTags()` が挿入順のままカテゴリ名と同名のタグを除外する（`Trim` 後完全一致。空カテゴリは除外なし）。ファイル別の件数制限は `NrmOutput` の上限パラメータで行う（TSV系は3件。`result(UTF8).csv`・`result_DB登録用(UTF8).json` のみ全件）。Issue #28で見直しなしを確定し全件仕様を維持する
 
-### 差分集計と so 新着偽造判定（SabunReader）
+### 差分集計と so 新着偽造判定（SabunReader・Issue #31）
 
 - 差分は LogOfficial.db の過去ランキングから取得する（`CheckSoMovieNeedSabun` / `GetRankingSabunDataLogOfficial`）。過去ログにデータがなければ差分なし
+- `CheckSoMovieNeedSabun` は `Ranking` に見つからない場合 `SoHistory`（so動画のIDごとに最新1件）の差分元で補う。どちらにもなければ差分なし。`SoHistory` 表自体がない旧DBでも新着扱いで正常終了する
 - 過去ログに差分が取れない so 動画（公式チャンネル）は ID 番号で新着判定する:
   - so + 数値が **40000000 未満 → 新着偽造**（非公開→再公開で過去にランクイン済みとみなし、`isDelete` で集計対象外）
   - **40000000 以上 → 新着**として通常集計
@@ -165,21 +166,30 @@
 
 | DB ファイル | 定数 | 用途 |
 |---|---|---|
-| `DB/LogOfficial.db` | `LOG_OFFICEIAL` | 公式過去ランキング（Ranking / Movie / RankingDate） |
+| `DB/LogOfficial.db` | `LOG_OFFICEIAL` | 公式過去ランキング（Ranking / RankingDate / SoHistory） |
 | `DB/NicoranHistory.db` | `NiCORAN_HISTORY` | 集計履歴（History / LastResult / LastResultInfo） |
 | `DB/ApiXML.db` | — | NicoApi キャッシュ（NicovideoThumb） |
 | `DB/Dailylog.db` | — | 中間集計の日別キャッシュ（Dailylog） |
 | `LogSnapshot{yyyyMMdd}.db` | `LOG_SNAPSHOT` | スナップショット DB（Ranking / DBVersion）。nicorank_SnapShot が日次作成 |
 
-### Ranking テーブル（LogOfficial.db）
+### Ranking テーブル（LogOfficial.db・Issue #31）
 
 列: `ID`（動画ID）/ `集計日`（INTEGER・yyyyMMdd）/ `再生数` / `コメント数` / `マイリスト数` / `いいね数` / `人気のタグ`（JSON文字列）
 - 集計日は主キーの一部（同一動画の日別履歴を持つ）
 - いいね数は ALTER TABLE で自動追加される（ない場合のみ）
+- 直近の保持期間分だけ残し、それより古い日は日次更新時に削除する（境界当日は残す）。境界はDB内の最新集計日を起点にさかのぼって決める
+- `集計日` の索引を持ち、日付削除に使う
 
-### Movie テーブル（LogOfficial.db）
+### SoHistory テーブル（LogOfficial.db・Issue #31）
 
-動画の基本情報（ID / タイトル / 投稿日時等）。Ranking と JOIN して使用。
+列: `ID`（so動画ID・主キー）/ `集計日`（INTEGER・yyyyMMdd）/ `再生数` / `コメント数` / `マイリスト数` / `いいね数`
+- so動画のIDごとに最新1件だけ保持する差分元。`Ranking` の古い分を消しても再公開チェックができるようにする
+- 日次更新時に当日分のso動画で足し替え、Ver1移行時に全so動画の最新行を初期移行する
+
+### Movie テーブル（LogOfficial.db・Issue #31で廃止）
+
+- Ver1移行で `DROP TABLE IF EXISTS` により廃止する。読み手（`GenreAnalyze`）は呼出元なし、日次更新での書込みも行わない
+- 廃止後に表が残っていても読み書きされない
 
 ### RankingDate テーブル（LogOfficial.db）
 

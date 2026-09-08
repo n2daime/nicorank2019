@@ -15,6 +15,15 @@
 
 ## 未完了タスク
 
+### LogOfficial.db肥大化対策（#31）
+
+> 依存: #28 DBVersion移行基盤・#32 VACUUMタブ（#31完了後に着手）。対象: `nicorankLib/Analyze/Official/RankingHistory.cs`・`SabunReader.cs`・`SoHistory` 新設・`Movie` 整理。受け入れ条件: 1年保持＋SoHistoryフォールバックで週刊差分が維持されること・テスト＋ビルド成功・reviewer再レビューで問題なし・ユーザー実行確認済み。**`develop` へのマージは対策前後2環境の1ヶ月週刊比較後（ユーザー指示があるまでマージしない）**
+
+- [ ] 3.1 SoHistory新設＋Ver1移行（初期移行・初期prune・初回のみVACUUM）
+- [ ] 3.2 日次prune（日次txn維持・同日txnに同梱・VACUUMなし）＋CheckSoMovieNeedSabunのSoHistoryフォールバック
+- [ ] 3.3 Movie整理（削除キー確定・デッドコード削除範囲確定）
+- [ ] 3.4 specs/design/knowledge更新・単体テスト追加・reviewerレビュー・ユーザー実行確認（マージは保留）
+
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。

@@ -243,7 +243,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Analyze\Input\GenreAnalyze.cs" />
     <Compile Include="Analyze\Input\Json\JsonReaderBase.cs" />
     <Compile Include="Analyze\Input\Json\JsonReaderDaily.cs" />
     <Compile Include="Analyze\Input\Json\JsonReaderMonthly.cs" />

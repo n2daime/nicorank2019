@@ -88,7 +88,7 @@ namespace UnitTest.nicorankLib.Util
         }
 
         [TestMethod]
-        public void RankingHistoryはDBVersionをVer0で作成し冪等である()
+        public void RankingHistoryはDBVersionをVer1で作成し冪等である()
         {
             using (var db = TestDbHelper.CreateInMemoryDb())
             {
@@ -100,7 +100,7 @@ namespace UnitTest.nicorankLib.Util
                 using (var cmd = db.Connection.CreateCommand())
                 {
                     cmd.CommandText = "SELECT Ver FROM DBVersion LIMIT 1;";
-                    Assert.AreEqual(0L, cmd.ExecuteScalar());
+                    Assert.AreEqual(1L, cmd.ExecuteScalar());
                 }
 
                 // 2回目は冪等

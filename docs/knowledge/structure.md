@@ -58,7 +58,7 @@ UnitTest ──→ nicorankLib を net48 で直接テスト（インメモリ SQ
 1. **UI / 実行**: `frmMain` / `frmMainSyukei`（WinForms）— モード選択 → ファクトリ取得 → 非同期解析
 2. **ファクトリ**: `ModeFactoryBase`（基底）/ `ModeFactoryWeekly` / `ModeFactoryTyukan` / `ModeFactroySP` — モードに合わせた入力セットアップと出力生成
 3. **集計**: `RankingAnalyze` — パイプライン制御（Input → BasicOption → calcRanking → ExtOption）
-4. **入力**: `JsonReader*`（公式ランキング JSON）/ `SPAnalyze`（IDリスト）/ `TyukanAnalyze`（中間）/ `GenreAnalyze`（ジャンル特化）
+4. **入力**: `JsonReader*`（公式ランキング JSON）/ `SPAnalyze`（IDリスト）/ `TyukanAnalyze`（中間）/ `TagRankAnalyze`（タグ検索）
 5. **過去データ管理**: `RankingHistory` — LogOfficial.db の更新・参照、メンテ日判定
 6. **出力**: `OutputBase` 派生（`NrmOutput` / `ResultCsv` / `ResultJsonRankDB` / `ResultImageget*` / `ResultHistory`）
 7. **ユーティリティ**: `Config`（設定シングルトン）/ `StatusLog` / `ErrLog` / `SQLiteCtrl` / `ISQLiteCtrl` / `TextUtil` 等
