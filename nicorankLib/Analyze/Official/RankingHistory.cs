@@ -269,19 +269,51 @@ namespace nicorankLib.Analyze.Official
         }
 
         /// <summary>
-        /// 全so動画の最新1件をSoHistoryに移す。すでに新しい行があれば置き換えない。
+        /// 全so動画の最新1件をSoHistoryに移す。新しい集計日から順に登録し、
+        /// 登録済みIDは無視するため最新1件が残る（再実行時も同結果で冪等）。
+        /// 1回分の確定を小さくするため集計日区切りで少しずつ入れる。
         /// </summary>
         private void BackfillSoHistory()
         {
+            var targetDates = new List<long>();
             using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
             {
-                // 同一IDの最新集計日だけを対象にする。ID先頭がsoの行のみ
-                aCmd.CommandText =
-                    $"INSERT OR REPLACE INTO {SoHistoryTable} (ID, 集計日, 再生数, コメント数, マイリスト数, いいね数) " +
-                    "SELECT ID, 集計日, 再生数, コメント数, マイリスト数, いいね数 FROM Ranking AS r " +
-                    "WHERE ID LIKE 'so%' AND 集計日 = (SELECT MAX(集計日) FROM Ranking WHERE ID = r.ID);";
-                aCmd.ExecuteNonQuery();
+                aCmd.CommandText = "SELECT DISTINCT 集計日 FROM Ranking WHERE ID LIKE 'so%' ORDER BY 集計日 DESC;";
+                using (var reader = aCmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        targetDates.Add(Convert.ToInt64(reader["集計日"]));
+                    }
+                }
             }
+
+            if (targetDates.Count < 1)
+            {
+                return;
+            }
+
+            StatusLog.WriteLine($"公式動画の差分元を退避しています（{targetDates.Count}日分）...");
+            int done = 0;
+            using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
+            {
+                foreach (var date in targetDates)
+                {
+                    aCmd.Parameters.Clear();
+                    aCmd.Parameters.AddWithValue("@Date", date);
+                    aCmd.CommandText =
+                        $"INSERT OR IGNORE INTO {SoHistoryTable} (ID, 集計日, 再生数, コメント数, マイリスト数, いいね数) " +
+                        "SELECT ID, 集計日, 再生数, コメント数, マイリスト数, いいね数 FROM Ranking " +
+                        "WHERE 集計日 = @Date AND ID LIKE 'so%';";
+                    aCmd.ExecuteNonQuery();
+                    done++;
+                    if (done % 100 == 0)
+                    {
+                        StatusLog.WriteLine($"退避中... ({done}/{targetDates.Count}日)");
+                    }
+                }
+            }
+            StatusLog.WriteLine("公式動画の差分元の退避が終わりました。");
         }
 
         /// <summary>
@@ -456,7 +488,8 @@ namespace nicorankLib.Analyze.Official
                     if (ranking == null && SoHistoryExists())
                     {
                         // 1年保持で古いRankingが消えている場合、SoHistoryの最新1件を差分元にする。
-                        // なければ新着扱い（ranking=nullのまま）。表自体がなければ何もしない
+                        // SoHistoryは基準日より新しい値になることがあるが、差分は小さめに出る方向のため
+                        // 新着誤除外にはならない。なければ新着扱い（ranking=nullのまま）
                         aCmd.Parameters.Clear();
                         aCmd.CommandText =
                             $"select 再生数, コメント数, マイリスト数, いいね数 from {SoHistoryTable} " +
@@ -865,7 +898,7 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
                     {
                         // 当日分のso動画でSoHistoryを足し替え、古いRankingを消す。
                         // 同一日次トランザクションに同梱する（日次単位は維持する）
-                        RefreshSoHistoryAndPrune(aCmd);
+                        RefreshSoHistoryAndPrune(aCmd, analyzeDate);
                     }
 
 
@@ -889,7 +922,8 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
         /// 日次トランザクションの中から呼ぶ（VACUUMはしない）。
         /// </summary>
         /// <param name="aCmd">日次トランザクション実行中のコマンド</param>
-        private void RefreshSoHistoryAndPrune(SqliteCommand aCmd)
+        /// <param name="analyzeDate">当日（yyyyMMdd）。SoHistory足し替えの対象日</param>
+        private void RefreshSoHistoryAndPrune(SqliteCommand aCmd, long analyzeDate)
         {
             // SoHistoryがなければ作る（移行前のDBで日次更新だけ走った場合の保険）
             aCmd.CommandText =
@@ -912,7 +946,7 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
                 "SELECT ID, 集計日, 再生数, コメント数, マイリスト数, いいね数 FROM Ranking " +
                 "WHERE 集計日 = @Today AND ID LIKE 'so%';";
             aCmd.Parameters.Clear();
-            aCmd.Parameters.AddWithValue("@Today", GetLatestDateInTransaction(aCmd));
+            aCmd.Parameters.AddWithValue("@Today", analyzeDate);
             aCmd.ExecuteNonQuery();
 
             // 保持境界より古い分を消す（境界当日は残す）。1日分ずつのため1文で足りる
@@ -925,16 +959,6 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
                 aCmd.ExecuteNonQuery();
             }
             aCmd.Parameters.Clear();
-        }
-
-        /// <summary>
-        /// トランザクション内から見た最新の集計日（RankingDateのMAX。未確定の当日を含む）。
-        /// </summary>
-        private long GetLatestDateInTransaction(SqliteCommand aCmd)
-        {
-            aCmd.CommandText = "SELECT MAX(集計日) FROM RankingDate;";
-            aCmd.Parameters.Clear();
-            return Convert.ToInt64(aCmd.ExecuteScalar());
         }
 
         /// <summary>

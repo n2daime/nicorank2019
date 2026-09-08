@@ -4,7 +4,7 @@
 
 | DB ファイル | 定数（DB.cs） | 用途 | 作成・更新元 |
 |---|---|---|---|
-| `DB/LogOfficial.db` | `LOG_OFFICEIAL` | 公式過去ランキング（Ranking / Movie / RankingDate） | RankingHistory（nicorank2019 起動時） |
+| `DB/LogOfficial.db` | `LOG_OFFICEIAL` | 公式過去ランキング（Ranking / RankingDate / SoHistory） | RankingHistory（nicorank2019 起動時） |
 | `DB/NicoranHistory.db` | `NiCORAN_HISTORY` | 集計履歴（History / LastResult / LastResultInfo） | ResultHistory / LastRankReader / TyokiHantei |
 | `DB/ApiXML.db` | — | NicoApi 動画情報キャッシュ（NicovideoThumb） | NicoApi |
 | `DB/Dailylog.db` | — | 中間集計の日別キャッシュ（Dailylog） | TyukanAnalyze |
