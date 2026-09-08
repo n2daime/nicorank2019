@@ -203,6 +203,63 @@ namespace UnitTest.nicorankLib.Analyze.Official
         }
 
         [TestMethod]
+        public void Ver1移行で境界以降のSoHistory混入行を清掃する()
+        {
+            using (var db = TestDbHelper.CreateInMemoryDb())
+            {
+                TestDbHelper.CreateRankingTable(db);
+                TestDbHelper.CreateSoHistoryTable(db);
+                // 最新20210101起点→境界は20200102
+                TestDbHelper.InsertRankingData(db, "so1", 20200101, 100, 10, 5, 2);
+                TestDbHelper.InsertRankingData(db, "so1", 20210101, 200, 20, 10, 4);
+                // 旧方式の混入行（境界当日以降）と休眠IDの正規行
+                TestDbHelper.InsertSoHistoryData(db, "so1", 20210101, 200, 20, 10, 4);
+                TestDbHelper.InsertSoHistoryData(db, "so9", 20200101, 111, 11, 6, 3);
+
+                var history = new RankingHistory(db);
+                Assert.IsTrue(history.Open());
+                Assert.IsTrue(history.EnsureMigrated());
+
+                // 混入行は消え、休眠IDの行は残る。so1は退避で正規行に戻る
+                using (var cmd = db.Connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT 集計日, 再生数 FROM SoHistory WHERE ID='so1';";
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        Assert.IsTrue(reader.Read());
+                        Assert.AreEqual(20200101, Convert.ToInt32(reader["集計日"]));
+                        Assert.AreEqual(100L, Convert.ToInt64(reader["再生数"]));
+                    }
+                }
+                Assert.AreEqual(1L, ScalarLong(db, "SELECT COUNT(*) FROM SoHistory WHERE ID='so9';"));
+                Assert.AreEqual(0L, ScalarLong(db, "SELECT COUNT(*) FROM SoHistory WHERE 集計日 >= 20200102;"));
+            }
+        }
+
+        [TestMethod]
+        public void CheckSoMovieNeedSabunは基準日より新しいSoHistory行を使わない()
+        {
+            using (var db = TestDbHelper.CreateInMemoryDb())
+            {
+                TestDbHelper.CreateRankingTable(db);
+                TestDbHelper.CreateSoHistoryTable(db);
+                TestDbHelper.InsertRankingData(db, "sm9", 20210101, 10, 1, 1, 1);
+                TestDbHelper.InsertSoHistoryData(db, "so1", 20200101, 500, 50, 25, 10);
+
+                var history = new RankingHistory(db);
+                Assert.IsTrue(history.Open());
+
+                // 基準日がSoHistory行より古い再集計では使わない（新着扱い）
+                Assert.IsTrue(history.CheckSoMovieNeedSabun("so1", 20191201, out var oldRanking));
+                Assert.IsNull(oldRanking);
+                // 通常の直近基準日では使う
+                Assert.IsTrue(history.CheckSoMovieNeedSabun("so1", 20210101, out var ranking));
+                Assert.IsNotNull(ranking);
+                Assert.AreEqual(500L, ranking.CountPlay);
+            }
+        }
+
+        [TestMethod]
         public void CheckSoMovieNeedSabunはSoHistory表なしでも新着扱いで成功する()
         {
             using (var db = TestDbHelper.CreateInMemoryDb())

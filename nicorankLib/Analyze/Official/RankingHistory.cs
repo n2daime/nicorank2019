@@ -196,7 +196,7 @@ namespace nicorankLib.Analyze.Official
         }
 
         /// <summary>
-        /// Ver1移行：SoHistoryの作成＋消える行の初期退避＋古いRankingの削除＋Movie廃止＋最適化。
+        /// Ver1移行：SoHistoryの作成＋消える行の初期退避＋境界以降の混入行の清掃＋古いRankingの削除＋Movie廃止＋最適化。
         /// SoHistoryにはRankingから消えた行のうち最新のものだけを入れる（prune駆動）。
         /// データ量が多いため一括トランザクションにせず、日付区切りで少しずつ確定する。
         /// どの段階もやり直し可能（退避はIGNORE・条件付き置換、削除とDROPはIF EXISTS系）。
@@ -210,6 +210,7 @@ namespace nicorankLib.Analyze.Official
                 EnsureRankingDateIndex();
 
                 long? cutoff = GetRetentionCutoff();
+                CleanupSoHistoryAboveCutoff(cutoff);
                 BackfillSoHistory(cutoff);
 
                 DropMovieTableIfExists();
@@ -323,6 +324,26 @@ namespace nicorankLib.Analyze.Official
                 }
             }
             StatusLog.WriteLine("公式動画の差分元の退避が終わりました。");
+        }
+
+        /// <summary>
+        /// 保持境界以降の日付のSoHistory行があれば消す。旧方式（当日上書き）で混入した行の清掃用。
+        /// SoHistoryは数十万行と小さく安価。冪等。
+        /// </summary>
+        /// <param name="cutoff">保持境界（この値以上を清掃）。データがなければnull</param>
+        private void CleanupSoHistoryAboveCutoff(long? cutoff)
+        {
+            if (!cutoff.HasValue)
+            {
+                return;
+            }
+
+            using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
+            {
+                aCmd.CommandText = $"DELETE FROM {SoHistoryTable} WHERE 集計日 >= @Cutoff;";
+                aCmd.Parameters.AddWithValue("@Cutoff", cutoff.Value);
+                aCmd.ExecuteNonQuery();
+            }
         }
 
         /// <summary>
@@ -497,15 +518,16 @@ namespace nicorankLib.Analyze.Official
                     if (ranking == null && SoHistoryExists())
                     {
                         // 1年保持で古いRankingが消えている場合、SoHistory（消えた行のうち最新）を差分元にする。
-                        // SoHistoryの日付は保持境界より古いため、基準日以前の値になることが保証される。
+                        // 基準日以前の行だけ使う（基準日より新しい行が混ざっていても無視する）。
                         // なければ新着扱い（ranking=nullのまま）
                         aCmd.Parameters.Clear();
                         aCmd.CommandText =
                             $"select 再生数, コメント数, マイリスト数, いいね数 from {SoHistoryTable} " +
-                            "Where ID = @ID " +
+                            "Where ID = @ID and 集計日 <= @Date " +
                             "Limit 1 ";
 
                         aCmd.Parameters.AddWithValue("@ID", id);
+                        aCmd.Parameters.AddWithValue("@Date", baseTime);
 
                         using (var reader = aCmd.ExecuteReader())
                         {

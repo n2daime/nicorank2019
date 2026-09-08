@@ -32,7 +32,7 @@
 ### 差分集計と so 新着偽造判定（SabunReader・Issue #31）
 
 - 差分は LogOfficial.db の過去ランキングから取得する（`CheckSoMovieNeedSabun` / `GetRankingSabunDataLogOfficial`）。過去ログにデータがなければ差分なし
-- `CheckSoMovieNeedSabun` は `Ranking` に見つからない場合 `SoHistory`（消えた行のうち最新の差分元）で補う。どちらにもなければ差分なし。`SoHistory` 表自体がない旧DBでも新着扱いで正常終了する。`SoHistory` の日付は保持境界より古いため、基準日以前の値になることが保証される。読み取りは2クエリ逐次（`Ranking` 優先・なければ `SoHistory`。結合・VIEW化は見送り）
+- `CheckSoMovieNeedSabun` は `Ranking` に見つからない場合 `SoHistory`（消えた行のうち最新の差分元）で補う。どちらにもなければ差分なし。`SoHistory` 表自体がない旧DBでも新着扱いで正常終了する。問合せは基準日以前の行だけ使う（基準日より新しい行が混ざっていても無視する）。通常の集計では基準日は直近のため、過去期間の再集計は運用外とする。読み取りは2クエリ逐次（`Ranking` 優先・なければ `SoHistory`。結合・VIEW化は見送り）
 - 過去ログに差分が取れない so 動画（公式チャンネル）は ID 番号で新着判定する:
   - so + 数値が **40000000 未満 → 新着偽造**（非公開→再公開で過去にランクイン済みとみなし、`isDelete` で集計対象外）
   - **40000000 以上 → 新着**として通常集計
