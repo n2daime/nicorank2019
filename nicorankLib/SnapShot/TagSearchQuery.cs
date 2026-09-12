@@ -26,5 +26,11 @@ namespace nicorankLib.SnapShot
         public DateTime StartLt { get; set; }
         /// <summary>動画種別（null・long・short）</summary>
         public string ContentType { get; set; } = null;
+        /// <summary>
+        /// スナップショットv2の最新値をそのまま集計値に使うか。
+        /// trueなら集計日DBを使わず、ライブ検索で得た4数値を累積値として採用する（UIのchkUseLiveCounterに対応）。
+        /// falseなら従来通りSnapshotDBから数値を読む。既定falseで既存動作を保つ。
+        /// </summary>
+        public bool UseLiveCounter { get; set; } = false;
     }
 }

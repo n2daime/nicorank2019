@@ -25,6 +25,13 @@ namespace nicorankLib.Analyze.Input
 
         public DateTime AnalyzeTime { get; protected set; }
         public TagSearchQuery Query { get; protected set; }
+        /// <summary>
+        /// ライブ検索で得た動画ごとの最新カウンタ（ID→4数値）。
+        /// AnalyzeRankの成功時に更新される。後段のLive系Readerが集計値の材料にする。
+        /// なぜInput側で保持するか: RankingAnalyzeはInput→Optionの順に実行されるため、
+        /// Option実行時点ではInputの取得結果が確定している。工場作成時点では未取得のため共有参照で渡す。
+        /// </summary>
+        public IDictionary<string, SnapShotJson.SnapShotJsonData> LiveCounters { get; } = new Dictionary<string, SnapShotJson.SnapShotJsonData>();
 
         public TagRankAnalyze(DateTime analyzeTime, TagSearchQuery query)
         {
@@ -56,15 +63,18 @@ namespace nicorankLib.Analyze.Input
                 StatusLog.WriteLine($"検索結果が多すぎます。({totalCount}件) {MaxTotalCount}件以下になるように条件を追加して下さい");
                 return false;
             }
-            var ids = CollectContentIds(jsonFilter, totalCount);
-            if (ids == null)
+            var liveData = CollectContentData(jsonFilter, totalCount);
+            if (liveData == null)
             {
                 return false;
             }
-            foreach (var id in ids)
+            // 後段のLive系Readerが累積値として使うため、IDと対になる4数値を保持する（従来はIDのみ利用で捨てていた）
+            LiveCounters.Clear();
+            foreach (var data in liveData)
             {
+                LiveCounters[data.ID] = data;
                 var wRank = new Ranking();
-                wRank.ID = id;
+                wRank.ID = data.ID;
                 rakingList.Add(wRank);
             }
             return true;
@@ -115,11 +125,11 @@ namespace nicorankLib.Analyze.Input
         }
 
         /// <summary>
-        /// 全ページを取得して動画ID列（重複除去・ID順）を生成する
+        /// 全ページを取得して動画データ列（ID重複除去・ID順）を生成する
         /// </summary>
-        protected List<string> CollectContentIds(string jsonFilter, long totalCount)
+        protected List<SnapShotJson.SnapShotJsonData> CollectContentData(string jsonFilter, long totalCount)
         {
-            var idSet = new HashSet<string>();
+            var dataMap = new Dictionary<string, SnapShotJson.SnapShotJsonData>();
             var lockObj = new object();
             bool failed = false;
             var offsets = new List<long>();
@@ -146,9 +156,9 @@ namespace nicorankLib.Analyze.Input
                     {
                         foreach (var data in info.Data)
                         {
-                            if (!string.IsNullOrEmpty(data.ID))
+                            if (!string.IsNullOrEmpty(data.ID) && !dataMap.ContainsKey(data.ID))
                             {
-                                idSet.Add(data.ID);
+                                dataMap.Add(data.ID, data);
                             }
                         }
                     }
@@ -169,7 +179,7 @@ namespace nicorankLib.Analyze.Input
                 StatusLog.WriteLine("タグ検索の取得に失敗しました");
                 return null;
             }
-            return idSet.OrderBy(id => id, StringComparer.Ordinal).ToList();
+            return dataMap.Values.OrderBy(data => data.ID, StringComparer.Ordinal).ToList();
         }
 
         /// <summary>
