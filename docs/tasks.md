@@ -15,6 +15,15 @@
 
 ## 未完了タスク
 
+### タグ検索v2最新値オプション（#35）
+
+> 背景: リアルタイムに結果だけ知りたい時にSnapshotDBの全量取得は時間・データ量とも過剰なため、集計日にv2最新値の選択肢を足す。依存: #30 タグ検索ランキング基盤。対象: `nicorank2019/frm/frmMain.cs`・`frmMain.Designer.cs`・`nicorankLib/Analyze/Input/TagRankAnalyze.cs`・`Analyze/Option/Basic/` 新規Reader・`Factory/ModeFactoryTagRank.cs`。受け入れ条件: v2モード（基準なし／あり）と既存SnapshotDBモードで集計できること・v2基準なし時はDBなし実行できること・テスト＋ビルド成功・reviewer再レビューで問題なし・ユーザー実行確認済み。**`develop` へマージ後、`feature/t031-logofficial-prune-sohistory` へも取り込む（t031のdevelopマージ判断には影響させない）**
+
+- [ ] 35.1 UI配置（ユーザー担当: `chkUseLiveCounter` をgrpDbに配置＋ON時AnalyzeDB必須解除）
+- [ ] 35.2 Query配線・TagRankAnalyzeカウンタ保持・LiveTotal/LiveSabun新設・工場4分岐
+- [ ] 35.3 specs/design/knowledge更新・単体テスト追加・reviewerレビュー・ユーザー実行確認
+- [ ] 35.4 developへマージ（`--no-ff`）後、feature/t031へも取込
+
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。
