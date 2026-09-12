@@ -109,6 +109,7 @@
             this.rbTyukan = new System.Windows.Forms.RadioButton();
             this.rbWeekly = new System.Windows.Forms.RadioButton();
             this.tabPageOut = new System.Windows.Forms.TabControl();
+            this.chkUseLiveCounter = new System.Windows.Forms.CheckBox();
             this.tabPageTag.SuspendLayout();
             this.grpDb.SuspendLayout();
             this.grpFilter.SuspendLayout();
@@ -127,11 +128,10 @@
             this.tabPageTag.Controls.Add(this.grpDb);
             this.tabPageTag.Controls.Add(this.grpFilter);
             this.tabPageTag.Controls.Add(this.grpTag);
-            this.tabPageTag.Location = new System.Drawing.Point(4, 25);
-            this.tabPageTag.Margin = new System.Windows.Forms.Padding(4);
+            this.tabPageTag.Location = new System.Drawing.Point(4, 22);
             this.tabPageTag.Name = "tabPageTag";
-            this.tabPageTag.Padding = new System.Windows.Forms.Padding(4);
-            this.tabPageTag.Size = new System.Drawing.Size(1107, 946);
+            this.tabPageTag.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPageTag.Size = new System.Drawing.Size(828, 754);
             this.tabPageTag.TabIndex = 3;
             this.tabPageTag.Text = "タグ検索集計";
             this.tabPageTag.UseVisualStyleBackColor = true;
@@ -139,10 +139,9 @@
             // btnAnalyzeTag
             // 
             this.btnAnalyzeTag.Enabled = false;
-            this.btnAnalyzeTag.Location = new System.Drawing.Point(425, 800);
-            this.btnAnalyzeTag.Margin = new System.Windows.Forms.Padding(4);
+            this.btnAnalyzeTag.Location = new System.Drawing.Point(319, 640);
             this.btnAnalyzeTag.Name = "btnAnalyzeTag";
-            this.btnAnalyzeTag.Size = new System.Drawing.Size(185, 49);
+            this.btnAnalyzeTag.Size = new System.Drawing.Size(139, 39);
             this.btnAnalyzeTag.TabIndex = 3;
             this.btnAnalyzeTag.Text = "ランキング計算";
             this.btnAnalyzeTag.UseVisualStyleBackColor = true;
@@ -150,6 +149,7 @@
             // 
             // grpDb
             // 
+            this.grpDb.Controls.Add(this.chkUseLiveCounter);
             this.grpDb.Controls.Add(this.label20);
             this.grpDb.Controls.Add(this.btnLastResult_Tag);
             this.grpDb.Controls.Add(this.label21);
@@ -159,11 +159,9 @@
             this.grpDb.Controls.Add(this.tbAnalyzeDB_Tag);
             this.grpDb.Controls.Add(this.btnBaseDB_Tag);
             this.grpDb.Controls.Add(this.tbBaseDB_Tag);
-            this.grpDb.Location = new System.Drawing.Point(11, 292);
-            this.grpDb.Margin = new System.Windows.Forms.Padding(4);
+            this.grpDb.Location = new System.Drawing.Point(8, 234);
             this.grpDb.Name = "grpDb";
-            this.grpDb.Padding = new System.Windows.Forms.Padding(4);
-            this.grpDb.Size = new System.Drawing.Size(1075, 160);
+            this.grpDb.Size = new System.Drawing.Size(806, 128);
             this.grpDb.TabIndex = 2;
             this.grpDb.TabStop = false;
             this.grpDb.Text = "3. スナップショットDB・前回結果（基準・前回は任意）";
@@ -171,21 +169,19 @@
             // label20
             // 
             this.label20.AutoSize = true;
-            this.label20.Location = new System.Drawing.Point(2, 98);
-            this.label20.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label20.Location = new System.Drawing.Point(1, 95);
             this.label20.Name = "label20";
-            this.label20.Size = new System.Drawing.Size(85, 30);
+            this.label20.Size = new System.Drawing.Size(67, 24);
             this.label20.TabIndex = 27;
             this.label20.Text = "前回結果(*)\r\n(Result.csv)";
             this.label20.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
             // btnLastResult_Tag
             // 
-            this.btnLastResult_Tag.Location = new System.Drawing.Point(899, 98);
-            this.btnLastResult_Tag.Margin = new System.Windows.Forms.Padding(4);
+            this.btnLastResult_Tag.Location = new System.Drawing.Point(674, 96);
             this.btnLastResult_Tag.Name = "btnLastResult_Tag";
-            this.btnLastResult_Tag.Size = new System.Drawing.Size(100, 29);
-            this.btnLastResult_Tag.TabIndex = 5;
+            this.btnLastResult_Tag.Size = new System.Drawing.Size(75, 23);
+            this.btnLastResult_Tag.TabIndex = 6;
             this.btnLastResult_Tag.Text = "参照";
             this.btnLastResult_Tag.UseVisualStyleBackColor = true;
             this.btnLastResult_Tag.Click += new System.EventHandler(this.btnLastResult_Tag_Click);
@@ -193,56 +189,50 @@
             // label21
             // 
             this.label21.AutoSize = true;
-            this.label21.Location = new System.Drawing.Point(28, 64);
-            this.label21.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label21.Location = new System.Drawing.Point(21, 58);
             this.label21.Name = "label21";
-            this.label21.Size = new System.Drawing.Size(52, 15);
+            this.label21.Size = new System.Drawing.Size(41, 12);
             this.label21.TabIndex = 26;
             this.label21.Text = "集計日";
             // 
             // tbLastResult_Tag
             // 
-            this.tbLastResult_Tag.Location = new System.Drawing.Point(92, 102);
-            this.tbLastResult_Tag.Margin = new System.Windows.Forms.Padding(4);
+            this.tbLastResult_Tag.Location = new System.Drawing.Point(69, 98);
             this.tbLastResult_Tag.Name = "tbLastResult_Tag";
-            this.tbLastResult_Tag.Size = new System.Drawing.Size(799, 22);
-            this.tbLastResult_Tag.TabIndex = 4;
+            this.tbLastResult_Tag.Size = new System.Drawing.Size(600, 19);
+            this.tbLastResult_Tag.TabIndex = 5;
             // 
             // label22
             // 
             this.label22.AutoSize = true;
-            this.label22.Location = new System.Drawing.Point(28, 28);
-            this.label22.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label22.Location = new System.Drawing.Point(21, 18);
             this.label22.Name = "label22";
-            this.label22.Size = new System.Drawing.Size(55, 15);
+            this.label22.Size = new System.Drawing.Size(43, 12);
             this.label22.TabIndex = 25;
             this.label22.Text = "基準(*)";
             // 
             // btnAnalyzeDB_Tag
             // 
-            this.btnAnalyzeDB_Tag.Location = new System.Drawing.Point(899, 57);
-            this.btnAnalyzeDB_Tag.Margin = new System.Windows.Forms.Padding(4);
+            this.btnAnalyzeDB_Tag.Location = new System.Drawing.Point(674, 67);
             this.btnAnalyzeDB_Tag.Name = "btnAnalyzeDB_Tag";
-            this.btnAnalyzeDB_Tag.Size = new System.Drawing.Size(100, 29);
-            this.btnAnalyzeDB_Tag.TabIndex = 3;
+            this.btnAnalyzeDB_Tag.Size = new System.Drawing.Size(75, 23);
+            this.btnAnalyzeDB_Tag.TabIndex = 4;
             this.btnAnalyzeDB_Tag.Text = "参照";
             this.btnAnalyzeDB_Tag.UseVisualStyleBackColor = true;
             this.btnAnalyzeDB_Tag.Click += new System.EventHandler(this.btnAnalyzeDB_Tag_Click);
             // 
             // tbAnalyzeDB_Tag
             // 
-            this.tbAnalyzeDB_Tag.Location = new System.Drawing.Point(92, 61);
-            this.tbAnalyzeDB_Tag.Margin = new System.Windows.Forms.Padding(4);
+            this.tbAnalyzeDB_Tag.Location = new System.Drawing.Point(69, 69);
             this.tbAnalyzeDB_Tag.Name = "tbAnalyzeDB_Tag";
-            this.tbAnalyzeDB_Tag.Size = new System.Drawing.Size(799, 22);
-            this.tbAnalyzeDB_Tag.TabIndex = 2;
+            this.tbAnalyzeDB_Tag.Size = new System.Drawing.Size(600, 19);
+            this.tbAnalyzeDB_Tag.TabIndex = 3;
             // 
             // btnBaseDB_Tag
             // 
-            this.btnBaseDB_Tag.Location = new System.Drawing.Point(899, 24);
-            this.btnBaseDB_Tag.Margin = new System.Windows.Forms.Padding(4);
+            this.btnBaseDB_Tag.Location = new System.Drawing.Point(674, 14);
             this.btnBaseDB_Tag.Name = "btnBaseDB_Tag";
-            this.btnBaseDB_Tag.Size = new System.Drawing.Size(100, 29);
+            this.btnBaseDB_Tag.Size = new System.Drawing.Size(75, 23);
             this.btnBaseDB_Tag.TabIndex = 1;
             this.btnBaseDB_Tag.Text = "参照";
             this.btnBaseDB_Tag.UseVisualStyleBackColor = true;
@@ -250,10 +240,9 @@
             // 
             // tbBaseDB_Tag
             // 
-            this.tbBaseDB_Tag.Location = new System.Drawing.Point(92, 28);
-            this.tbBaseDB_Tag.Margin = new System.Windows.Forms.Padding(4);
+            this.tbBaseDB_Tag.Location = new System.Drawing.Point(69, 16);
             this.tbBaseDB_Tag.Name = "tbBaseDB_Tag";
-            this.tbBaseDB_Tag.Size = new System.Drawing.Size(799, 22);
+            this.tbBaseDB_Tag.Size = new System.Drawing.Size(600, 19);
             this.tbBaseDB_Tag.TabIndex = 0;
             // 
             // grpFilter
@@ -272,11 +261,9 @@
             this.grpFilter.Controls.Add(this.lblMylistMin);
             this.grpFilter.Controls.Add(this.tbViewMin);
             this.grpFilter.Controls.Add(this.lblViewMin);
-            this.grpFilter.Location = new System.Drawing.Point(11, 168);
-            this.grpFilter.Margin = new System.Windows.Forms.Padding(4);
+            this.grpFilter.Location = new System.Drawing.Point(8, 134);
             this.grpFilter.Name = "grpFilter";
-            this.grpFilter.Padding = new System.Windows.Forms.Padding(4);
-            this.grpFilter.Size = new System.Drawing.Size(1075, 116);
+            this.grpFilter.Size = new System.Drawing.Size(806, 93);
             this.grpFilter.TabIndex = 1;
             this.grpFilter.TabStop = false;
             this.grpFilter.Text = "2. 絞り込み（下限0=指定なし）";
@@ -289,50 +276,45 @@
             "指定なし",
             "long",
             "short"});
-            this.cmbContentType.Location = new System.Drawing.Point(660, 70);
-            this.cmbContentType.Margin = new System.Windows.Forms.Padding(4);
+            this.cmbContentType.Location = new System.Drawing.Point(495, 56);
             this.cmbContentType.Name = "cmbContentType";
-            this.cmbContentType.Size = new System.Drawing.Size(159, 23);
+            this.cmbContentType.Size = new System.Drawing.Size(120, 20);
             this.cmbContentType.TabIndex = 13;
             this.cmbContentType.SelectedIndexChanged += new System.EventHandler(this.TagCondition_Changed);
             // 
             // lblContentType
             // 
             this.lblContentType.AutoSize = true;
-            this.lblContentType.Location = new System.Drawing.Point(613, 75);
-            this.lblContentType.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblContentType.Location = new System.Drawing.Point(460, 60);
             this.lblContentType.Name = "lblContentType";
-            this.lblContentType.Size = new System.Drawing.Size(37, 15);
+            this.lblContentType.Size = new System.Drawing.Size(29, 12);
             this.lblContentType.TabIndex = 12;
             this.lblContentType.Text = "種別";
             // 
             // dtEnd
             // 
             this.dtEnd.Enabled = false;
-            this.dtEnd.Location = new System.Drawing.Point(400, 70);
-            this.dtEnd.Margin = new System.Windows.Forms.Padding(4);
+            this.dtEnd.Location = new System.Drawing.Point(300, 56);
             this.dtEnd.Name = "dtEnd";
-            this.dtEnd.Size = new System.Drawing.Size(199, 22);
+            this.dtEnd.Size = new System.Drawing.Size(150, 19);
             this.dtEnd.TabIndex = 11;
             this.dtEnd.ValueChanged += new System.EventHandler(this.TagCondition_Changed);
             // 
             // dtStart
             // 
             this.dtStart.Enabled = false;
-            this.dtStart.Location = new System.Drawing.Point(187, 70);
-            this.dtStart.Margin = new System.Windows.Forms.Padding(4);
+            this.dtStart.Location = new System.Drawing.Point(140, 56);
             this.dtStart.Name = "dtStart";
-            this.dtStart.Size = new System.Drawing.Size(199, 22);
+            this.dtStart.Size = new System.Drawing.Size(150, 19);
             this.dtStart.TabIndex = 10;
             this.dtStart.ValueChanged += new System.EventHandler(this.TagCondition_Changed);
             // 
             // chkDateFilter
             // 
             this.chkDateFilter.AutoSize = true;
-            this.chkDateFilter.Location = new System.Drawing.Point(80, 74);
-            this.chkDateFilter.Margin = new System.Windows.Forms.Padding(4);
+            this.chkDateFilter.Location = new System.Drawing.Point(60, 59);
             this.chkDateFilter.Name = "chkDateFilter";
-            this.chkDateFilter.Size = new System.Drawing.Size(77, 19);
+            this.chkDateFilter.Size = new System.Drawing.Size(66, 16);
             this.chkDateFilter.TabIndex = 9;
             this.chkDateFilter.Text = "絞り込む";
             this.chkDateFilter.UseVisualStyleBackColor = true;
@@ -341,19 +323,17 @@
             // lblStartDate
             // 
             this.lblStartDate.AutoSize = true;
-            this.lblStartDate.Location = new System.Drawing.Point(13, 75);
-            this.lblStartDate.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblStartDate.Location = new System.Drawing.Point(10, 60);
             this.lblStartDate.Name = "lblStartDate";
-            this.lblStartDate.Size = new System.Drawing.Size(52, 15);
+            this.lblStartDate.Size = new System.Drawing.Size(41, 12);
             this.lblStartDate.TabIndex = 8;
             this.lblStartDate.Text = "投稿日";
             // 
             // tbCommentMin
             // 
-            this.tbCommentMin.Location = new System.Drawing.Point(867, 29);
-            this.tbCommentMin.Margin = new System.Windows.Forms.Padding(4);
+            this.tbCommentMin.Location = new System.Drawing.Point(650, 23);
             this.tbCommentMin.Name = "tbCommentMin";
-            this.tbCommentMin.Size = new System.Drawing.Size(132, 22);
+            this.tbCommentMin.Size = new System.Drawing.Size(100, 19);
             this.tbCommentMin.TabIndex = 7;
             this.tbCommentMin.Text = "0";
             this.tbCommentMin.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
@@ -362,19 +342,17 @@
             // lblCommentMin
             // 
             this.lblCommentMin.AutoSize = true;
-            this.lblCommentMin.Location = new System.Drawing.Point(764, 32);
-            this.lblCommentMin.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblCommentMin.Location = new System.Drawing.Point(573, 26);
             this.lblCommentMin.Name = "lblCommentMin";
-            this.lblCommentMin.Size = new System.Drawing.Size(94, 15);
+            this.lblCommentMin.Size = new System.Drawing.Size(74, 12);
             this.lblCommentMin.TabIndex = 6;
             this.lblCommentMin.Text = "コメント下限値";
             // 
             // tbLikeMin
             // 
-            this.tbLikeMin.Location = new System.Drawing.Point(613, 29);
-            this.tbLikeMin.Margin = new System.Windows.Forms.Padding(4);
+            this.tbLikeMin.Location = new System.Drawing.Point(460, 23);
             this.tbLikeMin.Name = "tbLikeMin";
-            this.tbLikeMin.Size = new System.Drawing.Size(132, 22);
+            this.tbLikeMin.Size = new System.Drawing.Size(100, 19);
             this.tbLikeMin.TabIndex = 5;
             this.tbLikeMin.Text = "0";
             this.tbLikeMin.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
@@ -383,19 +361,17 @@
             // lblLikeMin
             // 
             this.lblLikeMin.AutoSize = true;
-            this.lblLikeMin.Location = new System.Drawing.Point(509, 32);
-            this.lblLikeMin.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblLikeMin.Location = new System.Drawing.Point(382, 26);
             this.lblLikeMin.Name = "lblLikeMin";
-            this.lblLikeMin.Size = new System.Drawing.Size(89, 15);
+            this.lblLikeMin.Size = new System.Drawing.Size(72, 12);
             this.lblLikeMin.TabIndex = 4;
             this.lblLikeMin.Text = "いいね下限値";
             // 
             // tbMylistMin
             // 
-            this.tbMylistMin.Location = new System.Drawing.Point(360, 29);
-            this.tbMylistMin.Margin = new System.Windows.Forms.Padding(4);
+            this.tbMylistMin.Location = new System.Drawing.Point(270, 23);
             this.tbMylistMin.Name = "tbMylistMin";
-            this.tbMylistMin.Size = new System.Drawing.Size(132, 22);
+            this.tbMylistMin.Size = new System.Drawing.Size(100, 19);
             this.tbMylistMin.TabIndex = 3;
             this.tbMylistMin.Text = "0";
             this.tbMylistMin.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
@@ -404,19 +380,17 @@
             // lblMylistMin
             // 
             this.lblMylistMin.AutoSize = true;
-            this.lblMylistMin.Location = new System.Drawing.Point(266, 32);
-            this.lblMylistMin.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblMylistMin.Location = new System.Drawing.Point(200, 26);
             this.lblMylistMin.Name = "lblMylistMin";
-            this.lblMylistMin.Size = new System.Drawing.Size(94, 15);
+            this.lblMylistMin.Size = new System.Drawing.Size(75, 12);
             this.lblMylistMin.TabIndex = 2;
             this.lblMylistMin.Text = "マイリス下限値";
             // 
             // tbViewMin
             // 
-            this.tbViewMin.Location = new System.Drawing.Point(107, 29);
-            this.tbViewMin.Margin = new System.Windows.Forms.Padding(4);
+            this.tbViewMin.Location = new System.Drawing.Point(80, 23);
             this.tbViewMin.Name = "tbViewMin";
-            this.tbViewMin.Size = new System.Drawing.Size(132, 22);
+            this.tbViewMin.Size = new System.Drawing.Size(100, 19);
             this.tbViewMin.TabIndex = 1;
             this.tbViewMin.Text = "0";
             this.tbViewMin.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
@@ -425,10 +399,9 @@
             // lblViewMin
             // 
             this.lblViewMin.AutoSize = true;
-            this.lblViewMin.Location = new System.Drawing.Point(13, 32);
-            this.lblViewMin.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblViewMin.Location = new System.Drawing.Point(10, 26);
             this.lblViewMin.Name = "lblViewMin";
-            this.lblViewMin.Size = new System.Drawing.Size(82, 15);
+            this.lblViewMin.Size = new System.Drawing.Size(65, 12);
             this.lblViewMin.TabIndex = 0;
             this.lblViewMin.Text = "再生下限値";
             // 
@@ -439,11 +412,9 @@
             this.grpTag.Controls.Add(this.btnTagSearch);
             this.grpTag.Controls.Add(this.lblTagExample);
             this.grpTag.Controls.Add(this.tbTagCondition);
-            this.grpTag.Location = new System.Drawing.Point(11, 10);
-            this.grpTag.Margin = new System.Windows.Forms.Padding(4);
+            this.grpTag.Location = new System.Drawing.Point(8, 8);
             this.grpTag.Name = "grpTag";
-            this.grpTag.Padding = new System.Windows.Forms.Padding(4);
-            this.grpTag.Size = new System.Drawing.Size(1075, 150);
+            this.grpTag.Size = new System.Drawing.Size(806, 120);
             this.grpTag.TabIndex = 0;
             this.grpTag.TabStop = false;
             this.grpTag.Text = "1. タグ条件";
@@ -452,29 +423,26 @@
             // 
             this.lblTagWarn.AutoSize = true;
             this.lblTagWarn.ForeColor = System.Drawing.Color.Red;
-            this.lblTagWarn.Location = new System.Drawing.Point(11, 105);
-            this.lblTagWarn.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblTagWarn.Location = new System.Drawing.Point(8, 84);
             this.lblTagWarn.Name = "lblTagWarn";
-            this.lblTagWarn.Size = new System.Drawing.Size(515, 15);
+            this.lblTagWarn.Size = new System.Drawing.Size(406, 12);
             this.lblTagWarn.TabIndex = 4;
             this.lblTagWarn.Text = "検索結果が多すぎます。(123456件) 50000件以下になるように条件を追加して下さい";
             // 
             // lblTagCount
             // 
             this.lblTagCount.AutoSize = true;
-            this.lblTagCount.Location = new System.Drawing.Point(11, 80);
-            this.lblTagCount.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblTagCount.Location = new System.Drawing.Point(8, 64);
             this.lblTagCount.Name = "lblTagCount";
-            this.lblTagCount.Size = new System.Drawing.Size(221, 15);
+            this.lblTagCount.Size = new System.Drawing.Size(173, 12);
             this.lblTagCount.TabIndex = 3;
             this.lblTagCount.Text = "検索件数: 未確認（上限50000件）";
             // 
             // btnTagSearch
             // 
-            this.btnTagSearch.Location = new System.Drawing.Point(821, 22);
-            this.btnTagSearch.Margin = new System.Windows.Forms.Padding(4);
+            this.btnTagSearch.Location = new System.Drawing.Point(616, 18);
             this.btnTagSearch.Name = "btnTagSearch";
-            this.btnTagSearch.Size = new System.Drawing.Size(100, 29);
+            this.btnTagSearch.Size = new System.Drawing.Size(75, 23);
             this.btnTagSearch.TabIndex = 2;
             this.btnTagSearch.Text = "件数確認";
             this.btnTagSearch.UseVisualStyleBackColor = true;
@@ -483,19 +451,17 @@
             // lblTagExample
             // 
             this.lblTagExample.AutoSize = true;
-            this.lblTagExample.Location = new System.Drawing.Point(13, 51);
-            this.lblTagExample.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblTagExample.Location = new System.Drawing.Point(10, 41);
             this.lblTagExample.Name = "lblTagExample";
-            this.lblTagExample.Size = new System.Drawing.Size(363, 15);
+            this.lblTagExample.Size = new System.Drawing.Size(285, 12);
             this.lblTagExample.TabIndex = 1;
             this.lblTagExample.Text = "例: タグ1&&タグ2|タグ3*  (*なし=完全一致 *あり=部分一致)";
             // 
             // tbTagCondition
             // 
-            this.tbTagCondition.Location = new System.Drawing.Point(13, 25);
-            this.tbTagCondition.Margin = new System.Windows.Forms.Padding(4);
+            this.tbTagCondition.Location = new System.Drawing.Point(10, 20);
             this.tbTagCondition.Name = "tbTagCondition";
-            this.tbTagCondition.Size = new System.Drawing.Size(799, 22);
+            this.tbTagCondition.Size = new System.Drawing.Size(600, 19);
             this.tbTagCondition.TabIndex = 0;
             this.tbTagCondition.TextChanged += new System.EventHandler(this.TagCondition_Changed);
             this.tbTagCondition.KeyDown += new System.Windows.Forms.KeyEventHandler(this.tbTagCondition_KeyDown);
@@ -507,20 +473,18 @@
             this.tabPageSyukei.Controls.Add(this.panel3);
             this.tabPageSyukei.Controls.Add(this.panelSP);
             this.tabPageSyukei.Controls.Add(this.groupBox1);
-            this.tabPageSyukei.Location = new System.Drawing.Point(4, 25);
-            this.tabPageSyukei.Margin = new System.Windows.Forms.Padding(4);
+            this.tabPageSyukei.Location = new System.Drawing.Point(4, 22);
             this.tabPageSyukei.Name = "tabPageSyukei";
-            this.tabPageSyukei.Padding = new System.Windows.Forms.Padding(4);
-            this.tabPageSyukei.Size = new System.Drawing.Size(1107, 946);
+            this.tabPageSyukei.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPageSyukei.Size = new System.Drawing.Size(828, 754);
             this.tabPageSyukei.TabIndex = 0;
             this.tabPageSyukei.Text = "集計";
             // 
             // btnAnalyze
             // 
-            this.btnAnalyze.Location = new System.Drawing.Point(439, 584);
-            this.btnAnalyze.Margin = new System.Windows.Forms.Padding(4);
+            this.btnAnalyze.Location = new System.Drawing.Point(329, 467);
             this.btnAnalyze.Name = "btnAnalyze";
-            this.btnAnalyze.Size = new System.Drawing.Size(185, 49);
+            this.btnAnalyze.Size = new System.Drawing.Size(139, 39);
             this.btnAnalyze.TabIndex = 4;
             this.btnAnalyze.Text = "ランキング計算";
             this.btnAnalyze.UseVisualStyleBackColor = true;
@@ -550,38 +514,34 @@
             this.panel3.Controls.Add(this.label12);
             this.panel3.Controls.Add(this.label13);
             this.panel3.Controls.Add(this.label14);
-            this.panel3.Location = new System.Drawing.Point(15, 280);
-            this.panel3.Margin = new System.Windows.Forms.Padding(4);
+            this.panel3.Location = new System.Drawing.Point(11, 224);
             this.panel3.Name = "panel3";
-            this.panel3.Size = new System.Drawing.Size(1058, 284);
+            this.panel3.Size = new System.Drawing.Size(794, 228);
             this.panel3.TabIndex = 3;
             // 
             // label18
             // 
             this.label18.AutoSize = true;
-            this.label18.Location = new System.Drawing.Point(204, 159);
-            this.label18.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label18.Location = new System.Drawing.Point(153, 127);
             this.label18.Name = "label18";
-            this.label18.Size = new System.Drawing.Size(112, 15);
+            this.label18.Size = new System.Drawing.Size(89, 12);
             this.label18.TabIndex = 17;
             this.label18.Text = "ポイント全体補正";
             // 
             // tbUserInfoNum
             // 
-            this.tbUserInfoNum.Location = new System.Drawing.Point(519, 239);
-            this.tbUserInfoNum.Margin = new System.Windows.Forms.Padding(4);
+            this.tbUserInfoNum.Location = new System.Drawing.Point(389, 191);
             this.tbUserInfoNum.Name = "tbUserInfoNum";
-            this.tbUserInfoNum.Size = new System.Drawing.Size(121, 22);
+            this.tbUserInfoNum.Size = new System.Drawing.Size(92, 19);
             this.tbUserInfoNum.TabIndex = 16;
             this.tbUserInfoNum.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // label15
             // 
             this.label15.AutoSize = true;
-            this.label15.Location = new System.Drawing.Point(12, 242);
-            this.label15.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label15.Location = new System.Drawing.Point(9, 194);
             this.label15.Name = "label15";
-            this.label15.Size = new System.Drawing.Size(449, 15);
+            this.label15.Size = new System.Drawing.Size(357, 12);
             this.label15.TabIndex = 15;
             this.label15.Text = "UserInfo/Icon/Tagsを取得する動画数。長期は考慮しないので単純指定";
             // 
@@ -592,10 +552,9 @@
             this.cmbHoseiPointAll.Items.AddRange(new object[] {
             "0: しない",
             "1: 補正値D = 2.5 * コメント数 ÷ 再生数 * 100 (米率0.4％未満に補正)"});
-            this.cmbHoseiPointAll.Location = new System.Drawing.Point(335, 155);
-            this.cmbHoseiPointAll.Margin = new System.Windows.Forms.Padding(4);
+            this.cmbHoseiPointAll.Location = new System.Drawing.Point(251, 124);
             this.cmbHoseiPointAll.Name = "cmbHoseiPointAll";
-            this.cmbHoseiPointAll.Size = new System.Drawing.Size(599, 23);
+            this.cmbHoseiPointAll.Size = new System.Drawing.Size(450, 20);
             this.cmbHoseiPointAll.TabIndex = 14;
             // 
             // cmbHoseiComment
@@ -606,10 +565,9 @@
             "0: しない",
             "1: 補正 (再生＋マイリスト＋コメント＊N）／（再生＋マイリスト＋コメント",
             "2: 補正 (再生＋マイリスト＋コメント）／（再生＋マイリスト＋コメント"});
-            this.cmbHoseiComment.Location = new System.Drawing.Point(335, 91);
-            this.cmbHoseiComment.Margin = new System.Windows.Forms.Padding(4);
+            this.cmbHoseiComment.Location = new System.Drawing.Point(251, 73);
             this.cmbHoseiComment.Name = "cmbHoseiComment";
-            this.cmbHoseiComment.Size = new System.Drawing.Size(599, 23);
+            this.cmbHoseiComment.Size = new System.Drawing.Size(450, 20);
             this.cmbHoseiComment.TabIndex = 14;
             // 
             // cmbHoseiPlay
@@ -620,10 +578,9 @@
             "0: しない",
             "1: 補正値＝マイリスト率が1%未満の作品に適用する",
             "2: 補正値＝(コメント数＋マイリスト数＋いいね数）/ 再生数 ×1000"});
-            this.cmbHoseiPlay.Location = new System.Drawing.Point(335, 61);
-            this.cmbHoseiPlay.Margin = new System.Windows.Forms.Padding(4);
+            this.cmbHoseiPlay.Location = new System.Drawing.Point(251, 49);
             this.cmbHoseiPlay.Name = "cmbHoseiPlay";
-            this.cmbHoseiPlay.Size = new System.Drawing.Size(599, 23);
+            this.cmbHoseiPlay.Size = new System.Drawing.Size(450, 20);
             this.cmbHoseiPlay.TabIndex = 13;
             // 
             // cmbHoseiMylist
@@ -634,144 +591,129 @@
             "0: しない",
             "1: 弱い方",
             "2: 強い方 "});
-            this.cmbHoseiMylist.Location = new System.Drawing.Point(335, 29);
-            this.cmbHoseiMylist.Margin = new System.Windows.Forms.Padding(4);
+            this.cmbHoseiMylist.Location = new System.Drawing.Point(251, 23);
             this.cmbHoseiMylist.Name = "cmbHoseiMylist";
-            this.cmbHoseiMylist.Size = new System.Drawing.Size(599, 23);
+            this.cmbHoseiMylist.Size = new System.Drawing.Size(450, 20);
             this.cmbHoseiMylist.TabIndex = 12;
             // 
             // label8
             // 
             this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(240, 95);
-            this.label8.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label8.Location = new System.Drawing.Point(180, 76);
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(79, 15);
+            this.label8.Size = new System.Drawing.Size(62, 12);
             this.label8.TabIndex = 11;
             this.label8.Text = "コメント補正";
             // 
             // label9
             // 
             this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(252, 62);
-            this.label9.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label9.Location = new System.Drawing.Point(189, 50);
             this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(67, 15);
+            this.label9.Size = new System.Drawing.Size(53, 12);
             this.label9.TabIndex = 10;
             this.label9.Text = "再生補正";
             // 
             // label10
             // 
             this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(227, 32);
-            this.label10.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label10.Location = new System.Drawing.Point(170, 26);
             this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(90, 15);
+            this.label10.Size = new System.Drawing.Size(71, 12);
             this.label10.TabIndex = 9;
             this.label10.Text = "マイリスト補正";
             // 
             // tbCalcMylist
             // 
-            this.tbCalcMylist.Location = new System.Drawing.Point(119, 34);
-            this.tbCalcMylist.Margin = new System.Windows.Forms.Padding(4);
+            this.tbCalcMylist.Location = new System.Drawing.Point(89, 27);
             this.tbCalcMylist.Name = "tbCalcMylist";
-            this.tbCalcMylist.Size = new System.Drawing.Size(64, 22);
+            this.tbCalcMylist.Size = new System.Drawing.Size(49, 19);
             this.tbCalcMylist.TabIndex = 8;
             this.tbCalcMylist.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // tbHoseiCommentUnderLimit
             // 
-            this.tbHoseiCommentUnderLimit.Location = new System.Drawing.Point(335, 124);
-            this.tbHoseiCommentUnderLimit.Margin = new System.Windows.Forms.Padding(4);
+            this.tbHoseiCommentUnderLimit.Location = new System.Drawing.Point(251, 99);
             this.tbHoseiCommentUnderLimit.Name = "tbHoseiCommentUnderLimit";
-            this.tbHoseiCommentUnderLimit.Size = new System.Drawing.Size(64, 22);
+            this.tbHoseiCommentUnderLimit.Size = new System.Drawing.Size(49, 19);
             this.tbHoseiCommentUnderLimit.TabIndex = 6;
             this.tbHoseiCommentUnderLimit.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // tbCalcLike
             // 
-            this.tbCalcLike.Location = new System.Drawing.Point(119, 124);
-            this.tbCalcLike.Margin = new System.Windows.Forms.Padding(4);
+            this.tbCalcLike.Location = new System.Drawing.Point(89, 99);
             this.tbCalcLike.Name = "tbCalcLike";
-            this.tbCalcLike.Size = new System.Drawing.Size(64, 22);
+            this.tbCalcLike.Size = new System.Drawing.Size(49, 19);
             this.tbCalcLike.TabIndex = 6;
             this.tbCalcLike.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // tbCalcPlay
             // 
-            this.tbCalcPlay.Location = new System.Drawing.Point(119, 62);
-            this.tbCalcPlay.Margin = new System.Windows.Forms.Padding(4);
+            this.tbCalcPlay.Location = new System.Drawing.Point(89, 50);
             this.tbCalcPlay.Name = "tbCalcPlay";
-            this.tbCalcPlay.Size = new System.Drawing.Size(64, 22);
+            this.tbCalcPlay.Size = new System.Drawing.Size(49, 19);
             this.tbCalcPlay.TabIndex = 7;
             this.tbCalcPlay.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // label17
             // 
             this.label17.AutoSize = true;
-            this.label17.Location = new System.Drawing.Point(192, 126);
-            this.label17.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label17.Location = new System.Drawing.Point(144, 101);
             this.label17.Name = "label17";
-            this.label17.Size = new System.Drawing.Size(124, 15);
+            this.label17.Size = new System.Drawing.Size(98, 12);
             this.label17.TabIndex = 3;
             this.label17.Text = "コメント補正下限値";
             // 
             // label16
             // 
             this.label16.AutoSize = true;
-            this.label16.Location = new System.Drawing.Point(19, 126);
-            this.label16.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label16.Location = new System.Drawing.Point(14, 101);
             this.label16.Name = "label16";
-            this.label16.Size = new System.Drawing.Size(74, 15);
+            this.label16.Size = new System.Drawing.Size(60, 12);
             this.label16.TabIndex = 3;
             this.label16.Text = "いいね倍率";
             // 
             // tbCalcComment
             // 
-            this.tbCalcComment.Location = new System.Drawing.Point(119, 91);
-            this.tbCalcComment.Margin = new System.Windows.Forms.Padding(4);
+            this.tbCalcComment.Location = new System.Drawing.Point(89, 73);
             this.tbCalcComment.Name = "tbCalcComment";
-            this.tbCalcComment.Size = new System.Drawing.Size(64, 22);
+            this.tbCalcComment.Size = new System.Drawing.Size(49, 19);
             this.tbCalcComment.TabIndex = 6;
             this.tbCalcComment.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // label11
             // 
             this.label11.AutoSize = true;
-            this.label11.Location = new System.Drawing.Point(19, 94);
-            this.label11.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label11.Location = new System.Drawing.Point(14, 75);
             this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(79, 15);
+            this.label11.Size = new System.Drawing.Size(62, 12);
             this.label11.TabIndex = 3;
             this.label11.Text = "コメント倍率";
             // 
             // label12
             // 
             this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(19, 66);
-            this.label12.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label12.Location = new System.Drawing.Point(14, 53);
             this.label12.Name = "label12";
-            this.label12.Size = new System.Drawing.Size(67, 15);
+            this.label12.Size = new System.Drawing.Size(53, 12);
             this.label12.TabIndex = 2;
             this.label12.Text = "再生倍率";
             // 
             // label13
             // 
             this.label13.AutoSize = true;
-            this.label13.Location = new System.Drawing.Point(19, 38);
-            this.label13.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label13.Location = new System.Drawing.Point(14, 30);
             this.label13.Name = "label13";
-            this.label13.Size = new System.Drawing.Size(90, 15);
+            this.label13.Size = new System.Drawing.Size(71, 12);
             this.label13.TabIndex = 1;
             this.label13.Text = "マイリスト倍率";
             // 
             // label14
             // 
             this.label14.AutoSize = true;
-            this.label14.Location = new System.Drawing.Point(12, 8);
-            this.label14.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label14.Location = new System.Drawing.Point(9, 6);
             this.label14.Name = "label14";
-            this.label14.Size = new System.Drawing.Size(223, 15);
+            this.label14.Size = new System.Drawing.Size(179, 12);
             this.label14.TabIndex = 0;
             this.label14.Text = "ポイント計算方法(nicorank.xmlより）";
             // 
@@ -792,18 +734,16 @@
             this.panelSP.Controls.Add(this.label2);
             this.panelSP.Controls.Add(this.tbBaseDB);
             this.panelSP.Controls.Add(this.label1);
-            this.panelSP.Location = new System.Drawing.Point(11, 99);
-            this.panelSP.Margin = new System.Windows.Forms.Padding(4);
+            this.panelSP.Location = new System.Drawing.Point(8, 79);
             this.panelSP.Name = "panelSP";
-            this.panelSP.Size = new System.Drawing.Size(1065, 166);
+            this.panelSP.Size = new System.Drawing.Size(799, 133);
             this.panelSP.TabIndex = 1;
             // 
             // btnLastResult
             // 
-            this.btnLastResult.Location = new System.Drawing.Point(925, 126);
-            this.btnLastResult.Margin = new System.Windows.Forms.Padding(4);
+            this.btnLastResult.Location = new System.Drawing.Point(694, 101);
             this.btnLastResult.Name = "btnLastResult";
-            this.btnLastResult.Size = new System.Drawing.Size(100, 29);
+            this.btnLastResult.Size = new System.Drawing.Size(75, 23);
             this.btnLastResult.TabIndex = 27;
             this.btnLastResult.Text = "参照";
             this.btnLastResult.UseVisualStyleBackColor = true;
@@ -811,10 +751,9 @@
             // 
             // btnMovieSPList
             // 
-            this.btnMovieSPList.Location = new System.Drawing.Point(925, 92);
-            this.btnMovieSPList.Margin = new System.Windows.Forms.Padding(4);
+            this.btnMovieSPList.Location = new System.Drawing.Point(694, 74);
             this.btnMovieSPList.Name = "btnMovieSPList";
-            this.btnMovieSPList.Size = new System.Drawing.Size(100, 29);
+            this.btnMovieSPList.Size = new System.Drawing.Size(75, 23);
             this.btnMovieSPList.TabIndex = 26;
             this.btnMovieSPList.Text = "参照";
             this.btnMovieSPList.UseVisualStyleBackColor = true;
@@ -822,46 +761,41 @@
             // 
             // tbLastResult
             // 
-            this.tbLastResult.Location = new System.Drawing.Point(96, 128);
-            this.tbLastResult.Margin = new System.Windows.Forms.Padding(4);
+            this.tbLastResult.Location = new System.Drawing.Point(72, 102);
             this.tbLastResult.Name = "tbLastResult";
-            this.tbLastResult.Size = new System.Drawing.Size(820, 22);
+            this.tbLastResult.Size = new System.Drawing.Size(616, 19);
             this.tbLastResult.TabIndex = 25;
             // 
             // tbMovieSPList
             // 
-            this.tbMovieSPList.Location = new System.Drawing.Point(96, 96);
-            this.tbMovieSPList.Margin = new System.Windows.Forms.Padding(4);
+            this.tbMovieSPList.Location = new System.Drawing.Point(72, 77);
             this.tbMovieSPList.Name = "tbMovieSPList";
-            this.tbMovieSPList.Size = new System.Drawing.Size(820, 22);
+            this.tbMovieSPList.Size = new System.Drawing.Size(616, 19);
             this.tbMovieSPList.TabIndex = 25;
             // 
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(7, 125);
-            this.label5.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label5.Location = new System.Drawing.Point(5, 100);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(82, 30);
+            this.label5.Size = new System.Drawing.Size(66, 24);
             this.label5.TabIndex = 24;
             this.label5.Text = "前回結果\r\n(Result.csv)";
             // 
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(7, 100);
-            this.label4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label4.Location = new System.Drawing.Point(5, 80);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(82, 15);
+            this.label4.Size = new System.Drawing.Size(64, 12);
             this.label4.TabIndex = 24;
             this.label4.Text = "動画IDリスト";
             // 
             // btnAnalyzeDB
             // 
-            this.btnAnalyzeDB.Location = new System.Drawing.Point(925, 59);
-            this.btnAnalyzeDB.Margin = new System.Windows.Forms.Padding(4);
+            this.btnAnalyzeDB.Location = new System.Drawing.Point(694, 47);
             this.btnAnalyzeDB.Name = "btnAnalyzeDB";
-            this.btnAnalyzeDB.Size = new System.Drawing.Size(100, 29);
+            this.btnAnalyzeDB.Size = new System.Drawing.Size(75, 23);
             this.btnAnalyzeDB.TabIndex = 3;
             this.btnAnalyzeDB.Text = "参照";
             this.btnAnalyzeDB.UseVisualStyleBackColor = true;
@@ -869,10 +803,9 @@
             // 
             // btnBaseDB
             // 
-            this.btnBaseDB.Location = new System.Drawing.Point(925, 30);
-            this.btnBaseDB.Margin = new System.Windows.Forms.Padding(4);
+            this.btnBaseDB.Location = new System.Drawing.Point(694, 24);
             this.btnBaseDB.Name = "btnBaseDB";
-            this.btnBaseDB.Size = new System.Drawing.Size(100, 29);
+            this.btnBaseDB.Size = new System.Drawing.Size(75, 23);
             this.btnBaseDB.TabIndex = 1;
             this.btnBaseDB.Text = "参照";
             this.btnBaseDB.UseVisualStyleBackColor = true;
@@ -881,56 +814,50 @@
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(597, 5);
-            this.label6.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label6.Location = new System.Drawing.Point(448, 4);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(303, 15);
+            this.label6.Size = new System.Drawing.Size(241, 12);
             this.label6.TabIndex = 23;
             this.label6.Text = "※dbファイルはnicorank_SnapShot.exeで作成する";
             // 
             // tbAnalyzeDB
             // 
-            this.tbAnalyzeDB.Location = new System.Drawing.Point(96, 61);
-            this.tbAnalyzeDB.Margin = new System.Windows.Forms.Padding(4);
+            this.tbAnalyzeDB.Location = new System.Drawing.Point(72, 49);
             this.tbAnalyzeDB.Name = "tbAnalyzeDB";
-            this.tbAnalyzeDB.Size = new System.Drawing.Size(820, 22);
+            this.tbAnalyzeDB.Size = new System.Drawing.Size(616, 19);
             this.tbAnalyzeDB.TabIndex = 2;
             // 
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(33, 65);
-            this.label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label3.Location = new System.Drawing.Point(25, 52);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(52, 15);
+            this.label3.Size = new System.Drawing.Size(41, 12);
             this.label3.TabIndex = 19;
             this.label3.Text = "集計日";
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(36, 39);
-            this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label2.Location = new System.Drawing.Point(27, 31);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(37, 15);
+            this.label2.Size = new System.Drawing.Size(29, 12);
             this.label2.TabIndex = 18;
             this.label2.Text = "基準";
             // 
             // tbBaseDB
             // 
-            this.tbBaseDB.Location = new System.Drawing.Point(96, 30);
-            this.tbBaseDB.Margin = new System.Windows.Forms.Padding(4);
+            this.tbBaseDB.Location = new System.Drawing.Point(72, 24);
             this.tbBaseDB.Name = "tbBaseDB";
-            this.tbBaseDB.Size = new System.Drawing.Size(820, 22);
+            this.tbBaseDB.Size = new System.Drawing.Size(616, 19);
             this.tbBaseDB.TabIndex = 0;
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(8, 5);
-            this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label1.Location = new System.Drawing.Point(6, 4);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(478, 15);
+            this.label1.Size = new System.Drawing.Size(380, 12);
             this.label1.TabIndex = 1;
             this.label1.Text = "SPモード用の集計ファイルを指定 (例:基準 20xx0701.db 集計日:20xx1226.db)";
             // 
@@ -943,11 +870,9 @@
             this.groupBox1.Controls.Add(this.dtPAnalyzeDay);
             this.groupBox1.Controls.Add(this.rbTyukan);
             this.groupBox1.Controls.Add(this.rbWeekly);
-            this.groupBox1.Location = new System.Drawing.Point(8, 25);
-            this.groupBox1.Margin = new System.Windows.Forms.Padding(4);
+            this.groupBox1.Location = new System.Drawing.Point(6, 20);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Padding = new System.Windows.Forms.Padding(4);
-            this.groupBox1.Size = new System.Drawing.Size(1075, 66);
+            this.groupBox1.Size = new System.Drawing.Size(806, 53);
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "集計方法";
@@ -955,39 +880,35 @@
             // label19
             // 
             this.label19.AutoSize = true;
-            this.label19.Location = new System.Drawing.Point(572, 46);
-            this.label19.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label19.Location = new System.Drawing.Point(429, 37);
             this.label19.Name = "label19";
-            this.label19.Size = new System.Drawing.Size(220, 15);
+            this.label19.Size = new System.Drawing.Size(175, 12);
             this.label19.TabIndex = 9;
             this.label19.Text = "先週基準日指定(週間・中間専用)";
             // 
             // dtPLastweekDay
             // 
-            this.dtPLastweekDay.Location = new System.Drawing.Point(813, 42);
-            this.dtPLastweekDay.Margin = new System.Windows.Forms.Padding(4);
+            this.dtPLastweekDay.Location = new System.Drawing.Point(610, 34);
             this.dtPLastweekDay.Name = "dtPLastweekDay";
-            this.dtPLastweekDay.Size = new System.Drawing.Size(251, 22);
+            this.dtPLastweekDay.Size = new System.Drawing.Size(189, 19);
             this.dtPLastweekDay.TabIndex = 8;
             this.dtPLastweekDay.ValueChanged += new System.EventHandler(this.dtPLastweekDay_ValueChanged);
             // 
             // label7
             // 
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(612, 19);
-            this.label7.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.label7.Location = new System.Drawing.Point(459, 15);
             this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(182, 15);
+            this.label7.Size = new System.Drawing.Size(145, 12);
             this.label7.TabIndex = 7;
             this.label7.Text = "集計基準日指定(週間専用)";
             // 
             // rbSP
             // 
             this.rbSP.AutoSize = true;
-            this.rbSP.Location = new System.Drawing.Point(237, 34);
-            this.rbSP.Margin = new System.Windows.Forms.Padding(4);
+            this.rbSP.Location = new System.Drawing.Point(178, 27);
             this.rbSP.Name = "rbSP";
-            this.rbSP.Size = new System.Drawing.Size(43, 19);
+            this.rbSP.Size = new System.Drawing.Size(37, 16);
             this.rbSP.TabIndex = 2;
             this.rbSP.Text = "SP";
             this.rbSP.UseVisualStyleBackColor = true;
@@ -995,20 +916,18 @@
             // 
             // dtPAnalyzeDay
             // 
-            this.dtPAnalyzeDay.Location = new System.Drawing.Point(813, 15);
-            this.dtPAnalyzeDay.Margin = new System.Windows.Forms.Padding(4);
+            this.dtPAnalyzeDay.Location = new System.Drawing.Point(610, 12);
             this.dtPAnalyzeDay.Name = "dtPAnalyzeDay";
-            this.dtPAnalyzeDay.Size = new System.Drawing.Size(251, 22);
+            this.dtPAnalyzeDay.Size = new System.Drawing.Size(189, 19);
             this.dtPAnalyzeDay.TabIndex = 6;
             this.dtPAnalyzeDay.ValueChanged += new System.EventHandler(this.dtPAnalyzeDay_ValueChanged);
             // 
             // rbTyukan
             // 
             this.rbTyukan.AutoSize = true;
-            this.rbTyukan.Location = new System.Drawing.Point(139, 34);
-            this.rbTyukan.Margin = new System.Windows.Forms.Padding(4);
+            this.rbTyukan.Location = new System.Drawing.Point(104, 27);
             this.rbTyukan.Name = "rbTyukan";
-            this.rbTyukan.Size = new System.Drawing.Size(55, 19);
+            this.rbTyukan.Size = new System.Drawing.Size(47, 16);
             this.rbTyukan.TabIndex = 1;
             this.rbTyukan.Text = "中間";
             this.rbTyukan.UseVisualStyleBackColor = true;
@@ -1018,10 +937,9 @@
             // 
             this.rbWeekly.AutoSize = true;
             this.rbWeekly.Checked = true;
-            this.rbWeekly.Location = new System.Drawing.Point(44, 34);
-            this.rbWeekly.Margin = new System.Windows.Forms.Padding(4);
+            this.rbWeekly.Location = new System.Drawing.Point(33, 27);
             this.rbWeekly.Name = "rbWeekly";
-            this.rbWeekly.Size = new System.Drawing.Size(55, 19);
+            this.rbWeekly.Size = new System.Drawing.Size(47, 16);
             this.rbWeekly.TabIndex = 0;
             this.rbWeekly.TabStop = true;
             this.rbWeekly.Text = "週間";
@@ -1031,21 +949,31 @@
             // 
             this.tabPageOut.Controls.Add(this.tabPageSyukei);
             this.tabPageOut.Controls.Add(this.tabPageTag);
-            this.tabPageOut.Location = new System.Drawing.Point(-4, 5);
-            this.tabPageOut.Margin = new System.Windows.Forms.Padding(4);
+            this.tabPageOut.Location = new System.Drawing.Point(-3, 4);
             this.tabPageOut.Name = "tabPageOut";
             this.tabPageOut.SelectedIndex = 0;
-            this.tabPageOut.Size = new System.Drawing.Size(1115, 975);
+            this.tabPageOut.Size = new System.Drawing.Size(836, 780);
             this.tabPageOut.TabIndex = 0;
             this.tabPageOut.SelectedIndexChanged += new System.EventHandler(this.tabPageOut_SelectedIndexChanged);
             // 
+            // chkUseLiveCounter
+            // 
+            this.chkUseLiveCounter.AutoSize = true;
+            this.chkUseLiveCounter.Checked = true;
+            this.chkUseLiveCounter.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkUseLiveCounter.Location = new System.Drawing.Point(70, 47);
+            this.chkUseLiveCounter.Name = "chkUseLiveCounter";
+            this.chkUseLiveCounter.Size = new System.Drawing.Size(265, 16);
+            this.chkUseLiveCounter.TabIndex = 2;
+            this.chkUseLiveCounter.Text = "検索APIから直接集計する(スナップショットDB不要)";
+            this.chkUseLiveCounter.UseVisualStyleBackColor = true;
+            // 
             // frmMain
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1114, 893);
+            this.ClientSize = new System.Drawing.Size(836, 714);
             this.Controls.Add(this.tabPageOut);
-            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "frmMain";
             this.Text = "ニコラン2019 集計プログラム";
             this.Load += new System.EventHandler(this.frmMain_Load);
@@ -1151,6 +1079,7 @@
         private System.Windows.Forms.RadioButton rbTyukan;
         private System.Windows.Forms.RadioButton rbWeekly;
         private System.Windows.Forms.TabControl tabPageOut;
+        private System.Windows.Forms.CheckBox chkUseLiveCounter;
     }
 }
 
