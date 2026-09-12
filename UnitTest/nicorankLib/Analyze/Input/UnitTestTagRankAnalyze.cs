@@ -139,5 +139,22 @@ namespace UnitTest.nicorankLib.Analyze.Input
             Assert.IsFalse(analyzer.GetTotalCount(out long total));
             Assert.AreEqual(0, total);
         }
+
+        [TestMethod]
+        public void AnalyzeRank_FillsLiveCounters()
+        {
+            var analyzer = new StubTagRankAnalyze(Query("A")) { CountJson = CountJson(200) };
+            analyzer.Pages[0] = PageJson(200, "sm2", "sm1");
+            analyzer.Pages[100] = PageJson(200, "sm2", "sm3");
+
+            bool ok = analyzer.AnalyzeRank(out List<Ranking> list);
+
+            Assert.IsTrue(ok);
+            Assert.AreEqual(3, analyzer.LiveCounters.Count);
+            Assert.AreEqual(2, analyzer.LiveCounters["sm1"].CountPlay);
+            Assert.AreEqual(1, analyzer.LiveCounters["sm1"].CountComment);
+            Assert.AreEqual(3, analyzer.LiveCounters["sm1"].CountMylist);
+            Assert.AreEqual(4, analyzer.LiveCounters["sm1"].CountLike);
+        }
     }
 }

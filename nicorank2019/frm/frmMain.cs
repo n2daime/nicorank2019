@@ -57,6 +57,9 @@ namespace nicorank2019.frm
                 _panel3SyukeiLocation = panel3.Location;
                 lblTagCount.Text = "検索件数: 未確認（上限50000件）";
                 lblTagWarn.Visible = false;
+                // v2最新値チェックの切替配線はコード側で行う（Designerの再生成差分を増やさないため）。初期状態（既定ON）もここで反映する
+                chkUseLiveCounter.CheckedChanged += new EventHandler(this.chkUseLiveCounter_CheckedChanged);
+                UpdateLiveCounterControls();
                 _tagMockLoaded = true;
             }
             catch (Exception ex)
@@ -209,7 +212,8 @@ namespace nicorank2019.frm
                 UseDateFilter = chkDateFilter.Checked,
                 StartGte = dtStart.Value.Date,
                 StartLt = dtEnd.Value.Date,
-                ContentType = contentType
+                ContentType = contentType,
+                UseLiveCounter = chkUseLiveCounter.Checked
             };
             error = null;
             return true;
@@ -328,8 +332,9 @@ namespace nicorank2019.frm
                 MessageBox.Show(buildError, "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            // 集計日DBは必須。基準日DBと前回結果CSVは任意（基準なしは差分なしで累積値を使う）
-            if (!IsExistingFile(tbAnalyzeDB_Tag.Text))
+            // 集計日DBの要否はv2最新値モードで変わる。最新値モードはDBなし実行のため存在確認自体を行わない
+            // （無効化された欄に古い不正パスが残っていてもブロックしない。工場もAnalyzeDBを無視する）
+            if (!query.UseLiveCounter && !IsExistingFile(tbAnalyzeDB_Tag.Text))
             {
                 MessageBox.Show("集計日のDBを指定してください", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
@@ -397,6 +402,24 @@ namespace nicorank2019.frm
             dtStart.Enabled = enabled;
             dtEnd.Enabled = enabled;
             ResetTagCountState();
+        }
+
+        /// <summary>
+        /// v2最新値モードの切替で集計日DB欄の有効・無効を切り替える
+        /// </summary>
+        private void chkUseLiveCounter_CheckedChanged(object sender, EventArgs e)
+        {
+            UpdateLiveCounterControls();
+        }
+
+        /// <summary>
+        /// v2最新値モードONなら集計日DB欄を無効化する（DBなし実行のため）
+        /// </summary>
+        private void UpdateLiveCounterControls()
+        {
+            bool useDb = !chkUseLiveCounter.Checked;
+            tbAnalyzeDB_Tag.Enabled = useDb;
+            btnAnalyzeDB_Tag.Enabled = useDb;
         }
 
         // ポイント計算パネルを集計タブとタグタブで付け替える（タグ選択時はTAGRANK値に切り替える）
