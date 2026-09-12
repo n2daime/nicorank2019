@@ -51,7 +51,7 @@
 - 件数取得（`_limit=0`）でヒット件数を確認し、5万件超過時は集計せず「検索結果が多すぎます。(xxx件) 50000件以下になるように条件を追加して下さい」と通知する。取得は100件ページングを4並列で行い、IDは重複除去・ID順にする
 - 前回結果CSVは任意。未指定なら前回順位なし、指定ありならSP同様に前回順位を付与する
 - 基準日DBは任意。未指定なら差分なしで集計日DBの累積値をそのまま集計値にする（`Count = Total`）。指定ありならSP同様に差分計算する。基準なし時の `BaseDay` は `TargetDay` と同値にする
-- v2最新値モード（UIの「検索APIから直接集計する」ON・`TagSearchQuery.UseLiveCounter`）では集計日DBを使わない。ライブ検索で得た4数値を累積値として採用する（`Count = Total`）。基準日DBありならライブ値から基準値を引いて差分計算する（新着救済の基準-7日を含む考え方はSnapshotDB差分と同一）。集計日は実行日とし、基準なし時は `BaseDay = TargetDay = 実行日`、基準あり時は `TargetDay = 実行日・BaseDay = 基準日DBのDBVersion.集計日` とする。DBVersionを読まないためSnapshotDBの取得待ちが不要になる
+- v2最新値モード（UIの「検索APIから直接集計する」ON・`TagSearchQuery.UseLiveCounter`）では集計日DBを使わない。ライブ検索で得た4数値を累積値として採用する（`Count = Total`）。基準日DBありならライブ値から基準値を引いて差分計算する（新着救済の基準-7日を含む考え方はSnapshotDB差分と同一）。集計日は実行日とし、基準なし時は `BaseDay = TargetDay = 実行日`、基準あり時は `TargetDay = 実行日・BaseDay = 基準日DBのDBVersion.集計日` とする。DBVersionを読まないためSnapshotDBの取得待ちが不要になる。低再生の古動画（SnapshotDBの1000再生足切りに該当）はSnapshotDB版に含まれず1件程度の出入りがあり得る（2026-09検証で1件確認）
 - 出力はSPと同一（履歴登録・長期判定なしの7種。上書き）
 
 ### 紹介枠（GetRank）
