@@ -156,6 +156,8 @@ namespace nicorankLib.Analyze.Input
                     {
                         foreach (var data in info.Data)
                         {
+                            // 重複は先勝ち。ページ取得が4並列のため取得中のライブ変動時はどちらが残るか不定だが、
+                            // 同一動画の数秒差の変動で順位への実害は小さく、確定順序化のコストに見合わないため許容する
                             if (!string.IsNullOrEmpty(data.ID) && !dataMap.ContainsKey(data.ID))
                             {
                                 dataMap.Add(data.ID, data);

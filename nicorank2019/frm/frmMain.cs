@@ -332,16 +332,9 @@ namespace nicorank2019.frm
                 MessageBox.Show(buildError, "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            // 集計日DBの要否はv2最新値モードで変わる。最新値モードならDBなしで実行でき、指定があれば存在確認だけする
-            if (query.UseLiveCounter)
-            {
-                if (!string.IsNullOrWhiteSpace(tbAnalyzeDB_Tag.Text) && !File.Exists(tbAnalyzeDB_Tag.Text.Trim()))
-                {
-                    MessageBox.Show("集計日のDBファイルが見つかりません", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-            }
-            else if (!IsExistingFile(tbAnalyzeDB_Tag.Text))
+            // 集計日DBの要否はv2最新値モードで変わる。最新値モードはDBなし実行のため存在確認自体を行わない
+            // （無効化された欄に古い不正パスが残っていてもブロックしない。工場もAnalyzeDBを無視する）
+            if (!query.UseLiveCounter && !IsExistingFile(tbAnalyzeDB_Tag.Text))
             {
                 MessageBox.Show("集計日のDBを指定してください", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;

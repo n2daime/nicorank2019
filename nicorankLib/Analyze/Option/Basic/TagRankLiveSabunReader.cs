@@ -46,7 +46,7 @@ namespace nicorankLib.Analyze.Option.Basic
             }
             if (dbCtrlBase.Open(BaseDB))
             {
-                this.BaseTime = GetTargetTime(dbCtrlBase);
+                this.BaseTime = GetBaseTime(dbCtrlBase);
 
                 return true;
             }
@@ -57,11 +57,11 @@ namespace nicorankLib.Analyze.Option.Basic
         }
 
         /// <summary>
-        /// 集計日を取得する
+        /// 基準日DBのDBVersionから集計日（＝BaseTime）を取得する
         /// </summary>
         /// <param name="dbCtrl"></param>
         /// <returns></returns>
-        protected DateTime GetTargetTime(ISQLiteCtrl dbCtrl)
+        protected DateTime GetBaseTime(ISQLiteCtrl dbCtrl)
         {
             using (var aCmd = dbCtrl.Connection.CreateCommand())
             {
@@ -74,12 +74,13 @@ namespace nicorankLib.Analyze.Option.Basic
                     }
                 }
             }
-            //エラーは想定してない（手抜き）
+            //エラーは想定してない（手抜き。SnapShotSabunReaderの踏襲）
+            //なおこのフォールバックは実行日（TargetDay＝Today）より未来になり得るため、新着救済の基準-7日が効きにくくなる点に注意する
             return DateTime.Now;
         }
 
         /// <summary>
-        ///
+        /// 基準日DBのRankingから4数値を読む。存在しなければfalse（新着救済の判定材料）
         /// </summary>
         /// <param name="aCmd"></param>
         /// <param name="ID"></param>
@@ -120,6 +121,10 @@ namespace nicorankLib.Analyze.Option.Basic
         /// <summary>
         /// 差分値を集計する
         /// </summary>
+        /// <remarks>
+        /// 事前条件: RankingAnalyzeがInput→Optionの順に実行するため、Input成功後のLiveCountersが確定していること。
+        /// Input失敗時は本メソッドに到達しない。単独呼び出しでLiveCountersが空なら全件isDeleteの空成功になるが、0件検索の空成功を維持するため動作は変えない。
+        /// </remarks>
         /// <param name="rankingList"></param>
         /// <returns></returns>
         public override bool AnalyzeRank(ref List<Ranking> rankingList)

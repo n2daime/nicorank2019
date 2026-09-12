@@ -58,6 +58,10 @@ namespace nicorankLib.Analyze.Option.Basic
         /// <summary>
         /// ライブ値をそのまま集計値にする（差分なし）
         /// </summary>
+        /// <remarks>
+        /// 事前条件: RankingAnalyzeがInput→Optionの順に実行するため、Input成功後のLiveCountersが確定していること。
+        /// Input失敗時は本メソッドに到達しない。単独呼び出しでLiveCountersが空なら全件isDeleteの空成功になるが、0件検索の空成功を維持するため動作は変えない。
+        /// </remarks>
         public override bool AnalyzeRank(ref List<Ranking> rankingList)
         {
             try
