@@ -45,7 +45,7 @@ AnalyzeRank():
   IExtOptionBase.AnalyzeRank(list)     … 順位計算後の付加処理
 ```
 
-`calcRanking` の6種の順位（すべて並列）: 総合（PointTotal 降順）/ 再生 / コメント / マイリスト / いいね / カテゴリ（`!isDelete` のみ、Category グループごとに PointTotal 降順）。
+`calcRanking` の6種の順位（すべて並列）: 総合（PointTotal 降順）/ 再生 / コメント / マイリスト / いいね / カテゴリ（`!isDelete` のみ、Category グループごとに PointTotal 降順）。同点時は `RankingIdComparer`（種別→数字の数値認識、失敗時はOrdinalフォールバック）で決定的にする（Issue #34）。順位値は連番維持。
 
 ## Analyze/Input
 
@@ -98,6 +98,7 @@ AnalyzeRank():
 ## Analyze/model
 
 - `Ranking` — 集計結果1件。`CalcPoint()`（ポイント計算、キャッシュ付き）・`PointCalcReset()`・`MergeRankingList`・`IsChannel`（`so` 始まり）。計算式の詳細は `../specs.md` セクション2
+- `RankingIdComparer` — 動画IDの決定的な比較子（Issue #34）。種別→数字の数値認識、同点時だけ呼ばれるThenBy二次キー用
 - `EAnalyzeMode` — Weekly / SP / Tyukan / Daily / Mothly（タイポ）/ TagRank / Unknown
 - `DB` — DB ファイルパス定数（`LOG_OFFICEIAL` / `NiCORAN_HISTORY` / `LOG_SNAPSHOT`）
 - `RankGenreJson` / `RankLogJson` — 公式ランキング JSON のデシリアライズ用モデル（`JsonReaderBase` / `RankApi2Json` で使用）

@@ -333,3 +333,24 @@
   - `RankingDate` は削除対象外: 更新再開位置のしおりであり、消すと2019年からの全期間再取得になる。メンテ日判定にも使用。2646行・数十KBでコストは無視できる。来歴は `d7e5070`(2024-06サイバー攻撃対応)で新設、メンテ列は新設時から同梱、旧来はRanking直MAX取得だった
 - **検証**: コード変更なしのためビルド・テスト対象外(MUST 5はユーザー承認で省略)。測定クエリはすべて読取り専用で実DB無改変を確認。施策前後の差分検証(対策前後2環境で1ヶ月間週刊比較後にリリース)は2daimeが実施予定
 - **残課題**: メンテナンスタブ「DBの最適化」追加予定(断片化対策)。実施フェーズ(Issue化・SoHistory設計・prune手順の開発検証)は別タスク化予定
+
+---
+
+## 2026-09-12 タグ検索v2最新値オプション (#35)
+
+- **Issue**: https://github.com/n2daime/nicorank2019/issues/35
+- **ブランチ**: `feature/t035-tagrank-live-counter` → `develop` に `--no-ff` でマージ。続けて `feature/t031-logofficial-prune-sohistory` へも取込（t031のdevelopマージ判断には影響させない）。マージ後にfeatureブランチ削除
+- **背景**: リアルタイムに結果だけ知りたい時にSnapshotDB（20070306からの全期間全動画フルスナップショット）の取得は時間・データ量とも過剰なため、集計日にv2最新値の選択肢を足す
+- **実装内容**:
+  - UI（ユーザー担当）: `chkUseLiveCounter` をgrpDbに配置・既定TRUE。判定・退避・Enable切替配線は後工程で実施。Designer全体が環境差で再生成されたため表示確認はユーザー実行確認に委ねた
+  - `TagSearchQuery.UseLiveCounter`（既定false。唯一の切替。`SetInputFile` の引数は不変）
+  - `TagRankAnalyze.LiveCounters`（ID→4数値。従来捨てていた `DefaultFields` のカウンタを保持。`CollectContentIds`→`CollectContentData` に変更。重複は先勝ちでコメント明記）
+  - `TagRankLiveTotalReader`（基準なし。DB不要）・`TagRankLiveSabunReader`（基準あり。Target=ライブ・Base=基準日DB。新着救済はSabunReaderと同一）新設。純粋処理 `ApplyLiveTotals` はstatic共用
+  - `ModeFactoryTagRank` を4分岐化（SnapshotDB×基準あり/なし＋v2最新×基準あり/なし）。v2時の集計日は実行日
+  - frmMain配線: `TryBuildTagSearchQuery` 退避・ライブON時のAnalyzeDB存在確認スキップ・`frmMain_Load` でのCheckedChanged配線＋初期Disable（Designer再生成差分を避けコード側で実施）
+- **設計判断**（詳細は `design.md` のIssue #35追記）: Reader分離・Input共有参照（Input内完結案は肥大化のため不採用）。`RankingAnalyze` のInput→Option順序を前提とし事前条件をremarks明記。ポイント係数見直しは `TAGRANK` 節の運用調整に分離
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 全173件PASS（既存165＋新規8。内訳: LiveCounters保持1・ApplyLiveTotals対応付け1・Open成否4・工場分岐2。EXIT CODE 0）、`dotnet build nicorank2019.csproj` 成功
+  - reviewerレビュー＋再レビュー: 中1件（無効欄旧値ブロック→存在確認スキップ）・低4件（GetBaseTime改名・GetMovieData要約・先勝ち明記・事前条件remarks）を解消し再レビュー通過。工場の基準DBあり成功系を外した理由はテスト内コメントに記録
+  - ユーザー実行確認: エラーなく実行＋当日SnapshotDB版との比較検証。188行vs187行で共通187件の値列完全一致、差分は `sm43925516`（再生737の低再生古動画。旧DBの1000再生足切りに該当）1件の有無による順位+1シフトのみ。LiveCountersとSnapshotDB値の等価性を実証。specs.mdに1件出入りの旨を追記
+- **残課題**: DB以外（登録用JSON・前回CSV）を基準にする案は検討の結果不採用（差分にはDBが必要と結論。新Issueなし）。`TagRankLiveSabunReader` 差分分岐の純粋関数切り出しは将来検討（reviewer任意指摘）
