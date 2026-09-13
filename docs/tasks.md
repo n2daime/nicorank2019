@@ -15,14 +15,6 @@
 
 ## 未完了タスク
 
-### 順位計算の同点時タイブレーク（#34）
-
-> #31対策の前後比較で前回順位が2件だけ1ずつずれた。原因は `RankingAnalyze.calcRanking` が単一キー降順＋連番のみで、同点時の順序が入力順依存（並列取得のため不定）だったため。
-
-- [ ] 3.1 `RankingAnalyze.calcRanking` の6種（総合・再生・コメント・マイリスト・いいね・カテゴリ）にID数値認識の第二キー（種別→数字、失敗時はOrdinalフォールバック）を追加する。順位値は連番維持
-- [ ] 3.2 単体テスト追加（sm20/sm199・sm999/sm1000・sm/so混在・非数値フォールバックと群分離順序・null/同一・空文字・前ゼロ・入力順反転でも同一結果・副順位数値順。9件）
-- [ ] 3.3 specs/design/knowledge更新、173件＋新規が全PASS、ビルド警告0、reviewer再レビューで問題なし、ユーザー実行確認後にdevelopと `feature/t031-logofficial-prune-sohistory` の両方へマージ
-
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。
@@ -44,6 +36,7 @@
 
 | タスク | 完了日 | 主な成果物 |
 |---|---|---|
+| 順位計算の同点時タイブレーク(#34)✅ | 2026-09-13 | RankingIdComparer新設（種別→数字・群分離・ASCII限定）・calcRanking6種にThenBy＋並列前ポイント確定（既存競合解消）・UnitTest9件追加（計182件）・specs/design/knowledge更新・develop→t031取込（t031で197件PASS）・実集計rank1000比較で値列差分0・順位のみ同点安定化を確認 |
 | タグ検索v2最新値オプション(#35)✅ | 2026-09-12 | 集計日にv2最新値モード追加（chkUseLiveCounter・既定ON・DBなし実行可）・TagRankAnalyze.LiveCounters保持・TagRankLiveTotalReader/LiveSabunReader新設・ModeFactoryTagRank4分岐（集計日=実行日）・UnitTest8件追加（計173件）・specs/design/knowledge更新・develop→t031取込 |
 | タグ検索ランキング(#30)✅ | 2026-09-06 | タグ検索集計タブ（共有係数パネル・件数確認・Enter確定・上限超過時実行不可）・TagConditionParser（A&B\|C*→jsonFilter）・CreateTagSearch・TagRankAnalyze（5万判定・100件×4並列）・TagRankTotalReader（基準なし時）・ModeFactoryTagRank（SP相当・前回CSV任意・基準DB任意）・TAGRANK節（節単位フォールバック）・UnitTest29件追加（計165件）・specs/design/knowledge更新 |
 |---|---|---|
