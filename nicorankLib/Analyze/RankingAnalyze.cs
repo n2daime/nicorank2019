@@ -124,6 +124,15 @@ namespace nicorankLib.Analyze
 
                 StatusLog.WriteLine("ランキングを計算しています．．");
 
+                // ポイントを単一スレッドで確定させる。Ranking.CalcPointのキャッシュ(workPointTotal)は
+                // スレッドセーフでなく、計算途中の部分値を書き込みながら進めるため、並列タスク内で
+                // 初回計算が重なると別タスクが部分値を読んで順序が不定になる。同点タイブレークの
+                // 決定的保証のために、並列ソートの前に全件確定させる（読むだけなら競合しない）。
+                foreach (var rank in rakingList)
+                {
+                    _ = rank.PointTotal;
+                }
+
                 var taskList = new List<Task>();
                 // 同点時はIDの数値認識順で決定的にする。入力は並列取得のため順序が不定であり、
                 // 単一キー降順だけでは同点の並びが実行ごとに変わり前回順位が±1ずれる（Issue #34）。

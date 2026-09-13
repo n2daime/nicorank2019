@@ -109,11 +109,25 @@ namespace UnitTest.nicorankLib.Analyze
         [TestMethod]
         public void IdComparer_Fallback_NonNumeric()
         {
-            // 数字化できないIDは例外にせず辞書式フォールバックで決定的になること
+            // 数字化できないIDは例外にせず決定的になること
             Assert.AreEqual(0, RankingIdComparer.Instance.Compare("smABC", "smABC"));
             Assert.IsTrue(RankingIdComparer.Instance.Compare("smABC", "smABD") < 0);
-            // 片方だけ数字化できなくても決定的に比べられること（例外なし）
-            Assert.IsNotNull(RankingIdComparer.Instance.Compare("sm10", "smABC").ToString());
+            // 片方だけ数字化できなくても決定的に比べられること（例外なし）。
+            // 数値化できる正規IDを先にし、推移律を保つ（sm10・sm10a・sm9の循環を作らないため）
+            Assert.IsTrue(RankingIdComparer.Instance.Compare("sm10", "smABC") < 0);
+            Assert.IsTrue(RankingIdComparer.Instance.Compare("smABC", "sm10") > 0);
+            Assert.IsTrue(RankingIdComparer.Instance.Compare("sm9", "sm10a") < 0);
+        }
+
+        [TestMethod]
+        public void IdComparer_Edge_EmptyAndLeadingZero()
+        {
+            // 空文字でも例外なく決定的になること
+            Assert.IsTrue(RankingIdComparer.Instance.Compare("", "sm1") < 0);
+            Assert.AreEqual(0, RankingIdComparer.Instance.Compare("", ""));
+            // 前ゼロ付きは数値が等しいため全体の辞書式で決定的になること（例外なし・同値にしない）
+            Assert.IsTrue(RankingIdComparer.Instance.Compare("sm0010", "sm10") < 0);
+            Assert.IsTrue(RankingIdComparer.Instance.Compare("sm10", "sm0010") > 0);
         }
 
         [TestMethod]
@@ -157,7 +171,8 @@ namespace UnitTest.nicorankLib.Analyze
         [TestMethod]
         public void AnalyzeRank_SubRanksFollowNumericIdOrder()
         {
-            // 4数値も同点のため、再生・コメント・マイリスト・いいね・カテゴリも数値順になること
+            // 4数値も同点のため、再生・コメント・マイリスト・いいね・カテゴリも数値順になること。
+            // 総合と同様に3件全てをassertし、6箇所のThenBy適用漏れを検出できるようにする
             var byId = RunAnalyze("sm199", "sm20", "sm3");
 
             Assert.AreEqual(1, byId["sm3"].RankPlay);
@@ -165,9 +180,20 @@ namespace UnitTest.nicorankLib.Analyze
             Assert.AreEqual(3, byId["sm199"].RankPlay);
 
             Assert.AreEqual(1, byId["sm3"].RankComment);
+            Assert.AreEqual(2, byId["sm20"].RankComment);
+            Assert.AreEqual(3, byId["sm199"].RankComment);
+
             Assert.AreEqual(1, byId["sm3"].RankMyList);
+            Assert.AreEqual(2, byId["sm20"].RankMyList);
+            Assert.AreEqual(3, byId["sm199"].RankMyList);
+
             Assert.AreEqual(1, byId["sm3"].RankLike);
+            Assert.AreEqual(2, byId["sm20"].RankLike);
+            Assert.AreEqual(3, byId["sm199"].RankLike);
+
             Assert.AreEqual(1, byId["sm3"].RankCategory);
+            Assert.AreEqual(2, byId["sm20"].RankCategory);
+            Assert.AreEqual(3, byId["sm199"].RankCategory);
         }
     }
 }

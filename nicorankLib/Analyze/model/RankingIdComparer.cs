@@ -8,7 +8,8 @@ namespace nicorankLib.Analyze.model
     /// なぜ数値認識が必要か：単純な辞書式(Ordinal)では桁数が違うIDの順序が数値順と一致しない
     /// （例：3文字目の '1' と '2' の比較で sm199 が sm20 より先になる）。IDの大小を割り当て順と
     /// 直感的に一致させるため、種別(先頭の非数字部)→数字部の順に比べる。ID体系が変わって数字化
-    /// できない場合も例外にせず辞書式にフォールバックし、決定的であることを保つ。
+    /// できない場合も例外にせず決定的順序を保つ（数値化の有無で群を分けてから辞書式にフォールバックし、
+    /// 推移律が崩れないようにする）。
     /// なぜComparer1個にまとめるか：ThenByの二次比較子は一次キー(ポイント等)が等しい同点ペアに
     /// 対してだけ呼ばれるため、同点時だけ分解すれば処理コストが最小になる。キー抽出をThenByで
     /// 2段に分けると全件の分解が毎回走るため採用しない。
@@ -70,8 +71,16 @@ namespace nicorankLib.Analyze.model
                 }
                 // 数値まで等しい（例：前ゼロの有無）は全体の辞書式で決定的にする
             }
+            else if (parsedX != parsedY)
+            {
+                // 数値化の有無が混在する場合は有無で群を分ける。全体の辞書式に直接
+                // フォールバックすると推移律が崩れる（sm10・sm10a・sm9の循環例）ため、
+                // 先に群を分けて同群内だけで辞書式比較し、決定的順序を保つ。
+                // 数値化できる方を小さい（先）とし、実データの正規IDを異常IDより前にする。
+                return parsedX ? -1 : 1;
+            }
 
-            // 片方だけ数字化できない等の中途半端な状態は全体の辞書式にフォールバックする
+            // 両方とも数字化できない場合は全体の辞書式にフォールバックする
             return string.Compare(x, y, StringComparison.Ordinal);
         }
 
@@ -79,16 +88,26 @@ namespace nicorankLib.Analyze.model
         /// IDを先頭の非数字部（種別）と残りの数字部に分ける。
         /// 例：sm20 → ("sm", "20")、so40000000 → ("so", "40000000")。
         /// 数字部が空の場合は空文字のままとし、呼び出し側のTryParseで失敗扱いにする。
+        /// なぜASCII限定か：動画ID体系はASCII数字のみであり、全角数字等のUnicode10進数字を
+        /// 数字部に含めるとTryParseの受理範囲と判定範囲がずれて意図せぬ数値比較になるため。
         /// </summary>
         private static void SplitId(string id, out string prefix, out string number)
         {
             int i = 0;
-            while (i < id.Length && !char.IsDigit(id[i]))
+            while (i < id.Length && !IsAsciiDigit(id[i]))
             {
                 i++;
             }
             prefix = id.Substring(0, i);
             number = i < id.Length ? id.Substring(i) : string.Empty;
+        }
+
+        /// <summary>
+        /// ASCIIの0〜9かどうかを判定する。
+        /// </summary>
+        private static bool IsAsciiDigit(char c)
+        {
+            return '0' <= c && c <= '9';
         }
     }
 }
