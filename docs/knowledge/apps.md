@@ -32,9 +32,10 @@
 - 依存しないもの: `nicorank.xml`・`DB/` フォルダは使わない（SnapShot 経路に参照なし）。成果物はカレント直下の `LogSnapshot_yyyyMMdd.db`、エラー時のみ `nicorankerr.log`。定期実行では出力先の `WorkingDirectory` を固定する運用が必要
 - 持たないもの: 開始ボタン・サスペンド・TaskDialog（`Form1` 由来）。電源管理は cron / systemd 側の責務
 - **ビルド**: net8.0、SDK-style、`PackageReference`（`Microsoft.Data.Sqlite 10.0.11` / `Newtonsoft.Json 13.0.4` は UnitTest と同版に統一。`System.Text.Encoding.CodePages 8.0.0`）。**nicorankLib（net48）を参照するハイブリッド構成**（`nicorank_oldlog` と同じ）。Costura は使わない
-- 起動直後に `CodePagesEncodingProvider` を登録する（`TextUtil` の shift_jis 判別が Linux で例外にならないため）
+- 起動直後に `CodePagesEncodingProvider` を登録する（`TextUtil` の shift_jis 判別が Linux で例外にならないため。パッケージの版は `nicorank_oldlog` と同じ 8.0.0だが、登録呼び出し自体は oldlog にはなく CLI で追加した）
 - SQLite ネイティブは `Microsoft.Data.Sqlite` 経由で `runtimes/linux-x64/native/libe_sqlite3.so` が出力に含まれる。Windows 用の `lib` 集約・`probing` は持ち込まない
-- 配布は framework-dependent（`dotnet publish -c Release -r linux-x64 --self-contained false`）を想定。Linux 実機での取得実行は未検証（Windows 上で `--help` 終了コード 0 とビルド・全テスト 182 件 PASS まで確認）
+- 配布はポータブルな framework-dependent（`dotnet publish -c Release`。`-r` を付けない）を想定し、実行は `dotnet nicorank_SnapShot.Cli.dll` とする。理由は、`-r linux-x64` 付き publish では NuGet 由来の `runtimes/linux-x64/native/libe_sqlite3.so` が出力から落ち、win 用だけが残って Linux で動かないことを確認したためである。`-r` なし publish なら `runtimes/` 全 RID が同梱され linux-x64 が含まれる。出力直下の `lib/`（win 用 DLL 群）は net48 参照元から流れ込む残骸であり、Linux では無視される
+- Linux 実機での取得実行は未検証（Windows 上で `--help` 終了コード 0 とビルド・全テスト 182 件 PASS、portable publish への linux-x64 同梱まで確認）
 
 ## nicorank_oldlog（公式過去ランキング回収ツール）
 

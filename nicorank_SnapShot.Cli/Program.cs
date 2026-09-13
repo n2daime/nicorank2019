@@ -34,7 +34,9 @@ try
 catch (Exception e)
 {
     // SnapController 内で握りつぶされなかった例外の受け皿。nicorank_oldlog と同じ終了コード規約（0=成功/2=エラー）にする。
+    // 画面にも1行残す。ファイルだけだと cron 運用で失敗理由に気づくのが遅れるため。
     ErrLog.GetInstance().Write(e);
+    Console.WriteLine("集計がエラーになりました。nicorankerr.log を確認してください。");
     return 2;
 }
 

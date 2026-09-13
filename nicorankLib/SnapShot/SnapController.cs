@@ -25,7 +25,13 @@ namespace nicorankLib.SnapShot
                     StatusLog.WriteLine($"Snapshot APIのデータを取得しています...");
 
                     var snapShotDB = new SnapShotDB();
-                    snapShotDB.InitilizeDB();
+                    // 初期化失敗は例外にならないため戻り値で判定する。見落とすと空のまま取得が進み成功扱いになる（#37）。
+                    if (!snapShotDB.InitilizeDB())
+                    {
+                        StatusLog.WriteLine("スナップショットDBの初期化に失敗しました");
+                        result = false;
+                        return;
+                    }
 
                     var dataList = new List<SnapShotJson>(100000);
                     var addDate = new TimeSpan(15,0,0,0); //15日
@@ -52,14 +58,24 @@ namespace nicorankLib.SnapShot
                         dateTime = dateTime.Add(addDate);
                         if (dataList.Count > 10000 )
                         {
-                            snapShotDB.RegistDB(dataList);
+                            // 登録失敗は例外にならないため戻り値で失敗を記録する。続行自体はやめない（残件も登録して被害を最小化するため）。
+                            if (!snapShotDB.RegistDB(dataList))
+                            {
+                                StatusLog.WriteLine("スナップショットDBへの登録に失敗しました");
+                                result = false;
+                            }
                             dataList.Clear();
                         }
                         
                     }
                     if (dataList.Count > 0)
                     {
-                        snapShotDB.RegistDB(dataList);
+                        // 最終残件の登録失敗も成功扱いにしない（CLI の終了コードが誤るため）。
+                        if (!snapShotDB.RegistDB(dataList))
+                        {
+                            StatusLog.WriteLine("スナップショットDBへの登録に失敗しました");
+                            result = false;
+                        }
                     }
                 }
                 catch (Exception ex)
