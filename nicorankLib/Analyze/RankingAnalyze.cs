@@ -125,10 +125,14 @@ namespace nicorankLib.Analyze
                 StatusLog.WriteLine("ランキングを計算しています．．");
 
                 var taskList = new List<Task>();
+                // 同点時はIDの数値認識順で決定的にする。入力は並列取得のため順序が不定であり、
+                // 単一キー降順だけでは同点の並びが実行ごとに変わり前回順位が±1ずれる（Issue #34）。
+                // ThenByの二次比較子は一次キーが等しい同点ペアにだけ呼ばれるため処理コストは最小になる。
+                // 順位値は連番のまま変えない（同順位スキップはしない）。
                 taskList.Add(Task.Run(() =>
                 {// 総合順位
                     long rank = 1;
-                    var workList = rakingList.OrderByDescending(ranking => ranking.PointTotal).ToList();
+                    var workList = rakingList.OrderByDescending(ranking => ranking.PointTotal).ThenBy(ranking => ranking.ID, RankingIdComparer.Instance).ToList();
                     foreach (var wRank in workList)
                     {
                         wRank.RankTotal = rank;
@@ -138,7 +142,7 @@ namespace nicorankLib.Analyze
                 taskList.Add(Task.Run(() =>
                 {// 再生順位
                     long rank = 1;
-                    var workList = rakingList.OrderByDescending(ranking => ranking.CountPlay).ToList();
+                    var workList = rakingList.OrderByDescending(ranking => ranking.CountPlay).ThenBy(ranking => ranking.ID, RankingIdComparer.Instance).ToList();
                     foreach (var wRank in workList)
                     {
                         wRank.RankPlay = rank;
@@ -148,7 +152,7 @@ namespace nicorankLib.Analyze
                 taskList.Add(Task.Run(() =>
                 {// コメント順位
                     long rank = 1;
-                    var workList = rakingList.OrderByDescending(ranking => ranking.CountComment).ToList();
+                    var workList = rakingList.OrderByDescending(ranking => ranking.CountComment).ThenBy(ranking => ranking.ID, RankingIdComparer.Instance).ToList();
                     foreach (var wRank in workList)
                     {
                         wRank.RankComment = rank;
@@ -158,7 +162,7 @@ namespace nicorankLib.Analyze
                 taskList.Add(Task.Run(() =>
                 {// マイリスト順位
                     long rank = 1;
-                    var workList = rakingList.OrderByDescending(ranking => ranking.CountMyList).ToList();
+                    var workList = rakingList.OrderByDescending(ranking => ranking.CountMyList).ThenBy(ranking => ranking.ID, RankingIdComparer.Instance).ToList();
                     foreach (var wRank in workList)
                     {
                         wRank.RankMyList = rank;
@@ -168,7 +172,7 @@ namespace nicorankLib.Analyze
                 taskList.Add(Task.Run(() =>
                 {// いいね順位
                     long rank = 1;
-                    var workList = rakingList.OrderByDescending(ranking => ranking.CountLike).ToList();
+                    var workList = rakingList.OrderByDescending(ranking => ranking.CountLike).ThenBy(ranking => ranking.ID, RankingIdComparer.Instance).ToList();
                     foreach (var wRank in workList)
                     {
                         wRank.RankLike = rank;
@@ -181,7 +185,7 @@ namespace nicorankLib.Analyze
                     foreach (var cateRankList in categoryRankList)
                     {
                         long rank = 1;
-                        var workList = cateRankList.OrderByDescending(ranking => ranking.PointTotal).ToList();
+                        var workList = cateRankList.OrderByDescending(ranking => ranking.PointTotal).ThenBy(ranking => ranking.ID, RankingIdComparer.Instance).ToList();
                         foreach (var wRank in workList)
                         {
                             wRank.RankCategory = rank;
