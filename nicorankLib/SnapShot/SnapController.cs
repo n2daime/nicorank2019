@@ -65,6 +65,8 @@ namespace nicorankLib.SnapShot
                 catch (Exception ex)
                 {
                     ErrLog.GetInstance().Write(ex);
+                    // 例外時は失敗として返す。従来は result が true のまま成功扱いになり、CLI の終了コードが誤るため修正する（#37）。
+                    result = false;
                 }
             });
             return result;

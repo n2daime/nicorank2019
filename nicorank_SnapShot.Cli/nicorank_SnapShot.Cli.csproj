@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>nicorank_SnapShot.Cli</RootNamespace>
+    <AssemblyName>nicorank_SnapShot.Cli</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- UnitTest と同じ版に揃える。net48 の nicorankLib が対象とする版と一致させる必要がある（混在すると Batteries_V2.Init 時の FileLoadException になる。詳細は docs/knowledge/pitfalls.md の 4f） -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <!-- TextUtil が shift_jis 等のコードページを使う。net48 では OS 標準だが net8 の Linux では登録が必須になる（nicorank_oldlog と同じ） -->
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- nicorank_oldlog と同じハイブリッド構成（net8 から net48 ライブラリを参照する） -->
+    <ProjectReference Include="..\nicorankLib\nicorankLib.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -23,6 +23,19 @@
 - UI モード（`Form1.cs`）: 「OK」ボタンで `SnapController.GetSnapShotAsync()` を await。完了後、チェックボックス ON なら TaskDialog で 30 秒カウントダウン後に `Application.SetSuspendState`（PC サスペンド）、OFF なら即終了
 - **ビルド**: .NET Framework 4.8。WindowsAPICodePack-Core 1.1.2。Costura.Fody 6.2.0
 
+## nicorank_SnapShot.Cli（スナップショット取得の Linux 版。Issue #37）
+
+**役割**: WinForms を持たない net8.0 コンソール。NAS（Linux・x64・.NET 8 ランタイムあり）での定期取得用。取得中核は `nicorankLib/SnapShot` の `SnapController` をそのまま使う。
+
+- 起動: `--help` / `-h` で使い方表示（終了コード 0）。それ以外（引数なし含む）は取得を実行する（既存コンソールモードが引数の中身を解釈しない運用に合わせた）
+- 終了コード: 0=成功 / 2=エラー（`nicorank_oldlog` と同じ規約）。`SnapController` の catch で例外時に `false` を返すよう修正したため、例外時も 2 になる（従来は成功扱いだった）
+- 依存しないもの: `nicorank.xml`・`DB/` フォルダは使わない（SnapShot 経路に参照なし）。成果物はカレント直下の `LogSnapshot_yyyyMMdd.db`、エラー時のみ `nicorankerr.log`。定期実行では出力先の `WorkingDirectory` を固定する運用が必要
+- 持たないもの: 開始ボタン・サスペンド・TaskDialog（`Form1` 由来）。電源管理は cron / systemd 側の責務
+- **ビルド**: net8.0、SDK-style、`PackageReference`（`Microsoft.Data.Sqlite 10.0.11` / `Newtonsoft.Json 13.0.4` は UnitTest と同版に統一。`System.Text.Encoding.CodePages 8.0.0`）。**nicorankLib（net48）を参照するハイブリッド構成**（`nicorank_oldlog` と同じ）。Costura は使わない
+- 起動直後に `CodePagesEncodingProvider` を登録する（`TextUtil` の shift_jis 判別が Linux で例外にならないため）
+- SQLite ネイティブは `Microsoft.Data.Sqlite` 経由で `runtimes/linux-x64/native/libe_sqlite3.so` が出力に含まれる。Windows 用の `lib` 集約・`probing` は持ち込まない
+- 配布は framework-dependent（`dotnet publish -c Release -r linux-x64 --self-contained false`）を想定。Linux 実機での取得実行は未検証（Windows 上で `--help` 終了コード 0 とビルド・全テスト 182 件 PASS まで確認）
+
 ## nicorank_oldlog（公式過去ランキング回収ツール）
 
 **役割**: ニコニコ公式 API（nvapi.nicovideo.jp）から過去のランキング（ジャンル/定番/トレンドタグ）を JSON 化して `old-ranking/<folder>/<yyyy-MM-dd>/` に保存する。**net8.0 コンソールアプリ（top-level statements）**。
