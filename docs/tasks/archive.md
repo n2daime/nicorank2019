@@ -374,3 +374,29 @@
   - ユーザー実行確認: 実集計の `rank1000.txt` 修正前後比較。1000行・27列・ID集合は完全一致、値列の差分は0セル（順位以外の全列がIDごとに完全一致）。差分は6種の順位列のみ（総合42・カテゴリ8・再生78・コメント525・マイリス905・いいね552。マイリス等が多いのは同点群が巨大なため。例：マイリス数は176種類しかなく「10」が33件）。修正後ファイルは6種すべてで主キー降順＋ID数値認識順に完全一致（違反0件）
   - t031取込時は `docs/design.md`・`docs/knowledge/testing.md` がコンフリクト（隣接セクション追加同士）。両方残す形で解消し、`testing.md` はt031側のSoHistory15件と#35系8件と#34系9件を合算して197件に更新。`docs/tasks.md` の自動マージは#35完了状態（履歴行あり）を優先し、t031側の旧#35未完了節は解消済みとして扱った。取込後にt031上で全197件PASSを確認
 - **残課題**: なし。`CalcPoint` のロック化・ `MergeRankingList` の辞書順序の確定化は、現状ウォームアップとタイブレークで決定的になるため見送り
+
+---
+
+## 2026-09-14 SnapShot Linux対応CLI (#37)
+
+- **Issue**: https://github.com/n2daime/nicorank2019/issues/37
+- **ブランチ**: `feature/t037-snapshot-linux-cli` → `develop` に `--no-ff` でマージ。続けて `feature/t031-logofficial-prune-sohistory` へも取込（t031のdevelopマージ時競合の事前回避。#34・#35と同一方式）。マージ後にfeatureブランチ削除。プッシュはユーザー指示待ち
+- **背景**: nicorank_SnapShot（スナップショット取得ツール）を Linux（NAS・x64・.NET 8 ランタイムあり）で動かす。取得中核は nicorankLib/SnapShot に分離済みで、調査の結果 nicorank.xml・DB/ フォルダは取得単体では不要と確認したため、WinForms を持たない net8 CLI の新設で足りると判断した。WinForms 部分（開始ボタン・サスペンド・TaskDialog）は Linux 版に持ち込まない
+- **実装内容**:
+  - `nicorank_SnapShot.Cli` 新設（net8.0・SDK-style・top-level statements）。`SnapController.GetSnapShotAsync()` を呼び、終了コードは 0=成功/2=エラー（`nicorank_oldlog` と同一規約）。`--help` のみ取得せず終了する
+  - `SnapController` の失敗検知3件修正（#37レビュー指摘対応）。`InitilizeDB()` 失敗時は早期確定、`RegistDB()` 2か所（途中・最終残件）は失敗を記録しつつ続行（被害最小化）、catch の例外時は `false` を返す（従来は成功扱いだった）。いずれも Windows 側のエラー表示が正しくなる方向の変更
+  - パッケージは `Microsoft.Data.Sqlite 10.0.11` / `Newtonsoft.Json 13.0.4`（UnitTest と同版。pitfalls 4f の混在回避）・`System.Text.Encoding.CodePages 8.0.0`（oldlog と同版）。Costura は使わない。起動直後に `CodePagesEncodingProvider` を登録する（登録呼び出しは oldlog になく CLI で追加）
+  - `nicorank2019.sln` に登録（oldlog と同じ SDK-style 種別・AnyCPU マッピング）。既存 net48 WinForms は Windows 用として残す
+  - nicorankLib 全体の net8 化は範囲が広すぎるため見送り。`InternetUtil` の HttpClient 化も段階移行として別タスク化。oldlog の Newtonsoft 13.0.3 は稼働実績構成を変えないため見送り
+- **設計判断**: 案Aハイブリッド（net8 から net48 ライブラリを参照。Linux 稼働実績のある nicorank_oldlog と同じ形）。`RankingHistory` の `MessageBox` は SnapShot 経路から到達しないため初回は不問とし、実際にハイブリッド参照でビルドが通ることを確認して確定した
+- **検証**:
+  - `dotnet build` 成功、`dotnet test UnitTest/UnitTest.csproj` 全182件PASS（EXIT CODE 0）。develop マージ後も182件PASS、t031取込後は197件PASSを確認
+  - reviewerレビュー＋再レビュー: 中3件（InitilizeDB/RegistDB 戻り値無視・CodePages版差）・低4件（例外時の画面出力・csprojコメント・apps.md表現・Newtonsoft微差）を全対応または理由付き見送りし再レビュー通過（問題なし・マージ可）
+  - NAS実機（DS224）で portable publish（`-r` なし）を配布し `--help` 終了コード 0 を確認。続けて実取得を実行し `LogSnapshot_20260914.db`（415MB・8,997,750行・低再生993,261行・integrity_check ok・DBVersion=20260914/1.0.1.0）の正常性を確認。日付表示の `M/d/yyyy` は NAS ロケールによる `ToShortDateString` の差であり仕様通り
+  - t031取込時はコンフリクトなし（ort 自動マージ）。`docs/tasks.md` は develop 側の#34完了状態（履歴行あり）を優先し、t031側の旧#34未完了節は解消済みとして扱われた。`docs/tasks/archive.md` の#34追記（46d40e8）も t031 が取り込んでいなかった分として一緒に取り込まれた（ドキュメントのみで t031 の develop マージ判断に影響しない）
+- **実装ノウハウ（Linux 配布・運用）**:
+  - 配布は `-r` なし portable publish＋`dotnet xxx.dll` 実行に決定。`-r linux-x64` 付き publish では NuGet 由来の `runtimes/linux-x64/native/libe_sqlite3.so` が出力から落ち、win 用だけが残って Linux で動かないことを実確認した（`-r` なしなら全 RID 同梱で linux-x64 を含む）。出力直下の `lib/`（win 用 DLL 群）は net48 参照元から流れ込む残骸であり Linux では無視される
+  - `CodePages.dll` は共有フレームワーク提供のため publish 出力に含まれず、8.0.0 と 10.0.11 の競合は起きない（project.assets.json で確認）
+  - コピー対象は `.exe`・`.pdb`・`lib/` 以外の全部。`runtimes/` は `linux-x64` のみ残して他は削除可（約35MB→約2MB）。`nicorank_SnapShot.Cli.runtimeconfig.json` は必須（コピー漏れに注意）。プログラム群は読取のみ、出力先フォルダに実行ユーザーの書込権限が必要
+  - 同一日は出力ファイル名が同一で `InitilizeDB` が削除→再作成するため、同時実行は DB 破壊につながる。月1日・毎週月曜の2タスク運用では `flock -n` で重複時スキップ（同一処理のため実害なし）、スクリプトは `set -euo pipefail`＋終了コードゲート＋`wal_checkpoint(TRUNCATE)` 後の移動（`mv`。作業側に旧DBを残さないため glob が曖昧にならない）とする
+- **残課題**: Linux 実機での定期タスク化はユーザー運用側で継続（ロック付きスクリプト・月1＋週1の2タスク構成）。取得物の月次アーカイブ先は `/volume1/nicoran/Snapshot/2026/`

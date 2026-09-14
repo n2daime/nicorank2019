@@ -15,14 +15,6 @@
 
 ## 未完了タスク
 
-### SnapShot Linux 対応 CLI（#37）
-
-> nicorank_SnapShot を Linux（NAS 等）で動かすため、WinForms を持たない net8 CLI を新設する。取得中核は nicorankLib/SnapShot に分離済みであり、調査の結果 nicorank.xml・DB/ フォルダは取得単体では不要と確認したため、新規プロジェクトから SnapController を呼ぶだけで足りる。方針は案Aハイブリッド（net48 の nicorankLib を net8 CLI から参照する構成であり、Linux 稼働実績のある nicorank_oldlog と同じ形）である。nicorankLib 全体の net8 化は範囲が広すぎるため今回は行わない。
-
-- [ ] 3.1 nicorank_SnapShot.Cli（net8.0・SDK-style・PackageReference）を新設しソリューションに登録する（既存 net48 WinForms は Windows 用として残す）
-- [ ] 3.2 終了コード規約（0=成功/2=エラー）・CodePages 登録・カレント相対出力（LogSnapshot_yyyyMMdd.db）の実装を行う
-- [ ] 3.3 ビルド＋全テスト PASS＋reviewer レビュー＋knowledge 更新を行う
-
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。
@@ -44,6 +36,7 @@
 
 | タスク | 完了日 | 主な成果物 |
 |---|---|---|
+| SnapShot Linux対応CLI(#37)✅ | 2026-09-14 | nicorank_SnapShot.Cli新設（net8・ハイブリッド・終了コード0/2・CodePages登録）・SnapController失敗検知3件修正（InitilizeDB/RegistDB/例外）・sln登録・UnitTest182件維持・NAS実機で取得＋DB正常性確認（899万行・低再生99万行・integrity ok）・develop＋t031両マージ（t031で197件PASS）・knowledge更新 |
 | 順位計算の同点時タイブレーク(#34)✅ | 2026-09-13 | RankingIdComparer新設（種別→数字・群分離・ASCII限定）・calcRanking6種にThenBy＋並列前ポイント確定（既存競合解消）・UnitTest9件追加（計182件）・specs/design/knowledge更新・develop→t031取込（t031で197件PASS）・実集計rank1000比較で値列差分0・順位のみ同点安定化を確認 |
 | タグ検索v2最新値オプション(#35)✅ | 2026-09-12 | 集計日にv2最新値モード追加（chkUseLiveCounter・既定ON・DBなし実行可）・TagRankAnalyze.LiveCounters保持・TagRankLiveTotalReader/LiveSabunReader新設・ModeFactoryTagRank4分岐（集計日=実行日）・UnitTest8件追加（計173件）・specs/design/knowledge更新・develop→t031取込 |
 | タグ検索ランキング(#30)✅ | 2026-09-06 | タグ検索集計タブ（共有係数パネル・件数確認・Enter確定・上限超過時実行不可）・TagConditionParser（A&B\|C*→jsonFilter）・CreateTagSearch・TagRankAnalyze（5万判定・100件×4並列）・TagRankTotalReader（基準なし時）・ModeFactoryTagRank（SP相当・前回CSV任意・基準DB任意）・TAGRANK節（節単位フォールバック）・UnitTest29件追加（計165件）・specs/design/knowledge更新 |
