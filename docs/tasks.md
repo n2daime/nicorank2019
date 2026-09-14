@@ -15,6 +15,14 @@
 
 ## 未完了タスク
 
+### SnapShot Linux 対応 CLI（#37）
+
+> nicorank_SnapShot を Linux（NAS 等）で動かすため、WinForms を持たない net8 CLI を新設する。取得中核は nicorankLib/SnapShot に分離済みであり、調査の結果 nicorank.xml・DB/ フォルダは取得単体では不要と確認したため、新規プロジェクトから SnapController を呼ぶだけで足りる。方針は案Aハイブリッド（net48 の nicorankLib を net8 CLI から参照する構成であり、Linux 稼働実績のある nicorank_oldlog と同じ形）である。nicorankLib 全体の net8 化は範囲が広すぎるため今回は行わない。
+
+- [ ] 3.1 nicorank_SnapShot.Cli（net8.0・SDK-style・PackageReference）を新設しソリューションに登録する（既存 net48 WinForms は Windows 用として残す）
+- [ ] 3.2 終了コード規約（0=成功/2=エラー）・CodePages 登録・カレント相対出力（LogSnapshot_yyyyMMdd.db）の実装を行う
+- [ ] 3.3 ビルド＋全テスト PASS＋reviewer レビュー＋knowledge 更新を行う
+
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。

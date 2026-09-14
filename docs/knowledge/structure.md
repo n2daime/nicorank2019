@@ -6,7 +6,8 @@
 nicorank2019.sln
 ├── nicorankLib/          .NET Framework 4.8 クラスライブラリ（全プロジェクトの共通コア）
 ├── nicorank2019/         .NET Framework 4.8 WinForms アプリ（集計メイン UI）
-├── nicorank_SnapShot/    .NET Framework 4.8 WinForms アプリ（スナップショット取得ツール）
+├── nicorank_SnapShot/    .NET Framework 4.8 WinForms アプリ（スナップショット取得ツール。Windows 用）
+├── nicorank_SnapShot.Cli/ net8.0 コンソール（スナップショット取得の Linux 版。WinForms・サスペンドなし。Issue #37）
 ├── nicorank_oldlog/      .NET 8 コンソールアプリ（公式過去ランキング回収ツール、SDK-style）
 ├── UnitTest/             .NET Framework 4.8 MSTest テストプロジェクト（SDK-style、75件）
 ├── 依存ファイル/           nicorank.xml・DB/*.db（ソリューションフォルダ）
@@ -20,6 +21,7 @@ nicorank2019.sln
 ```
 nicorank2019 ──→ nicorankLib
 nicorank_SnapShot ──→ nicorankLib
+nicorank_SnapShot.Cli ──→ nicorankLib（net8.0 から net48 ライブラリを参照するハイブリッド。nicorank_oldlog と同じ）
 nicorank_oldlog ──→ nicorankLib（net48 ライブラリを net8.0 から参照するハイブリッド）
 UnitTest ──→ nicorankLib
 ```
@@ -29,6 +31,7 @@ UnitTest ──→ nicorankLib
 ```
 nicorank_SnapShot ──(引数あり)→ SnapController（コンソールモード）┐
                  └──(引数なし)→ Form1（UI）                     ├→ nicorankLib コア
+nicorank_SnapShot.Cli ──→ SnapController（Linux/CLI。--help 以外は取得実行）┘
 nicorank2019 ──→ frmMain → ModeFactory(Weekly/Tyukan/SP/TagRank) ──────┘
 nicorank_oldlog ──(net8.0 別系統)──→ NicoRankiApi → old-ranking/ へ JSON 保存
 UnitTest ──→ nicorankLib を net48 で直接テスト（インメモリ SQLite）
