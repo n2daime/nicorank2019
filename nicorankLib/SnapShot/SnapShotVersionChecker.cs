@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using nicorankLib.Util;
 using System;
+using System.Globalization;
 using System.IO;
 
 namespace nicorankLib.SnapShot
@@ -113,7 +114,10 @@ namespace nicorankLib.SnapShot
                 {
                     return result;
                 }
-                if (!DateTimeOffset.TryParse(token.Value<string>(), out parsed))
+                // 生値は last_modified の値そのものを残す（レスポンス本文全体ではない）。
+                // ログ・ダイアログに載せるのは日時だけでよく、本文全体は可読性を下げるため
+                result.LastModifiedRaw = token.Value<string>();
+                if (!DateTimeOffset.TryParse(result.LastModifiedRaw, CultureInfo.InvariantCulture, DateTimeStyles.None, out parsed))
                 {
                     return result;
                 }

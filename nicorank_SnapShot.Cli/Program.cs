@@ -32,9 +32,10 @@ try
         // 終了コード2でNASからエラーメールが飛び、9時枠見直しのトリガーになる。
         // DBエラーではなくリトライタイムアウトであることを nicorankerr.log に記録する（後から切り分けられるようにするため）
         const string skipMessage = "Snapshot API v2 の更新が確認できなかったため、取得せず終了します（リトライタイムアウト）。";
+        // ログは StatusLog 経由に一本化する。CLIの出力先は ConsoleWriter（＝コンソール）のため
+        // Console.WriteLine を併用すると同じ文面が2回出る
         StatusLog.WriteLine(skipMessage);
         ErrLog.GetInstance().Write(skipMessage);
-        Console.WriteLine(skipMessage);
         return 2;
     }
 

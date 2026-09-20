@@ -91,5 +91,24 @@ namespace UnitTest.nicorankLib.SnapShot
             Assert.AreEqual(12, clock.Sleeps.Count);
             Assert.AreEqual(13, logs.Count);
         }
+
+        [TestMethod]
+        public void WaitForUpdate_UnknownUntilTimeout_StopsAfterTimeout()
+        {
+            // 確認不能（取得失敗）のままの場合も未更新と同様に打ち切る。
+            // 将来 Unknown だけ別分岐が追加されても退行を見逃さないためのテスト
+            var checker = new SnapShotVersionChecker(
+                (string url, out string text) => { text = null; return false; },
+                () => NowJst);
+            var clock = new FakeClock { Current = DateTimeOffset.UtcNow };
+            var logs = new List<string>();
+            var poller = new SnapShotVersionPoller(checker, clock.Sleep, () => clock.Current);
+
+            var result = poller.WaitForUpdate(logs.Add);
+
+            Assert.AreEqual(SnapShotVersionStatus.Unknown, result.Status);
+            Assert.AreEqual(12, clock.Sleeps.Count);
+            Assert.AreEqual(13, logs.Count);
+        }
     }
 }

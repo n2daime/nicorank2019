@@ -32,7 +32,8 @@ namespace UnitTest.nicorankLib.SnapShot
             var result = checker.Check();
 
             Assert.AreEqual(SnapShotVersionStatus.Updated, result.Status);
-            Assert.AreEqual("{\"last_modified\":\"2026-09-20T07:08:34+09:00\"}", result.LastModifiedRaw);
+            // 生値は last_modified の値そのもの（レスポンス本文全体ではない）
+            Assert.AreEqual("2026-09-20T07:08:34+09:00", result.LastModifiedRaw);
             Assert.IsTrue(result.LastModified.HasValue);
         }
 
@@ -125,6 +126,21 @@ namespace UnitTest.nicorankLib.SnapShot
             var result = checker.Check();
 
             Assert.AreEqual(SnapShotVersionStatus.Unknown, result.Status);
+        }
+
+        [TestMethod]
+        public void Check_NonJstOffset_KeepsOffsetAndComparesInJst()
+        {
+            // Z（UTC）表記の last_modified でもオフセットを保持してJST換算で判定すること。
+            // 2026-09-19T22:08:34Z は JSTで2026-09-20T07:08 と同 instant のため更新済みになる
+            var checker = CreateChecker("{\"last_modified\":\"2026-09-19T22:08:34Z\"}", NowJst);
+
+            var result = checker.Check();
+
+            Assert.AreEqual(SnapShotVersionStatus.Updated, result.Status);
+            // Z は UTC(+00:00)として保持される（実行環境の +09:00 に寄せられていないこと）。
+            // オフセットが落ちず instant 比較になっている証拠
+            Assert.AreEqual(TimeSpan.Zero, result.LastModified.Value.Offset);
         }
 
         [TestMethod]

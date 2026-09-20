@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -27,16 +28,18 @@ namespace nicorank_SnapShot
             this.btnOK.Enabled = false;
 
             // 取得前に Snapshot API v2 の更新有無を確認する（Issue #38）。
-            // 前日データでDBを作ると後段の集計差分がすべてずれるため、未更新時は確認ダイアログで続行可否を問う
-            var versionResult = new SnapShotVersionChecker().Check();
+            // 前日データでDBを作ると後段の集計差分がすべてずれるため、未更新時は確認ダイアログで続行可否を問う。
+            // 通信は別スレッドで行う。UIスレッド同期だと回線不調時にフォームが無応答になるため
+            var versionResult = await Task.Run(() => new SnapShotVersionChecker().Check());
             StatusLog.WriteLine(SnapShotVersionChecker.ToStatusLogLine(versionResult));
 
             if (versionResult.Status == SnapShotVersionStatus.NotUpdated)
             {
-                // 実行日と last_modified（日時まで表示）の両方を出す。何時のデータになるかが分からないと続行判断ができないため
-                string today = SnapShotVersionChecker.ToJst(DateTimeOffset.Now).ToString("yyyy/MM/dd");
+                // 実行日と last_modified（日時まで表示）の両方を出す。何時のデータになるかが分からないと続行判断ができないため。
+                // 区切り文字の決定性のため InvariantCulture を指定する
+                string today = SnapShotVersionChecker.ToJst(DateTimeOffset.Now).ToString("yyyy/MM/dd", CultureInfo.InvariantCulture);
                 string modified = versionResult.LastModified.HasValue
-                    ? SnapShotVersionChecker.ToJst(versionResult.LastModified.Value).ToString("yyyy/MM/dd HH:mm")
+                    ? SnapShotVersionChecker.ToJst(versionResult.LastModified.Value).ToString("yyyy/MM/dd HH:mm", CultureInfo.InvariantCulture)
                     : "不明";
                 var confirm = MessageBox.Show(
                     $"ニコ動公式側で本日（{today}）のデータの更新が終わっていません。\n{modified} 時点のデータになる可能性が高いですが、続行しますか？",
