@@ -95,7 +95,6 @@ namespace nicorankLib.SnapShot
             {
                 return result;
             }
-            result.LastModifiedRaw = text;
 
             DateTimeOffset parsed;
             try
@@ -150,7 +149,8 @@ namespace nicorankLib.SnapShot
         /// </summary>
         public static string ToStatusLogLine(SnapShotVersionResult result)
         {
-            string raw = result.LastModifiedRaw ?? "(取得失敗)";
+            // 未取得時は取得失敗・解析失敗の区別が付かないため両方を含む文言にする
+            string raw = result.LastModifiedRaw ?? "(取得失敗または解析失敗)";
             string judgment = result.Status == SnapShotVersionStatus.Updated ? "更新済み"
                 : result.Status == SnapShotVersionStatus.NotUpdated ? "未更新" : "確認不能";
             return $"Snapshot version: last_modified={raw}（{judgment}）";
