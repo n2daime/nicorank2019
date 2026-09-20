@@ -20,14 +20,15 @@
 - 起動: **引数があればコンソールモード、引数なしなら UI モード**（`Program.cs`）
   - `nicorank_SnapShot.csproj /get` のように任意の引数1つ以上でコンソールモード（引数の中身は解釈されない）
 - コンソールモード: `new SnapController().GetSnapShotAsync().Result` を実行
-- UI モード（`Form1.cs`）: 「OK」ボタンで `SnapController.GetSnapShotAsync()` を await。完了後、チェックボックス ON なら TaskDialog で 30 秒カウントダウン後に `Application.SetSuspendState`（PC サスペンド）、OFF なら即終了
+- UI モード（`Form1.cs`）: 「OK」ボタンでまず `SnapShotVersionChecker` で更新確認（Issue #38）。未更新なら日時入りのOK/キャンセル確認ダイアログ（キャンセルは取得せず終了）、確認不能ならエラーダイアログで中断。更新済み（またはダイアログでOK）の場合のみ `SnapController.GetSnapShotAsync()` を await。完了後、チェックボックス ON なら TaskDialog で 30 秒カウントダウン後に `Application.SetSuspendState`（PC サスペンド）、OFF なら即終了
 - **ビルド**: .NET Framework 4.8。WindowsAPICodePack-Core 1.1.2。Costura.Fody 6.2.0
 
 ## nicorank_SnapShot.Cli（スナップショット取得の Linux 版。Issue #37）
 
 **役割**: WinForms を持たない net8.0 コンソール。NAS（Linux・x64・.NET 8 ランタイムあり）での定期取得用。取得中核は `nicorankLib/SnapShot` の `SnapController` をそのまま使う。
 
-- 起動: `--help` / `-h` で使い方表示（終了コード 0）。それ以外（引数なし含む）は取得を実行する（既存コンソールモードが引数の中身を解釈しない運用に合わせた）
+- 起動: `--help` / `-h` で使い方表示（終了コード 0）。それ以外（引数なし含む）は更新確認後に取得を実行する（既存コンソールモードが引数の中身を解釈しない運用に合わせた）
+- 取得前に `SnapShotVersionPoller` で更新待ち（Issue #38）。未更新／確認不能の間は5分ごとに最大1時間リトライし、毎回 `last_modified` をログ出力。更新検知したら通常取得、1時間待っても更新なしなら取得せず終了コード2（`InitilizeDB` に触れない。リトライタイムアウトであることを `nicorankerr.log` に記録しNASメールで通知）
 - 終了コード: 0=成功 / 2=エラー（`nicorank_oldlog` と同じ規約）。`SnapController` の catch で例外時に `false` を返すよう修正したため、例外時も 2 になる（従来は成功扱いだった）
 - 依存しないもの: `nicorank.xml`・`DB/` フォルダは使わない（SnapShot 経路に参照なし）。成果物はカレント直下の `LogSnapshot_yyyyMMdd.db`、エラー時のみ `nicorankerr.log`。定期実行では出力先の `WorkingDirectory` を固定する運用が必要
 - 持たないもの: 開始ボタン・サスペンド・TaskDialog（`Form1` 由来）。電源管理は cron / systemd 側の責務

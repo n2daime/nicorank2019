@@ -205,3 +205,10 @@
 - 公式タグ（〜2026-09-07時点）: 更新停止の明確な日付はなく徐々に頻度減→時代で変わらないタグが固定化（2019-06-12は当時放送アニメ等、2026-09-07は不変系タグ等）。流行していても人気タグが空の動画が増えたため#27（タグロック補完）で対応
 - 1000再生制限（2024-08-06・v20240806）: ニコ動側仕様ではなくこちら側の運用判断。取得2000万件超で32bitビルドがメモリオーバーしたため、累計1000未満除外＋定期DB書込でメモリ解放し処理時間・DBサイズを削減（1年区切りの導入時期は記録なし）。[v20240806](https://github.com/n2daime/nicorank2019/releases/tag/v20240806)
 - 過去ログ→自前スナップショット（2024-06攻撃→2024-08-06切替・v20240805）: 公式過去ログ廃止（[公式表明2024-08-02](https://x.com/nico_nico_talk/status/1819281180384284975)）→RSS提供→RSSは順位のみ毎時更新・再生数等は取得時点値のため集計タイミングに依存→自前取得に切替え（[Issue #6](https://github.com/n2daime/nicorank2019/issues/6#issuecomment-2266347042)・[v20240805](https://github.com/n2daime/nicorank2019/releases/tag/v20240805)）。運用は自宅NAS＋バックアップWinPCの多重＋他2名宅でも集計し停電欠損を回避。NAS以外・ローカル参照もXML設定で可。URLは公開しない
+
+### 22. JObject.Parse 既定の日付自動パースでオフセットが落ちる（Issue #38・2026-09）
+
+- **症状**: `{"last_modified":"2026-09-20T07:08:34+09:00"}` を `JObject.Parse` して `obj["last_modified"].Type == JTokenType.String` で判定すると不一致になり、単体テスト8件が全滅（すべて確認不能扱い）
+- **原因**: `JObject.Parse` の既定（`DateParseHandling.Date`）ではISO日時文字列が `Date` トークンに自動変換され、文字列比較の前提が崩れる。`ToString()` した値では `+09:00` のオフセット情報も落ちる
+- **対策**: `JsonTextReader` で `DateParseHandling.None` を指定して `JObject.Load` し、文字列のまま `DateTimeOffset.TryParse` に回す（オフセット保持）。`SnapShotJson` の `Settings`（`DateParseHandling.None`）と同型の対処
+- **教訓**: JSON内の日時を「文字列として」扱いたい場合はパース設定を明示する。`try { JObject.Parse } catch` の握りつぶしは原因特定を遅らせるため、失敗時はテストで検出できる形（3値返却等）にしておく

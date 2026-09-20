@@ -128,6 +128,8 @@ AnalyzeRank():
 ## SnapShot
 
 - `SnapController` — スナップショット一括取得エントリ。20070306 から現在まで 15 日間隔でループ。直近1年以内は 1000 再生制限なし URL、それ以前は制限あり URL。10000 件ごとに `SnapShotDB.RegistDB`
+- `SnapShotVersionChecker` — 更新チェック（Issue #38）。version エンドポイントの `last_modified` と実行日をJST日付比較し更新済み/未更新/確認不能の3値を返す。取得実行はしない（事後動作は呼び出し側）。日時パースは `DateParseHandling.None`（pitfalls 項目22）
+- `SnapShotVersionPoller` — 更新待ち制御（Issue #38）。5分ごと再チェック・最大1時間（定数化）。時計・待機は注入可（単体テストで実時間待ちなし）
 - `SnapShotAnalyze` — snapshot API リクエスト構築・並列ページング（4 並列）。総件数 5 万超なら期間を狭めて再試行。`":null"` → `":0"` 置換
 - `SnapShotRequest` — スナップショット検索API v2 の型付きリクエスト（Issue #19）。`q/targets/fields/filters/jsonFilter/_sort/_limit/_offset/_context` を保持し値のみ `EscapeDataString` で URL 生成。`_context` 既定 `WeeklyNicoranProgram`、`_limit/_offset` クランプ。`CreateTagSearch` はタグ検索用（jsonFilter＋数値・日付・種別を `filters[]` で指定。Issue #30）
 - `TagConditionParser` — タグ条件式（`A&B|C*`）を jsonFilter に変換（Issue #30）。`*` は末尾1文字のみ許可

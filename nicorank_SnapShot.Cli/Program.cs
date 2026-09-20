@@ -21,6 +21,23 @@ if (args.Any(a => a == "--help" || a == "-h" || a == "-?" || a == "/?"))
 
 try
 {
+    // 取得前に Snapshot API v2 の更新有無を確認する（Issue #38）。
+    // 前日データでDBを作ると後段の集計差分がすべてずれるため、未更新の間は5分ごとに最大1時間待つ。
+    // チェックごとの last_modified は StatusLog（＝コンソール）に出し、NASメールの実行ログに残す
+    var version = new SnapShotVersionPoller().WaitForUpdate(msg => StatusLog.WriteLine(msg));
+    if (version.Status != SnapShotVersionStatus.Updated)
+    {
+        // 1時間待っても更新なし（または確認不能のまま）の場合は、前日データでDBを作らないよう取得せず終了する。
+        // SnapShotDB.InitilizeDB は既存DBの削除を伴うため、この分岐では一切触れない。
+        // 終了コード2でNASからエラーメールが飛び、9時枠見直しのトリガーになる。
+        // DBエラーではなくリトライタイムアウトであることを nicorankerr.log に記録する（後から切り分けられるようにするため）
+        const string skipMessage = "Snapshot API v2 の更新が確認できなかったため、取得せず終了します（リトライタイムアウト）。";
+        StatusLog.WriteLine(skipMessage);
+        ErrLog.GetInstance().Write(skipMessage);
+        Console.WriteLine(skipMessage);
+        return 2;
+    }
+
     // 成果物はカレントディレクトリの LogSnapshot_yyyyMMdd.db に保存される（SnapShotDB の仕様）。
     bool ok = await new SnapController().GetSnapShotAsync();
     if (ok)
