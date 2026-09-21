@@ -21,7 +21,7 @@
 - **SoHistory**: `ID`（so動画ID・主キー）/ `集計日` / `再生数` / `コメント数` / `マイリスト数` / `いいね数`（Issue #31）。soのIDごとに最新1件だけ保持する差分元
 - **Movie**: Issue #31で廃止（Ver1移行でDROP）。廃止後にファイル内の表が残っていても読み書きされない（消してもよい）
 - **RankingDate**: 集計日とメンテナンスフラグ。`CheckMaintananceDay` でメンテ日判定＋更新再開位置のしおり（`Max(集計日)+1` から日別取得）。初期値 20190610
-- **DBVersion**: `Ver` INTEGER（Issue #28。旧DBはテーブルなし→Ver0扱い。集計開始時の自動移行でVer=0を1行追加）
+- **DBVersion**: `Ver` INTEGER（Issue #28。旧DBはテーブルなし→Ver0扱い。LogOfficialはVer0→Ver1の順に自動移行を適用し、最終的に現行値（現在1）を1行で記録する）
 - 更新フロー: 集計開始時に `DbMigrationCoordinator` が LogOfficial→NicoranHistory の順に更新確認（失敗時は中断）→ `UpdateOfficialRankingDB()` が RankingDate の `Max(集計日)+1` から今日までを日別取得。データ 0 件の日はメンテナンス日として登録（UI で確認）
 
 ### NicoranHistory.db

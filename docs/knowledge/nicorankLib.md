@@ -66,7 +66,7 @@ AnalyzeRank():
 - `EnsureMigrated()`（`IDbMigratable`）: RankingDate確保＋DBVersion確保＋Ver1でSoHistory・prune用索引・古いRanking削除・Movie廃止。集計開始時に司令塔から呼ばれる
 - `UpdateOfficialRankingDB()`: RankingDate の `Max(集計日)+1`（初期値 20190610）から今日までを日別に取得・登録。0 件の日はメンテナンス日として登録（UI で確認）
 - `CheckMaintananceDay(DateTime)`: RankingDate でメンテ日判定
-- `CheckSoMovieNeedSabun(id, baseTime)`: 公式チャンネル動画（so）の差分取得判定。過去ランキング既出なら差分データ、なければ `ranking = null`（差分なし）。DB 非オープン・例外時は false
+- `CheckSoMovieNeedSabun(id, baseTime)`: 公式チャンネル動画（so）の差分取得判定。過去ランキング既出なら差分データ、なければ `ranking = null`（差分なし）。`Ranking` に見つからない場合は `SoHistory`（消えた行のうち最新の差分元）を基準日以前の行に限って参照し、それもなければ新着扱いとする。`SoHistory` 表自体がない旧DBでも新着扱いで正常終了する。DB 非オープン・例外時は false
 - `GetRankingSabunDataLogOfficial(id, baseTime, baseTime2)`: 過去ログから差分候補を取得（7日間に無ければ baseTime 以降の最古データを採用）
 - `ISQLiteCtrl` コンストラクタ注入可
 

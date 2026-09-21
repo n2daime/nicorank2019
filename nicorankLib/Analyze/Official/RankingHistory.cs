@@ -199,7 +199,7 @@ namespace nicorankLib.Analyze.Official
         /// Ver1移行：SoHistoryの作成＋消える行の初期退避＋境界以降の混入行の清掃＋古いRankingの削除＋Movie廃止＋最適化。
         /// SoHistoryにはRankingから消えた行のうち最新のものだけを入れる（prune駆動）。
         /// データ量が多いため一括トランザクションにせず、日付区切りで少しずつ確定する。
-        /// どの段階もやり直し可能（退避はIGNORE・条件付き置換、削除とDROPはIF EXISTS系）。
+        /// どの段階もやり直し可能（退避は条件付き置換、削除とDROPはIF EXISTS系）。
         /// バージョン記録は全工程の成功後に呼び出し側が行う。
         /// </summary>
         private bool MigrateToVersion1()
@@ -272,8 +272,11 @@ namespace nicorankLib.Analyze.Official
 
         /// <summary>
         /// 消える行（保持境界より古い）のうち、so動画の最新1件をSoHistoryに退避する。
-        /// 新しい集計日から順に登録し、登録済みIDは無視するため境界より古い最新1件が残る
-        /// （再実行時も同結果で冪等）。境界当日以降の行はRankingに残るため退避しない。
+        /// 新しい集計日から順に登録し、入っている日付より新しい消去行だけ置き換えるため
+        /// 境界より古い最新1件が残る（再実行時も同結果で冪等）。
+        /// 移行の中断→再開で保持境界がずれても、新しい退避候補が古い行を上書きするため
+        /// 「最新1件」が崩れない（単なるIGNOREでは古い行が残り続けるため条件付き置換にする）。
+        /// 境界当日以降の行はRankingに残るため退避しない。
         /// 1回分の確定を小さくするため集計日区切りで少しずつ入れる。
         /// </summary>
         /// <param name="cutoff">保持境界（この値未満を退避・削除）。データがなければnull</param>
@@ -312,9 +315,13 @@ namespace nicorankLib.Analyze.Official
                     aCmd.Parameters.Clear();
                     aCmd.Parameters.AddWithValue("@Date", date);
                     aCmd.CommandText =
-                        $"INSERT OR IGNORE INTO {SoHistoryTable} (ID, 集計日, 再生数, コメント数, マイリスト数, いいね数) " +
+                        $"INSERT INTO {SoHistoryTable} (ID, 集計日, 再生数, コメント数, マイリスト数, いいね数) " +
                         "SELECT ID, 集計日, 再生数, コメント数, マイリスト数, いいね数 FROM Ranking " +
-                        "WHERE 集計日 = @Date AND ID LIKE 'so%';";
+                        "WHERE 集計日 = @Date AND ID LIKE 'so%' " +
+                        "ON CONFLICT(ID) DO UPDATE SET " +
+                        "集計日=excluded.集計日, 再生数=excluded.再生数, コメント数=excluded.コメント数, " +
+                        "マイリスト数=excluded.マイリスト数, いいね数=excluded.いいね数 " +
+                        $"WHERE excluded.集計日 > {SoHistoryTable}.集計日;";
                     aCmd.ExecuteNonQuery();
                     done++;
                     if (done % 100 == 0)
