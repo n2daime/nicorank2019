@@ -22,7 +22,23 @@ namespace nicorankLib.Analyze.Official
         /// <summary>
         /// DB構成バージョンの現在値。構成変更時に+1する。
         /// </summary>
-        public const long DbCurrentVersion = 0;
+        public const long DbCurrentVersion = 1;
+
+        /// <summary>
+        /// 直近何日分のRankingを残すか。値はコードのみに持ち、文書には書かない。
+        /// 境界はDB内の最新集計日（RankingDateのMAX）を起点にさかのぼって決める。
+        /// </summary>
+        public const int RetentionDays = 365;
+
+        /// <summary>
+        /// 新着偽装チェック用の差分元テーブル。so動画のIDごとに最新1件だけ保持する。
+        /// </summary>
+        private const string SoHistoryTable = "SoHistory";
+
+        /// <summary>
+        /// prune用の索引。PKが(ID,集計日)のため集計日だけの削除が全走査になるのを避ける。
+        /// </summary>
+        private const string RankingDateIndex = "idx_Ranking_集計日";
 
         protected ISQLiteCtrl dbCtrlOfficial = null;
 
@@ -168,10 +184,269 @@ namespace nicorankLib.Analyze.Official
                 case 0:
                     // ベース：メンテナンス日管理テーブルの確保
                     return createRankingDateTable();
+                case 1:
+                    // 1年保持＋SoHistory併設：SoHistory作成＋初期移行＋初期prune＋Movie廃止。
+                    // VACUUMはトランザクション内で実行できないため除外し、確定後に実行する
+                    return MigrateToVersion1();
                 default:
                     // 未定義は取りこぼし防止のため失敗させる
                     ErrLog.GetInstance().Write($"{DB.LOG_OFFICEIAL}更新でエラー発生。(RankingHistory::MigrateToVersion 未対応Ver={version})");
                     return false;
+            }
+        }
+
+        /// <summary>
+        /// Ver1移行：SoHistoryの作成＋消える行の初期退避＋境界以降の混入行の清掃＋古いRankingの削除＋Movie廃止＋最適化。
+        /// SoHistoryにはRankingから消えた行のうち最新のものだけを入れる（prune駆動）。
+        /// データ量が多いため一括トランザクションにせず、日付区切りで少しずつ確定する。
+        /// どの段階もやり直し可能（退避は条件付き置換、削除とDROPはIF EXISTS系）。
+        /// バージョン記録は全工程の成功後に呼び出し側が行う。
+        /// </summary>
+        private bool MigrateToVersion1()
+        {
+            try
+            {
+                EnsureSoHistoryTable();
+                EnsureRankingDateIndex();
+
+                long? cutoff = GetRetentionCutoff();
+                CleanupSoHistoryAboveCutoff(cutoff);
+                BackfillSoHistory(cutoff);
+
+                DropMovieTableIfExists();
+
+                if (!PruneOldRankingsChunked(cutoff))
+                {
+                    return false;
+                }
+
+                StatusLog.WriteLine($"{DB.LOG_OFFICEIAL}を最適化しています（数十分かかることがあります。PCのスリープを無効にしてください）...");
+                // 確定済みデータの最適化。失敗時はバージョン未記録のため再実行でやり直せる
+                using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
+                {
+                    aCmd.CommandText = "VACUUM;";
+                    aCmd.ExecuteNonQuery();
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                var errLog = ErrLog.GetInstance();
+                errLog.Write($"{DB.LOG_OFFICEIAL}更新でエラー発生。(RankingHistory::MigrateToVersion1)");
+                errLog.Write(ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// SoHistoryテーブルがなければ作る（あれば何もしない）。
+        /// </summary>
+        private void EnsureSoHistoryTable()
+        {
+            using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
+            {
+                aCmd.CommandText =
+                    $"CREATE TABLE IF NOT EXISTS {SoHistoryTable} (" +
+                    "ID TEXT PRIMARY KEY, " +
+                    "集計日 INTEGER, " +
+                    "再生数 INTEGER, " +
+                    "コメント数 INTEGER, " +
+                    "マイリスト数 INTEGER, " +
+                    "いいね数 INTEGER " +
+                    ");";
+                aCmd.ExecuteNonQuery();
+            }
+        }
+
+        /// <summary>
+        /// prune用の索引がなければ作る（あれば何もしない）。
+        /// </summary>
+        private void EnsureRankingDateIndex()
+        {
+            using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
+            {
+                aCmd.CommandText = $"CREATE INDEX IF NOT EXISTS {RankingDateIndex} ON Ranking (集計日);";
+                aCmd.ExecuteNonQuery();
+            }
+        }
+
+        /// <summary>
+        /// 消える行（保持境界より古い）のうち、so動画の最新1件をSoHistoryに退避する。
+        /// 新しい集計日から順に登録し、入っている日付より新しい消去行だけ置き換えるため
+        /// 境界より古い最新1件が残る（再実行時も同結果で冪等）。
+        /// 移行の中断→再開で保持境界がずれても、新しい退避候補が古い行を上書きするため
+        /// 「最新1件」が崩れない（単なるIGNOREでは古い行が残り続けるため条件付き置換にする）。
+        /// 境界当日以降の行はRankingに残るため退避しない。
+        /// 1回分の確定を小さくするため集計日区切りで少しずつ入れる。
+        /// </summary>
+        /// <param name="cutoff">保持境界（この値未満を退避・削除）。データがなければnull</param>
+        private void BackfillSoHistory(long? cutoff)
+        {
+            if (!cutoff.HasValue)
+            {
+                return;
+            }
+
+            var targetDates = new List<long>();
+            using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
+            {
+                aCmd.CommandText = "SELECT DISTINCT 集計日 FROM Ranking WHERE ID LIKE 'so%' AND 集計日 < @Cutoff ORDER BY 集計日 DESC;";
+                aCmd.Parameters.AddWithValue("@Cutoff", cutoff.Value);
+                using (var reader = aCmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        targetDates.Add(Convert.ToInt64(reader["集計日"]));
+                    }
+                }
+            }
+
+            if (targetDates.Count < 1)
+            {
+                return;
+            }
+
+            StatusLog.WriteLine($"公式動画の差分元を退避しています（{targetDates.Count}日分）...");
+            int done = 0;
+            using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
+            {
+                foreach (var date in targetDates)
+                {
+                    aCmd.Parameters.Clear();
+                    aCmd.Parameters.AddWithValue("@Date", date);
+                    aCmd.CommandText =
+                        $"INSERT INTO {SoHistoryTable} (ID, 集計日, 再生数, コメント数, マイリスト数, いいね数) " +
+                        "SELECT ID, 集計日, 再生数, コメント数, マイリスト数, いいね数 FROM Ranking " +
+                        "WHERE 集計日 = @Date AND ID LIKE 'so%' " +
+                        "ON CONFLICT(ID) DO UPDATE SET " +
+                        "集計日=excluded.集計日, 再生数=excluded.再生数, コメント数=excluded.コメント数, " +
+                        "マイリスト数=excluded.マイリスト数, いいね数=excluded.いいね数 " +
+                        $"WHERE excluded.集計日 > {SoHistoryTable}.集計日;";
+                    aCmd.ExecuteNonQuery();
+                    done++;
+                    if (done % 100 == 0)
+                    {
+                        StatusLog.WriteLine($"退避中... ({done}/{targetDates.Count}日)");
+                    }
+                }
+            }
+            StatusLog.WriteLine("公式動画の差分元の退避が終わりました。");
+        }
+
+        /// <summary>
+        /// 保持境界以降の日付のSoHistory行があれば消す。旧方式（当日上書き）で混入した行の清掃用。
+        /// SoHistoryは数十万行と小さく安価。冪等。
+        /// </summary>
+        /// <param name="cutoff">保持境界（この値以上を清掃）。データがなければnull</param>
+        private void CleanupSoHistoryAboveCutoff(long? cutoff)
+        {
+            if (!cutoff.HasValue)
+            {
+                return;
+            }
+
+            using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
+            {
+                aCmd.CommandText = $"DELETE FROM {SoHistoryTable} WHERE 集計日 >= @Cutoff;";
+                aCmd.Parameters.AddWithValue("@Cutoff", cutoff.Value);
+                aCmd.ExecuteNonQuery();
+            }
+        }
+
+        /// <summary>
+        /// Movieテーブルがあれば廃止する。読み手は呼出元なし、書込みも今回で止めるため。
+        /// </summary>
+        private void DropMovieTableIfExists()
+        {
+            using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
+            {
+                aCmd.CommandText = "DROP TABLE IF EXISTS Movie;";
+                aCmd.ExecuteNonQuery();
+            }
+        }
+
+        /// <summary>
+        /// 保持境界より古いRankingを集計日区切りで少しずつ消す。境界当日は残す。
+        /// </summary>
+        /// <param name="cutoff">保持境界（この値未満を削除）。データがなければnull</param>
+        /// <returns>正常終了時true、失敗時false</returns>
+        private bool PruneOldRankingsChunked(long? cutoff)
+        {
+            if (!cutoff.HasValue)
+            {
+                // データがなければ消すものなし
+                return true;
+            }
+
+            var targetDates = new List<long>();
+            using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
+            {
+                aCmd.CommandText = "SELECT DISTINCT 集計日 FROM Ranking WHERE 集計日 < @Cutoff ORDER BY 集計日;";
+                aCmd.Parameters.AddWithValue("@Cutoff", cutoff.Value);
+                using (var reader = aCmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        targetDates.Add(Convert.ToInt64(reader["集計日"]));
+                    }
+                }
+            }
+
+            if (targetDates.Count < 1)
+            {
+                return true;
+            }
+
+            StatusLog.WriteLine($"古いランキングデータ {targetDates.Count} 日分を削除しています...");
+            int done = 0;
+            using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
+            {
+                foreach (var date in targetDates)
+                {
+                    aCmd.Parameters.Clear();
+                    aCmd.Parameters.AddWithValue("@Date", date);
+                    aCmd.CommandText = "DELETE FROM Ranking WHERE 集計日 = @Date;";
+                    aCmd.ExecuteNonQuery();
+                    done++;
+                    if (done % 100 == 0)
+                    {
+                        StatusLog.WriteLine($"削除中... ({done}/{targetDates.Count}日)");
+                    }
+                }
+            }
+            StatusLog.WriteLine($"古いランキングデータの削除が終わりました（{targetDates.Count}日分）。");
+            return true;
+        }
+
+        /// <summary>
+        /// 保持境界（この値未満を削除）を求める。DB内の最新集計日を起点にさかのぼる。
+        /// データがなければnullを返す。
+        /// </summary>
+        private long? GetRetentionCutoff()
+        {
+            using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
+            {
+                aCmd.CommandText = "SELECT MAX(集計日) FROM RankingDate;";
+                object result = aCmd.ExecuteScalar();
+                if (result == null || result == DBNull.Value)
+                {
+                    return null;
+                }
+                DateTime latest = DateConvert.String2Time(result.ToString(), false);
+                DateTime cutoffDate = latest.AddDays(-RetentionDays);
+                return long.Parse(DateConvert.Time2String(cutoffDate, false));
+            }
+        }
+
+        /// <summary>
+        /// SoHistoryテーブルがあるかを確認する。移行前のDBでフォールバック検索を壊さないため。
+        /// </summary>
+        private bool SoHistoryExists()
+        {
+            using (var aCmd = dbCtrlOfficial.Connection.CreateCommand())
+            {
+                aCmd.CommandText = $"SELECT COUNT(*) FROM sqlite_master WHERE TYPE='table' AND name='{SoHistoryTable}';";
+                return Convert.ToInt64(aCmd.ExecuteScalar()) > 0;
             }
         }
 
@@ -228,7 +503,7 @@ namespace nicorankLib.Analyze.Official
                     using (var reader = aCmd.ExecuteReader())
                     {
                         if (reader.Read())
-                        {                    
+                        {
                             //過去のランキングに記載されている＝新着ではない
                             ranking = new Ranking()
                             {
@@ -244,6 +519,36 @@ namespace nicorankLib.Analyze.Official
                             // 新着 or 新着偽造（過去のランキングだけでは判断できない）
                             // 差分データなし
                             ranking = null;
+                        }
+                    }
+
+                    if (ranking == null && SoHistoryExists())
+                    {
+                        // 1年保持で古いRankingが消えている場合、SoHistory（消えた行のうち最新）を差分元にする。
+                        // 基準日以前の行だけ使う（基準日より新しい行が混ざっていても無視する）。
+                        // なければ新着扱い（ranking=nullのまま）
+                        aCmd.Parameters.Clear();
+                        aCmd.CommandText =
+                            $"select 再生数, コメント数, マイリスト数, いいね数 from {SoHistoryTable} " +
+                            "Where ID = @ID and 集計日 <= @Date " +
+                            "Limit 1 ";
+
+                        aCmd.Parameters.AddWithValue("@ID", id);
+                        aCmd.Parameters.AddWithValue("@Date", baseTime);
+
+                        using (var reader = aCmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                ranking = new Ranking()
+                                {
+                                    ID = id,
+                                    CountPlay = System.Convert.ToInt64(reader["再生数"]),
+                                    CountComment = System.Convert.ToInt64(reader["コメント数"]),
+                                    CountMyList = System.Convert.ToInt64(reader["マイリスト数"]),
+                                    CountLike = System.Convert.ToInt64(reader["いいね数"])
+                                };
+                            }
                         }
                     }
                 }
@@ -608,29 +913,6 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
                                 aCmd.ExecuteNonQuery();
                             }
                         }
-
-                        //動画情報が無いときだけ追加する
-                        strSQL = @"INSERT INTO Movie( ID, '投稿日','タイトル')
-                               SELECT @ID,@Date,@Title
-                               WHERE NOT EXISTS (SELECT * FROM Movie WHERE ID=@ID);";
-
-                        aCmd.CommandText = strSQL;
-
-                        foreach (var wRank in rankings)
-                        {
-                            if (!regDelete.IsMatch(wRank.ThumbnailURL))
-                            {// 削除 or 非表示動画は登録しない
-                            }
-                            else
-                            {
-                                aCmd.Parameters.Clear();
-                                aCmd.Parameters.AddWithValue("@ID", wRank.ID);
-                                aCmd.Parameters.AddWithValue("@Date", DateConvert.Time2String(wRank.Date, true));
-                                aCmd.Parameters.AddWithValue("@Title", wRank.Title);
-                                //更新の実行
-                                aCmd.ExecuteNonQuery();
-                            }
-                        }
                     }//←メンテナンス日以外の時実行
 
 
@@ -650,6 +932,13 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
                         aCmd.ExecuteNonQuery();
                     }
 
+                    if (!isMaintenance)
+                    {
+                        // 消える行をSoHistoryに拾ってから古いRankingを消す。
+                        // 同一日次トランザクションに同梱する（日次単位は維持する）
+                        RefreshSoHistoryAndPrune(aCmd);
+                    }
+
 
                     aCmd.Transaction.Commit();
                 }
@@ -664,6 +953,73 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
                 }
             }
             return true;
+        }
+
+        /// <summary>
+        /// 消える行（保持境界より古い）のうちso動画をSoHistoryに拾ってから、古いRankingを消す。
+        /// SoHistoryには消えた行のうち最新のものだけを残す（入っている日付より新しい消去行だけ置き換える）。
+        /// 当日分の上書きはしない（当日分はRankingに残るため差分元として不要で、置き換えると
+        /// 基準日より新しい値になり再公開チェックが効かなくなる）。
+        /// 日次トランザクションの中から呼ぶ（VACUUMはしない）。
+        /// </summary>
+        /// <param name="aCmd">日次トランザクション実行中のコマンド</param>
+        private void RefreshSoHistoryAndPrune(SqliteCommand aCmd)
+        {
+            // SoHistoryがなければ作る（移行前のDBで日次更新だけ走った場合の保険）
+            aCmd.CommandText =
+                $"CREATE TABLE IF NOT EXISTS {SoHistoryTable} (" +
+                "ID TEXT PRIMARY KEY, " +
+                "集計日 INTEGER, " +
+                "再生数 INTEGER, " +
+                "コメント数 INTEGER, " +
+                "マイリスト数 INTEGER, " +
+                "いいね数 INTEGER " +
+                ");";
+            aCmd.Parameters.Clear();
+            aCmd.ExecuteNonQuery();
+            aCmd.CommandText = $"CREATE INDEX IF NOT EXISTS {RankingDateIndex} ON Ranking (集計日);";
+            aCmd.ExecuteNonQuery();
+
+            // 保持境界より古い分を消す（境界当日は残す）。1日分ずつのため1文で足りる
+            long? cutoff = GetRetentionCutoffInTransaction(aCmd);
+            if (cutoff.HasValue)
+            {
+                // 消す直前にso動画の分だけ拾う。入っている日付より新しい消去行だけ置き換える
+                aCmd.CommandText =
+                    $"INSERT INTO {SoHistoryTable} (ID, 集計日, 再生数, コメント数, マイリスト数, いいね数) " +
+                    "SELECT ID, 集計日, 再生数, コメント数, マイリスト数, いいね数 FROM Ranking " +
+                    "WHERE 集計日 < @Cutoff AND ID LIKE 'so%' " +
+                    "ON CONFLICT(ID) DO UPDATE SET " +
+                    "集計日=excluded.集計日, 再生数=excluded.再生数, コメント数=excluded.コメント数, " +
+                    "マイリスト数=excluded.マイリスト数, いいね数=excluded.いいね数 " +
+                    $"WHERE excluded.集計日 > {SoHistoryTable}.集計日;";
+                aCmd.Parameters.Clear();
+                aCmd.Parameters.AddWithValue("@Cutoff", cutoff.Value);
+                aCmd.ExecuteNonQuery();
+
+                aCmd.CommandText = "DELETE FROM Ranking WHERE 集計日 < @Cutoff;";
+                aCmd.Parameters.Clear();
+                aCmd.Parameters.AddWithValue("@Cutoff", cutoff.Value);
+                aCmd.ExecuteNonQuery();
+            }
+            aCmd.Parameters.Clear();
+        }
+
+        /// <summary>
+        /// トランザクション内から見た保持境界。データがなければnull。
+        /// </summary>
+        private long? GetRetentionCutoffInTransaction(SqliteCommand aCmd)
+        {
+            aCmd.CommandText = "SELECT MAX(集計日) FROM RankingDate;";
+            aCmd.Parameters.Clear();
+            object result = aCmd.ExecuteScalar();
+            if (result == null || result == DBNull.Value)
+            {
+                return null;
+            }
+            DateTime latest = DateConvert.String2Time(result.ToString(), false);
+            DateTime cutoffDate = latest.AddDays(-RetentionDays);
+            return long.Parse(DateConvert.Time2String(cutoffDate, false));
         }
         /// <summary>
         /// RankingDateテーブルが存在しなければ追加する

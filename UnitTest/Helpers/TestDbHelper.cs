@@ -46,6 +46,50 @@ namespace UnitTest.Helpers
             }
         }
 
+        public static void CreateSoHistoryTable(ISQLiteCtrl dbCtrl)
+        {
+            using (var cmd = dbCtrl.Connection.CreateCommand())
+            {
+                cmd.CommandText = @"
+                    CREATE TABLE IF NOT EXISTS SoHistory (
+                        ID TEXT PRIMARY KEY,
+                        集計日 INTEGER,
+                        再生数 INTEGER,
+                        コメント数 INTEGER,
+                        マイリスト数 INTEGER,
+                        いいね数 INTEGER
+                    )";
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        public static void InsertSoHistoryData(ISQLiteCtrl dbCtrl, string id, int syuukeiBi, int play, int comment, int mylist, int like)
+        {
+            using (var cmd = dbCtrl.Connection.CreateCommand())
+            {
+                cmd.CommandText = @"INSERT OR REPLACE INTO SoHistory(ID, 集計日, 再生数, コメント数, マイリスト数, いいね数)
+                                    VALUES(@ID, @集計日, @再生数, @コメント数, @マイリスト数, @いいね数)";
+                cmd.Parameters.AddWithValue("@ID", id);
+                cmd.Parameters.AddWithValue("@集計日", syuukeiBi);
+                cmd.Parameters.AddWithValue("@再生数", play);
+                cmd.Parameters.AddWithValue("@コメント数", comment);
+                cmd.Parameters.AddWithValue("@マイリスト数", mylist);
+                cmd.Parameters.AddWithValue("@いいね数", like);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        public static void InsertRankingDateData(ISQLiteCtrl dbCtrl, int syuukeiBi, int maintenance = 0)
+        {
+            using (var cmd = dbCtrl.Connection.CreateCommand())
+            {
+                cmd.CommandText = @"INSERT OR REPLACE INTO RankingDate(集計日, メンテナンス) VALUES(@集計日, @メンテナンス)";
+                cmd.Parameters.AddWithValue("@集計日", syuukeiBi);
+                cmd.Parameters.AddWithValue("@メンテナンス", maintenance);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
         public static void CreateRankingDateTable(ISQLiteCtrl dbCtrl)
         {
             using (var cmd = dbCtrl.Connection.CreateCommand())
