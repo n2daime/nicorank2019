@@ -15,16 +15,6 @@
 
 ## 未完了タスク
 
-### LogOfficial.db肥大化対策（#31）
-
-> 依存: #28 DBVersion移行基盤・#32 VACUUMタブ（#31完了後に着手）。対象: `nicorankLib/Analyze/Official/RankingHistory.cs`・`SabunReader.cs`・`SoHistory` 新設・`Movie` 整理。受け入れ条件: 1年保持＋SoHistoryフォールバックで週刊差分が維持されること・テスト＋ビルド成功・reviewer再レビューで問題なし・ユーザー実行確認済み。**`develop` へのマージは対策前後2環境の1ヶ月週刊比較後（ユーザー指示があるまでマージしない）**
-
-- [ ] 3.1 SoHistory新設＋Ver1移行（初期移行・初期prune・初回のみVACUUM）
-- [ ] 3.2 日次prune（日次txn維持・同日txnに同梱・VACUUMなし）＋CheckSoMovieNeedSabunのSoHistoryフォールバック
-- [ ] 3.3 Movie整理（削除キー確定・デッドコード削除範囲確定）
-- [ ] 3.4 specs/design/knowledge更新・単体テスト追加・reviewerレビュー・ユーザー実行確認（マージは保留）
-- [ ] 3.5 実DBの破損対応（2026-09-08試行でRanking表の一部破損を検出・integrity_checkで確定。復旧手順確立後に移行再試行。破損時の案内文改善を含む）
-
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。
@@ -46,6 +36,7 @@
 
 | タスク | 完了日 | 主な成果物 |
 |---|---|---|
+| LogOfficial.db肥大化対策(#31)✅ | 2026-09-21 | SoHistory新設＋Ver1移行（初期退避・混入行清掃・prune・Movie廃止・初回VACUUM）・日次prune駆動＋SoHistoryフォールバック（Ranking優先2クエリ逐次・基準日ガード）・GenreAnalyze削除・UnitTest15件追加（計197件）・specs/design/knowledge更新・reviewer総合判定マージ可（低8件：4件対応・4件見送り）・実DB破損救出再建＋通し再実行（2.01GB・integrity ok）・対策前後比較で旧exe混入と確定し検証終了・developマージ |
 | SnapShot Linux対応CLI(#37)✅ | 2026-09-14 | nicorank_SnapShot.Cli新設（net8・ハイブリッド・終了コード0/2・CodePages登録）・SnapController失敗検知3件修正（InitilizeDB/RegistDB/例外）・sln登録・UnitTest182件維持・NAS実機で取得＋DB正常性確認（899万行・低再生99万行・integrity ok）・develop＋t031両マージ（t031で197件PASS）・knowledge更新 |
 | 順位計算の同点時タイブレーク(#34)✅ | 2026-09-13 | RankingIdComparer新設（種別→数字・群分離・ASCII限定）・calcRanking6種にThenBy＋並列前ポイント確定（既存競合解消）・UnitTest9件追加（計182件）・specs/design/knowledge更新・develop→t031取込（t031で197件PASS）・実集計rank1000比較で値列差分0・順位のみ同点安定化を確認 |
 | タグ検索v2最新値オプション(#35)✅ | 2026-09-12 | 集計日にv2最新値モード追加（chkUseLiveCounter・既定ON・DBなし実行可）・TagRankAnalyze.LiveCounters保持・TagRankLiveTotalReader/LiveSabunReader新設・ModeFactoryTagRank4分岐（集計日=実行日）・UnitTest8件追加（計173件）・specs/design/knowledge更新・develop→t031取込 |
