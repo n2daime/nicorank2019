@@ -15,7 +15,7 @@ namespace nicorankLib.SnapShot
         /// <summary>再チェック間隔。5分以上空けるのは公式ガイドの注意書き（503時は5分以上空けてリトライ）に倣う</summary>
         public static readonly TimeSpan RetryInterval = TimeSpan.FromMinutes(5);
 
-        /// <summary>待ち合わせの上限。定期タスク6時→7時→9時の運用に合わせ、1枠分とする</summary>
+        /// <summary>待ち合わせの上限。定期タスクの1枠分（約1時間）に合わせる</summary>
         public static readonly TimeSpan Timeout = TimeSpan.FromHours(1);
 
         private readonly SnapShotVersionChecker _checker;
