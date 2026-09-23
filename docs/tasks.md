@@ -15,14 +15,6 @@
 
 ## 未完了タスク
 
-### Snapshot API v2更新チェック（#38）
-
-- [ ] SnapShotVersionChecker新設（version取得・JST日付比較・更新済み/未更新/確認不能の3値判定）
-- [ ] 取得開始時にlast_modifiedをStatusLogへ出力（CLI＝NASメールログに残る）
-- [ ] WinForm未更新時に日時入りOK/キャンセル確認ダイアログ、確認不能時にエラーダイアログ
-- [ ] CLIで5分×最大1時間リトライ、タイムアウト時は取得せず終了コード2
-- [ ] 単体テスト追加・dotnet test＋ビルド成功・specs/design/knowledge更新・reviewerレビュー
-
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。
@@ -43,6 +35,8 @@
 ## 完了済みタスク（履歴）
 
 | タスク | 完了日 | 主な成果物 |
+|---|---|---|
+| Snapshot API v2更新チェック(#38)✅ | 2026-09-23 | SnapShotVersionChecker/Poller新設（version取得・JST日付比較・更新済み/未更新/確認不能の3値判定・5分×最大1時間待機）・取得開始時にlast_modifiedをStatusLog出力・WinForm未更新時に日時入りOK/キャンセル確認ダイアログ・CLIタイムアウト時は取得せず終了コード2＋リトライタイムアウト記録・UnitTest17件追加（計214件）・specs/design/knowledge更新（切替時刻実測・競合注意）・reviewer再レビュー問題なし・NAS実機検証（9/21に8回未更新→更新検知→全期間取得・終了コード0）・調査スクリプトはマージ前除外・developマージ |
 |---|---|---|
 | LogOfficial.db肥大化対策(#31)✅ | 2026-09-21 | SoHistory新設＋Ver1移行（初期退避・混入行清掃・prune・Movie廃止・初回VACUUM）・日次prune駆動＋SoHistoryフォールバック（Ranking優先2クエリ逐次・基準日ガード）・GenreAnalyze削除・UnitTest15件追加（計197件）・specs/design/knowledge更新・reviewer総合判定マージ可（低8件：4件対応・4件見送り）・実DB破損救出再建＋通し再実行（2.01GB・integrity ok）・対策前後比較で旧exe混入と確定し検証終了・developマージ |
 | SnapShot Linux対応CLI(#37)✅ | 2026-09-14 | nicorank_SnapShot.Cli新設（net8・ハイブリッド・終了コード0/2・CodePages登録）・SnapController失敗検知3件修正（InitilizeDB/RegistDB/例外）・sln登録・UnitTest182件維持・NAS実機で取得＋DB正常性確認（899万行・低再生99万行・integrity ok）・develop＋t031両マージ（t031で197件PASS）・knowledge更新 |

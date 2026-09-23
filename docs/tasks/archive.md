@@ -421,3 +421,20 @@
   - 実DB破損対応: 2026-09-08試行で `SQLite Error 11: database disk image is malformed`（Ranking本体ページ2468645〜2508875帯・約100件）を確定。rowidチャンク＋row-by-row救出で再建し、バックアップから最新仕様で通し再実行（約3時間）。結果は `LogOfficial.db` 2.01GB・integrity_check ok・Ranking 24400035行・SoHistory 244852行・週刊出力一式正常
   - 対策前後2環境比較: 9-08週は総合1000/1000一致・前回2件±1（同点帯の先週持ち越し）。9-21週は件数・ポイント一致で順位のみ差（マイリスト等）があり、原因は修正前exeがタイブレーク導入前（#34は9-13導入）の古いビルドだったと確定。#31起因の揺らぎなしとして検証終了し、1ヶ月比較を待たずユーザー指示でマージした
 - **残課題**: 見送り分の別タスク化（SPAnalyze.GenreSQL整理・SoHistoryExistsキャッシュ検討・追加テスト3件）。#32メンテナンスタブ「DBの最適化」（VACUUM）は#31完了後に着手
+
+## 2026-09-23 Snapshot API v2更新チェック(#38)
+
+- **Issue**: https://github.com/n2daime/nicorank2019/issues/38
+- **ブランチ**: `feature/t038-snapshot-version-check` → `develop` に `--no-ff` でマージ（ca5f3a0）。developの#31取込を事前にfeature側へマージし競合1件（testing.md件数）を214件に統合
+- **背景**: Snapshot API v2のデータ更新時刻が後ろ倒し傾向にあり、前日データでLogSnapshot DBを作ると後段集計の差分がずれる。公式のversionエンドポイント（`.../snapshot/version` → `{"last_modified": "..."}`）で取得前に更新有無を判定する
+- **実装・検証**:
+  - `SnapShotVersionChecker`（3値判定・JST日付比較・`DateParseHandling.None`での日時パース）・`SnapShotVersionPoller`（5分×最大1時間待機・時計/待機は注入可）を新設。取得実行とは分離し、事後動作（ダイアログ/リトライ）は呼び出し側に委ねる
+  - WinForm（Form1）: 未更新時に日時入りOK/キャンセル確認ダイアログ、確認不能時にエラーダイアログ。チェックは`await Task.Run`化（UI凍結回避・reviewer中指摘）
+  - CLI（nicorank_SnapShot.Cliのみ）: 未更新/確認不能の間リトライ、更新検知で通常取得（終了コード0）、1時間経過も未更新なら取得せず終了コード2（`InitilizeDB`に触れない。DBエラーではなくリトライタイムアウトであることをnicorankerr.logに記録）
+  - `LastModifiedRaw`は値そのものを保持（本文全体ではない・reviewer中指摘）。CLIの二重出力解消・InvariantCulture指定（reviewer低指摘）。Pollerのsleep上限化は見送り（精度不要のため）
+  - 実装中に単体テスト8件失敗で発覚：`JObject.Parse`既定ではISO日時がDateトークンに化けてオフセットが落ちる。`DateParseHandling.None`で文字列のまま`DateTimeOffset.TryParse`に回す（pitfalls項目22）
+  - `dotnet test UnitTest/UnitTest.csproj` 214件PASS（#38で17件追加）・両アプリビルド成功（EXIT CODE=0）
+  - reviewerレビュー→必須2件修正→再レビュー問題なし（残った低2件も整理済み）
+  - NAS実機検証（9/21）: 06:37開始→8回未更新→07:14更新検知→全期間取得→終了コード0。WinFormはユーザー実行確認済み・問題なし。タイムアウト経路の実機テストは省略し単体テストで代替
+- **調査（仮説検証）**: 9/13の「8時過ぎに件数増加」記憶とlast_modified（7時台）のズレを調査。versionと実データ件数の同時測定を4朝実施し、切替時刻は07:08/07:14/07:09/07:07と日々バラつくこと（単調長期化ではない）、いずれも実データ段差と一致すること（last_modifiedは信用できる）を確認。specsに実測注記・pitfalls項目23（本取得タスクとの競合注意）を追記。調査スクリプト自体はマージ前に履歴から除去（`.gitattributes`のLF固定ともども除外。動作版はNASに配置済み）
+- **残課題**: Issue #39（タグ検索v2最新値モードのデータ時点表示）は別タスクとして継続
