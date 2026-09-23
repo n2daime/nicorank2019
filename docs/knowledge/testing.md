@@ -9,7 +9,7 @@ dotnet test UnitTest/UnitTest.csproj
 
 - 環境: **.NET Framework 4.8 ターゲットだが .NET 10 SDK でビルド・実行**（Windows）
 - テストフレームワーク: MSTest 3.5.2 / モック: Moq 4.20.72
-- 全 **199 件**のテストが PASS
+- 全 **214 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件を追加）
 
 ## 構成
 
@@ -31,6 +31,7 @@ UnitTest/
     ├── Analyze/     UnitTestRankingAnalyze(9)
     ├── Analyze/model/ UnitTestRanking(6) / UnitTestRankingDisplayTags(5)
     ├── Analyze/Input/ UnitTestTagRankAnalyze(8)
+    ├── Analyze/Official/ UnitTestRankingHistorySoHistory(15)
     ├── Analyze/Option/Basic/ UnitTestTagRankTotalReader(4) / UnitTestTagRankLiveReader(7)
     ├── Analyze/Option/Ext/ UnitTestFavoriteTagReader(9)
     └── api/        UnitTestNicoApiLockedTags(6)
@@ -64,7 +65,8 @@ UnitTest/
 | `UnitTestSnapShotVersionChecker` | 12 | version判定の同日・前日・月またぎ・非JST環境・非JSTオフセット・取得失敗・例外・JSON破損・欠落・パース失敗・ログ文面（Issue #38） |
 | `UnitTestSnapShotVersionPoller` | 5 | 待機仕様値の固定・即更新・リトライ後更新・タイムアウト打ち切り・確認不能のまま打ち切り（フェイク時計。Issue #38） |
 | `UnitTestApiUrlBuilder` | 7 | ApiUrlBuilder のクエリ組み立て（日本語tag・tag省略形状・null/空・null値・`?`付きベース・nullベース例外。Issue #19） |
-| `UnitTestDbMigrationCoordinator` | 12 | 司令塔の全成功・失敗時中断・null例外、RankingHistory/ResultHistoryのDBVersion確保・JSON列DROP・SP行削除・冪等・記録Verが新しい場合の無変更・最古スキーマ対応（Issue #28） |
+| `UnitTestDbMigrationCoordinator` | 12 | 司令塔の全成功・失敗時中断・null例外、RankingHistory/ResultHistoryのDBVersion確保・JSON列DROP・SP行削除・冪等・記録Verが新しい場合の無変更・最古スキーマ対応（Issue #28。RankingHistoryのVer期待値はVer1に更新） |
+| `UnitTestRankingHistorySoHistory` | 15 | SoHistory作成・境界より古い行の退避・混入行清掃・基準日ガード・保持境界prune・Movie廃止・冪等・索引作成・CheckSoMovieNeedSabunのフォールバック/優先/null/表なし・日次の消去行拾い上げと条件付き置換・まとめ消し（Issue #31） |
 
 ## テストパターン
 

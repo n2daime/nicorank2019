@@ -400,3 +400,24 @@
   - コピー対象は `.exe`・`.pdb`・`lib/` 以外の全部。`runtimes/` は `linux-x64` のみ残して他は削除可（約35MB→約2MB）。`nicorank_SnapShot.Cli.runtimeconfig.json` は必須（コピー漏れに注意）。プログラム群は読取のみ、出力先フォルダに実行ユーザーの書込権限が必要
   - 同一日は出力ファイル名が同一で `InitilizeDB` が削除→再作成するため、同時実行は DB 破壊につながる。月1日・毎週月曜の2タスク運用では `flock -n` で重複時スキップ（同一処理のため実害なし）、スクリプトは `set -euo pipefail`＋終了コードゲート＋`wal_checkpoint(TRUNCATE)` 後の移動（`mv`。作業側に旧DBを残さないため glob が曖昧にならない）とする
 - **残課題**: Linux 実機での定期タスク化はユーザー運用側で継続（ロック付きスクリプト・月1＋週1の2タスク構成）。取得物の月次アーカイブ先は `/volume1/nicoran/Snapshot/2026/`
+
+---
+
+## 2026-09-21 LogOfficial.db肥大化対策 (#31)
+
+- **Issue**: https://github.com/n2daime/nicorank2019/issues/31（検証結果を追記してクローズ）
+- **ブランチ**: `feature/t031-logofficial-prune-sohistory` → `develop` に `--no-ff` でマージ（23f2abe）。#37は別途先行マージ済み（ce81623）のため本差分は#31のみ。tasks.mdコンフリクトはdevelop側の#37完了状態を優先し#31節を残す形で解消。マージ後にfeatureブランチ削除。プッシュはユーザー実施
+- **背景**: 7年運用で `LogOfficial.db` が12GB超（Ranking全1億4107万行の82.7%が1年超）。2026-09-07調査で過去無制限遡りは `CheckSoMovieNeedSabun` のみと特定し、1年保持＋SoHistory併設の方針に決定した
+- **実装内容**:
+  - Ver1移行（`DbCurrentVersion` 0→1）: SoHistory作成＋保持境界より古い行の最新を初期退避＋境界以降の混入行清掃＋古いRanking削除＋Movie廃止＋初回のみVACUUM。退避は日次と同じ条件付きUPSERT（`WHERE excluded.集計日 > SoHistory.集計日`）に統一し、中断再開時のcutoffずれでも最新1件に収束する（reviewer低指摘対応）
+  - 日次 `RefreshSoHistoryAndPrune`: 消える行を拾ってから削除し、同日次トランザクションに同梱する（VACUUMなし）。当日分の上書きはしない（当日分はRankingに残るため不要で、置き換えると基準日より新しい値になり再公開チェックが効かなくなる）
+  - `CheckSoMovieNeedSabun` はRanking優先・なければSoHistoryを見る2クエリ逐次。両方になければ新着扱いし、表なし旧DBでも正常終了する。問合せは `集計日 <= @Date` ガード付き。JOIN・VIEWの1本化は見送り
+  - `GenreAnalyze.cs` 削除＋csproj参照削除＋Movie書込みブロック削除。SPAnalyze側の同名Genre SQLは残置（#31範囲外のため別タスク化）
+  - 保持境界はDB最大日基準（`MAX(集計日)-365日` 未満削除）。prune用索引 `idx_Ranking_集計日` を恒久化
+- **設計判断**（詳細は `design.md` のIssue #31節）: SoHistoryはID＋集計日＋4数値のみ（タグは差分に使わず別経路のため含めない）。最新1件のみ保持し全履歴は持たない（差分元の用途には十分）。SoHistoryの日付は常に保持境界より古い不変条件により、無制限履歴の「基準日以前の最新行」と同じ結果になる
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj -c Release` 全197件PASS（既存182＋新規15。EXIT CODE 0）、`dotnet build nicorank2019.sln -c Release` 成功。ビルド1回目は起動中のnicorank2019.exeがbinをロックしMSB3021/3027で失敗したため、exe終了後に同条件で再実行し成功を確認
+  - reviewerレビュー: 総合判定マージ可。低8件のうち4件対応（Backfill条件付きUPSERT統一・db.md現行Ver1・nicorankLib.mdフォールバック追記・specs Ver1明記）、4件見送り（SPAnalyze.GenreSQL削除・SoHistoryExistsキャッシュ・追加テスト3件は別タスク化。理由はコミットメッセージに記録）
+  - 実DB破損対応: 2026-09-08試行で `SQLite Error 11: database disk image is malformed`（Ranking本体ページ2468645〜2508875帯・約100件）を確定。rowidチャンク＋row-by-row救出で再建し、バックアップから最新仕様で通し再実行（約3時間）。結果は `LogOfficial.db` 2.01GB・integrity_check ok・Ranking 24400035行・SoHistory 244852行・週刊出力一式正常
+  - 対策前後2環境比較: 9-08週は総合1000/1000一致・前回2件±1（同点帯の先週持ち越し）。9-21週は件数・ポイント一致で順位のみ差（マイリスト等）があり、原因は修正前exeがタイブレーク導入前（#34は9-13導入）の古いビルドだったと確定。#31起因の揺らぎなしとして検証終了し、1ヶ月比較を待たずユーザー指示でマージした
+- **残課題**: 見送り分の別タスク化（SPAnalyze.GenreSQL整理・SoHistoryExistsキャッシュ検討・追加テスト3件）。#32メンテナンスタブ「DBの最適化」（VACUUM）は#31完了後に着手

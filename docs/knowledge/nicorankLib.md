@@ -10,7 +10,7 @@ nicorankLib/
 ├── Factory/       モード分岐（ModeFactoryBase / Weekly / Tyukan / SP）
 ├── Analyze/       集計パイプライン・入力・過去データ管理
 │   ├── RankingAnalyze.cs   パイプライン制御
-│   ├── Input/              入力（JsonReader系 / SPAnalyze / TyukanAnalyze / GenreAnalyze）
+│   ├── Input/              入力（JsonReader系 / SPAnalyze / TyukanAnalyze / TagRankAnalyze）
 │   ├── Official/           公式ランキング DB 管理（RankingHistory）
 │   ├── Option/             オプション処理（Basic: 順位計算前 / Ext: 順位計算後）
 │   └── model/              ドメインモデル（Ranking / DB / EAnalyzeMode / 各種 JSON モデル）
@@ -54,7 +54,6 @@ AnalyzeRank():
 | `InputBase` | 抽象基底。`AnalyzeDay` / `AnalyzeRank(out List<Ranking>)` を規定 |
 | `JsonReaderBase` | 公式過去ランキング JSON 取得の基底。`file_name_list.json` → ジャンル別 JSON を `Config.ThreadMax` 並列でダウンロード → `Ranking` に変換 → `MergeRankingList` で重複 ID マージ。`CheckAnalyzeTime`（当日 1:00 前は集計不可判定） |
 | `JsonReaderDaily` / `Weekly` / `Monthly` / `Total` | 種別ごと。Weekly は直近の月曜まで遡る、Monthly は直近の1日まで |
-| `GenreAnalyze` | 「演奏してみた」ジャンル特化入力。LogOfficial.db の Movie と Ranking を JOIN |
 | `SPAnalyze` | SP 用。動画 ID リスト（改行区切り）を読み込み Ranking リスト化 |
 | `TagRankAnalyze` | タグ検索用。snapshot v2 ライブ検索でID列を生成（件数→5万判定→100件×4並列→重複除去・ID順）。`LiveCounters`（ID→4数値）も保持しv2最新値モードの材料にする。差分は後段の SabunReader / TotalReader が行う |
 | `TyukanAnalyze` | 中間集計。`Dailylog.db` を使用。対象日リスト（メンテ日除外）を日別に `JsonReaderDaily` + `SabunReader` で集計し Dailylog に INSERT → 期間合計で中間ランキング生成 |
@@ -64,10 +63,10 @@ AnalyzeRank():
 `RankingHistory.cs` — LogOfficial.db（公式過去ランキング DB）の更新・参照。`IDisposable`。
 
 - `Open()` / `Close()`: LogOfficial を開閉（注入済みの開接続は再利用）
-- `EnsureMigrated()`（`IDbMigratable`）: RankingDate確保＋DBVersion（Ver INTEGER・Ver0開始）確保。集計開始時に司令塔から呼ばれる
+- `EnsureMigrated()`（`IDbMigratable`）: RankingDate確保＋DBVersion確保＋Ver1でSoHistory・prune用索引・古いRanking削除・Movie廃止。集計開始時に司令塔から呼ばれる
 - `UpdateOfficialRankingDB()`: RankingDate の `Max(集計日)+1`（初期値 20190610）から今日までを日別に取得・登録。0 件の日はメンテナンス日として登録（UI で確認）
 - `CheckMaintananceDay(DateTime)`: RankingDate でメンテ日判定
-- `CheckSoMovieNeedSabun(id, baseTime)`: 公式チャンネル動画（so）の差分取得判定。過去ランキング既出なら差分データ、なければ `ranking = null`（差分なし）。DB 非オープン・例外時は false
+- `CheckSoMovieNeedSabun(id, baseTime)`: 公式チャンネル動画（so）の差分取得判定。過去ランキング既出なら差分データ、なければ `ranking = null`（差分なし）。`Ranking` に見つからない場合は `SoHistory`（消えた行のうち最新の差分元）を基準日以前の行に限って参照し、それもなければ新着扱いとする。`SoHistory` 表自体がない旧DBでも新着扱いで正常終了する。DB 非オープン・例外時は false
 - `GetRankingSabunDataLogOfficial(id, baseTime, baseTime2)`: 過去ログから差分候補を取得（7日間に無ければ baseTime 以降の最古データを採用）
 - `ISQLiteCtrl` コンストラクタ注入可
 
@@ -174,4 +173,4 @@ AnalyzeRank():
 | `NicoApi` | — | GenreInfoReader / MovieInfoReader / UserInfoReader |
 | `ModeFactory*` | — | `frmMainSyukei.cs`（Weekly:86 / Tyukan:93 / SP:99 で切替） |
 
-テスト容易性のための `_dbCtrlOverride` パターン（`ISQLiteCtrl` コンストラクタ注入）は `RankingHistory` / `TyukanAnalyze` / `SnapShotSabunReader` / `LastRankReader` / `TyokiHantei` / `FavoriteTagReader` / `GenreAnalyze` に実装済み。
+テスト容易性のための `_dbCtrlOverride` パターン（`ISQLiteCtrl` コンストラクタ注入）は `RankingHistory` / `TyukanAnalyze` / `SnapShotSabunReader` / `LastRankReader` / `TyokiHantei` / `FavoriteTagReader` に実装済み。
