@@ -15,6 +15,14 @@
 
 ## 未完了タスク
 
+### Snapshot API v2更新チェック（#38）
+
+- [ ] SnapShotVersionChecker新設（version取得・JST日付比較・更新済み/未更新/確認不能の3値判定）
+- [ ] 取得開始時にlast_modifiedをStatusLogへ出力（CLI＝NASメールログに残る）
+- [ ] WinForm未更新時に日時入りOK/キャンセル確認ダイアログ、確認不能時にエラーダイアログ
+- [ ] CLIで5分×最大1時間リトライ、タイムアウト時は取得せず終了コード2
+- [ ] 単体テスト追加・dotnet test＋ビルド成功・specs/design/knowledge更新・reviewerレビュー
+
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。

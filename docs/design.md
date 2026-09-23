@@ -241,6 +241,25 @@
 
 ---
 
+## Snapshot API v2更新チェック（Issue #38）
+
+### Context
+
+- スナップショット v2 のデータは AM5:00（JST）時点だが参照可能になる時刻はデータ蓄積とともに後ろ倒し（2026-09-20実測で `last_modified=07:08`）。更新完了の後ろ倒しに合わせ定期タスクの開始時刻を見直してきた経緯があるが、それでも前日データをつかむ危険があり、前日DBで後段の差分がすべてずれる
+- 公式ガイドに切り替え日時エンドポイント（`.../api/v2/snapshot/version` → `{"last_modified": "..."}`）があるため推測ロジックは不要
+- WinForm（手動）とCLI（無人・NASメール運用）で事後動作が異なる。「取得成功なのに異常終了」を作ると運用の切り分けが難しくなるため、タイムアウト時は取得自体をやめて異常終了する方式にした
+
+### Decisions
+
+- **判定と待機と取得を3分離**: `SnapShotVersionChecker`（取得→パース→JST日付比較の3値判定）・`SnapShotVersionPoller`（5分×最大1時間の待機）・`SnapController`（取得専任のまま）。待機と取得を分けると「タイムアウト時は取得せず終了」が呼び出し側に素直に書ける。取得成功＋遅延の畳み込み（終了コードの意味が二重になる案）は不採用
+- **JST比較は `ToOffset(+09:00)` で寄せる**: `DateTime.Today` は実行環境TZ依存でNAS側設定次第で日付境界がずれる。`last_modified` のオフセットと実行時刻の両方をJST化してから `Date` 比較する
+- **タイムアウト時は `InitilizeDB` に触れない**: 既存DB削除を伴うため、前日データでの上書きも当日ファイルの破壊も起きない。終了コード2でNASメールが飛び9時枠見直しのトリガーになる。DBエラーとの切り分けのため `nicorankerr.log` にリトライタイムアウトであることを記録する
+- **version日時パースは `DateParseHandling.None`**: `JObject.Parse` 既定ではISO日時が `Date` トークンに化けて `+09:00` が落ちる（実装中に単体テスト8件失敗で発覚）。`JsonTextReader` で None を指定し文字列のまま `DateTimeOffset.TryParse` に回す。詳細は `pitfalls` 項目22
+- **Winコンソールモードは対象外**: Linux CLIのみにリトライを実装し、Windows引数あり起動は従来通り。揃える場合は別タスクとする
+- **待機の数え方は経過時間ベース**: 初回＋12回再チェックで約60分。精度不要のため超過分の延びは許容する。`RetryInterval`/`Timeout` は定数化し変更時はIssue見直しと判断するためテストで縛る
+
+---
+
 ## 実装済みの設計判断（要点）
 
 詳細は `docs/knowledge/db.md`・`docs/knowledge/testing.md` を参照。
