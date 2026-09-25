@@ -85,9 +85,11 @@ namespace nicorankLib.api
         /// なぜ新しい方を残すか: 本地にしかない古い貯金を消さないため。上書きコピーはしない。
         /// </summary>
         /// <param name="sourceDbPath">運搬ファイルのパス</param>
+        /// <param name="localDbPath">本地DBのパス（省略時は規定のDB/ApiXML.db。テストで一時DBを指定する）</param>
         /// <returns>取り込んだ件数</returns>
-        public virtual int MergeCacheFile(string sourceDbPath)
+        public virtual int MergeCacheFile(string sourceDbPath, string localDbPath = null)
         {
+            string localPath = localDbPath ?? DATA_SOURCE;
             int merged = 0;
             using (var sourceCtrl = new SQLiteCtrl())
             {
@@ -117,7 +119,7 @@ namespace nicorankLib.api
 
                 using (var localCtrl = new SQLiteCtrl())
                 {
-                    if (!localCtrl.Open(DATA_SOURCE))
+                    if (!localCtrl.Open(localPath))
                     {
                         return 0;
                     }

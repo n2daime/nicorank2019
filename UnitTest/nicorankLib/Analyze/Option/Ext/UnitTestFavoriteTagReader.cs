@@ -166,8 +166,9 @@ namespace UnitTest.nicorankLib.Analyze.Option.Ext
         }
 
         [TestMethod]
-        public void 確保失敗時はfalseを返す()
+        public void 確保失敗時は中断せず取得済み分で続ける()
         {
+            //Issue #40で仕様変更：ApiXMLは表示用キャッシュのため、確保失敗でも集計は続ける
             using (var db = TestDbHelper.CreateInMemoryDb())
             {
                 TestDbHelper.CreateRankingTable(db);
@@ -179,7 +180,8 @@ namespace UnitTest.nicorankLib.Analyze.Option.Ext
 
                 var list = new List<Ranking> { CreateRank("sm1", 1) };
 
-                Assert.IsFalse(reader.AnalyzeRank(list));
+                Assert.IsTrue(reader.AnalyzeRank(list));
+                CollectionAssert.AreEqual(new List<string> { "A" }, new List<string>(list[0].FavoriteTags));
             }
         }
 
