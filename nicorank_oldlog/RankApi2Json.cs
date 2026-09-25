@@ -594,9 +594,8 @@ namespace nicorank_oldlog
                     }
                     api.CloseDB();
                 }
-                //一時名から本名へ置き換える（書きかけ配置の防止）
-                try { if (File.Exists(dstPath)) { File.Delete(dstPath); } } catch { }
-                File.Move(tmpPath, dstPath);
+                //一時名から本名へ置き換える（書きかけ配置の防止。旧ファイルの削除→移動では移動失敗時に前回分まで失うため上書き移動する）
+                File.Move(tmpPath, dstPath, true);
                 Console.WriteLine($"---- {this.RankInfo.folder}:動画情報キャッシュを保存しました ----");
             }
             catch (Exception e)

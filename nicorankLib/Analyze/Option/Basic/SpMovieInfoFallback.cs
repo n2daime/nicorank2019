@@ -56,7 +56,7 @@ namespace nicorankLib.Analyze.Option.Basic
                     if (firstSeen.HasValue)
                     {
                         //本物の投稿日ではなく「期間内で初めて見かけた日」を参考値にする。
-                        //古い動画なのに基準側に数字がない場合は除外、新しく見かけた場合は残す判断に使うため。
+                        //生成時刻のまま残すより集計期間に即した日付になるため。新着救済の判断材料にするが、除外には使わない。
                         wRank.Date = firstSeen.Value;
                     }
                     //どちらも見つからなくても残す（除外しない）。出力時に【集計後削除】の目印を付ける。
@@ -72,6 +72,8 @@ namespace nicorankLib.Analyze.Option.Basic
         /// <summary>
         /// 過去の週刊結果から最新のタイトルを拾う。なければnull。
         /// SPは履歴DBに登録しないため、週刊の LastResult を参照する（SP対象は週刊1000位以内のため存在する見込み）。
+        /// なぜ2段にするか: LastResult の主キーは（種別, 集計日, ID）のため ID 単独条件では索引が効かず全表走査になる。
+        /// まず種別=Weekly に絞って主キー経路で引き、なければ全体にフォールバックする。
         /// </summary>
         protected string FindLastTitle(string id)
         {
@@ -82,24 +84,12 @@ namespace nicorankLib.Analyze.Option.Basic
                 {
                     return null;
                 }
-                using (var aCmd = dbCtrl.Connection.CreateCommand())
+                string title = FindLastTitleBySyubetsu(dbCtrl, id, EAnalyzeMode.Weekly.ToString());
+                if (!string.IsNullOrWhiteSpace(title))
                 {
-                    aCmd.CommandText =
-                        @"SELECT タイトル FROM LastResult
-                          WHERE ID = @ID ORDER BY 集計日 DESC LIMIT 1";
-                    aCmd.Parameters.AddWithValue("@ID", id);
-                    using (var reader = aCmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            string title = reader["タイトル"]?.ToString();
-                            if (!string.IsNullOrWhiteSpace(title))
-                            {
-                                return title;
-                            }
-                        }
-                    }
+                    return title;
                 }
+                return FindLastTitleBySyubetsu(dbCtrl, id, null);
             }
             catch (Exception ex)
             {
@@ -108,8 +98,45 @@ namespace nicorankLib.Analyze.Option.Basic
             return null;
         }
 
+        private static string FindLastTitleBySyubetsu(ISQLiteCtrl dbCtrl, string id, string syubetsu)
+        {
+            using (var aCmd = dbCtrl.Connection.CreateCommand())
+            {
+                if (string.IsNullOrEmpty(syubetsu))
+                {
+                    aCmd.CommandText =
+                        @"SELECT タイトル FROM LastResult
+                          WHERE ID = @ID ORDER BY 集計日 DESC LIMIT 1";
+                    aCmd.Parameters.AddWithValue("@ID", id);
+                }
+                else
+                {
+                    aCmd.CommandText =
+                        @"SELECT タイトル FROM LastResult
+                          WHERE 種別 = @種別 AND ID = @ID ORDER BY 集計日 DESC LIMIT 1";
+                    aCmd.Parameters.AddWithValue("@種別", syubetsu);
+                    aCmd.Parameters.AddWithValue("@ID", id);
+                }
+                using (var reader = aCmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        string title = reader["タイトル"]?.ToString();
+                        if (!string.IsNullOrWhiteSpace(title))
+                        {
+                            return title;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
         /// <summary>
         /// 公式履歴から集計期間内で初めて見かけた集計日を拾う。なければnull。
+        /// 見つかった日は生成時刻（DateTime.Now）の代わりの参考値にするだけで、除外には使わない。
+        /// なぜ除外に使わないか: 検索下限を基準-7日に合わせているため、返る日は新着救済の閾値以上にしかならず、
+        /// 除外分岐には到達しない。方針は「残す」（Issue #40）であり、ここで除外を復活させない。
         /// なければ新着扱いで残す（除外しない）。
         /// </summary>
         protected DateTime? FindFirstSeenDay(string id, DateTime baseDay, DateTime targetDay)

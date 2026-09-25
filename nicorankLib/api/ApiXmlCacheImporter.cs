@@ -23,6 +23,7 @@ namespace nicorankLib.api
         /// <summary>
         /// NicovideoThumb表がなければ作る。配布DB・取込先DB・テストDBのいずれにも使える。
         /// なぜIF NOT EXISTSか: 既存キャッシュを壊さずに確保だけ行うため。
+        /// 主キーは本番DB（依存ファイル/DB/ApiXML.db）と同じ（ID, 取得日）にする。
         /// </summary>
         public static void EnsureNicovideoThumbTable(ISQLiteCtrl dbCtrl)
         {
@@ -33,7 +34,8 @@ namespace nicorankLib.api
                         取得日 INTEGER,
                         ID TEXT,
                         Status INTEGER,
-                        XML TEXT
+                        XML TEXT,
+                        PRIMARY KEY (ID, 取得日)
                     )";
                 aCmd.ExecuteNonQuery();
             }
@@ -105,12 +107,17 @@ namespace nicorankLib.api
                     {
                         while (reader.Read())
                         {
+                            //NULL混じりの行は取り込まない（取得日の比較ができないため）
+                            if (reader["取得日"] == DBNull.Value || reader["ID"] == DBNull.Value)
+                            {
+                                continue;
+                            }
                             rows.Add(new CacheRow
                             {
                                 GetDate = reader["取得日"].ToString(),
                                 ID = reader["ID"].ToString(),
-                                Status = Convert.ToInt64(reader["Status"]),
-                                Xml = reader["XML"].ToString()
+                                Status = reader["Status"] == DBNull.Value ? 0 : Convert.ToInt64(reader["Status"]),
+                                Xml = reader["XML"] == DBNull.Value ? string.Empty : reader["XML"].ToString()
                             });
                         }
                     }
@@ -121,6 +128,8 @@ namespace nicorankLib.api
                 {
                     if (!localCtrl.Open(localPath))
                     {
+                        //本地DBがない場合は新規起動できないため件数0で終える（無言で済ませないよう記録する）
+                        StatusLog.WriteLine($"本地の動画情報キャッシュを開けませんでした: {localPath}");
                         return 0;
                     }
                     EnsureNicovideoThumbTable(localCtrl);
@@ -128,31 +137,37 @@ namespace nicorankLib.api
                     {
                         const int commitBatch = 5000;
                         int rowCounter = 0;
-                        using (var transaction = (SqliteTransaction)localCtrl.Connection.BeginTransaction())
+                        //巨大トランザクションによるWAL肥大を避けるため5000件ごとに確定する（SnapShotDBと同一の考え方）
+                        aCmd.Transaction = (SqliteTransaction)localCtrl.Connection.BeginTransaction();
+                        try
                         {
-                            aCmd.Transaction = transaction;
-                            try
+                            foreach (var row in rows)
                             {
-                                foreach (var row in rows)
+                                if (IsSourceNewer(aCmd, row))
                                 {
-                                    if (IsSourceNewer(aCmd, row))
-                                    {
-                                        ReplaceRow(aCmd, row);
-                                        merged++;
-                                    }
-                                    rowCounter++;
-                                    if ((rowCounter % commitBatch) == 0)
-                                    {
-                                        aCmd.Transaction.Commit();
-                                        aCmd.Transaction = (SqliteTransaction)localCtrl.Connection.BeginTransaction();
-                                    }
+                                    ReplaceRow(aCmd, row);
+                                    merged++;
                                 }
-                                aCmd.Transaction.Commit();
+                                rowCounter++;
+                                if ((rowCounter % commitBatch) == 0)
+                                {
+                                    CommitAndRenew(localCtrl, aCmd);
+                                }
                             }
-                            catch
+                            aCmd.Transaction.Commit();
+                        }
+                        catch
+                        {
+                            try { aCmd.Transaction?.Rollback(); } catch { }
+                            throw;
+                        }
+                        finally
+                        {
+                            //確定済みの区切りトランザクションは破棄する（接続クローズまで残さない）
+                            if (aCmd.Transaction != null)
                             {
-                                try { aCmd.Transaction?.Rollback(); } catch { }
-                                throw;
+                                aCmd.Transaction.Dispose();
+                                aCmd.Transaction = null;
                             }
                         }
                     }
@@ -190,6 +205,18 @@ namespace nicorankLib.api
                 }
             }
             return true;
+        }
+
+        /// <summary>
+        /// 区切りで確定し、新しいトランザクションに取り替える。確定済みの区切りは破棄する。
+        /// </summary>
+        protected static void CommitAndRenew(ISQLiteCtrl dbCtrl, SqliteCommand aCmd)
+        {
+            var finished = aCmd.Transaction;
+            aCmd.Transaction = null;
+            finished.Commit();
+            finished.Dispose();
+            aCmd.Transaction = (SqliteTransaction)dbCtrl.Connection.BeginTransaction();
         }
 
         protected static void ReplaceRow(SqliteCommand aCmd, CacheRow row)

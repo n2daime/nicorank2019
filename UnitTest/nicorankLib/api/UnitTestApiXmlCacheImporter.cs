@@ -119,5 +119,53 @@ namespace UnitTest.nicorankLib.api
                 File.Delete(local);
             }
         }
+
+        [TestMethod]
+        public void 取得日が同じなら置き換えない()
+        {
+            string source = CreateThumbDbFile();
+            string local = CreateThumbDbFile();
+            try
+            {
+                InsertRow(source, 20200101, "sm1", "XML_NEW");
+                InsertRow(local, 20200101, "sm1", "XML_OLD");
+
+                var importer = new ApiXmlCacheImporter();
+                Assert.AreEqual(0, importer.MergeCacheFile(source, local));
+                Assert.AreEqual("XML_OLD", ReadXml(local, "sm1"));
+            }
+            finally
+            {
+                File.Delete(source);
+                File.Delete(local);
+            }
+        }
+
+        [TestMethod]
+        public void StatusNULLの行も取り込む()
+        {
+            string source = CreateThumbDbFile();
+            string local = CreateThumbDbFile();
+            try
+            {
+                var dbCtrl = new SQLiteCtrl();
+                Assert.IsTrue(dbCtrl.Open(source), "temp db open");
+                using (var cmd = dbCtrl.Connection.CreateCommand())
+                {
+                    cmd.CommandText = "INSERT INTO NicovideoThumb(取得日, ID, Status, XML) VALUES(20200101, 'sm1', NULL, 'XML_A')";
+                    cmd.ExecuteNonQuery();
+                }
+                dbCtrl.Close();
+
+                var importer = new ApiXmlCacheImporter();
+                Assert.AreEqual(1, importer.MergeCacheFile(source, local));
+                Assert.AreEqual("XML_A", ReadXml(local, "sm1"));
+            }
+            finally
+            {
+                File.Delete(source);
+                File.Delete(local);
+            }
+        }
     }
 }

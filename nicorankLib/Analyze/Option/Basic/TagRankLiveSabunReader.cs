@@ -26,12 +26,16 @@ namespace nicorankLib.Analyze.Option.Basic
 
         ISQLiteCtrl dbCtrlBase;
 
-        public TagRankLiveSabunReader(TagRankAnalyze input, DateTime analyzeTime, string baseDB, ISQLiteCtrl dbCtrl = null)
+        //動画情報が取れなかった場合の予備補完（案B・Issue #40）。テストで差し替え可能にするため注入可。
+        protected SpMovieInfoFallback _fallback;
+
+        public TagRankLiveSabunReader(TagRankAnalyze input, DateTime analyzeTime, string baseDB, ISQLiteCtrl dbCtrl = null, SpMovieInfoFallback fallback = null)
         {
             Input = input;
             AnalyzeTime = analyzeTime;
             BaseDB = baseDB;
             dbCtrlBase = dbCtrl ?? new SQLiteCtrl();
+            _fallback = fallback ?? new SpMovieInfoFallback();
         }
 
         /// <summary>
@@ -148,6 +152,9 @@ namespace nicorankLib.Analyze.Option.Basic
                     return false;
                 }
 
+                //動画情報が取れなかった分は予備情報で補う（案B。SnapShotSabunReaderと同一。Issue #40）
+                _fallback.ComplementMovieInfo(rankingList, this.BaseTime, this.AnalyzeTime);
+
                 StatusLog.WriteLine("基準日からの差分値を計算しています...");
 
                 //差分データが無くても許容する投稿日の基準を計算する
@@ -210,9 +217,12 @@ namespace nicorankLib.Analyze.Option.Basic
                 if (disposing)
                 {
                     dbCtrlBase.Close();
+                    //予備補完が自前で開いた接続も閉じる（注入接続は先方が閉じるため触らない）
+                    _fallback?.Close();
                 }
 
                 dbCtrlBase = null;
+                _fallback = null;
 
                 disposedValue = true;
             }

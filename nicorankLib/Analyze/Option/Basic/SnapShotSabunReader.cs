@@ -209,12 +209,15 @@ namespace nicorankLib.Analyze.Option.Basic
                     // TODO: マネージ状態を破棄します (マネージ オブジェクト)。
                     dbCtrlAnalyze.Close();
                     dbCtrlBase.Close();
+                    //予備補完が自前で開いた接続も閉じる（注入接続は先方が閉じるため触らない）
+                    _fallback?.Close();
                 }
 
                 // TODO: アンマネージ リソース (アンマネージ オブジェクト) を解放し、下のファイナライザーをオーバーライドします。
                 // TODO: 大きなフィールドを null に設定します。
                 dbCtrlAnalyze = null;
                 dbCtrlBase = null;
+                _fallback = null;
 
                 disposedValue = true;
             }
