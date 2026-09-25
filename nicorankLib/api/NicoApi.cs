@@ -364,7 +364,11 @@ namespace nicorankLib.api
 
 
         /// <summary>
-        /// ユーザー情報と再生時間を補完する
+        /// ユーザー情報と再生時間を補完する。
+        /// 表示用の補完だけを行い、集計対象の存否は判断しない。
+        /// 取得失敗・Status非ok・行なしの場合も isDelete を立てず、空欄・既定値のまま残して true で返す。
+        /// なぜ除外しないか: ApiXML.db は表示用キャッシュであり、取得タイミング次第で結果が変わる削除判定を
+        /// 順位・ポイントに影響させないため（Issue #40）。除外の判断はスナップショット差分・Sabun・Hidden側に任せる。
         /// </summary>
         /// <param name="ranking"></param>
         /// <returns></returns>
@@ -383,9 +387,10 @@ namespace nicorankLib.api
                         using (var aCmd = dbCtrl.Connection.CreateCommand())
                         {
                             //ローカルにあるかどうかチェックする
+                            //同一IDが複数取得日で存在する場合は最新の行を使う（GetLockedTagsと同一。行選択の不定をなくすため）
                             aCmd.CommandText =
                                 @" SELECT XML FROM NicovideoThumb
-                               Where ID = @ID";
+                                Where ID = @ID ORDER BY 取得日 DESC LIMIT 1";
                             aCmd.Parameters.AddWithValue("@ID", ranking.ID);
                             using (var reader = aCmd.ExecuteReader())
                             {
@@ -395,7 +400,7 @@ namespace nicorankLib.api
                                     ThumbinfoBase thumbinfo = GetTumbInfo(ranking, ranking.ID, reader["XML"].ToString());
                                     if (thumbinfo == null || thumbinfo.Status != "ok")
                                     {
-                                        ranking.isDelete = true;
+                                        //削除・非公開・取得失敗の場合も除外せず、再生時間だけ既定値にして残す
                                         ranking.SetPlayTime("??:??");
                                     }
                                     else
@@ -411,10 +416,7 @@ namespace nicorankLib.api
                                         }
                                     }
                                 }
-                                else
-                                {
-                                    ranking.isDelete = true;
-                                }
+                                //行なしの場合も除外せず、そのまま残す（表示欠落は呼び出し側・出力側で扱う）
                             }
                         }
                     }
@@ -429,7 +431,10 @@ namespace nicorankLib.api
         }
 
         /// <summary>
-        /// 動画情報で補完できるものは補完する
+        /// 動画情報で補完できるものは補完する。
+        /// 表示用の補完だけを行い、集計対象の存否は判断しない。
+        /// 取得失敗・Status非ok・行なしの場合も isDelete を立てず、空欄・既定値のまま残して true で返す。
+        /// なぜ除外しないかは GetUserInfo と同一（Issue #40）。
         /// </summary>
         /// <param name="ranking"></param>
         /// <returns></returns>
@@ -448,9 +453,10 @@ namespace nicorankLib.api
                         using (var aCmd = dbCtrl.Connection.CreateCommand())
                         {
                             //ローカルにあるかどうかチェックする
+                            //同一IDが複数取得日で存在する場合は最新の行を使う（GetLockedTagsと同一。行選択の不定をなくすため）
                             aCmd.CommandText =
                                 @" SELECT XML FROM NicovideoThumb
-                               Where ID = @ID";
+                                Where ID = @ID ORDER BY 取得日 DESC LIMIT 1";
                             aCmd.Parameters.AddWithValue("@ID", ranking.ID);
                             using (var reader = aCmd.ExecuteReader())
                             {
@@ -460,7 +466,7 @@ namespace nicorankLib.api
                                     ThumbinfoBase thumbinfo = GetTumbInfo(ranking, ranking.ID, reader["XML"].ToString());
                                     if (thumbinfo == null || thumbinfo.Status != "ok")
                                     {
-                                        ranking.isDelete = true;
+                                        //削除・非公開・取得失敗の場合も除外せず、再生時間だけ既定値にして残す
                                         ranking.SetPlayTime("??:??");
                                     }
                                     else
@@ -485,10 +491,7 @@ namespace nicorankLib.api
                                         }
                                     }
                                 }
-                                else
-                                {
-                                    ranking.isDelete = true;
-                                }
+                                //行なしの場合も除外せず、そのまま残す（SP側は予備情報で補う。タグ検索は数字なし除外のみ残す）
                             }
                         }
                     }

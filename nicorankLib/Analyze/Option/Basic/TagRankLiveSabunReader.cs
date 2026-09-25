@@ -186,6 +186,11 @@ namespace nicorankLib.Analyze.Option.Basic
                 }
                 //データが取得できたものだけ抽出
                 rankingList = rankingList.Where(wRank => !wRank.isDelete).ToList();
+                //動画情報が最後まで埋まらなかった分は目印を付けて残す（除外しない。Issue #40）
+                foreach (var wRank in rankingList)
+                {
+                    wRank.ApplyDeletedTitleMarker();
+                }
             }
             catch (Exception ex)
             {

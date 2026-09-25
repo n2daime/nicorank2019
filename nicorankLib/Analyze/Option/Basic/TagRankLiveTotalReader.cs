@@ -89,6 +89,8 @@ namespace nicorankLib.Analyze.Option.Basic
                     wRank.CountMyList = wRank.CountMyListTotal;
                     wRank.CountLike = wRank.CountLikeTotal;
                     wRank.PointCalcReset();
+                    //動画情報が最後まで埋まらなかった分は目印を付けて残す（除外しない。Issue #40）
+                    wRank.ApplyDeletedTitleMarker();
                 }
             }
             catch (Exception ex)
