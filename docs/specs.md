@@ -29,6 +29,15 @@
 - `Ranking.FavoriteTags` は `List<string>` で挿入順を保持する（人気タグ→タグロック定義順）
 - 出力: `Ranking.GetDisplayTags()` が挿入順のままカテゴリ名と同名のタグを除外する（`Trim` 後完全一致。空カテゴリは除外なし）。ファイル別の件数制限は `NrmOutput` の上限パラメータで行う（TSV系は3件。`result(UTF8).csv`・`result_DB登録用(UTF8).json` のみ全件）。Issue #28で見直しなしを確定し全件仕様を維持する
 
+### 動画情報キャッシュと削除判定の分離（Issue #40）
+
+- `ApiXML.db`（NicovideoThumb）は表示用キャッシュであり、取得の成否を順位・ポイントに影響させない。`NicoApi.GetUserInfo` / `GetMovieInfo` は取得失敗・Status非ok・行なしの場合も `isDelete` を立てず、空欄・既定値のまま残して処理を続ける。除外の判断はスナップショット差分・Sabun・Hidden側に任せる
+- 同一IDが複数取得日で存在する場合は最新の行を読む（`ORDER BY 取得日 DESC LIMIT 1`。タグロック取得と同一）。行選択の不定をなくすため
+- `MovieInfoReader` / `GenreInfoReader` / `UserInfoReader` / `FavoriteTagReader` の補完は、確保・読取の失敗があっても集計を中断しない。取れない動画は空欄のまま残す
+- 週刊の動画情報は oldlog が週刊JSONに出たID全部（約26000件）を一括取得し、日付フォルダ（`old-ranking/weekly/YYYY-MM-DD/`）へ `ApiXML.db` として置く。2019側の週刊JSON取得後（`JsonReaderWeekly`）に一時置き場へ落として本地へ取り込む（IDごとに運搬側の取得日が本地より新しい場合だけ置き換え。本地にしかない貯金は残す）。運搬ファイルがなければ本地のまま流す。書きかけ配置の防止のため一時名で作ってから置き換える
+- SPで動画情報が取れない場合は予備情報で補う（案B）。優先順位は ApiXML → `NicoranHistory.db` の `LastResult` 最新タイトル → `LogOfficial.db` の `Ranking` から集計期間内で初めて見かけた集計日（参考投稿日）→ 空のまま残す（除外しない）。ジャンル空欄は許容する。タグ検索は数字なし除外を維持するが、ApiXML不調だけでは除外しない
+- 集計には残したが動画情報が最後まで埋まらなかった場合、タイトル欄の先頭に【集計後削除】を付ける。列の追加・順序変更はしない（ニコランWeb手動アップロード互換のため）
+
 ### 差分集計と so 新着偽造判定（SabunReader・Issue #31）
 
 - 差分は LogOfficial.db の過去ランキングから取得する（`CheckSoMovieNeedSabun` / `GetRankingSabunDataLogOfficial`）。過去ログにデータがなければ差分なし
@@ -235,7 +244,9 @@
 
 ### NicoApi（nicorankLib/api/NicoApi.cs）
 
-- `https://ext.nicovideo.jp/api/getthumbinfo/` — 動画情報 XML 取得。キャッシュは `DB/ApiXML.db` の `NicovideoThumb`（取得日ごとに管理）
+- `https://ext.nicovideo.jp/api/getthumbinfo/` — 動画情報 XML 取得。キャッシュは `DB/ApiXML.db` の `NicovideoThumb`（取得日ごとに管理）。同一IDは最新の行を読む
+- `GetUserInfo` / `GetMovieInfo` は表示補完だけを行い、取得失敗・Status非ok・行なしでも除外（`isDelete`）せず集計を続ける（Issue #40）
+- 週刊の日付フォルダには oldlog が用意した `ApiXML.db` が置かれる。2019側は `ApiXmlCacheImporter` で取り込む（新しい取得日だけ置き換え。失敗時は本地継続）
 - `https://api.ce.nicovideo.jp/nicoapi/v1/video.info?v=` — video.info（現在 `convertMovieID` は未使用）
 - 取得は `Parallel.ForEach`（`Config.ThreadMax` 並列）。失敗時は**全スレッド一時停止 + 指数バックオフ**（403 対策。後述の pitfalls 参照）
 

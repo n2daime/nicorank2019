@@ -53,6 +53,7 @@ AnalyzeRank():
 |---|---|
 | `InputBase` | 抽象基底。`AnalyzeDay` / `AnalyzeRank(out List<Ranking>)` を規定 |
 | `JsonReaderBase` | 公式過去ランキング JSON 取得の基底。`file_name_list.json` → ジャンル別 JSON を `Config.ThreadMax` 並列でダウンロード → `Ranking` に変換 → `MergeRankingList` で重複 ID マージ。`CheckAnalyzeTime`（当日 1:00 前は集計不可判定） |
+| `JsonReaderWeekly` | 週刊用。JSON取得後に oldlog 配布の `ApiXML.db` を `ApiXmlCacheImporter` で取り込む（失敗時は本地継続。Issue #40） |
 | `JsonReaderDaily` / `Weekly` / `Monthly` / `Total` | 種別ごと。Weekly は直近の月曜まで遡る、Monthly は直近の1日まで |
 | `SPAnalyze` | SP 用。動画 ID リスト（改行区切り）を読み込み Ranking リスト化 |
 | `TagRankAnalyze` | タグ検索用。snapshot v2 ライブ検索でID列を生成（件数→5万判定→100件×4並列→重複除去・ID順）。`LiveCounters`（ID→4数値）も保持しv2最新値モードの材料にする。差分は後段の SabunReader / TotalReader が行う |
@@ -80,9 +81,10 @@ AnalyzeRank():
 | `SabunReader` | 基準日との差分計算。so 動画は差分が取れなければ ID 番号で新着判定（so40000000 未満は新着偽造で isDelete）。DB エラー等で判定不能な場合も isDelete |
 | `LastRankReader` | NicoranHistory.db の Lastresult から前回総合ランク/ポイントをセット |
 | `LastRankCsvReader` | SP 用。前回 result CSV から前回順位を付与 |
-| `GenreInfoReader` | カテゴリ不明の動画を NicoApi で補完 |
-| `MovieInfoReader` | NicoApi で動画情報（タイトル・投稿日）を取得 |
-| `SnapShotSabunReader` | SP 集計の中核。スナップショット DB 2本（AnalyzeDB/BaseDB）の累積値差分を計算。`IDisposable` |
+| `GenreInfoReader` | カテゴリ不明の動画を NicoApi で補完。失敗しても中断せず空欄のまま残す（Issue #40） |
+| `MovieInfoReader` | NicoApi で動画情報（タイトル・投稿日）を取得。失敗しても中断せず空欄のまま残す（Issue #40） |
+| `SnapShotSabunReader` | SP 集計の中核。スナップショット DB 2本（AnalyzeDB/BaseDB）の累積値差分を計算。動画情報の後に `SpMovieInfoFallback` で予備補完し、残欠落には削除目印を付ける（Issue #40）。`IDisposable` |
+| `SpMovieInfoFallback` | SPの予備補完（Issue #40・案B）。タイトル空欄分だけ LastResult 最新タイトル＋LogOfficial 期間内初見日で埋める。新規取得なし・失敗でも中断しない |
 | `TagRankTotalReader` | タグ検索の基準DBなし専用。AnalyzeDBの累積値をそのまま集計値にする（差分なし）。`IDisposable` |
 | `TagRankLiveTotalReader` | v2最新値の基準DBなし専用。`TagRankAnalyze.LiveCounters` をそのまま集計値にする（DB不要。`ApplyLiveTotals` は純粋処理で共用） |
 | `TagRankLiveSabunReader` | v2最新値の基準DBあり専用。Target=ライブ値・Base=基準日DBで差分計算（新着救済はSabunReaderと同一）。`IDisposable` |
@@ -97,7 +99,7 @@ AnalyzeRank():
 
 ## Analyze/model
 
-- `Ranking` — 集計結果1件。`CalcPoint()`（ポイント計算、キャッシュ付き）・`PointCalcReset()`・`MergeRankingList`・`IsChannel`（`so` 始まり）。計算式の詳細は `../specs.md` セクション2
+- `Ranking` — 集計結果1件。`CalcPoint()`（ポイント計算、キャッシュ付き）・`PointCalcReset()`・`MergeRankingList`・`IsChannel`（`so` 始まり）。`DeletedTitlePrefix`＋`ApplyDeletedTitleMarker()`（情報欠落時の目印付け。Issue #40）。計算式の詳細は `../specs.md` セクション2
 - `RankingIdComparer` — 動画IDの決定的な比較子（Issue #34）。種別→数字の数値認識、同点時だけ呼ばれるThenBy二次キー用
 - `EAnalyzeMode` — Weekly / SP / Tyukan / Daily / Mothly（タイポ）/ TagRank / Unknown
 - `DB` — DB ファイルパス定数（`LOG_OFFICEIAL` / `NiCORAN_HISTORY` / `LOG_SNAPSHOT`）
@@ -121,7 +123,8 @@ AnalyzeRank():
 
 ## api
 
-- `NicoApi` — getthumbinfo API 取得 + `DB/ApiXML.db`（NicovideoThumb）キャッシュ。`Parallel.ForEach`（`Config.ThreadMax`）。失敗時は全スレッド一時停止 + 指数バックオフ（pitfalls 参照）
+- `NicoApi` — getthumbinfo API 取得 + `DB/ApiXML.db`（NicovideoThumb）キャッシュ。`Parallel.ForEach`（`Config.ThreadMax`。設定がなければ既定4）。失敗時は全スレッド一時停止 + 指数バックオフ（pitfalls 参照）。`GetUserInfo/GetMovieInfo` は表示補完のみで除外しない・最新行読み（Issue #40）。`OpenDB(path)` で既定外の場所も開ける（oldlog配布DB作成用）
+- `ApiXmlCacheImporter` — 週刊キャッシュの受け渡し（Issue #40）。`EnsureNicovideoThumbTable`（表確保）・`ImportWeeklyCache`（日付フォルダから取得→取込。失敗時は本地継続）・`MergeCacheFile`（新しい取得日だけ置き換え。5000件バッチ）
 - `model/ThumbinfoBase` / `model/VideoResponse` — レスポンスデシリアライズ用 POCO。`GetUserID/GetUserName/GetUserIconUrl` はユーザー動画なら `user_*`、チャンネルなら `ch_*` を返す
 
 ## SnapShot
