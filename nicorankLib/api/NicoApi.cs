@@ -35,8 +35,19 @@ namespace nicorankLib.api
 
         public virtual bool OpenDB()
         {
+            return OpenDB(DATA_SROURCE);
+        }
+
+        /// <summary>
+        /// 指定パスのDBを開く。oldlogが週刊フォルダへ ApiXML.db を作る場合など、既定以外の場所を使うときに利用する。
+        /// テーブルがなければ呼び出し側で ApiXmlCacheImporter.EnsureNicovideoThumbTable を呼んで確保する。
+        /// </summary>
+        /// <param name="dataSource">DBファイルパス</param>
+        /// <returns></returns>
+        public virtual bool OpenDB(string dataSource)
+        {
             dbCtrl = _dbCtrlOverride ?? new SQLiteCtrl();
-            return dbCtrl.Open(DATA_SROURCE);
+            return dbCtrl.Open(dataSource);
         }
 
         public virtual void CloseDB()
@@ -106,7 +117,10 @@ namespace nicorankLib.api
 
                     if (updateList.Count > 0)
                     {//マルチスレッドで取得する
-                        int threadMax = Config.GetInstance().ThreadMax;
+                        //nicorank.xml がない場所（oldlog等）でも動くよう、設定取得に失敗したら既定値を使う
+                        int threadMax = 4;
+                        try { threadMax = Config.GetInstance().ThreadMax; } catch { }
+                        if (threadMax <= 0) { threadMax = 4; }
                         try
                         {
 
@@ -246,6 +260,20 @@ namespace nicorankLib.api
                 }
             }
 
+            return true;
+        }
+
+        /// <summary>
+        /// NicovideoThumb表がなければ作る（配布DB作成時用）。OpenDBの後に呼ぶ。
+        /// </summary>
+        /// <returns></returns>
+        public virtual bool EnsureCacheTable()
+        {
+            if (dbCtrl?.IsOpen != true)
+            {
+                return false;
+            }
+            ApiXmlCacheImporter.EnsureNicovideoThumbTable(dbCtrl);
             return true;
         }
 
