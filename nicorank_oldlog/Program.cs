@@ -4,6 +4,8 @@ using nicorankLib.Util;
 
 try
 {
+    //StatusLogの出力先をコンソールにする。受け手がないと動画情報取得などの進捗表示が捨てられる（Issue #40）
+    StatusLog.SetLogWriter(new ConsoleLogWriter());
 
     var convConfig = ConvertConfig.GetInstance();
     if (convConfig == null)
@@ -86,4 +88,15 @@ catch (Exception e)
     return 2;
 }
 return 0;
+
+/// <summary>
+/// StatusLogをコンソールに出す受け手。Writeを受け取った順にそのまま出すだけ。
+/// </summary>
+public class ConsoleLogWriter : IStatusLogWriter
+{
+    public void Write(string log)
+    {
+        Console.Write(log);
+    }
+}
 

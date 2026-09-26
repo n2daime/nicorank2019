@@ -129,9 +129,13 @@ namespace nicorankLib.api
                             var lockObject = new object();
                             var thumbinfoList = new List<ThumbinfoBase>();
                             int GetCounter = 0;
-                            int beforeLen = 1;
 
-                            System.Console.CursorVisible = false;
+                            //進捗表示の方針：生きたコンソールでは同じ行を上書きし、リダイレクト時（ログファイル等）は一定間隔で1行ずつ出す。
+                            //\b方式はファイル側に制御文字のゴミを残し桁管理も要るため、行頭復帰\r＋空白埋めに統一する（Issue #40）。
+                            //カーソル表示の直接操作はやめる。ライブラリはWinFormからも呼ばれるため、表示方法は呼び出し側に任せる。
+                            bool redirectOutput = false;
+                            try { redirectOutput = System.Console.IsOutputRedirected; } catch { }
+                            int progressStep = redirectOutput ? 500 : 5;
                             Random rnd = new Random();
                             ManualResetEventSlim resumeEvent = new ManualResetEventSlim(true);
 
@@ -188,29 +192,28 @@ namespace nicorankLib.api
                                 }
                                 lock (lockObject)
                                 {
-                                    //StatusLog.Write(".");
-                                    if (GetCounter % 5 == 0 && GetCounter != 0)
-                                    {
-                                        var outNum = $"{GetCounter}";
-                                        StatusLog.Write(new string('\b', beforeLen));
-                                        StatusLog.Write(outNum);
-                                        beforeLen = outNum.Length;
-
-                                    }
                                     if (thmbInfo != null)
                                     {
                                         thumbinfoList.Add(thmbInfo);
                                     }
                                     GetCounter++;
+                                    if (GetCounter % progressStep == 0 || GetCounter == updateList.Count)
+                                    {
+                                        //\rで行頭に戻して書き直す。短くなった場合の消し残し防止に空白で埋める。
+                                        //リダイレクト時は上書きが効かないため、間引きした件数行だけ出す（全件ログにしない）。
+                                        string progress = $"取得中 {GetCounter}/{updateList.Count}件";
+                                        if (redirectOutput)
+                                        {
+                                            StatusLog.WriteLine(progress);
+                                        }
+                                        else
+                                        {
+                                            StatusLog.Write("\r" + progress.PadRight(40));
+                                        }
+                                    }
                                 }
-                                
+
                              });
-                            if(GetCounter > 0)
-                            {
-                                var outNum = $"{GetCounter}";
-                                StatusLog.Write(new string('\b', beforeLen));
-                                StatusLog.Write(outNum);
-                            }
 
                             // DBに登録する
                             // 一度古いデータを削除する
@@ -249,7 +252,6 @@ namespace nicorankLib.api
                             ErrLog.GetInstance().Write(ex);
                             return false;
                         }
-                        System.Console.CursorVisible = true;
 
                     }
                 }
