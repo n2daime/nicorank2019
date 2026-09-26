@@ -38,6 +38,11 @@ namespace UnitTest.nicorankLib.api
             {
                 this.dbCtrl = ctrl;
             }
+
+            public int ResolveForTest()
+            {
+                return ResolveThreadMax();
+            }
         }
 
         private static List<Ranking> RankingList(params string[] ids)
@@ -151,6 +156,40 @@ namespace UnitTest.nicorankLib.api
                 Assert.IsTrue(api.GetMovieInfo(list, false, true));
                 Assert.IsFalse(list[0].isDelete);
                 Assert.IsTrue(string.IsNullOrWhiteSpace(list[0].Title));
+            }
+        }
+
+        [TestMethod]
+        public void ThreadMaxOverrideがConfigより優先される()
+        {
+            using (var db = TestDbHelper.CreateInMemoryDb())
+            {
+                //テスト出力のnicorank.xmlはThreadMax=16。指定3が勝てば優先が証明できる
+                var api = new TestableNicoApi(db) { ThreadMaxOverride = 3 };
+
+                Assert.AreEqual(3, api.ResolveForTest());
+            }
+        }
+
+        [TestMethod]
+        public void ThreadMaxOverrideなしはConfig値を読む()
+        {
+            using (var db = TestDbHelper.CreateInMemoryDb())
+            {
+                var api = new TestableNicoApi(db);
+
+                Assert.AreEqual(16, api.ResolveForTest());
+            }
+        }
+
+        [TestMethod]
+        public void ThreadMaxOverride不正値はConfig値に落ちる()
+        {
+            using (var db = TestDbHelper.CreateInMemoryDb())
+            {
+                var api = new TestableNicoApi(db) { ThreadMaxOverride = 0 };
+
+                Assert.AreEqual(16, api.ResolveForTest());
             }
         }
     }

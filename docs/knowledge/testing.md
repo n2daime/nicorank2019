@@ -9,7 +9,7 @@ dotnet test UnitTest/UnitTest.csproj
 
 - 環境: **.NET Framework 4.8 ターゲットだが .NET 10 SDK でビルド・実行**（Windows）
 - テストフレームワーク: MSTest 3.5.2 / モック: Moq 4.20.72
-- 全 **231 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で17件を追加）
+- 全 **234 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件を追加）
 
 ## 構成
 
@@ -34,7 +34,7 @@ UnitTest/
     ├── Analyze/Official/ UnitTestRankingHistorySoHistory(15)
     ├── Analyze/Option/Basic/ UnitTestTagRankTotalReader(4) / UnitTestTagRankLiveReader(7) / UnitTestSpMovieInfoFallback(4)
     ├── Analyze/Option/Ext/ UnitTestFavoriteTagReader(9)
-    └── api/        UnitTestNicoApiLockedTags(6) / UnitTestNicoApiNoDelete(6) / UnitTestApiXmlCacheImporter(5)
+    └── api/        UnitTestNicoApiLockedTags(6) / UnitTestNicoApiNoDelete(9) / UnitTestApiXmlCacheImporter(5)
 ```
 
 ### テスト一覧（観点）
@@ -54,7 +54,7 @@ UnitTest/
 | `UnitTestRankingDisplayTags` | 6 | `GetDisplayTags` のカテゴリ除外・順序・Trim・重複・非破壊・null（Issue #27） |
 | `UnitTestFavoriteTagReader` | 9 | 人気タグ＋ロックタグ全件補完・重複除外・対象外・確保失敗でも中断せず続ける・null行・`isLocalOnly`×2（Issue #27。確保失敗の扱いはIssue #40で変更） |
 | `UnitTestNicoApiLockedTags` | 6 | `GetLockedTags` のlock抽出・行なし・最新取得日・非ok・破損XML（Issue #27） |
-| `UnitTestNicoApiNoDelete` | 6 | `GetUserInfo`/`GetMovieInfo` の非ok・行なしでも除外せず中断しない・最新取得日読みの両方向（Issue #40） |
+| `UnitTestNicoApiNoDelete` | 9 | `GetUserInfo`/`GetMovieInfo` の非ok・行なしでも除外せず中断しない・最新取得日読みの両方向・ThreadMax解決の優先順（Issue #40） |
 | `UnitTestSpMovieInfoFallback` | 4 | LastResultタイトル補完・期間内初見日・予備なし残留・取得済み非上書き（Issue #40） |
 | `UnitTestRankingDeletedMarker` | 2 | 空欄タイトルへの【集計後削除】付与・取得済み非変更（Issue #40） |
 | `UnitTestApiXmlCacheImporter` | 5 | 新規取込・本地が新しい場合の保持・運搬が新しい場合の置換・同取得日の保持・Status NULL行の取込（Issue #40） |

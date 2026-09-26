@@ -25,6 +25,13 @@ namespace nicorank_oldlog
         public Ranking_Info ranking_monthly { get; set; } = new Ranking_Info();
         public Ranking_Info ranking_total { get; set; } = new Ranking_Info();
 
+        /// <summary>
+        /// 動画情報取得（NicoApi）の並列スレッド数。週刊の動画情報キャッシュ保存で使う。
+        /// nicorank.xmlではなくconfig.json側で管理するため、oldlogの出力にnicorank.xmlは不要（Issue #40）。
+        /// 項目がなければ既定値6で動く。
+        /// </summary>
+        public int nicoapi_thread_max { get; set; } = 6;
+
         protected static ConvertConfig? Instance = null;
 
         /// <summary>

@@ -581,6 +581,8 @@ namespace nicorank_oldlog
 
                 using (var api = new NicoApi())
                 {
+                    //スレッド数はconfig.json側で管理し、nicorank.xmlに依存しない（Issue #40）
+                    api.ThreadMaxOverride = ConvertConfig.GetInstance()?.nicoapi_thread_max;
                     if (!api.OpenDB(tmpPath) || !api.EnsureCacheTable())
                     {
                         Console.WriteLine($"---- {this.RankInfo.folder}:動画情報キャッシュDBを開けませんでした ----");

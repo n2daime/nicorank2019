@@ -29,12 +29,6 @@
   <ItemGroup>
     <None Include="config.json.org" />
     <None Include="cookie.txt.org" />
-    <!-- 動画情報取得（NicoApi.UpdateTumbInfo）がConfig.ThreadMaxを読むため、nicorank.xmlを出力へ同梱する。
-         oldlogが使う設定はスレッド数のみ。ビルド時点で複写されるため、しきい値変更時は再ビルドが必要（運用注意） -->
-    <Content Include="..\依存ファイル\nicorank.xml">
-      <Link>nicorank.xml</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 
 </Project>

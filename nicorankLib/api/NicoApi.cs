@@ -33,6 +33,36 @@ namespace nicorankLib.api
 
         protected ISQLiteCtrl _dbCtrlOverride;
 
+        /// <summary>
+        /// 並列取得のスレッド数指定。設定時は Config（nicorank.xml）より優先する。
+        /// oldlogはconfig.json側の設定をここへ渡すことで、nicorank.xmlへの依存をなくす（Issue #40）。
+        /// </summary>
+        public int? ThreadMaxOverride { get; set; }
+
+        /// <summary>
+        /// 並列数の決定。指定値→Config→既定値4の順に解決する。Config不在でも例外にしない。
+        /// 指定値がある場合はConfigを読まないため、nicorank.xml不在のエラーログも出ない。
+        /// </summary>
+        /// <returns></returns>
+        protected virtual int ResolveThreadMax()
+        {
+            if (ThreadMaxOverride.HasValue && ThreadMaxOverride.Value > 0)
+            {
+                return ThreadMaxOverride.Value;
+            }
+            //nicorank.xml がない場所（oldlog等）でも動くよう、設定取得に失敗したら既定値を使う
+            try
+            {
+                int configValue = Config.GetInstance().ThreadMax;
+                if (configValue > 0)
+                {
+                    return configValue;
+                }
+            }
+            catch { }
+            return 4;
+        }
+
         public virtual bool OpenDB()
         {
             return OpenDB(DATA_SROURCE);
@@ -117,10 +147,7 @@ namespace nicorankLib.api
 
                     if (updateList.Count > 0)
                     {//マルチスレッドで取得する
-                        //nicorank.xml がない場所（oldlog等）でも動くよう、設定取得に失敗したら既定値を使う
-                        int threadMax = 4;
-                        try { threadMax = Config.GetInstance().ThreadMax; } catch { }
-                        if (threadMax <= 0) { threadMax = 4; }
+                        int threadMax = ResolveThreadMax();
                         try
                         {
 

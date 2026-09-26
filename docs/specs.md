@@ -34,7 +34,7 @@
 - `ApiXML.db`（NicovideoThumb）は表示用キャッシュであり、取得の成否を順位・ポイントに影響させない。`NicoApi.GetUserInfo` / `GetMovieInfo` は取得失敗・Status非ok・行なしの場合も `isDelete` を立てず、空欄・既定値のまま残して処理を続ける。除外の判断はスナップショット差分・Sabun・Hidden側に任せる
 - 同一IDが複数取得日で存在する場合は最新の行を読む（`ORDER BY 取得日 DESC LIMIT 1`。タグロック取得と同一）。行選択の不定をなくすため
 - `MovieInfoReader` / `GenreInfoReader` / `UserInfoReader` / `FavoriteTagReader` の補完は、確保・読取の失敗があっても集計を中断しない。取れない動画は空欄のまま残す
-- 週刊の動画情報は oldlog が週刊JSONに出たID全部（約26000件）を一括取得し、日付フォルダ（`old-ranking/weekly/YYYY-MM-DD/`）へ `ApiXML.db` として置く。2019側の週刊JSON取得後（`JsonReaderWeekly`）に一時置き場へ落として本地へ取り込む（IDごとに運搬側の取得日が本地より新しい場合だけ置き換え。本地にしかない貯金は残す）。運搬ファイルがなければ本地のまま流す。書きかけ配置の防止のため一時名で作ってから置き換える
+- 週刊の動画情報は oldlog が週刊JSONに出たID全部（約26000件）を一括取得し、日付フォルダ（`old-ranking/weekly/YYYY-MM-DD/`）へ `ApiXML.db` として置く。並列数は `config.json` の `nicoapi_thread_max` で管理する（既定6。`nicorank.xml` には依存しない）。2019側の週刊JSON取得後（`JsonReaderWeekly`）に一時置き場へ落として本地へ取り込む（IDごとに運搬側の取得日が本地より新しい場合だけ置き換え。本地にしかない貯金は残す）。運搬ファイルがなければ本地のまま流す。書きかけ配置の防止のため一時名で作ってから置き換える
 - SPで動画情報が取れない場合は予備情報で補う（案B）。優先順位は ApiXML → `NicoranHistory.db` の `LastResult` 最新タイトル → `LogOfficial.db` の `Ranking` から集計期間内で初めて見かけた集計日（参考投稿日）→ 空のまま残す（除外しない）。ジャンル空欄は許容する。タグ検索は数字なし除外を維持するが、ApiXML不調だけでは除外しない
 - 集計には残したが動画情報が最後まで埋まらなかった場合、タイトル欄の先頭に【集計後削除】を付ける。列の追加・順序変更はしない（ニコランWeb手動アップロード互換のため）
 
