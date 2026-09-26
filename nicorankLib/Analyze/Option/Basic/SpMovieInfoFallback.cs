@@ -89,6 +89,8 @@ namespace nicorankLib.Analyze.Option.Basic
                 {
                     return title;
                 }
+                //2段目はID単独条件のため全表走査になる。Weeklyにない動画が大量に出る異常時以外は到達が稀なため許容する。
+                //実害が出るようなら LastResult(ID) の索引追加を検討する。
                 return FindLastTitleBySyubetsu(dbCtrl, id, null);
             }
             catch (Exception ex)

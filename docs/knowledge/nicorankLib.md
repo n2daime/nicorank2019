@@ -84,10 +84,10 @@ AnalyzeRank():
 | `GenreInfoReader` | カテゴリ不明の動画を NicoApi で補完。失敗しても中断せず空欄のまま残す（Issue #40） |
 | `MovieInfoReader` | NicoApi で動画情報（タイトル・投稿日）を取得。失敗しても中断せず空欄のまま残す（Issue #40） |
 | `SnapShotSabunReader` | SP 集計の中核。スナップショット DB 2本（AnalyzeDB/BaseDB）の累積値差分を計算。動画情報の後に `SpMovieInfoFallback` で予備補完し、残欠落には削除目印を付ける（Issue #40）。`IDisposable` |
-| `SpMovieInfoFallback` | SPの予備補完（Issue #40・案B）。タイトル空欄分だけ LastResult 最新タイトル＋LogOfficial 期間内初見日で埋める。新規取得なし・失敗でも中断しない |
+| `SpMovieInfoFallback` | SPの予備補完（Issue #40・案B）。タイトル空欄分だけ LastResult 最新タイトル（種別=Weekly優先の2段引き）＋LogOfficial 期間内初見日で埋める。新規取得なし・失敗でも中断しない |
 | `TagRankTotalReader` | タグ検索の基準DBなし専用。AnalyzeDBの累積値をそのまま集計値にする（差分なし）。`IDisposable` |
 | `TagRankLiveTotalReader` | v2最新値の基準DBなし専用。`TagRankAnalyze.LiveCounters` をそのまま集計値にする（DB不要。`ApplyLiveTotals` は純粋処理で共用） |
-| `TagRankLiveSabunReader` | v2最新値の基準DBあり専用。Target=ライブ値・Base=基準日DBで差分計算（新着救済はSabunReaderと同一）。`IDisposable` |
+| `TagRankLiveSabunReader` | v2最新値の基準DBあり専用。Target=ライブ値・Base=基準日DBで差分計算（新着救済はSabunReaderと同一）。動画情報の後に `SpMovieInfoFallback` で予備補完する（Issue #40）。`IDisposable` |
 
 ### Ext（順位計算後に実行、`bool AnalyzeRank(List<Ranking>)`）
 
@@ -172,7 +172,9 @@ AnalyzeRank():
 | `RankingHistory` | SQLiteCtrl, JsonReader 4種 | ModeFactoryWeekly, TyukanAnalyze, SabunReader, frmMainSyukei |
 | `SabunReader` | RankingHistory | ModeFactoryWeekly, TyukanAnalyze |
 | `TyokiHantei` | SQLiteCtrl | ModeFactoryWeekly |
-| `SnapShotSabunReader` | SQLiteCtrl×2, MovieInfoReader | ModeFactroySP |
+| `SnapShotSabunReader` | SQLiteCtrl×2, MovieInfoReader, SpMovieInfoFallback | ModeFactroySP |
+| `SpMovieInfoFallback` | SQLiteCtrl×2（NicoranHistory・LogOfficial。失敗時は開かず続行） | SnapShotSabunReader / TagRankLiveSabunReader |
+| `TagRankLiveSabunReader` | SQLiteCtrl, MovieInfoReader, SpMovieInfoFallback | ModeFactoryTagRank |
 | `NicoApi` | — | GenreInfoReader / MovieInfoReader / UserInfoReader |
 | `ModeFactory*` | — | `frmMainSyukei.cs`（Weekly:86 / Tyukan:93 / SP:99 で切替） |
 
