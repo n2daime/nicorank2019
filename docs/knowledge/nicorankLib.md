@@ -154,6 +154,7 @@ AnalyzeRank():
 | `ISQLiteCtrl` | SQLite 操作の抽象化（`SqliteConnection` 公開。テストでインメモリ実装に差し替え） |
 | `IDbMigratable` | 集計開始時のDB更新確認IF（`TargetDb` / `EnsureMigrated()`。実処理は各DB担当クラスが持つ。Issue #28） |
 | `DbMigrationCoordinator` | 集計開始時の更新指示の司令塔（`EnsureAllAtAnalyzeStart()`。失敗時は中断。具象には依存しない。Issue #28） |
+| `DbOptimizer`（static） | 手動DB最適化の実行本体（Issue #32）。`GetDefaultTargets()`（4DB・UI表示順）/ `Optimize(dbPath)`（不在はスキップ・`VACUUM;`1発・実行前後サイズ付き結果）/ `FormatFileSize()`。ApiXML／Dailylogのパス定数も持つ |
 | `StatusLog` | 静的。`IStatusLogWriter` を注入するプラグイン方式（UI 側が実装を注入。未設定なら何も出さない） |
 | `ErrLog` | シングルトン。`nicorankerr.log` に追記（UTF8）。`Close()` で非 SilentMode ならキー入力待ち |
 | `DateConvert` | 日付 ↔ 文字列（yyyyMMdd / yyyyMMddHHmmss）変換 |

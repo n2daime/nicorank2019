@@ -232,6 +232,15 @@
 - `Ranking`（ID 主キー / 再生数 / コメント数 / マイリスト数 / いいね数）— `INSERT OR IGNORE` で追記
 - `DBVersion`（集計日 / Ver 1.0.1.0）
 
+### 手動DB最適化（メンテナンスタブ・Issue #32）
+
+- メンテナンスタブの「DBの最適化を実行」で、チェックされたDBに `VACUUM;` を1件ずつ発行する（移行時の最適化と同一手順）。対象は `DB/LogOfficial.db`・`DB/NicoranHistory.db`・`DB/ApiXML.db`・`DB/Dailylog.db` の4件（チェック既定ON）
+- 実行前後のサイズ欄には `.db` 本体のみのサイズを出す（`-wal` / `-shm` の合算はしない。VACUUMが自動チェックポイントするため前後比較は成立する）
+- ファイル不在のDBはスキップし、サイズ欄に「なし」と出す（Dailylog.db等は未実行モードでは存在しないのが正常のため、失敗にしない）
+- VACUUM失敗時はそのDBだけ「失敗」とし、残りを続ける。理由は `nicorankerr.log` に残し、最後に件数サマリを通知する
+- 数十分かかりうるため非同期で実行し、実行中は実行系ボタン（最適化・各集計）を無効化する（集計との同時実行によるDBロック競合を防ぐ。VACUUM自体は原子性があるため、最悪でも失敗に留まり破損しない）
+- 実行ログは集計タブと同様にコンソール側へ出す（タブ内にログ欄は持たない）
+
 ### SQLite 接続設定（SQLiteCtrl.Open）
 
 - 接続文字列: `Pooling=False` / `JournalMode=Wal` / `DefaultTimeout=30`

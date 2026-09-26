@@ -180,14 +180,119 @@ namespace nicorank2019.frm
         }
 
         /// <summary>
-        /// メンテナンスタブの「DBの最適化を実行」ボタン(Issue #32・UIモック段階)
-        /// 見た目の配線確認のため未実装メッセージを出すだけで、DBには触れない。
-        /// 中身(VACUUM発行・サイズ取得・非同期化)はレイアウト確定後の実装フェーズで行う。
-        /// 実行ログは集計タブと同様にコンソール側へ出す運用のため、タブ内にログ欄は持たない。
+        /// メンテナンスタブの「DBの最適化を実行」ボタン(Issue #32)。
+        /// チェックされたDBを1件ずつVACUUMする。数十分かかりうるため実処理は集計スレッド側で行い、
+        /// UI更新はawait復帰後のUIスレッドで行う（集計スレッドからコントロールに触らない。pitfalls項目19）。
+        /// 実行ログは集計タブと同様にコンソール側（StatusLog）へ出すため、タブ内にログ欄は持たない。
         /// </summary>
-        private void btnVacuumExec_Click(object sender, EventArgs e)
+        private async void btnVacuumExec_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("UIモックのため未実装です", "メンテナンス", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            // 集計スレッドに渡す条件はUIスレッドで退避する（タグ検索のTagExecuteContextと同一理由）
+            var targets = new List<VacuumUiTarget>();
+            AddVacuumTarget(targets, chkVacuumLogOfficial, lblVacuumBeforeLogOfficial, lblVacuumAfterLogOfficial, nicorankLib.Analyze.model.DB.LOG_OFFICEIAL);
+            AddVacuumTarget(targets, chkVacuumNicoranHistory, lblVacuumBeforeNicoranHistory, lblVacuumAfterNicoranHistory, nicorankLib.Analyze.model.DB.NiCORAN_HISTORY);
+            AddVacuumTarget(targets, chkVacuumApiXml, lblVacuumBeforeApiXml, lblVacuumAfterApiXml, DbOptimizer.ApiXmlDbPath);
+            AddVacuumTarget(targets, chkVacuumDailylog, lblVacuumBeforeDailylog, lblVacuumAfterDailylog, DbOptimizer.DailylogDbPath);
+            if (targets.Count == 0)
+            {
+                MessageBox.Show("最適化するDBにチェックを入れてください", "メンテナンス", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            // 実行中は二重実行と集計との同時実行（DBロック競合）を防ぐため、実行系ボタンを止める
+            SetVacuumRunning(true);
+            progressVacuum.Maximum = targets.Count;
+            progressVacuum.Value = 0;
+            lblVacuumStatus.Text = "状態: 実行中...";
+            int successCount = 0;
+            int skipCount = 0;
+            int failCount = 0;
+            try
+            {
+                foreach (var target in targets)
+                {
+                    if (!System.IO.File.Exists(target.DbPath))
+                    {
+                        target.BeforeLabel.Text = "実行前: なし";
+                        target.AfterLabel.Text = "実行後: なし";
+                        skipCount++;
+                        progressVacuum.Value++;
+                        continue;
+                    }
+                    target.BeforeLabel.Text = "実行前: " + DbOptimizer.FormatFileSize(new System.IO.FileInfo(target.DbPath).Length);
+                    target.AfterLabel.Text = "実行後: 実行中...";
+                    DbOptimizeResult result = await System.Threading.Tasks.Task.Run(() => DbOptimizer.Optimize(target.DbPath));
+                    if (!result.Executed)
+                    {
+                        target.AfterLabel.Text = "実行後: なし";
+                        skipCount++;
+                    }
+                    else if (result.Success)
+                    {
+                        target.AfterLabel.Text = "実行後: " + DbOptimizer.FormatFileSize(result.SizeAfter);
+                        successCount++;
+                    }
+                    else
+                    {
+                        target.AfterLabel.Text = "実行後: 失敗";
+                        failCount++;
+                    }
+                    progressVacuum.Value++;
+                }
+                if (failCount == 0)
+                {
+                    lblVacuumStatus.Text = "状態: 完了";
+                    MessageBox.Show($"最適化が完了しました（成功 {successCount}件・スキップ {skipCount}件）", "メンテナンス", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    lblVacuumStatus.Text = "状態: 一部失敗";
+                    MessageBox.Show($"最適化で失敗がありました（成功 {successCount}件・スキップ {skipCount}件・失敗 {failCount}件）。コンソールとnicorankerr.logを確認してください", "メンテナンス", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                lblVacuumStatus.Text = "状態: 失敗";
+                MessageBox.Show(GetExceptionMessages(ex), "システムエラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                SetVacuumRunning(false);
+            }
+        }
+
+        /// <summary>
+        /// チェックONのDBだけ実行対象に積む（チェック状態の読み取りはUIスレッドで行う）。
+        /// </summary>
+        private static void AddVacuumTarget(List<VacuumUiTarget> targets, CheckBox checkBox, Label beforeLabel, Label afterLabel, string dbPath)
+        {
+            if (checkBox.Checked)
+            {
+                targets.Add(new VacuumUiTarget { DbPath = dbPath, BeforeLabel = beforeLabel, AfterLabel = afterLabel });
+            }
+        }
+
+        /// <summary>
+        /// メンテナンスタブの実行対象1件分（UIスレッドで退避した表示先付き）。
+        /// </summary>
+        private class VacuumUiTarget
+        {
+            public string DbPath;
+            public Label BeforeLabel;
+            public Label AfterLabel;
+        }
+
+        /// <summary>
+        /// 実行中の二重実行・同時集計を防ぐため、実行系の有効・無効を切り替える。
+        /// </summary>
+        private void SetVacuumRunning(bool running)
+        {
+            btnVacuumExec.Enabled = !running;
+            chkVacuumLogOfficial.Enabled = !running;
+            chkVacuumNicoranHistory.Enabled = !running;
+            chkVacuumApiXml.Enabled = !running;
+            chkVacuumDailylog.Enabled = !running;
+            btnAnalyze.Enabled = !running;
+            btnAnalyzeTag.Enabled = !running;
         }
 
         /// <summary>
