@@ -205,13 +205,21 @@ namespace UnitTest.nicorankLib.Analyze
             }
             finally
             {
-                if (analyzePath != null && File.Exists(analyzePath))
+                // 後始末は best-effort とする。なぜ try/catch で包むか:
+                // 本体側の削除失敗（＝ハンドル残留の検出）が finally 側の二次例外で上書きされると切り分けが難しくなるため。
+                try
                 {
-                    File.Delete(analyzePath);
+                    if (analyzePath != null && File.Exists(analyzePath))
+                    {
+                        File.Delete(analyzePath);
+                    }
+                    if (basePath != null && File.Exists(basePath))
+                    {
+                        File.Delete(basePath);
+                    }
                 }
-                if (basePath != null && File.Exists(basePath))
+                catch
                 {
-                    File.Delete(basePath);
                 }
             }
         }
@@ -233,9 +241,16 @@ namespace UnitTest.nicorankLib.Analyze
             }
             finally
             {
-                if (basePath != null && File.Exists(basePath))
+                // 後始末は best-effort とする（SnapShot 側と同一理由）。
+                try
                 {
-                    File.Delete(basePath);
+                    if (basePath != null && File.Exists(basePath))
+                    {
+                        File.Delete(basePath);
+                    }
+                }
+                catch
+                {
                 }
             }
         }
