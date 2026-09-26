@@ -327,6 +327,42 @@ namespace UnitTest.nicorankLib.Common
         }
 
         [TestMethod]
+        public void TestConfigOffset_Setter_WithoutSection_GeneratesSectionWithoutAffectingCommon()
+        {
+            // 節そのものがない旧XMLでタグ検索モードに保存しても、節を新設して節内へ書き、共通が変わらないこと。
+            // 他項目は節単位判定（UseTagRank）が偽のまま週間フォールバックのため、OFFSET以外の挙動は変わらない
+            try
+            {
+                TestConfigBuilder.LoadFromXmlString(string.Format(XmlBaseWithOffsets, "", ""));
+                var config = Config.GetInstance();
+
+                config.IsSP = false;
+                config.IsTagRank = false;
+                Assert.AreEqual(1, config.CalcMyListKind);
+
+                config.IsSP = false;
+                config.IsTagRank = true;
+                Assert.AreEqual(1, config.CalcMyListKind);
+                config.CalcMyListKind = 0;
+                Assert.AreEqual(0, config.CalcMyListKind);
+
+                config.IsSP = false;
+                config.IsTagRank = false;
+                Assert.AreEqual(1, config.CalcMyListKind);
+
+                config.IsSP = true;
+                config.IsTagRank = false;
+                Assert.AreEqual(1, config.CalcMyListKind);
+            }
+            finally
+            {
+                Config.GetInstance().IsSP = false;
+                Config.GetInstance().IsTagRank = false;
+                TestConfigBuilder.ResetInstance();
+            }
+        }
+
+        [TestMethod]
         public void TestConfigOffset_Setter_WithPartialSection_DoesNotAffectCommon()
         {
             // reviewer指摘（中）の再現検証。節内要素なしの状態でタグ検索モードに保存しても、

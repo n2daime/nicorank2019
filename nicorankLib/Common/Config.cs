@@ -180,8 +180,8 @@ namespace nicorankLib.Common
                         var fallback = xml.COMMENT_OFFSET;
                         xml.TAGRANK.COMMENT_OFFSET = new COMMENT_OFFSET()
                         {
-                            Mode = fallback != null ? fallback.Mode : 2,
-                            UnderLimit = fallback != null ? fallback.UnderLimit : 0.01
+                            Mode = fallback != null ? fallback.Mode : DefaultCommentOffsetMode,
+                            UnderLimit = fallback != null ? fallback.UnderLimit : DefaultCommentUnderLimit
                         };
                     }
                     return xml.TAGRANK.COMMENT_OFFSET;
@@ -194,13 +194,13 @@ namespace nicorankLib.Common
                         var fallback = xml.COMMENT_OFFSET;
                         xml.SP.COMMENT_OFFSET = new COMMENT_OFFSET()
                         {
-                            Mode = fallback != null ? fallback.Mode : 2,
-                            UnderLimit = fallback != null ? fallback.UnderLimit : 0.01
+                            Mode = fallback != null ? fallback.Mode : DefaultCommentOffsetMode,
+                            UnderLimit = fallback != null ? fallback.UnderLimit : DefaultCommentUnderLimit
                         };
                     }
                     return xml.SP.COMMENT_OFFSET;
                 }
-                if (xml.COMMENT_OFFSET == null) { xml.COMMENT_OFFSET = new COMMENT_OFFSET() { Mode = 2, UnderLimit = 0.01 }; }
+                if (xml.COMMENT_OFFSET == null) { xml.COMMENT_OFFSET = new COMMENT_OFFSET() { Mode = DefaultCommentOffsetMode, UnderLimit = DefaultCommentUnderLimit }; }
                 return xml.COMMENT_OFFSET;
             }
         }
@@ -216,7 +216,7 @@ namespace nicorankLib.Common
                     if (xml.TAGRANK.MYLIST_OFFSET == null)
                     {
                         var fallback = xml.MYLIST_OFFSET;
-                        xml.TAGRANK.MYLIST_OFFSET = new MYLIST_OFFSET() { Mode = fallback != null ? fallback.Mode : 1 };
+                        xml.TAGRANK.MYLIST_OFFSET = new MYLIST_OFFSET() { Mode = fallback != null ? fallback.Mode : DefaultMylistOffsetMode };
                     }
                     return xml.TAGRANK.MYLIST_OFFSET;
                 }
@@ -226,11 +226,11 @@ namespace nicorankLib.Common
                     if (xml.SP.MYLIST_OFFSET == null)
                     {
                         var fallback = xml.MYLIST_OFFSET;
-                        xml.SP.MYLIST_OFFSET = new MYLIST_OFFSET() { Mode = fallback != null ? fallback.Mode : 1 };
+                        xml.SP.MYLIST_OFFSET = new MYLIST_OFFSET() { Mode = fallback != null ? fallback.Mode : DefaultMylistOffsetMode };
                     }
                     return xml.SP.MYLIST_OFFSET;
                 }
-                if (xml.MYLIST_OFFSET == null) { xml.MYLIST_OFFSET = new MYLIST_OFFSET() { Mode = 1 }; }
+                if (xml.MYLIST_OFFSET == null) { xml.MYLIST_OFFSET = new MYLIST_OFFSET() { Mode = DefaultMylistOffsetMode }; }
                 return xml.MYLIST_OFFSET;
             }
         }
@@ -246,7 +246,7 @@ namespace nicorankLib.Common
                     if (xml.TAGRANK.PLAY_OFFSET == null)
                     {
                         var fallback = xml.PLAY_OFFSET;
-                        xml.TAGRANK.PLAY_OFFSET = new PLAY_OFFSET() { Mode = fallback != null ? fallback.Mode : 2 };
+                        xml.TAGRANK.PLAY_OFFSET = new PLAY_OFFSET() { Mode = fallback != null ? fallback.Mode : DefaultPlayOffsetMode };
                     }
                     return xml.TAGRANK.PLAY_OFFSET;
                 }
@@ -256,11 +256,11 @@ namespace nicorankLib.Common
                     if (xml.SP.PLAY_OFFSET == null)
                     {
                         var fallback = xml.PLAY_OFFSET;
-                        xml.SP.PLAY_OFFSET = new PLAY_OFFSET() { Mode = fallback != null ? fallback.Mode : 2 };
+                        xml.SP.PLAY_OFFSET = new PLAY_OFFSET() { Mode = fallback != null ? fallback.Mode : DefaultPlayOffsetMode };
                     }
                     return xml.SP.PLAY_OFFSET;
                 }
-                if (xml.PLAY_OFFSET == null) { xml.PLAY_OFFSET = new PLAY_OFFSET() { Mode = 2 }; }
+                if (xml.PLAY_OFFSET == null) { xml.PLAY_OFFSET = new PLAY_OFFSET() { Mode = DefaultPlayOffsetMode }; }
                 return xml.PLAY_OFFSET;
             }
         }
@@ -276,7 +276,7 @@ namespace nicorankLib.Common
                     if (xml.TAGRANK.POINTALL_OFFSET == null)
                     {
                         var fallback = xml.POINTALL_OFFSET;
-                        xml.TAGRANK.POINTALL_OFFSET = new POINTALL_OFFSET() { Mode = fallback != null ? fallback.Mode : 0 };
+                        xml.TAGRANK.POINTALL_OFFSET = new POINTALL_OFFSET() { Mode = fallback != null ? fallback.Mode : DefaultPointAllOffsetMode };
                     }
                     return xml.TAGRANK.POINTALL_OFFSET;
                 }
@@ -286,11 +286,11 @@ namespace nicorankLib.Common
                     if (xml.SP.POINTALL_OFFSET == null)
                     {
                         var fallback = xml.POINTALL_OFFSET;
-                        xml.SP.POINTALL_OFFSET = new POINTALL_OFFSET() { Mode = fallback != null ? fallback.Mode : 0 };
+                        xml.SP.POINTALL_OFFSET = new POINTALL_OFFSET() { Mode = fallback != null ? fallback.Mode : DefaultPointAllOffsetMode };
                     }
                     return xml.SP.POINTALL_OFFSET;
                 }
-                if (xml.POINTALL_OFFSET == null) { xml.POINTALL_OFFSET = new POINTALL_OFFSET() { Mode = 0 }; }
+                if (xml.POINTALL_OFFSET == null) { xml.POINTALL_OFFSET = new POINTALL_OFFSET() { Mode = DefaultPointAllOffsetMode }; }
                 return xml.POINTALL_OFFSET;
             }
         }
@@ -319,6 +319,14 @@ namespace nicorankLib.Common
         /// ランキング取得用のURL
         /// </summary>
         public string URL_JSON_TARGET { get { return xml.SYSTEM.URL_JSON_TARGET.Url; } set { } }
+
+        // OFFSET系の既定値（現行共通値）。Initilizeの欠落補完と*ForWriteの生成初期値で共用する。
+        // なぜ定数化するか：4箇所×4種に散らすと将来の既定値変更で修正漏れが起きるためである（AGENTS.md §1のマジックナンバー抑止）。
+        private const int DefaultCommentOffsetMode = 2;
+        private const double DefaultCommentUnderLimit = 0.01;
+        private const int DefaultMylistOffsetMode = 1;
+        private const int DefaultPlayOffsetMode = 2;
+        private const int DefaultPointAllOffsetMode = 0;
 
         #endregion
 
@@ -376,20 +384,20 @@ namespace nicorankLib.Common
                 this.xml.SYSTEM.Download.UserIcon = new UserIcon() { Retry = 20 };
             }
             if (this.xml.COMMENT_OFFSET == null)
-            {//設定がない場合の既定は現行共通値（Mode=2・UnderLimit=0.01）。欠落XMLでのNullReferenceを防ぐ
-                this.xml.COMMENT_OFFSET = new COMMENT_OFFSET() { Mode = 2, UnderLimit = 0.01 };
+            {//設定がない場合の既定は現行共通値。欠落XMLでのNullReferenceを防ぐ
+                this.xml.COMMENT_OFFSET = new COMMENT_OFFSET() { Mode = DefaultCommentOffsetMode, UnderLimit = DefaultCommentUnderLimit };
             }
             if (this.xml.MYLIST_OFFSET == null)
-            {//設定がない場合の既定は現行共通値（Mode=1）
-                this.xml.MYLIST_OFFSET = new MYLIST_OFFSET() { Mode = 1 };
+            {//設定がない場合の既定は現行共通値
+                this.xml.MYLIST_OFFSET = new MYLIST_OFFSET() { Mode = DefaultMylistOffsetMode };
             }
             if (this.xml.PLAY_OFFSET == null)
-            {//設定がない場合の既定は現行共通値（Mode=2）
-                this.xml.PLAY_OFFSET = new PLAY_OFFSET() { Mode = 2 };
+            {//設定がない場合の既定は現行共通値
+                this.xml.PLAY_OFFSET = new PLAY_OFFSET() { Mode = DefaultPlayOffsetMode };
             }
             if (this.xml.POINTALL_OFFSET == null)
             {//設定がない場合 補正なしにする
-                this.xml.POINTALL_OFFSET = new POINTALL_OFFSET() { Mode = 0 };
+                this.xml.POINTALL_OFFSET = new POINTALL_OFFSET() { Mode = DefaultPointAllOffsetMode };
             }
             if (this.xml.SYSTEM.URL_JSON_TARGET == null)
             {//設定がない場合
