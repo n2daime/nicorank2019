@@ -74,7 +74,8 @@ namespace nicorankLib.Util
 
         /// <summary>
         /// prune境界の「1年前」をyyyyMMdd整数で求める。起点は実行日（ローリング計算。壁打ち申送り通り）。
-        /// 境界当日を含む（集計日 &lt;= 境界が削除対象）のため、厳密な1年保持ではなく「1年前の日も消す」点に注意。
+        /// この関数は日付を作るだけであり、境界当日を含めるかは呼び出し側のSQLが決める。
+        /// NicoranHistoryは `集計日 &lt;=` で当日を含めて消し、ApiXMLは `取得日 &lt;` で当日を残す（元のSQLの書き分け通り）。
         /// </summary>
         public static long CutoffOneYearAgo(DateTime today)
         {
@@ -159,8 +160,16 @@ namespace nicorankLib.Util
 
         private static bool IsSamePath(string a, string b)
         {
-            // Windowsのファイルパスとして比較する（大文字小文字を区別しない）。
-            return string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+            // 表記揺れ（相対／絶対・./付き）でも一致するよう正規化してから比べる（大文字小文字は区別しない）。
+            // 正規化に失敗したら正規化前の文字列で比べる（比較不能でprune漏れにするより確実な方を選ぶ）。
+            try
+            {
+                return string.Equals(Path.GetFullPath(a), Path.GetFullPath(b), StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+            }
         }
 
         /// <summary>
@@ -172,8 +181,9 @@ namespace nicorankLib.Util
         {
             cmd.CommandText = "DROP TABLE IF EXISTS IDConvert;";
             cmd.ExecuteNonQuery();
-            // 取得日はyyyyMMddの文字列またはINTEGERのいずれでも格納されうるが、
-            // どちらも数値比較できるため整数パラメータで比較する（ApiXmlCacheImporterの比較と同一考え）。
+            // 取得日列はINTEGER宣言のため、文字列で渡された値も列アフィニティで整数化されて数値比較になる。
+            // ApiXmlCacheImporter側は文字列比較であり仕組みは別物だが、yyyyMMdd固定長のため順序は一致する。
+            // 列型をTEXTに変えると辞書式比較（例：900 > 1000）になるため、型変更時はこの比較を見直すこと。
             cmd.Parameters.Clear();
             cmd.Parameters.AddWithValue("@取得日", cutoff);
             cmd.CommandText = "DELETE FROM NicovideoThumb WHERE 取得日 < @取得日;";
@@ -185,6 +195,7 @@ namespace nicorankLib.Util
         /// <summary>
         /// Dailylog.db：中間集計の日別キャッシュを全削除する。
         /// DROP禁止（本番コードにCREATE経路がなく、表を消すと再作成されないため）。再集計で自己回復する。
+        /// 全削除を1文で行う。壁打ちで最大6日分・キャッシュ用途と確定しておりWAL肥大の実害は小さいため、集計日ごとの分割はしない。
         /// </summary>
         private static long PruneDailylog(SqliteCommand cmd)
         {

@@ -92,7 +92,7 @@ namespace UnitTest.nicorankLib.Util
                         cmd.ExecuteNonQuery();
                         cmd.CommandText = "CREATE TABLE IDConvert (ID TEXT, ThreadID TEXT);";
                         cmd.ExecuteNonQuery();
-                        // INTEGER格納とTEXT格納の両形で古行を置く（どちらも数値比較できることの確認）
+                        // INTEGER格納と文字列バインドの両形で古行を置く（文字列で渡しても列アフィニティで数値比較されることの確認）
                         cmd.CommandText = "INSERT INTO NicovideoThumb (取得日, ID, Status, XML) VALUES (20200101, 'sm1', 1, '<x/>');";
                         cmd.ExecuteNonQuery();
                         cmd.Parameters.AddWithValue("@取得日", "20200101");
@@ -167,6 +167,11 @@ namespace UnitTest.nicorankLib.Util
                     Assert.AreEqual(0L, CountRows(dbCtrl, "Dailylog"), "行は空になること");
                     dbCtrl.Close();
                 }
+
+                DbOptimizeResult second = DbOptimizer.Optimize(DbOptimizer.DailylogDbPath, FixedToday);
+
+                Assert.IsTrue(second.Success, "2回目（削除0件）も成功すること");
+                Assert.AreEqual(0L, second.DeletedRows, "削除0件になること");
             }
             finally
             {
@@ -215,6 +220,11 @@ namespace UnitTest.nicorankLib.Util
                     Assert.AreEqual(1L, CountRows(dbCtrl, "LastResultInfo"), "設定XMLに触れないこと");
                     dbCtrl.Close();
                 }
+
+                DbOptimizeResult second = DbOptimizer.Optimize(DB.NiCORAN_HISTORY, FixedToday);
+
+                Assert.IsTrue(second.Success, "2回目（削除0件）も成功すること");
+                Assert.AreEqual(0L, second.DeletedRows, "削除0件になること");
             }
             finally
             {
