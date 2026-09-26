@@ -520,3 +520,28 @@
   - reviewerレビュー計3回。初回は中1件（setter非対称）＋低4件で要修正、対応後に再レビューでマージ可。残低4件（定数集約・文書整合・テスト1件）も対応して計260件にした。3度目のレビューは高・中指摘なしのため省略
   - ユーザー実機検証OK（アプリ起動中のまま確認し、指摘は配布XML見本とテンプレート全0化のみ。両方対応済み）
 - **残課題**: なし（#39完結）。OFFSET既定値の将来変更時は `Config` 内定数とspecs・テンプレートを同時更新すること
+
+---
+
+## 2026-09-26 BasicOption破棄経路の整備（Issue #44・提案元 #42）
+
+- **Issue**: #44（AI提案の #42 を受けて新規作成。#42 は提案Issueとして残し、実装は #44 で管理）
+- **ブランチ**: `feature/t044-dispose-basic-option` を `develop` へ `--no-ff` でマージ。ブランチ削除済み
+- **背景**: #40 で SnapShotSabunReader.Dispose 等の中身は直したが、呼び出し側が Dispose を呼ばないため実運用では接続が閉じられなかった。SP の1回集計で最大4本（集計日DB・基準日DB・予備補完2本）の接続が開き、同一プロセスでの再集計時に積み上がる。根本原因は BasicOptionBase が IDisposable を継承しておらず、破棄の契約が型に表れていなかったこと
+- **実施内容**:
+  - `BasicOptionBase : IDisposable` 化＋空の仮想 `Dispose`。資源を持たない7件は無変更。資源持ち3件（SnapShotSabunReader / TagRankLiveSabunReader / TagRankTotalReader）の明示的実装を `override` に寄せ替え（基底参照から届かせるため。明示的実装のままだと基底の空実装が呼ばれる）。冗長な `, IDisposable` は除去
+  - 3 Reader に `_ownsDbCtrl` フラグを追加し自前生成分のみ閉じる（SpMovieInfoFallback と同一流儀。受け入れ条件「注入接続は閉じないこと」の根拠）。本番経路は常に null 渡しのため挙動不変
+  - `RankingAnalyze` / `ModeFactoryBase` を `IDisposable` 化して破棄を委譲（冪等・null 安全・1件失敗でも継続して ErrLog に記録。両者ともマネージドのみのためファイナライザなし）。`RankingList` は破棄しない
+  - `ModeFactroySP` / `ModeFactoryTagRank` の Open 失敗経路でも生成物を破棄してから false を返す。成功時は RankingAnalyze に渡す一方通行で二重所有にしない
+  - `TyukanAnalyze` 内側の使い捨て `RankingAnalyze` を `using` 化（日別ループでの積み上がり防止）
+  - `frmMainSyukei.AnalyzeAsync` で新 Factory 代入前の旧 Factory 破棄＋出力処理の `try-finally` 化による終了後破棄
+  - `UnitTest`10件追加（計270件）。空Dispose・全Option破棄と冪等・1件失敗でも継続・注入非破棄・自前解放（ファイル削除で検証）・工場委譲
+  - `design.md` に Issue #44 の節を追記（Ext 見送り理由を含む）
+- **設計判断**:
+  - 案B（基底に破棄契約）を採用。案A（Factory 側の `is IDisposable` 分岐）は差分最小だが、追加のたびに注意が必要な構造欠陥が残るため。空Dispose7件は実コード確認済みで空が正しく、基底の空仮想により無変更で済む
+  - Ext（`IExtOptionBase`）は対象外。インターフェースであり .NET Framework 4.8 の C# では既定実装を付けにくく、現状持ち越しもないため。将来の net8 移行時に再検討する（knowledge に記録）
+- **検証**:
+  - `dotnet test` 270件PASS・sln Releaseビルド成功（EXIT CODE=0）
+  - reviewerレビュー＋再レビューで総合判定マージ可（中3件：注入所有権・design反映・自前接続テスト、低3件：finally・継続テスト・テスト後始末をすべて対応。低の見送りなし）
+  - ユーザーSP実機検証OK（集計後にworkファイル的なものが全部消えた＝DBが閉じたことを確認）
+- **残課題**: なし（#44完結）。単一 `dbCtrl` を Analyze/Base 両方へ注入すると後開き側に張り替わる既存挙動は残るが、所有権とは独立のため別扱い。Ext の契約化は net8 移行時に検討

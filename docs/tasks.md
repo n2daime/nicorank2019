@@ -15,13 +15,6 @@
 
 ## 未完了タスク
 
-### BasicOption破棄経路の整備（案B・Issue #44。提案元 #42）
-
-- 依存: #40 の予備補完（`SpMovieInfoFallback` の所有権流儀は維持する）
-- 対象: `BasicOptionBase`（`IDisposable` 化＋空の仮想 `Dispose`）、`RankingAnalyze`（`IDisposable` 化＋ `BaseOptionList` 破棄）、`ModeFactoryBase`（`IDisposable` 化＋ `RankingAnalyze` 破棄委譲）、`frmMainSyukei.AnalyzeAsync`（集計後の `MainFactory` 破棄）
-- 受け入れ条件: SP／タグ検索（基準あり・なし・v2最新値）の集計後に自前接続が閉じること、注入接続は閉じないこと、二重 `Dispose` で例外が出ないこと、既存テスト全件成功＋ソリューションビルド成功（EXIT CODE=0）、design／knowledge 更新（Ext 見送り理由を含む）
-- 備考: `IExtOptionBase` 側は対象外とする。インターフェースであり .NET Framework 4.8 の C# では空の既定実装を付けにくく、現状持ち越しもないため。将来の net8 移行時に再検討する。
-
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。
@@ -43,6 +36,7 @@
 
 | タスク | 完了日 | 主な成果物 |
 |---|---|---|
+| BasicOption破棄経路の整備（案B・#44。提案元#42）✅ | 2026-09-26 | BasicOptionBaseのIDisposable化（空の仮想Dispose・資源なし7件は無変更）・資源持ち3件のoverride寄せ替え＋_ownsDbCtrl所有権（注入接続は閉じない）・RankingAnalyze／ModeFactoryBaseのIDisposable化と破棄委譲（冪等・null安全・1件失敗でも継続）・SP／TagRank工場の失敗経路破棄・Tyukan内側using化・frmMainSyukeiの付け替え前＋出力後try-finally破棄・UnitTest10件追加（計270件）・design更新（Ext見送り理由含む）・reviewer再レビューでマージ可（中3件＋低3件すべて対応）・ユーザーSP実機検証OK（集計後にworkファイル消去を確認）・developマージ |
 | タグ検索v2最新値のデータ時点表示＋OFFSET節別化(#39)✅ | 2026-09-26 | lblTagSnapshotTime新設（ON時のみ表示・MM/DD 05:00固定・確認不能時は中断）・TagSnapshotTimestamp新設（JST日・定数05:00・TryFormat）・SP/TAGRANK節にOFFSET4種（項目単位フォールバック・書込は節内生成）・集計中タブ固定・Initilize既定生成・配布テンプレートTAGRANK-OFFSET全0化・UnitTest16件追加（計260件）・specs/design/knowledge更新・reviewer再レビュー2回でマージ可（低4件対応）・ユーザー実機検証OK・developマージ |
 | メンテナンスタブにDBの最適化(#32)✅ | 2026-09-26 | tabPageMaint新設（4DBチェック既定ON・実行前後2列・#41予告枠・ログ欄なし）・DbOptimizer新設（DBごとにDROP→DELETE→VACUUM・削除行数＋前後サイズ・実行日起点1年前・種別パラメータ化・境界固定）・convertMovieID除去・非同期実行＋同時実行ガード（両方向・実行中フラグ）・UnitTest10件追加（計244件）・specs/design/knowledge更新・AGENTSにIssueコメント全件読み追加・reviewer再レビュー4回でマージ可（低見送り3件）・ユーザー実機検証OK・developマージ |
 | ApiXML削除判定の順位影響排除(#40)✅ | 2026-09-26 | NicoApiのisDelete除去・最新行読み・Reader中断廃止・SP予備補完SpMovieInfoFallback（案B。LastResultタイトル＋LogOfficial初見日）・週刊事前取得（oldlogが全ID約26000件をApiXML.dbへ・2019が取込）・削除目印【集計後削除】・並列数のconfig.json管理（ThreadMaxOverride）・UnitTest20件追加（計234件）・specs/design/knowledge更新・reviewer再レビュー問題なし（低2件見送り）・週刊実機検証（26770件取込・取得2372件に削減・有無両経路）・SP実機検証（エラーなし・マーカー0件正常）・developマージ |

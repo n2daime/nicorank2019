@@ -26,7 +26,7 @@ nicorankLib/
 
 | クラス | 責務 |
 |---|---|
-| `ModeFactoryBase` | 抽象基底。`AnalyzeRank()` は `RankingAnalyze.AnalyzeRank` を呼び結果を `RankingList` に格納。出力系は抽象メソッド（`CreateAnalyzer` / `CreateHistory` / `CreateOutputCSV` / `CreateNRMRank` 等） |
+| `ModeFactoryBase` | 抽象基底。`AnalyzeRank()` は `RankingAnalyze.AnalyzeRank` を呼び結果を `RankingList` に格納。出力系は抽象メソッド（`CreateAnalyzer` / `CreateHistory` / `CreateOutputCSV` / `CreateNRMRank` 等）。`IDisposable`（保持する `RankingAnalyze` の破棄に委譲。`RankingList` は破棄しない。Issue #44） |
 | `ModeFactoryWeekly` | 週間集計。メンテ日は `RankingHistory.CheckMaintananceDay` で中間集計に代替。BasicOption: HiddenMovieDelete → SabunReader → LastRankReader → GenreInfoReader。ExtOption: FavoriteTagReader → UserInfoReader → TyokiHantei |
 | `ModeFactoryTyukan` | 中間集計。TyokiHantei = null、履歴DB登録なし。`CreateNRMRank1000` は固定 1000 位 |
 | `ModeFactroySP` | **ファイル名タイポは元コードのまま**。`ModeFactoryWeekly` 継承。4種の入力ファイルを `SetInputFile` で設定（analyzeDB / baseDB / movieList / 前回結果CSV） |
@@ -34,7 +34,7 @@ nicorankLib/
 
 ## Analyze / RankingAnalyze
 
-`RankingAnalyze.cs` — 集計パイプライン制御。
+`RankingAnalyze.cs` — 集計パイプライン制御。`IDisposable`（所有する BasicOption 群を一括破棄する。冪等・null 安全・1件失敗でも継続して `ErrLog` に記録。Input と Ext は破棄対象外。Issue #44）。
 
 ```
 AnalyzeRank():
@@ -75,6 +75,8 @@ AnalyzeRank():
 
 ### Basic（順位計算前に実行、`AnalyzeRank(ref List<Ranking>)`）
 
+基底 `BasicOptionBase` は `IDisposable` であり、空の仮想 `Dispose` を持つ。なぜ基底で契約するか: 呼び出し側（`RankingAnalyze`）はリストとして一括破棄するため、個別の型を知らなくても破棄できる必要があるから。資源を持たない派生は空実装のまま何も書かず、資源を持つ派生だけ `override` する（Issue #44）。注入された接続は呼び出し側の所有物のため破棄せず、自前生成分のみ破棄する（`_ownsDbCtrl` フラグ。`SpMovieInfoFallback` と同一流儀）。
+
 | クラス | 責務 |
 |---|---|
 | `HiddenMovieDelete` | サムネイル `/video_deleted` の動画を `isDelete=true` に |
@@ -83,13 +85,15 @@ AnalyzeRank():
 | `LastRankCsvReader` | SP 用。前回 result CSV から前回順位を付与 |
 | `GenreInfoReader` | カテゴリ不明の動画を NicoApi で補完。失敗しても中断せず空欄のまま残す（Issue #40） |
 | `MovieInfoReader` | NicoApi で動画情報（タイトル・投稿日）を取得。失敗しても中断せず空欄のまま残す（Issue #40） |
-| `SnapShotSabunReader` | SP 集計の中核。スナップショット DB 2本（AnalyzeDB/BaseDB）の累積値差分を計算。動画情報の後に `SpMovieInfoFallback` で予備補完し、残欠落には削除目印を付ける（Issue #40）。`IDisposable` |
+| `SnapShotSabunReader` | SP 集計の中核。スナップショット DB 2本（AnalyzeDB/BaseDB）の累積値差分を計算。動画情報の後に `SpMovieInfoFallback` で予備補完し、残欠落には削除目印を付ける（Issue #40）。`Dispose` を `override` して自前接続のみ閉じる（Issue #44） |
 | `SpMovieInfoFallback` | SPの予備補完（Issue #40・案B）。タイトル空欄分だけ LastResult 最新タイトル（種別=Weekly優先の2段引き）＋LogOfficial 期間内初見日で埋める。新規取得なし・失敗でも中断しない |
-| `TagRankTotalReader` | タグ検索の基準DBなし専用。AnalyzeDBの累積値をそのまま集計値にする（差分なし）。`IDisposable` |
+| `TagRankTotalReader` | タグ検索の基準DBなし専用。AnalyzeDBの累積値をそのまま集計値にする（差分なし）。`Dispose` を `override` して自前接続のみ閉じる（Issue #44） |
 | `TagRankLiveTotalReader` | v2最新値の基準DBなし専用。`TagRankAnalyze.LiveCounters` をそのまま集計値にする（DB不要。`ApplyLiveTotals` は純粋処理で共用） |
-| `TagRankLiveSabunReader` | v2最新値の基準DBあり専用。Target=ライブ値・Base=基準日DBで差分計算（新着救済はSabunReaderと同一）。動画情報の後に `SpMovieInfoFallback` で予備補完する（Issue #40）。`IDisposable` |
+| `TagRankLiveSabunReader` | v2最新値の基準DBあり専用。Target=ライブ値・Base=基準日DBで差分計算（新着救済はSabunReaderと同一）。動画情報の後に `SpMovieInfoFallback` で予備補完する（Issue #40）。`Dispose` を `override` して自前接続のみ閉じる（Issue #44） |
 
 ### Ext（順位計算後に実行、`bool AnalyzeRank(List<Ranking>)`）
+
+`IExtOptionBase` は破棄契約を持たない。なぜ付けないか: インターフェースであり .NET Framework 4.8 の C# では空の既定実装を付けにくく、現状の実装（`FavoriteTagReader`・`UserInfoReader`・`TyokiHantei`）は呼び出しごとに自前接続を生成して `finally` で破棄するため持ち越しがないから（Issue #44 で見送り）。将来の net8 移行時に再検討する。
 
 | クラス | 責務 |
 |---|---|

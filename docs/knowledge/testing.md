@@ -9,7 +9,7 @@ dotnet test UnitTest/UnitTest.csproj
 
 - 環境: **.NET Framework 4.8 ターゲットだが .NET 10 SDK でビルド・実行**（Windows）
 - テストフレームワーク: MSTest 3.5.2 / モック: Moq 4.20.72
-- 全 **260 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件・#39で16件を追加）
+- 全 **270 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件・#39で16件・#44で10件を追加）
 
 ## 構成
 
@@ -28,7 +28,7 @@ UnitTest/
     ├── Common/     UnitTestConfig(8)
     ├── output/     UnitTestOutput(8)
     ├── SnapShot/   UnitTestSnapShotRequest(12) / UnitTestTagConditionParser(7) / UnitTestTagSearchRequest(7) / UnitTestSnapShotVersionChecker(12) / UnitTestSnapShotVersionPoller(5)
-    ├── Analyze/     UnitTestRankingAnalyze(9)
+    ├── Analyze/     UnitTestRankingAnalyze(9) / UnitTestBasicOptionDispose(10)
     ├── Analyze/model/ UnitTestRanking(6) / UnitTestRankingDisplayTags(5) / UnitTestRankingDeletedMarker(2)
     ├── Analyze/Input/ UnitTestTagRankAnalyze(8)
     ├── Analyze/Official/ UnitTestRankingHistorySoHistory(15)
@@ -60,6 +60,7 @@ UnitTest/
 | `UnitTestApiXmlCacheImporter` | 5 | 新規取込・本地が新しい場合の保持・運搬が新しい場合の置換・同取得日の保持・Status NULL行の取込（Issue #40） |
 | `UnitTestRanking` | 6 | PointTotal/HoseiAllPoint の補正計算（VOCACOLE2023実測、補正なし、sqrt、削除動画、ゼロ、境界値 0.25〜1.0） |
 | `UnitTestRankingAnalyze` | 9 | 同点時タイブレーク（Issue #34。ID数値認識のsm20/sm199・桁境界・sm/so種別・非数値フォールバックと群分離順序・null/同一・空文字・前ゼロ・総合数値順・入力順反転の決定性・副順位数値順） |
+| `UnitTestBasicOptionDispose` | 10 | 破棄経路の再発防止（Issue #44。空Dispose7件・全Option破棄と冪等・1件失敗でも継続・注入接続の非破棄・自前接続の解放2件・工場委譲と未生成時） |
 | `UnitTestTagConditionParser` | 7 | タグ条件式→jsonFilter（完全一致・部分一致・AND/OR優先・Trim・空条件・空トークン・末尾外`*`却下。Issue #30） |
 | `UnitTestTagSearchRequest` | 7 | CreateTagSearch の URL 生成（空q・targets省略・下限0省略・下限あり・種別long/short・不正種別・jsonFilter・中立期間・日付指定。Issue #30） |
 | `UnitTestTagRankAnalyze` | 8 | 件数取得・ページ重複除去・ID順・上限超過・件数失敗・不正条件・ページ失敗・null条件（Issue #30）・LiveCounters保持（Issue #35） |
