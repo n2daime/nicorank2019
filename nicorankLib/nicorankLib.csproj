@@ -319,6 +319,7 @@
     <Compile Include="Util\ISQLiteCtrl.cs" />
     <Compile Include="Util\IDbMigratable.cs" />
     <Compile Include="Util\DbMigrationCoordinator.cs" />
+    <Compile Include="Util\DbOptimizer.cs" />
     <Compile Include="Util\RegLib.cs" />
     <Compile Include="Util\SQLiteCtrl.cs" />
     <Compile Include="Util\StatusLog.cs" />

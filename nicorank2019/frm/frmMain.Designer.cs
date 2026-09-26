@@ -1203,7 +1203,7 @@
             this.lblVacuumStatus.Name = "lblVacuumStatus";
             this.lblVacuumStatus.Size = new System.Drawing.Size(107, 12);
             this.lblVacuumStatus.TabIndex = 16;
-            this.lblVacuumStatus.Text = "状態: 待機中（モック）";
+            this.lblVacuumStatus.Text = "状態: 待機中";
             // 
             // progressVacuum
             // 

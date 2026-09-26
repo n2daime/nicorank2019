@@ -232,6 +232,20 @@
 - `Ranking`（ID 主キー / 再生数 / コメント数 / マイリスト数 / いいね数）— `INSERT OR IGNORE` で追記
 - `DBVersion`（集計日 / Ver 1.0.1.0）
 
+### 手動DB最適化（メンテナンスタブ・Issue #32）
+
+- メンテナンスタブの「DBの最適化を実行」で、チェックされたDBを壁打ち準拠の手順で最適化する。順序はDROP→DELETE→VACUUM
+- `DB/ApiXML.db`：未使用の `IDConvert` を `DROP TABLE IF EXISTS` で落とし、`NicovideoThumb` の1年以上未更新行（`取得日 < 1年前`）を削除してからVACUUMする。削除行は再取得で自己回復する
+- `DB/Dailylog.db`：中間集計の日別キャッシュを全行削除してからVACUUMする（`DROP TABLE`禁止。本番コードに`CREATE`経路がないため。再集計で自己回復する）
+- `DB/NicoranHistory.db`：`LastResult` のWeekly・総合ランク1001位以下・1年以上前（`集計日 <= 1年前`）だけ削除してからVACUUMする。SP削除はしない（Ver0移行で削除済み）。`LastResultInfo`には触れない
+- `DB/LogOfficial.db`：VACUUMのみ（#31の日次pruneと住み分け）
+- 1年前境界は実行日起点のローリング計算（yyyyMMdd整数比較）。1000位ちょうどは残し、1年前当日を含む
+- ファイル不在のDBはスキップし、サイズ欄に「なし」と出す（Dailylog.db等は未実行モードでは存在しないのが正常のため、失敗にしない）
+- 実行前後のサイズ欄には `.db` 本体のみのサイズを出す（`-wal` / `-shm` の合算はしない。接続クローズ時のチェックポイント後に測るため前後比較が成立する）
+- prune＋VACUUMの失敗時はそのDBだけ「失敗」とし、残りを続ける。理由は `nicorankerr.log` に残し、最後に件数サマリを通知する
+- 数十分かかりうるため非同期で実行し、実行中は実行系ボタン（最適化・各集計）を無効化する（集計との同時実行によるDBロック競合を防ぐ。VACUUM自体は原子性があるため、最悪でも失敗に留まり破損しない）
+- 実行ログは集計タブと同様にコンソール側へ出す（タブ内にログ欄は持たない）
+
 ### SQLite 接続設定（SQLiteCtrl.Open）
 
 - 接続文字列: `Pooling=False` / `JournalMode=Wal` / `DefaultTimeout=30`

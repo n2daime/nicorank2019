@@ -276,6 +276,30 @@
 - **週刊は事前取得で欠落自体を減らす**: oldlog週刊保存時に全ID約26000件を一括取得して日付フォルダへ `ApiXML.db` を置く。DB形式にした理由は、2019側が今のまま開けて読み書きコードが要らないから（json/tsvは取込コードが要る）。一時名で作ってから置き換え、2019側は一時置き場経由で新しい取得日だけ取り込む。運搬なしでも本地継続する
 - **削除表示はタイトル欄の目印**: `Ranking.DeletedTitlePrefix`（【集計後削除】）を空欄タイトルに付ける。列追加・順序変更をしない理由は、手動アップロード先への互換を守るため。Status明言と行なしの区別はしない（区別のための再取得がタイミング依存を戻すため）
 
+## 手動DB最適化（Issue #32）
+
+### Context
+
+- #31の日次pruneではVACUUMしないため、断片化が気になったときに手動で最適化する置き場所が必要になった
+- 要求はIssue #32の壁打ちコメント（2026-09-08）にあり、DBごとに処理が異なる。素のVACUUMだけでは満たせない（VACUUMのみの初版はこの見落としで作り直した。経緯はarchive参照）
+- UIは先にモック（32.1）で固めた。対象4DB・実行前後2列・#41予告枠・ログ欄なし・実行ボタン文言まで確定済みのため、中身実装ではレイアウトを変えない
+
+### Decisions
+
+- **`DbOptimizer` は `Util` の static クラス**: `DbMigrationCoordinator` と同層に置き、UIに依存させない。staticにしたのは状態を持たないため（`ApiUrlBuilder` と同型）。`Optimize(dbPath[, today])`・`FormatFileSize`・`GetDefaultTargets()`・`CutoffOneYearAgo(today)` を公開し、単体テストから直接呼べる。日付指定付き overload は境界テストの決定性のため
+- **DBごとにprune＋VACUUM（順序DROP→DELETE→VACUUM）**: `PruneByDb` でパス判別する。VACUUM手順自体は移行時と同一（`SQLiteCtrl` で開いて `VACUUM;` を1発。トランザクションで包まない）。PRAGMA系は `Open()` 側で面倒を見るため呼び出し側では触らない
+- **ApiXMLはDROP＋1年削除**: `IDConvert` は有効な読み書きがコメントアウト内のみで `CREATE` がないため、`DELETE` ではなく `DROP TABLE IF EXISTS` で表ごと落とす（冪等）。`NicovideoThumb` は `取得日 < 1年前` を削除する。取得日はyyyyMMdd文字列・INTEGERの両格納がありうるが、どちらも数値比較できるため整数パラメータで比較する（`ApiXmlCacheImporter` の比較と同一考え）。コメントアウト `convertMovieID` は実装時に除去する（壁打ち申送り通り）
+- **DailylogはDELETE限定・DROP禁止**: 本番コードに `CREATE` 経路がなく、表を消すと再作成されないため。全削除でも再集計で自己回復する
+- **NicoranHistoryはWeekly旧下位のみ**: `LastResult` の `種別=Weekly AND 総合ランク>1001位以下 AND 集計日<=1年前` を削除する。SP削除はしない（Ver0移行で削除済みのため毎回0件の空振りになる）。`LastResultInfo` には触れない（上位1000行が残る日の設定XMLを守るため）。種別はパラメータ化する（ダブルクォート直書き回避）。境界は1000位ちょうど残す・1年前当日を含む
+- **1年前境界は実行日起点のローリング計算**: `CutoffOneYearAgo(today)` でyyyyMMdd整数にする。#31の保持境界（DB内最新日起点）とは起点が異なる。#31は日次更新の窓ずれ防止、こちらは手動実行の直感（押した日の1年前）のため。変える場合はIssueで合意する
+- **ファイル不在はスキップ扱い（失敗にしない）**: Dailylog.db等は未実行モードでは存在しないのが正常であり、不在自体は異常ではないため。UIはサイズ欄に「なし」と出す
+- **サイズは `.db` 本体のみ**: `-wal` / `-shm` の合算はしない。接続クローズ時のチェックポイント後に本体サイズを測るため前後比較は成立する（VACUUM自体の効果ではなく測定順序が根拠のため、順序を変えると壊れる）。合算すると実行前後で測り方がぶれるため採用しない
+- **表なしDBへのpruneは失敗させる**: 期待する表がないDBは異常状態であり、黙ってVACUUM成功にすると異常を見逃す。fail-fastで理由を残す（移行時の失敗時中断と同一考え）
+- **非同期は `Task.Run` + `await`（`BackgroundWorker` 不使用）**: 既存の `ExecuteAnalyzeAsync` と同型にする。DB件数ステップで進捗を更新でき、UI更新はawait復帰後のUIスレッドに寄るため、pitfalls項目19（集計スレッドからのコントロール参照禁止）に触れない。条件の退避もタグ検索の `TagExecuteContext` と同一理由で行う。`_vacuumRunning` フラグで実行中の条件編集によるボタン復活も抑止する
+- **実行中は実行系ボタンを無効化**: 最適化ボタン・チェック4件・各集計ボタンを止め、逆方向（集計実行中の最適化開始）も `ExecuteAnalyzeAsync` 側で止める。集計との同時実行によるDBロック競合を防ぐ。VACUUM自体は原子性があるため、最悪でも失敗表示に留まり破損しない。タグ集計同士の相互ガードは既存挙動であり今回の範囲外（別扱い）
+- **ApiXML／Dailylogのパス定数は `DbOptimizer` に持つ**: `DB.cs` に定数がないため、`NicoApi`／`ApiXmlCacheImporter`／`TyukanAnalyze` と同一値をここに定義する。値ずれは最適化対象と集計参照先の食い違いになるため、変更時は同時更新すること（単体テスト `GetDefaultTargets_MatchesKnownPaths` で既知値との一致を縛る）
+- **サイズ表示の進数は1024固定**: Windowsのエクスプローラ表示と合わせるため。`BytesPerUnit` として定数化する（マジックナンバー抑止）。保持年数・順位境界も定数化する（仕様値のため。`RetentionYears`／`WeeklyRankKeepLimit`）
+
 ---
 
 ## 実装済みの設計判断（要点）
