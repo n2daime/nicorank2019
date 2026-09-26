@@ -110,6 +110,32 @@
             this.rbWeekly = new System.Windows.Forms.RadioButton();
             this.tabPageOut = new System.Windows.Forms.TabControl();
             this.chkUseLiveCounter = new System.Windows.Forms.CheckBox();
+            this.tabPageMaint = new System.Windows.Forms.TabPage();
+            this.grpVacuum = new System.Windows.Forms.GroupBox();
+            this.lblVacuumDesc = new System.Windows.Forms.Label();
+            this.lblVacuumHeaderBefore = new System.Windows.Forms.Label();
+            this.lblVacuumHeaderAfter = new System.Windows.Forms.Label();
+            this.chkVacuumLogOfficial = new System.Windows.Forms.CheckBox();
+            this.lblVacuumBeforeLogOfficial = new System.Windows.Forms.Label();
+            this.lblVacuumAfterLogOfficial = new System.Windows.Forms.Label();
+            this.chkVacuumNicoranHistory = new System.Windows.Forms.CheckBox();
+            this.lblVacuumBeforeNicoranHistory = new System.Windows.Forms.Label();
+            this.lblVacuumAfterNicoranHistory = new System.Windows.Forms.Label();
+            this.chkVacuumApiXml = new System.Windows.Forms.CheckBox();
+            this.lblVacuumBeforeApiXml = new System.Windows.Forms.Label();
+            this.lblVacuumAfterApiXml = new System.Windows.Forms.Label();
+            this.chkVacuumDailylog = new System.Windows.Forms.CheckBox();
+            this.lblVacuumBeforeDailylog = new System.Windows.Forms.Label();
+            this.lblVacuumAfterDailylog = new System.Windows.Forms.Label();
+            this.btnVacuumExec = new System.Windows.Forms.Button();
+            this.lblVacuumStatus = new System.Windows.Forms.Label();
+            this.progressVacuum = new System.Windows.Forms.ProgressBar();
+            this.lblVacuumNote = new System.Windows.Forms.Label();
+            this.grpFutureApiXml = new System.Windows.Forms.GroupBox();
+            this.lblFutureApiXmlDesc = new System.Windows.Forms.Label();
+            this.tbFutureApiXmlFolder = new System.Windows.Forms.TextBox();
+            this.btnFutureApiXmlFolder = new System.Windows.Forms.Button();
+            this.btnFutureApiXmlExec = new System.Windows.Forms.Button();
             this.tabPageTag.SuspendLayout();
             this.grpDb.SuspendLayout();
             this.grpFilter.SuspendLayout();
@@ -119,6 +145,9 @@
             this.panelSP.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.tabPageOut.SuspendLayout();
+            this.tabPageMaint.SuspendLayout();
+            this.grpVacuum.SuspendLayout();
+            this.grpFutureApiXml.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabPageTag
@@ -949,6 +978,7 @@
             // 
             this.tabPageOut.Controls.Add(this.tabPageSyukei);
             this.tabPageOut.Controls.Add(this.tabPageTag);
+            this.tabPageOut.Controls.Add(this.tabPageMaint);
             this.tabPageOut.Location = new System.Drawing.Point(-3, 4);
             this.tabPageOut.Name = "tabPageOut";
             this.tabPageOut.SelectedIndex = 0;
@@ -967,9 +997,286 @@
             this.chkUseLiveCounter.TabIndex = 2;
             this.chkUseLiveCounter.Text = "検索APIから直接集計する(スナップショットDB不要)";
             this.chkUseLiveCounter.UseVisualStyleBackColor = true;
-            // 
+            //
+            // tabPageMaint
+            //
+            // メンテナンスタブ(#32)。UIモック段階のため表示だけ作り、中身の処理は持たない。
+            // ログ欄は置かない(集計タブと同様にコンソール側へ出す運用のため)。
+            this.tabPageMaint.BackColor = System.Drawing.SystemColors.Control;
+            this.tabPageMaint.Controls.Add(this.grpVacuum);
+            this.tabPageMaint.Controls.Add(this.grpFutureApiXml);
+            this.tabPageMaint.Location = new System.Drawing.Point(4, 22);
+            this.tabPageMaint.Name = "tabPageMaint";
+            this.tabPageMaint.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPageMaint.Size = new System.Drawing.Size(828, 754);
+            this.tabPageMaint.TabIndex = 4;
+            this.tabPageMaint.Text = "メンテナンス";
+            this.tabPageMaint.UseVisualStyleBackColor = true;
+            //
+            // grpVacuum
+            //
+            this.grpVacuum.Controls.Add(this.lblVacuumDesc);
+            this.grpVacuum.Controls.Add(this.lblVacuumHeaderBefore);
+            this.grpVacuum.Controls.Add(this.lblVacuumHeaderAfter);
+            this.grpVacuum.Controls.Add(this.chkVacuumLogOfficial);
+            this.grpVacuum.Controls.Add(this.lblVacuumBeforeLogOfficial);
+            this.grpVacuum.Controls.Add(this.lblVacuumAfterLogOfficial);
+            this.grpVacuum.Controls.Add(this.chkVacuumNicoranHistory);
+            this.grpVacuum.Controls.Add(this.lblVacuumBeforeNicoranHistory);
+            this.grpVacuum.Controls.Add(this.lblVacuumAfterNicoranHistory);
+            this.grpVacuum.Controls.Add(this.chkVacuumApiXml);
+            this.grpVacuum.Controls.Add(this.lblVacuumBeforeApiXml);
+            this.grpVacuum.Controls.Add(this.lblVacuumAfterApiXml);
+            this.grpVacuum.Controls.Add(this.chkVacuumDailylog);
+            this.grpVacuum.Controls.Add(this.lblVacuumBeforeDailylog);
+            this.grpVacuum.Controls.Add(this.lblVacuumAfterDailylog);
+            this.grpVacuum.Controls.Add(this.btnVacuumExec);
+            this.grpVacuum.Controls.Add(this.lblVacuumStatus);
+            this.grpVacuum.Controls.Add(this.progressVacuum);
+            this.grpVacuum.Controls.Add(this.lblVacuumNote);
+            this.grpVacuum.Location = new System.Drawing.Point(8, 8);
+            this.grpVacuum.Name = "grpVacuum";
+            this.grpVacuum.Size = new System.Drawing.Size(806, 330);
+            this.grpVacuum.TabIndex = 0;
+            this.grpVacuum.TabStop = false;
+            this.grpVacuum.Text = "1. DBの最適化（VACUUM）";
+            //
+            // lblVacuumDesc
+            //
+            this.lblVacuumDesc.AutoSize = true;
+            this.lblVacuumDesc.Location = new System.Drawing.Point(12, 22);
+            this.lblVacuumDesc.Name = "lblVacuumDesc";
+            this.lblVacuumDesc.Size = new System.Drawing.Size(400, 12);
+            this.lblVacuumDesc.TabIndex = 0;
+            this.lblVacuumDesc.Text = "削除・更新の繰り返しで断片化したDBファイルを最適化します";
+            //
+            // lblVacuumHeaderBefore
+            //
+            this.lblVacuumHeaderBefore.AutoSize = true;
+            this.lblVacuumHeaderBefore.Location = new System.Drawing.Point(330, 48);
+            this.lblVacuumHeaderBefore.Name = "lblVacuumHeaderBefore";
+            this.lblVacuumHeaderBefore.Size = new System.Drawing.Size(41, 12);
+            this.lblVacuumHeaderBefore.TabIndex = 1;
+            this.lblVacuumHeaderBefore.Text = "実行前";
+            //
+            // lblVacuumHeaderAfter
+            //
+            this.lblVacuumHeaderAfter.AutoSize = true;
+            this.lblVacuumHeaderAfter.Location = new System.Drawing.Point(500, 48);
+            this.lblVacuumHeaderAfter.Name = "lblVacuumHeaderAfter";
+            this.lblVacuumHeaderAfter.Size = new System.Drawing.Size(41, 12);
+            this.lblVacuumHeaderAfter.TabIndex = 2;
+            this.lblVacuumHeaderAfter.Text = "実行後";
+            //
+            // chkVacuumLogOfficial
+            //
+            this.chkVacuumLogOfficial.AutoSize = true;
+            this.chkVacuumLogOfficial.Checked = true;
+            this.chkVacuumLogOfficial.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkVacuumLogOfficial.Location = new System.Drawing.Point(12, 70);
+            this.chkVacuumLogOfficial.Name = "chkVacuumLogOfficial";
+            this.chkVacuumLogOfficial.Size = new System.Drawing.Size(250, 16);
+            this.chkVacuumLogOfficial.TabIndex = 3;
+            this.chkVacuumLogOfficial.Text = "LogOfficial.db（DB/LogOfficial.db）";
+            this.chkVacuumLogOfficial.UseVisualStyleBackColor = true;
+            //
+            // lblVacuumBeforeLogOfficial
+            //
+            this.lblVacuumBeforeLogOfficial.AutoSize = true;
+            this.lblVacuumBeforeLogOfficial.Location = new System.Drawing.Point(330, 72);
+            this.lblVacuumBeforeLogOfficial.Name = "lblVacuumBeforeLogOfficial";
+            this.lblVacuumBeforeLogOfficial.Size = new System.Drawing.Size(65, 12);
+            this.lblVacuumBeforeLogOfficial.TabIndex = 4;
+            this.lblVacuumBeforeLogOfficial.Text = "実行前: —";
+            //
+            // lblVacuumAfterLogOfficial
+            //
+            this.lblVacuumAfterLogOfficial.AutoSize = true;
+            this.lblVacuumAfterLogOfficial.Location = new System.Drawing.Point(500, 72);
+            this.lblVacuumAfterLogOfficial.Name = "lblVacuumAfterLogOfficial";
+            this.lblVacuumAfterLogOfficial.Size = new System.Drawing.Size(65, 12);
+            this.lblVacuumAfterLogOfficial.TabIndex = 5;
+            this.lblVacuumAfterLogOfficial.Text = "実行後: —";
+            //
+            // chkVacuumNicoranHistory
+            //
+            this.chkVacuumNicoranHistory.AutoSize = true;
+            this.chkVacuumNicoranHistory.Checked = true;
+            this.chkVacuumNicoranHistory.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkVacuumNicoranHistory.Location = new System.Drawing.Point(12, 95);
+            this.chkVacuumNicoranHistory.Name = "chkVacuumNicoranHistory";
+            this.chkVacuumNicoranHistory.Size = new System.Drawing.Size(250, 16);
+            this.chkVacuumNicoranHistory.TabIndex = 6;
+            this.chkVacuumNicoranHistory.Text = "NicoranHistory.db（DB/NicoranHistory.db）";
+            this.chkVacuumNicoranHistory.UseVisualStyleBackColor = true;
+            //
+            // lblVacuumBeforeNicoranHistory
+            //
+            this.lblVacuumBeforeNicoranHistory.AutoSize = true;
+            this.lblVacuumBeforeNicoranHistory.Location = new System.Drawing.Point(330, 97);
+            this.lblVacuumBeforeNicoranHistory.Name = "lblVacuumBeforeNicoranHistory";
+            this.lblVacuumBeforeNicoranHistory.Size = new System.Drawing.Size(65, 12);
+            this.lblVacuumBeforeNicoranHistory.TabIndex = 7;
+            this.lblVacuumBeforeNicoranHistory.Text = "実行前: —";
+            //
+            // lblVacuumAfterNicoranHistory
+            //
+            this.lblVacuumAfterNicoranHistory.AutoSize = true;
+            this.lblVacuumAfterNicoranHistory.Location = new System.Drawing.Point(500, 97);
+            this.lblVacuumAfterNicoranHistory.Name = "lblVacuumAfterNicoranHistory";
+            this.lblVacuumAfterNicoranHistory.Size = new System.Drawing.Size(65, 12);
+            this.lblVacuumAfterNicoranHistory.TabIndex = 8;
+            this.lblVacuumAfterNicoranHistory.Text = "実行後: —";
+            //
+            // chkVacuumApiXml
+            //
+            this.chkVacuumApiXml.AutoSize = true;
+            this.chkVacuumApiXml.Checked = true;
+            this.chkVacuumApiXml.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkVacuumApiXml.Location = new System.Drawing.Point(12, 120);
+            this.chkVacuumApiXml.Name = "chkVacuumApiXml";
+            this.chkVacuumApiXml.Size = new System.Drawing.Size(250, 16);
+            this.chkVacuumApiXml.TabIndex = 9;
+            this.chkVacuumApiXml.Text = "ApiXML.db（DB/ApiXML.db）";
+            this.chkVacuumApiXml.UseVisualStyleBackColor = true;
+            //
+            // lblVacuumBeforeApiXml
+            //
+            this.lblVacuumBeforeApiXml.AutoSize = true;
+            this.lblVacuumBeforeApiXml.Location = new System.Drawing.Point(330, 122);
+            this.lblVacuumBeforeApiXml.Name = "lblVacuumBeforeApiXml";
+            this.lblVacuumBeforeApiXml.Size = new System.Drawing.Size(65, 12);
+            this.lblVacuumBeforeApiXml.TabIndex = 10;
+            this.lblVacuumBeforeApiXml.Text = "実行前: —";
+            //
+            // lblVacuumAfterApiXml
+            //
+            this.lblVacuumAfterApiXml.AutoSize = true;
+            this.lblVacuumAfterApiXml.Location = new System.Drawing.Point(500, 122);
+            this.lblVacuumAfterApiXml.Name = "lblVacuumAfterApiXml";
+            this.lblVacuumAfterApiXml.Size = new System.Drawing.Size(65, 12);
+            this.lblVacuumAfterApiXml.TabIndex = 11;
+            this.lblVacuumAfterApiXml.Text = "実行後: —";
+            //
+            // chkVacuumDailylog
+            //
+            this.chkVacuumDailylog.AutoSize = true;
+            this.chkVacuumDailylog.Checked = true;
+            this.chkVacuumDailylog.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkVacuumDailylog.Location = new System.Drawing.Point(12, 145);
+            this.chkVacuumDailylog.Name = "chkVacuumDailylog";
+            this.chkVacuumDailylog.Size = new System.Drawing.Size(250, 16);
+            this.chkVacuumDailylog.TabIndex = 12;
+            this.chkVacuumDailylog.Text = "Dailylog.db（DB/Dailylog.db）";
+            this.chkVacuumDailylog.UseVisualStyleBackColor = true;
+            //
+            // lblVacuumBeforeDailylog
+            //
+            this.lblVacuumBeforeDailylog.AutoSize = true;
+            this.lblVacuumBeforeDailylog.Location = new System.Drawing.Point(330, 147);
+            this.lblVacuumBeforeDailylog.Name = "lblVacuumBeforeDailylog";
+            this.lblVacuumBeforeDailylog.Size = new System.Drawing.Size(65, 12);
+            this.lblVacuumBeforeDailylog.TabIndex = 13;
+            this.lblVacuumBeforeDailylog.Text = "実行前: —";
+            //
+            // lblVacuumAfterDailylog
+            //
+            this.lblVacuumAfterDailylog.AutoSize = true;
+            this.lblVacuumAfterDailylog.Location = new System.Drawing.Point(500, 147);
+            this.lblVacuumAfterDailylog.Name = "lblVacuumAfterDailylog";
+            this.lblVacuumAfterDailylog.Size = new System.Drawing.Size(65, 12);
+            this.lblVacuumAfterDailylog.TabIndex = 14;
+            this.lblVacuumAfterDailylog.Text = "実行後: —";
+            //
+            // btnVacuumExec
+            //
+            // UIモック段階のため押下時は未実装メッセージのみ出し、DBには触れない。
+            this.btnVacuumExec.Location = new System.Drawing.Point(12, 180);
+            this.btnVacuumExec.Name = "btnVacuumExec";
+            this.btnVacuumExec.Size = new System.Drawing.Size(180, 36);
+            this.btnVacuumExec.TabIndex = 15;
+            this.btnVacuumExec.Text = "DBの最適化を実行";
+            this.btnVacuumExec.UseVisualStyleBackColor = true;
+            this.btnVacuumExec.Click += new System.EventHandler(this.btnVacuumExec_Click);
+            //
+            // lblVacuumStatus
+            //
+            this.lblVacuumStatus.AutoSize = true;
+            this.lblVacuumStatus.Location = new System.Drawing.Point(205, 186);
+            this.lblVacuumStatus.Name = "lblVacuumStatus";
+            this.lblVacuumStatus.Size = new System.Drawing.Size(150, 12);
+            this.lblVacuumStatus.TabIndex = 16;
+            this.lblVacuumStatus.Text = "状態: 待機中（モック）";
+            //
+            // progressVacuum
+            //
+            this.progressVacuum.Location = new System.Drawing.Point(205, 205);
+            this.progressVacuum.Name = "progressVacuum";
+            this.progressVacuum.Size = new System.Drawing.Size(580, 20);
+            this.progressVacuum.TabIndex = 17;
+            //
+            // lblVacuumNote
+            //
+            this.lblVacuumNote.AutoSize = true;
+            this.lblVacuumNote.Location = new System.Drawing.Point(12, 240);
+            this.lblVacuumNote.Name = "lblVacuumNote";
+            this.lblVacuumNote.Size = new System.Drawing.Size(400, 36);
+            this.lblVacuumNote.TabIndex = 18;
+            this.lblVacuumNote.Text = "注意: 数十分かかることがあります。\r\nPCのスリープを無効にしてください。\r\n実行前にDBフォルダのバックアップを推奨します。";
+            //
+            // grpFutureApiXml
+            //
+            // #41(週刊ApiXML.dbの蓄積マージ)の置き場所予約。中身は#41着手時に埋める。
+            this.grpFutureApiXml.Controls.Add(this.lblFutureApiXmlDesc);
+            this.grpFutureApiXml.Controls.Add(this.tbFutureApiXmlFolder);
+            this.grpFutureApiXml.Controls.Add(this.btnFutureApiXmlFolder);
+            this.grpFutureApiXml.Controls.Add(this.btnFutureApiXmlExec);
+            this.grpFutureApiXml.Location = new System.Drawing.Point(8, 346);
+            this.grpFutureApiXml.Name = "grpFutureApiXml";
+            this.grpFutureApiXml.Size = new System.Drawing.Size(806, 120);
+            this.grpFutureApiXml.TabIndex = 1;
+            this.grpFutureApiXml.TabStop = false;
+            this.grpFutureApiXml.Text = "2. 長期キャッシュ再構築（将来対応・#41）";
+            //
+            // lblFutureApiXmlDesc
+            //
+            this.lblFutureApiXmlDesc.AutoSize = true;
+            this.lblFutureApiXmlDesc.Location = new System.Drawing.Point(12, 22);
+            this.lblFutureApiXmlDesc.Name = "lblFutureApiXmlDesc";
+            this.lblFutureApiXmlDesc.Size = new System.Drawing.Size(400, 24);
+            this.lblFutureApiXmlDesc.TabIndex = 0;
+            this.lblFutureApiXmlDesc.Text = "週刊のApiXML.dbを蓄積マージする機能を将来ここに追加します。\r\n中身は#41着手時に埋めるため、今は操作できません。";
+            //
+            // tbFutureApiXmlFolder
+            //
+            this.tbFutureApiXmlFolder.Enabled = false;
+            this.tbFutureApiXmlFolder.Location = new System.Drawing.Point(12, 60);
+            this.tbFutureApiXmlFolder.Name = "tbFutureApiXmlFolder";
+            this.tbFutureApiXmlFolder.Size = new System.Drawing.Size(590, 19);
+            this.tbFutureApiXmlFolder.TabIndex = 1;
+            //
+            // btnFutureApiXmlFolder
+            //
+            this.btnFutureApiXmlFolder.Enabled = false;
+            this.btnFutureApiXmlFolder.Location = new System.Drawing.Point(608, 58);
+            this.btnFutureApiXmlFolder.Name = "btnFutureApiXmlFolder";
+            this.btnFutureApiXmlFolder.Size = new System.Drawing.Size(75, 23);
+            this.btnFutureApiXmlFolder.TabIndex = 2;
+            this.btnFutureApiXmlFolder.Text = "参照";
+            this.btnFutureApiXmlFolder.UseVisualStyleBackColor = true;
+            //
+            // btnFutureApiXmlExec
+            //
+            this.btnFutureApiXmlExec.Enabled = false;
+            this.btnFutureApiXmlExec.Location = new System.Drawing.Point(689, 58);
+            this.btnFutureApiXmlExec.Name = "btnFutureApiXmlExec";
+            this.btnFutureApiXmlExec.Size = new System.Drawing.Size(75, 23);
+            this.btnFutureApiXmlExec.TabIndex = 3;
+            this.btnFutureApiXmlExec.Text = "実行";
+            this.btnFutureApiXmlExec.UseVisualStyleBackColor = true;
+            //
             // frmMain
-            // 
+            //
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(836, 714);
@@ -992,6 +1299,12 @@
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             this.tabPageOut.ResumeLayout(false);
+            this.tabPageMaint.ResumeLayout(false);
+            this.tabPageMaint.PerformLayout();
+            this.grpVacuum.ResumeLayout(false);
+            this.grpVacuum.PerformLayout();
+            this.grpFutureApiXml.ResumeLayout(false);
+            this.grpFutureApiXml.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -1080,6 +1393,32 @@
         private System.Windows.Forms.RadioButton rbWeekly;
         private System.Windows.Forms.TabControl tabPageOut;
         private System.Windows.Forms.CheckBox chkUseLiveCounter;
+        private System.Windows.Forms.TabPage tabPageMaint;
+        private System.Windows.Forms.GroupBox grpVacuum;
+        private System.Windows.Forms.Label lblVacuumDesc;
+        private System.Windows.Forms.Label lblVacuumHeaderBefore;
+        private System.Windows.Forms.Label lblVacuumHeaderAfter;
+        private System.Windows.Forms.CheckBox chkVacuumLogOfficial;
+        private System.Windows.Forms.Label lblVacuumBeforeLogOfficial;
+        private System.Windows.Forms.Label lblVacuumAfterLogOfficial;
+        private System.Windows.Forms.CheckBox chkVacuumNicoranHistory;
+        private System.Windows.Forms.Label lblVacuumBeforeNicoranHistory;
+        private System.Windows.Forms.Label lblVacuumAfterNicoranHistory;
+        private System.Windows.Forms.CheckBox chkVacuumApiXml;
+        private System.Windows.Forms.Label lblVacuumBeforeApiXml;
+        private System.Windows.Forms.Label lblVacuumAfterApiXml;
+        private System.Windows.Forms.CheckBox chkVacuumDailylog;
+        private System.Windows.Forms.Label lblVacuumBeforeDailylog;
+        private System.Windows.Forms.Label lblVacuumAfterDailylog;
+        private System.Windows.Forms.Button btnVacuumExec;
+        private System.Windows.Forms.Label lblVacuumStatus;
+        private System.Windows.Forms.ProgressBar progressVacuum;
+        private System.Windows.Forms.Label lblVacuumNote;
+        private System.Windows.Forms.GroupBox grpFutureApiXml;
+        private System.Windows.Forms.Label lblFutureApiXmlDesc;
+        private System.Windows.Forms.TextBox tbFutureApiXmlFolder;
+        private System.Windows.Forms.Button btnFutureApiXmlFolder;
+        private System.Windows.Forms.Button btnFutureApiXmlExec;
     }
 }
 
