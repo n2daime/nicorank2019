@@ -15,15 +15,6 @@
 
 ## 未完了タスク
 
-### ApiXML由来の削除判定を順位に影響させない（#40）
-
-- [ ] 3.1 `NicoApi.GetUserInfo` / `GetMovieInfo` から `isDelete` 代入を除去し、失敗時は空欄・既定値のまま残して中断しない。`SELECT XML` を最新取得日に統一する
-- [ ] 3.2 SPの投稿日・タイトル欠落を案Bで補う（ApiXML→LastResultタイトル→LogOfficial初見日→空のまま残す）。ジャンル空欄は許容。タグ検索は数字なし除外を維持
-- [ ] 3.3 週刊の事前取得（oldlogが週刊JSON全ID約26000件を一括取得し日付フォルダへ `ApiXML.db` 追加。2019側は一時置き場経由で本地へ取り込む）
-- [ ] 3.4 情報欠落が残る場合はタイトル欄先頭に【集計後削除】を付ける（列追加なし）
-- [ ] 3.5 単体テスト追加（非ok・行なしでも除外されない／最新行読み／中断しない／SP予備／目印）とテスト・ビルド成功、specs/design/knowledge更新、reviewerレビュー、ユーザー実行確認
-- ［将来検討］スナップショットDBへの文字情報保持（案A）は #41 に分離し今回は対応しない
-
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。
@@ -45,6 +36,7 @@
 
 | タスク | 完了日 | 主な成果物 |
 |---|---|---|
+| ApiXML削除判定の順位影響排除(#40)✅ | 2026-09-26 | NicoApiのisDelete除去・最新行読み・Reader中断廃止・SP予備補完SpMovieInfoFallback（案B。LastResultタイトル＋LogOfficial初見日）・週刊事前取得（oldlogが全ID約26000件をApiXML.dbへ・2019が取込）・削除目印【集計後削除】・並列数のconfig.json管理（ThreadMaxOverride）・UnitTest20件追加（計234件）・specs/design/knowledge更新・reviewer再レビュー問題なし（低2件見送り）・週刊実機検証（26770件取込・取得2372件に削減・有無両経路）・SP実機検証（エラーなし・マーカー0件正常）・developマージ |
 | Snapshot API v2更新チェック(#38)✅ | 2026-09-23 | SnapShotVersionChecker/Poller新設（version取得・JST日付比較・更新済み/未更新/確認不能の3値判定・5分×最大1時間待機）・取得開始時にlast_modifiedをStatusLog出力・WinForm未更新時に日時入りOK/キャンセル確認ダイアログ・CLIタイムアウト時は取得せず終了コード2＋リトライタイムアウト記録・UnitTest17件追加（計214件）・specs/design/knowledge更新（切替時刻実測・競合注意）・reviewer再レビュー問題なし・NAS実機検証（9/21に8回未更新→更新検知→全期間取得・終了コード0）・調査スクリプトはマージ前除外・developマージ |
 |---|---|---|
 | LogOfficial.db肥大化対策(#31)✅ | 2026-09-21 | SoHistory新設＋Ver1移行（初期退避・混入行清掃・prune・Movie廃止・初回VACUUM）・日次prune駆動＋SoHistoryフォールバック（Ranking優先2クエリ逐次・基準日ガード）・GenreAnalyze削除・UnitTest15件追加（計197件）・specs/design/knowledge更新・reviewer総合判定マージ可（低8件：4件対応・4件見送り）・実DB破損救出再建＋通し再実行（2.01GB・integrity ok）・対策前後比較で旧exe混入と確定し検証終了・developマージ |
