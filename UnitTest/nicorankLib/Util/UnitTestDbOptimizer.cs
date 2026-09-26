@@ -64,6 +64,7 @@ namespace UnitTest.nicorankLib.Util
                 Assert.IsTrue(result.Success, "成功すること: " + result.ErrorMessage);
                 Assert.AreEqual(sizeBefore, result.SizeBefore, "実行前サイズが一致すること");
                 Assert.IsTrue(result.SizeAfter > 0, "実行後サイズが取れること");
+                Assert.IsTrue(result.SizeAfter < result.SizeBefore, "断片化の解消で縮小すること（500行中400行削除のため確実に縮む）");
                 using (var dbCtrl = new SQLiteCtrl())
                 {
                     Assert.IsTrue(dbCtrl.Open(dbPath), "最適化後も開けること");

@@ -289,7 +289,7 @@
 - **`DbOptimizer` は `Util` の static クラス**: `DbMigrationCoordinator` と同層に置き、UIに依存させない。staticにしたのは状態を持たないため（`ApiUrlBuilder` と同型）。`Optimize(dbPath)`・`FormatFileSize`・`GetDefaultTargets()` を公開し、単体テストから直接呼べる
 - **VACUUM手順は移行時と同一**: `SQLiteCtrl` で開いて `VACUUM;` を1発。トランザクションで包まない（VACUUMはトランザクション不可のため。移行時と同一の理由）。PRAGMA系は `Open()` 側で面倒を見るため呼び出し側では触らない
 - **ファイル不在はスキップ扱い（失敗にしない）**: Dailylog.db等は未実行モードでは存在しないのが正常であり、不在自体は異常ではないため。UIはサイズ欄に「なし」と出す
-- **サイズは `.db` 本体のみ**: `-wal` / `-shm` の合算はしない。VACUUMが自動チェックポイントするため前後比較は成立する。合算すると実行前後で測り方がぶれるため採用しない
+- **サイズは `.db` 本体のみ**: `-wal` / `-shm` の合算はしない。接続クローズ時のチェックポイント後に本体サイズを測るため前後比較は成立する（VACUUM自体の効果ではなく測定順序が根拠のため、順序を変えると壊れる）。合算すると実行前後で測り方がぶれるため採用しない
 - **非同期は `Task.Run` + `await`（`BackgroundWorker` 不使用）**: 既存の `ExecuteAnalyzeAsync` と同型にする。DB件数ステップで進捗を更新でき、UI更新はawait復帰後のUIスレッドに寄るため、pitfalls項目19（集計スレッドからのコントロール参照禁止）に触れない。条件の退避もタグ検索の `TagExecuteContext` と同一理由で行う
 - **実行中は実行系ボタンを無効化**: 最適化ボタン・チェック4件・各集計ボタンを止め、集計との同時実行によるDBロック競合を防ぐ。VACUUM自体は原子性があるため、最悪でも失敗表示に留まり破損しない
 - **ApiXML／Dailylogのパス定数は `DbOptimizer` に持つ**: `DB.cs` に定数がないため、`NicoApi`／`ApiXmlCacheImporter`／`TyukanAnalyze` と同一値をここに定義する。値ずれは最適化対象と集計参照先の食い違いになるため、変更時は同時更新すること（単体テスト `GetDefaultTargets_MatchesKnownPaths` で既知値との一致を縛る）

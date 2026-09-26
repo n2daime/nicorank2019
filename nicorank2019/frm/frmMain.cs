@@ -101,6 +101,8 @@ namespace nicorank2019.frm
             try
             {
                 execButton.Enabled = false;
+                // 集計実行中は最適化を開始できないようにする（逆方向の同時実行防止。最適化側も集計ボタンを止める）
+                SetVacuumControlsEnabled(false);
 
                 bool result = await AnalyzeAsync();
                 if (!result)
@@ -123,6 +125,7 @@ namespace nicorank2019.frm
             finally
             {
                 execButton.Enabled = true;
+                SetVacuumControlsEnabled(true);
             }
         }
 
@@ -187,12 +190,21 @@ namespace nicorank2019.frm
         /// </summary>
         private async void btnVacuumExec_Click(object sender, EventArgs e)
         {
-            // 集計スレッドに渡す条件はUIスレッドで退避する（タグ検索のTagExecuteContextと同一理由）
+            // パスの単一源は DbOptimizer.GetDefaultTargets() とし、UI側にパス値を二重定義しない。
+            // 配列の並び順は GetDefaultTargets() の順序と対応させること（順序を変えると対応がずれる）。
+            var definitions = DbOptimizer.GetDefaultTargets();
+            CheckBox[] checkBoxes = { chkVacuumLogOfficial, chkVacuumNicoranHistory, chkVacuumApiXml, chkVacuumDailylog };
+            Label[] beforeLabels = { lblVacuumBeforeLogOfficial, lblVacuumBeforeNicoranHistory, lblVacuumBeforeApiXml, lblVacuumBeforeDailylog };
+            Label[] afterLabels = { lblVacuumAfterLogOfficial, lblVacuumAfterNicoranHistory, lblVacuumAfterApiXml, lblVacuumAfterDailylog };
+            // チェック状態の読み取りはUIスレッドで行う（タグ検索のTagExecuteContextと同一理由）
             var targets = new List<VacuumUiTarget>();
-            AddVacuumTarget(targets, chkVacuumLogOfficial, lblVacuumBeforeLogOfficial, lblVacuumAfterLogOfficial, nicorankLib.Analyze.model.DB.LOG_OFFICEIAL);
-            AddVacuumTarget(targets, chkVacuumNicoranHistory, lblVacuumBeforeNicoranHistory, lblVacuumAfterNicoranHistory, nicorankLib.Analyze.model.DB.NiCORAN_HISTORY);
-            AddVacuumTarget(targets, chkVacuumApiXml, lblVacuumBeforeApiXml, lblVacuumAfterApiXml, DbOptimizer.ApiXmlDbPath);
-            AddVacuumTarget(targets, chkVacuumDailylog, lblVacuumBeforeDailylog, lblVacuumAfterDailylog, DbOptimizer.DailylogDbPath);
+            for (int i = 0; i < definitions.Count; i++)
+            {
+                if (checkBoxes[i].Checked)
+                {
+                    targets.Add(new VacuumUiTarget { DbPath = definitions[i].DbPath, BeforeLabel = beforeLabels[i], AfterLabel = afterLabels[i] });
+                }
+            }
             if (targets.Count == 0)
             {
                 MessageBox.Show("最適化するDBにチェックを入れてください", "メンテナンス", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -210,31 +222,30 @@ namespace nicorank2019.frm
             {
                 foreach (var target in targets)
                 {
-                    if (!System.IO.File.Exists(target.DbPath))
-                    {
-                        target.BeforeLabel.Text = "実行前: なし";
-                        target.AfterLabel.Text = "実行後: なし";
-                        skipCount++;
-                        progressVacuum.Value++;
-                        continue;
-                    }
-                    target.BeforeLabel.Text = "実行前: " + DbOptimizer.FormatFileSize(new System.IO.FileInfo(target.DbPath).Length);
+                    // 不在判定は Optimize 側に一本化する。UI側で事前判定すると、
+                    // 判定と実行の隙にファイルが消えた場合に残りのDB処理ごと中断してしまうため
+                    // （specs「そのDBだけ失敗とし残りを続ける」を守る）。
                     target.AfterLabel.Text = "実行後: 実行中...";
                     DbOptimizeResult result = await System.Threading.Tasks.Task.Run(() => DbOptimizer.Optimize(target.DbPath));
                     if (!result.Executed)
                     {
+                        target.BeforeLabel.Text = "実行前: なし";
                         target.AfterLabel.Text = "実行後: なし";
                         skipCount++;
                     }
-                    else if (result.Success)
-                    {
-                        target.AfterLabel.Text = "実行後: " + DbOptimizer.FormatFileSize(result.SizeAfter);
-                        successCount++;
-                    }
                     else
                     {
-                        target.AfterLabel.Text = "実行後: 失敗";
-                        failCount++;
+                        target.BeforeLabel.Text = "実行前: " + DbOptimizer.FormatFileSize(result.SizeBefore);
+                        if (result.Success)
+                        {
+                            target.AfterLabel.Text = "実行後: " + DbOptimizer.FormatFileSize(result.SizeAfter);
+                            successCount++;
+                        }
+                        else
+                        {
+                            target.AfterLabel.Text = "実行後: 失敗";
+                            failCount++;
+                        }
                     }
                     progressVacuum.Value++;
                 }
@@ -261,17 +272,6 @@ namespace nicorank2019.frm
         }
 
         /// <summary>
-        /// チェックONのDBだけ実行対象に積む（チェック状態の読み取りはUIスレッドで行う）。
-        /// </summary>
-        private static void AddVacuumTarget(List<VacuumUiTarget> targets, CheckBox checkBox, Label beforeLabel, Label afterLabel, string dbPath)
-        {
-            if (checkBox.Checked)
-            {
-                targets.Add(new VacuumUiTarget { DbPath = dbPath, BeforeLabel = beforeLabel, AfterLabel = afterLabel });
-            }
-        }
-
-        /// <summary>
         /// メンテナンスタブの実行対象1件分（UIスレッドで退避した表示先付き）。
         /// </summary>
         private class VacuumUiTarget
@@ -281,18 +281,39 @@ namespace nicorank2019.frm
             public Label AfterLabel;
         }
 
+        // 最適化開始前の btnAnalyzeTag の有効状態。タグタブは条件未入力・件数超過で意図的に無効化する運用のため、
+        // 完了時に無条件で true に戻すとその状態を壊す。退避値を戻す方式にする。
+        private bool _btnAnalyzeTagEnabledBeforeVacuum = true;
+
         /// <summary>
         /// 実行中の二重実行・同時集計を防ぐため、実行系の有効・無効を切り替える。
         /// </summary>
         private void SetVacuumRunning(bool running)
         {
-            btnVacuumExec.Enabled = !running;
-            chkVacuumLogOfficial.Enabled = !running;
-            chkVacuumNicoranHistory.Enabled = !running;
-            chkVacuumApiXml.Enabled = !running;
-            chkVacuumDailylog.Enabled = !running;
+            SetVacuumControlsEnabled(!running);
             btnAnalyze.Enabled = !running;
-            btnAnalyzeTag.Enabled = !running;
+            if (running)
+            {
+                _btnAnalyzeTagEnabledBeforeVacuum = btnAnalyzeTag.Enabled;
+                btnAnalyzeTag.Enabled = false;
+            }
+            else
+            {
+                btnAnalyzeTag.Enabled = _btnAnalyzeTagEnabledBeforeVacuum;
+            }
+        }
+
+        /// <summary>
+        /// 最適化タブ側の操作部だけを切り替える。集計実行中にも最適化を開始できないよう、
+        /// ExecuteAnalyzeAsync 側からも呼ぶ（逆方向の同時実行防止）。
+        /// </summary>
+        private void SetVacuumControlsEnabled(bool enabled)
+        {
+            btnVacuumExec.Enabled = enabled;
+            chkVacuumLogOfficial.Enabled = enabled;
+            chkVacuumNicoranHistory.Enabled = enabled;
+            chkVacuumApiXml.Enabled = enabled;
+            chkVacuumDailylog.Enabled = enabled;
         }
 
         /// <summary>
