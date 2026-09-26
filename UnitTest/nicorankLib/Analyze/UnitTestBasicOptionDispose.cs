@@ -40,6 +40,51 @@ namespace UnitTest.nicorankLib.Analyze
             }
         }
 
+        /// <summary>
+        /// 破棄時に例外を投げる stub。1件失敗でも残りを続ける保証の検証用。
+        /// </summary>
+        private sealed class ThrowingOption : BasicOptionBase
+        {
+            public override bool AnalyzeRank(ref List<Ranking> rankingList)
+            {
+                return true;
+            }
+
+            public override void Dispose()
+            {
+                throw new InvalidOperationException("dispose failure");
+            }
+        }
+
+        /// <summary>
+        /// スナップショットDB形式の一時ファイルを作る。Reader の Open が成功する最小構成。
+        /// </summary>
+        private static string CreateSnapshotDbFile(int syuukeiBi)
+        {
+            string path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".db");
+            File.Create(path).Dispose();
+            var dbCtrl = new SQLiteCtrl();
+            Assert.IsTrue(dbCtrl.Open(path), "temp db open");
+            TestDbHelper.CreateSnapshotRankingTable(dbCtrl);
+            TestDbHelper.CreateDBVersionTable(dbCtrl);
+            using (var cmd = dbCtrl.Connection.CreateCommand())
+            {
+                cmd.CommandText = "INSERT INTO DBVersion(集計日, Ver) VALUES(@日, '1.0')";
+                cmd.Parameters.AddWithValue("@日", syuukeiBi);
+                cmd.ExecuteNonQuery();
+            }
+            dbCtrl.Close();
+            dbCtrl.Dispose();
+            return path;
+        }
+
+        private static TagRankAnalyze LiveInput()
+        {
+            var input = new TagRankAnalyze(new DateTime(2024, 1, 1), new TagSearchQuery() { TagCondition = "A", UseLiveCounter = true });
+            input.LiveCounters["sm1"] = new SnapShotJson.SnapShotJsonData() { ID = "sm1", CountPlay = 100, CountComment = 10, CountMylist = 5, CountLike = 2 };
+            return input;
+        }
+
         [TestMethod]
         public void EmptyDispose_NonResourceOptions_NoThrow()
         {
@@ -98,25 +143,101 @@ namespace UnitTest.nicorankLib.Analyze
         }
 
         [TestMethod]
-        public void SnapShotSabunReader_Dispose_KeepsInjectedFallbackConnectionsOpen()
+        public void RankingAnalyze_Dispose_ContinuesAfterOneFailure()
         {
-            // 注入接続は呼び出し側の所有物のため閉じないこと（SpMovieInfoFallback の流儀）。
-            // なぜ Reader 経由で確認するか: 実運用では Reader の Dispose から fallback の Close が呼ばれるため。
+            // 1件の破棄が例外でも残りを諦めないこと。なぜ必要か: 破棄時の例外で正常な接続まで残すと漏れに戻るため。
+            var stub1 = new StubOption();
+            var throwing = new ThrowingOption();
+            var stub2 = new StubOption();
+            var analyze = new RankingAnalyze(
+                null,
+                new List<BasicOptionBase>() { stub1, throwing, stub2 });
+
+            analyze.Dispose();
+
+            Assert.AreEqual(1, stub1.DisposeCount);
+            Assert.AreEqual(1, stub2.DisposeCount);
+        }
+
+        [TestMethod]
+        public void SnapShotSabunReader_Dispose_KeepsInjectedConnectionsOpen()
+        {
+            // 注入接続は呼び出し側の所有物のため閉じないこと（SpMovieInfoFallback と同一の流儀）。
+            // なぜ Reader 経由で確認するか: 実運用では Reader の Dispose から dbCtrl と fallback の Close が呼ばれるため。
+            var injectedDb = TestDbHelper.CreateInMemoryDb();
             var historyDb = TestDbHelper.CreateInMemoryDb();
             var officialDb = TestDbHelper.CreateInMemoryDb();
             var reader = new SnapShotSabunReader(
                 Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".db"),
                 Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".db"),
-                null,
+                injectedDb,
                 new SpMovieInfoFallback(historyDb, officialDb));
 
             reader.Dispose();
             reader.Dispose();
 
+            Assert.IsTrue(injectedDb.IsOpen);
             Assert.IsTrue(historyDb.IsOpen);
             Assert.IsTrue(officialDb.IsOpen);
+            injectedDb.Dispose();
             historyDb.Dispose();
             officialDb.Dispose();
+        }
+
+        [TestMethod]
+        public void SnapShotSabunReader_Dispose_ReleasesSelfOpenedConnections()
+        {
+            // 自前で開いた接続は実際に閉じること。ハンドルが離れていることはファイル削除の成功で見る。
+            // なぜ削除で見るか: 開きっぱなしだと Windows のファイルロックで削除が失敗し、漏れが検出できるため。
+            string analyzePath = CreateSnapshotDbFile(20240102);
+            string basePath = CreateSnapshotDbFile(20240101);
+            try
+            {
+                var reader = new SnapShotSabunReader(analyzePath, basePath);
+                Assert.IsTrue(reader.Open());
+                reader.Dispose();
+                reader.Dispose();
+
+                File.Delete(analyzePath);
+                analyzePath = null;
+                File.Delete(basePath);
+                basePath = null;
+            }
+            finally
+            {
+                if (analyzePath != null && File.Exists(analyzePath))
+                {
+                    File.Delete(analyzePath);
+                }
+                if (basePath != null && File.Exists(basePath))
+                {
+                    File.Delete(basePath);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void TagRankLiveSabunReader_Dispose_ReleasesSelfOpenedConnection()
+        {
+            // 基準日DBの自前接続が実際に閉じること（v2最新値の差分あり経路）。
+            string basePath = CreateSnapshotDbFile(20240101);
+            try
+            {
+                var reader = new TagRankLiveSabunReader(LiveInput(), new DateTime(2024, 1, 2), basePath);
+                Assert.IsTrue(reader.Open());
+                reader.Dispose();
+                reader.Dispose();
+
+                File.Delete(basePath);
+                basePath = null;
+            }
+            finally
+            {
+                if (basePath != null && File.Exists(basePath))
+                {
+                    File.Delete(basePath);
+                }
+            }
         }
 
         [TestMethod]

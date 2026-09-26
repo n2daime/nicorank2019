@@ -26,6 +26,9 @@ namespace nicorankLib.Analyze.Option.Basic
 
         ISQLiteCtrl dbCtrlBase;
 
+        //注入された接続は呼び出し側の所有物のため破棄しない。自前生成分のみ破棄する（SpMovieInfoFallbackと同一の流儀。Issue #44）。
+        protected bool _ownsDbCtrl;
+
         //動画情報が取れなかった場合の予備補完（案B・Issue #40）。テストで差し替え可能にするため注入可。
         protected SpMovieInfoFallback _fallback;
 
@@ -34,6 +37,7 @@ namespace nicorankLib.Analyze.Option.Basic
             Input = input;
             AnalyzeTime = analyzeTime;
             BaseDB = baseDB;
+            _ownsDbCtrl = dbCtrl == null;
             dbCtrlBase = dbCtrl ?? new SQLiteCtrl();
             _fallback = fallback ?? new SpMovieInfoFallback();
         }
@@ -216,7 +220,11 @@ namespace nicorankLib.Analyze.Option.Basic
             {
                 if (disposing)
                 {
-                    dbCtrlBase.Close();
+                    //自前生成の接続だけ閉じる。注入された接続は呼び出し側の所有物のため触らない。
+                    if (_ownsDbCtrl)
+                    {
+                        dbCtrlBase.Close();
+                    }
                     //予備補完が自前で開いた接続も閉じる（注入接続は先方が閉じるため触らない）
                     _fallback?.Close();
                 }

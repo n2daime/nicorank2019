@@ -19,9 +19,13 @@ namespace nicorankLib.Analyze.Option.Basic
 
         ISQLiteCtrl dbCtrlAnalyze;
 
+        //注入された接続は呼び出し側の所有物のため破棄しない。自前生成分のみ破棄する（SpMovieInfoFallbackと同一の流儀。Issue #44）。
+        protected bool _ownsDbCtrl;
+
         public TagRankTotalReader(string analyzeDB, ISQLiteCtrl dbCtrl = null)
         {
             AnalyzeDB = analyzeDB;
+            _ownsDbCtrl = dbCtrl == null;
             dbCtrlAnalyze = dbCtrl ?? new SQLiteCtrl();
         }
 
@@ -145,7 +149,11 @@ namespace nicorankLib.Analyze.Option.Basic
             {
                 if (disposing)
                 {
-                    dbCtrlAnalyze.Close();
+                    //自前生成の接続だけ閉じる。注入された接続は呼び出し側の所有物のため触らない。
+                    if (_ownsDbCtrl)
+                    {
+                        dbCtrlAnalyze.Close();
+                    }
                 }
 
                 dbCtrlAnalyze = null;

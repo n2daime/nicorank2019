@@ -240,39 +240,45 @@ namespace nicorank2019.frm
                     history.Close();
                 }
 
-                if (returnVal)
-                {
-                    var outputList = new List<OutputBase>()
-                    {
-                        MainFactory.CreateHistory(),
-                        MainFactory.TyokiHantei,
-                        MainFactory.CreateNRMRank(),
-                        MainFactory.CreateNRMRank1000(),
-                        MainFactory.CreateNRMRankED(),
-                        MainFactory.CreateOutputCSV(),
-                        MainFactory.CreateOutputHTML(),
-                        MainFactory.CreateOutputMovieIconGet(),
-                        MainFactory.CreateOutputUserIconGet(),
-                        MainFactory.CreateOutputWORK(),
-                        MainFactory.CreateOutputJson_rankDB()
-                     };
-
-                    foreach (var output in outputList)
-                    {
-                        output?.Execute(MainFactory.RankingList);
-                    }
-                }
-                // 集計終了後に Factory（ひいては Reader 群の接続）を破棄する。成功・失敗問わず実行する。
-                // なぜ outputs の後か: 出力処理が MainFactory.RankingList を使うため。
+                // 集計終了後に Factory（ひいては Reader 群の接続）を破棄する。成功・失敗・出力中例外のいずれでも実行する。
+                // なぜ try-finally か: 出力処理の途中で例外が出ても接続を残さないため。
                 // 破棄は RankingAnalyze のみを対象とし、RankingList 自体は残すため出力後の参照に影響しない。
                 // 次回集計時の付け替え前にも破棄するため、二重破棄になるが冪等であり問題ない。
                 try
                 {
-                    MainFactory?.Dispose();
+                    if (returnVal)
+                    {
+                        var outputList = new List<OutputBase>()
+                        {
+                            MainFactory.CreateHistory(),
+                            MainFactory.TyokiHantei,
+                            MainFactory.CreateNRMRank(),
+                            MainFactory.CreateNRMRank1000(),
+                            MainFactory.CreateNRMRankED(),
+                            MainFactory.CreateOutputCSV(),
+                            MainFactory.CreateOutputHTML(),
+                            MainFactory.CreateOutputMovieIconGet(),
+                            MainFactory.CreateOutputUserIconGet(),
+                            MainFactory.CreateOutputWORK(),
+                            MainFactory.CreateOutputJson_rankDB()
+                         };
+
+                        foreach (var output in outputList)
+                        {
+                            output?.Execute(MainFactory.RankingList);
+                        }
+                    }
                 }
-                catch (Exception ex)
+                finally
                 {
-                    ErrLog.GetInstance().Write(ex);
+                    try
+                    {
+                        MainFactory?.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        ErrLog.GetInstance().Write(ex);
+                    }
                 }
             });
             return returnVal;
