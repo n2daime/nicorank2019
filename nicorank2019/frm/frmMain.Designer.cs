@@ -31,6 +31,7 @@
             this.tabPageTag = new System.Windows.Forms.TabPage();
             this.btnAnalyzeTag = new System.Windows.Forms.Button();
             this.grpDb = new System.Windows.Forms.GroupBox();
+            this.chkUseLiveCounter = new System.Windows.Forms.CheckBox();
             this.label20 = new System.Windows.Forms.Label();
             this.btnLastResult_Tag = new System.Windows.Forms.Button();
             this.label21 = new System.Windows.Forms.Label();
@@ -109,7 +110,6 @@
             this.rbTyukan = new System.Windows.Forms.RadioButton();
             this.rbWeekly = new System.Windows.Forms.RadioButton();
             this.tabPageOut = new System.Windows.Forms.TabControl();
-            this.chkUseLiveCounter = new System.Windows.Forms.CheckBox();
             this.tabPageMaint = new System.Windows.Forms.TabPage();
             this.grpVacuum = new System.Windows.Forms.GroupBox();
             this.lblVacuumDesc = new System.Windows.Forms.Label();
@@ -159,7 +159,7 @@
             this.tabPageTag.Controls.Add(this.grpTag);
             this.tabPageTag.Location = new System.Drawing.Point(4, 22);
             this.tabPageTag.Name = "tabPageTag";
-            this.tabPageTag.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPageTag.Padding = new System.Windows.Forms.Padding(3);
             this.tabPageTag.Size = new System.Drawing.Size(828, 754);
             this.tabPageTag.TabIndex = 3;
             this.tabPageTag.Text = "タグ検索集計";
@@ -194,6 +194,18 @@
             this.grpDb.TabIndex = 2;
             this.grpDb.TabStop = false;
             this.grpDb.Text = "3. スナップショットDB・前回結果（基準・前回は任意）";
+            // 
+            // chkUseLiveCounter
+            // 
+            this.chkUseLiveCounter.AutoSize = true;
+            this.chkUseLiveCounter.Checked = true;
+            this.chkUseLiveCounter.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkUseLiveCounter.Location = new System.Drawing.Point(70, 47);
+            this.chkUseLiveCounter.Name = "chkUseLiveCounter";
+            this.chkUseLiveCounter.Size = new System.Drawing.Size(265, 16);
+            this.chkUseLiveCounter.TabIndex = 2;
+            this.chkUseLiveCounter.Text = "検索APIから直接集計する(スナップショットDB不要)";
+            this.chkUseLiveCounter.UseVisualStyleBackColor = true;
             // 
             // label20
             // 
@@ -504,7 +516,7 @@
             this.tabPageSyukei.Controls.Add(this.groupBox1);
             this.tabPageSyukei.Location = new System.Drawing.Point(4, 22);
             this.tabPageSyukei.Name = "tabPageSyukei";
-            this.tabPageSyukei.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPageSyukei.Padding = new System.Windows.Forms.Padding(3);
             this.tabPageSyukei.Size = new System.Drawing.Size(828, 754);
             this.tabPageSyukei.TabIndex = 0;
             this.tabPageSyukei.Text = "集計";
@@ -986,35 +998,21 @@
             this.tabPageOut.TabIndex = 0;
             this.tabPageOut.SelectedIndexChanged += new System.EventHandler(this.tabPageOut_SelectedIndexChanged);
             // 
-            // chkUseLiveCounter
-            // 
-            this.chkUseLiveCounter.AutoSize = true;
-            this.chkUseLiveCounter.Checked = true;
-            this.chkUseLiveCounter.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkUseLiveCounter.Location = new System.Drawing.Point(70, 47);
-            this.chkUseLiveCounter.Name = "chkUseLiveCounter";
-            this.chkUseLiveCounter.Size = new System.Drawing.Size(265, 16);
-            this.chkUseLiveCounter.TabIndex = 2;
-            this.chkUseLiveCounter.Text = "検索APIから直接集計する(スナップショットDB不要)";
-            this.chkUseLiveCounter.UseVisualStyleBackColor = true;
-            //
             // tabPageMaint
-            //
-            // メンテナンスタブ(#32)。UIモック段階のため表示だけ作り、中身の処理は持たない。
-            // ログ欄は置かない(集計タブと同様にコンソール側へ出す運用のため)。
-            this.tabPageMaint.BackColor = System.Drawing.SystemColors.Control;
+            // 
+            this.tabPageMaint.BackColor = System.Drawing.Color.Transparent;
             this.tabPageMaint.Controls.Add(this.grpVacuum);
             this.tabPageMaint.Controls.Add(this.grpFutureApiXml);
             this.tabPageMaint.Location = new System.Drawing.Point(4, 22);
             this.tabPageMaint.Name = "tabPageMaint";
-            this.tabPageMaint.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPageMaint.Padding = new System.Windows.Forms.Padding(3);
             this.tabPageMaint.Size = new System.Drawing.Size(828, 754);
             this.tabPageMaint.TabIndex = 4;
             this.tabPageMaint.Text = "メンテナンス";
             this.tabPageMaint.UseVisualStyleBackColor = true;
-            //
+            // 
             // grpVacuum
-            //
+            // 
             this.grpVacuum.Controls.Add(this.lblVacuumDesc);
             this.grpVacuum.Controls.Add(this.lblVacuumHeaderBefore);
             this.grpVacuum.Controls.Add(this.lblVacuumHeaderAfter);
@@ -1040,193 +1038,191 @@
             this.grpVacuum.TabIndex = 0;
             this.grpVacuum.TabStop = false;
             this.grpVacuum.Text = "1. DBの最適化（VACUUM）";
-            //
+            // 
             // lblVacuumDesc
-            //
+            // 
             this.lblVacuumDesc.AutoSize = true;
             this.lblVacuumDesc.Location = new System.Drawing.Point(12, 22);
             this.lblVacuumDesc.Name = "lblVacuumDesc";
-            this.lblVacuumDesc.Size = new System.Drawing.Size(400, 12);
+            this.lblVacuumDesc.Size = new System.Drawing.Size(297, 12);
             this.lblVacuumDesc.TabIndex = 0;
             this.lblVacuumDesc.Text = "削除・更新の繰り返しで断片化したDBファイルを最適化します";
-            //
+            // 
             // lblVacuumHeaderBefore
-            //
+            // 
             this.lblVacuumHeaderBefore.AutoSize = true;
             this.lblVacuumHeaderBefore.Location = new System.Drawing.Point(330, 48);
             this.lblVacuumHeaderBefore.Name = "lblVacuumHeaderBefore";
             this.lblVacuumHeaderBefore.Size = new System.Drawing.Size(41, 12);
             this.lblVacuumHeaderBefore.TabIndex = 1;
             this.lblVacuumHeaderBefore.Text = "実行前";
-            //
+            // 
             // lblVacuumHeaderAfter
-            //
+            // 
             this.lblVacuumHeaderAfter.AutoSize = true;
             this.lblVacuumHeaderAfter.Location = new System.Drawing.Point(500, 48);
             this.lblVacuumHeaderAfter.Name = "lblVacuumHeaderAfter";
             this.lblVacuumHeaderAfter.Size = new System.Drawing.Size(41, 12);
             this.lblVacuumHeaderAfter.TabIndex = 2;
             this.lblVacuumHeaderAfter.Text = "実行後";
-            //
+            // 
             // chkVacuumLogOfficial
-            //
+            // 
             this.chkVacuumLogOfficial.AutoSize = true;
             this.chkVacuumLogOfficial.Checked = true;
             this.chkVacuumLogOfficial.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkVacuumLogOfficial.Location = new System.Drawing.Point(12, 70);
             this.chkVacuumLogOfficial.Name = "chkVacuumLogOfficial";
-            this.chkVacuumLogOfficial.Size = new System.Drawing.Size(250, 16);
+            this.chkVacuumLogOfficial.Size = new System.Drawing.Size(196, 16);
             this.chkVacuumLogOfficial.TabIndex = 3;
             this.chkVacuumLogOfficial.Text = "LogOfficial.db（DB/LogOfficial.db）";
             this.chkVacuumLogOfficial.UseVisualStyleBackColor = true;
-            //
+            // 
             // lblVacuumBeforeLogOfficial
-            //
+            // 
             this.lblVacuumBeforeLogOfficial.AutoSize = true;
             this.lblVacuumBeforeLogOfficial.Location = new System.Drawing.Point(330, 72);
             this.lblVacuumBeforeLogOfficial.Name = "lblVacuumBeforeLogOfficial";
-            this.lblVacuumBeforeLogOfficial.Size = new System.Drawing.Size(65, 12);
+            this.lblVacuumBeforeLogOfficial.Size = new System.Drawing.Size(55, 12);
             this.lblVacuumBeforeLogOfficial.TabIndex = 4;
             this.lblVacuumBeforeLogOfficial.Text = "実行前: —";
-            //
+            // 
             // lblVacuumAfterLogOfficial
-            //
+            // 
             this.lblVacuumAfterLogOfficial.AutoSize = true;
             this.lblVacuumAfterLogOfficial.Location = new System.Drawing.Point(500, 72);
             this.lblVacuumAfterLogOfficial.Name = "lblVacuumAfterLogOfficial";
-            this.lblVacuumAfterLogOfficial.Size = new System.Drawing.Size(65, 12);
+            this.lblVacuumAfterLogOfficial.Size = new System.Drawing.Size(55, 12);
             this.lblVacuumAfterLogOfficial.TabIndex = 5;
             this.lblVacuumAfterLogOfficial.Text = "実行後: —";
-            //
+            // 
             // chkVacuumNicoranHistory
-            //
+            // 
             this.chkVacuumNicoranHistory.AutoSize = true;
             this.chkVacuumNicoranHistory.Checked = true;
             this.chkVacuumNicoranHistory.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkVacuumNicoranHistory.Location = new System.Drawing.Point(12, 95);
             this.chkVacuumNicoranHistory.Name = "chkVacuumNicoranHistory";
-            this.chkVacuumNicoranHistory.Size = new System.Drawing.Size(250, 16);
+            this.chkVacuumNicoranHistory.Size = new System.Drawing.Size(238, 16);
             this.chkVacuumNicoranHistory.TabIndex = 6;
             this.chkVacuumNicoranHistory.Text = "NicoranHistory.db（DB/NicoranHistory.db）";
             this.chkVacuumNicoranHistory.UseVisualStyleBackColor = true;
-            //
+            // 
             // lblVacuumBeforeNicoranHistory
-            //
+            // 
             this.lblVacuumBeforeNicoranHistory.AutoSize = true;
             this.lblVacuumBeforeNicoranHistory.Location = new System.Drawing.Point(330, 97);
             this.lblVacuumBeforeNicoranHistory.Name = "lblVacuumBeforeNicoranHistory";
-            this.lblVacuumBeforeNicoranHistory.Size = new System.Drawing.Size(65, 12);
+            this.lblVacuumBeforeNicoranHistory.Size = new System.Drawing.Size(55, 12);
             this.lblVacuumBeforeNicoranHistory.TabIndex = 7;
             this.lblVacuumBeforeNicoranHistory.Text = "実行前: —";
-            //
+            // 
             // lblVacuumAfterNicoranHistory
-            //
+            // 
             this.lblVacuumAfterNicoranHistory.AutoSize = true;
             this.lblVacuumAfterNicoranHistory.Location = new System.Drawing.Point(500, 97);
             this.lblVacuumAfterNicoranHistory.Name = "lblVacuumAfterNicoranHistory";
-            this.lblVacuumAfterNicoranHistory.Size = new System.Drawing.Size(65, 12);
+            this.lblVacuumAfterNicoranHistory.Size = new System.Drawing.Size(55, 12);
             this.lblVacuumAfterNicoranHistory.TabIndex = 8;
             this.lblVacuumAfterNicoranHistory.Text = "実行後: —";
-            //
+            // 
             // chkVacuumApiXml
-            //
+            // 
             this.chkVacuumApiXml.AutoSize = true;
             this.chkVacuumApiXml.Checked = true;
             this.chkVacuumApiXml.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkVacuumApiXml.Location = new System.Drawing.Point(12, 120);
             this.chkVacuumApiXml.Name = "chkVacuumApiXml";
-            this.chkVacuumApiXml.Size = new System.Drawing.Size(250, 16);
+            this.chkVacuumApiXml.Size = new System.Drawing.Size(164, 16);
             this.chkVacuumApiXml.TabIndex = 9;
             this.chkVacuumApiXml.Text = "ApiXML.db（DB/ApiXML.db）";
             this.chkVacuumApiXml.UseVisualStyleBackColor = true;
-            //
+            // 
             // lblVacuumBeforeApiXml
-            //
+            // 
             this.lblVacuumBeforeApiXml.AutoSize = true;
             this.lblVacuumBeforeApiXml.Location = new System.Drawing.Point(330, 122);
             this.lblVacuumBeforeApiXml.Name = "lblVacuumBeforeApiXml";
-            this.lblVacuumBeforeApiXml.Size = new System.Drawing.Size(65, 12);
+            this.lblVacuumBeforeApiXml.Size = new System.Drawing.Size(55, 12);
             this.lblVacuumBeforeApiXml.TabIndex = 10;
             this.lblVacuumBeforeApiXml.Text = "実行前: —";
-            //
+            // 
             // lblVacuumAfterApiXml
-            //
+            // 
             this.lblVacuumAfterApiXml.AutoSize = true;
             this.lblVacuumAfterApiXml.Location = new System.Drawing.Point(500, 122);
             this.lblVacuumAfterApiXml.Name = "lblVacuumAfterApiXml";
-            this.lblVacuumAfterApiXml.Size = new System.Drawing.Size(65, 12);
+            this.lblVacuumAfterApiXml.Size = new System.Drawing.Size(55, 12);
             this.lblVacuumAfterApiXml.TabIndex = 11;
             this.lblVacuumAfterApiXml.Text = "実行後: —";
-            //
+            // 
             // chkVacuumDailylog
-            //
+            // 
             this.chkVacuumDailylog.AutoSize = true;
             this.chkVacuumDailylog.Checked = true;
             this.chkVacuumDailylog.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkVacuumDailylog.Location = new System.Drawing.Point(12, 145);
             this.chkVacuumDailylog.Name = "chkVacuumDailylog";
-            this.chkVacuumDailylog.Size = new System.Drawing.Size(250, 16);
+            this.chkVacuumDailylog.Size = new System.Drawing.Size(168, 16);
             this.chkVacuumDailylog.TabIndex = 12;
             this.chkVacuumDailylog.Text = "Dailylog.db（DB/Dailylog.db）";
             this.chkVacuumDailylog.UseVisualStyleBackColor = true;
-            //
+            // 
             // lblVacuumBeforeDailylog
-            //
+            // 
             this.lblVacuumBeforeDailylog.AutoSize = true;
             this.lblVacuumBeforeDailylog.Location = new System.Drawing.Point(330, 147);
             this.lblVacuumBeforeDailylog.Name = "lblVacuumBeforeDailylog";
-            this.lblVacuumBeforeDailylog.Size = new System.Drawing.Size(65, 12);
+            this.lblVacuumBeforeDailylog.Size = new System.Drawing.Size(55, 12);
             this.lblVacuumBeforeDailylog.TabIndex = 13;
             this.lblVacuumBeforeDailylog.Text = "実行前: —";
-            //
+            // 
             // lblVacuumAfterDailylog
-            //
+            // 
             this.lblVacuumAfterDailylog.AutoSize = true;
             this.lblVacuumAfterDailylog.Location = new System.Drawing.Point(500, 147);
             this.lblVacuumAfterDailylog.Name = "lblVacuumAfterDailylog";
-            this.lblVacuumAfterDailylog.Size = new System.Drawing.Size(65, 12);
+            this.lblVacuumAfterDailylog.Size = new System.Drawing.Size(55, 12);
             this.lblVacuumAfterDailylog.TabIndex = 14;
             this.lblVacuumAfterDailylog.Text = "実行後: —";
-            //
+            // 
             // btnVacuumExec
-            //
-            // UIモック段階のため押下時は未実装メッセージのみ出し、DBには触れない。
-            this.btnVacuumExec.Location = new System.Drawing.Point(12, 180);
+            // 
+            this.btnVacuumExec.Location = new System.Drawing.Point(12, 189);
             this.btnVacuumExec.Name = "btnVacuumExec";
             this.btnVacuumExec.Size = new System.Drawing.Size(180, 36);
             this.btnVacuumExec.TabIndex = 15;
             this.btnVacuumExec.Text = "DBの最適化を実行";
             this.btnVacuumExec.UseVisualStyleBackColor = true;
             this.btnVacuumExec.Click += new System.EventHandler(this.btnVacuumExec_Click);
-            //
+            // 
             // lblVacuumStatus
-            //
+            // 
             this.lblVacuumStatus.AutoSize = true;
-            this.lblVacuumStatus.Location = new System.Drawing.Point(205, 186);
+            this.lblVacuumStatus.Location = new System.Drawing.Point(205, 175);
             this.lblVacuumStatus.Name = "lblVacuumStatus";
-            this.lblVacuumStatus.Size = new System.Drawing.Size(150, 12);
+            this.lblVacuumStatus.Size = new System.Drawing.Size(107, 12);
             this.lblVacuumStatus.TabIndex = 16;
             this.lblVacuumStatus.Text = "状態: 待機中（モック）";
-            //
+            // 
             // progressVacuum
-            //
-            this.progressVacuum.Location = new System.Drawing.Point(205, 205);
+            // 
+            this.progressVacuum.Location = new System.Drawing.Point(207, 201);
             this.progressVacuum.Name = "progressVacuum";
             this.progressVacuum.Size = new System.Drawing.Size(580, 20);
             this.progressVacuum.TabIndex = 17;
-            //
+            // 
             // lblVacuumNote
-            //
+            // 
             this.lblVacuumNote.AutoSize = true;
-            this.lblVacuumNote.Location = new System.Drawing.Point(12, 240);
+            this.lblVacuumNote.Location = new System.Drawing.Point(12, 253);
             this.lblVacuumNote.Name = "lblVacuumNote";
-            this.lblVacuumNote.Size = new System.Drawing.Size(400, 36);
+            this.lblVacuumNote.Size = new System.Drawing.Size(230, 36);
             this.lblVacuumNote.TabIndex = 18;
             this.lblVacuumNote.Text = "注意: 数十分かかることがあります。\r\nPCのスリープを無効にしてください。\r\n実行前にDBフォルダのバックアップを推奨します。";
-            //
+            // 
             // grpFutureApiXml
-            //
-            // #41(週刊ApiXML.dbの蓄積マージ)の置き場所予約。中身は#41着手時に埋める。
+            // 
             this.grpFutureApiXml.Controls.Add(this.lblFutureApiXmlDesc);
             this.grpFutureApiXml.Controls.Add(this.tbFutureApiXmlFolder);
             this.grpFutureApiXml.Controls.Add(this.btnFutureApiXmlFolder);
@@ -1237,46 +1233,47 @@
             this.grpFutureApiXml.TabIndex = 1;
             this.grpFutureApiXml.TabStop = false;
             this.grpFutureApiXml.Text = "2. 長期キャッシュ再構築（将来対応・#41）";
-            //
+            // 
             // lblFutureApiXmlDesc
-            //
+            // 
             this.lblFutureApiXmlDesc.AutoSize = true;
             this.lblFutureApiXmlDesc.Location = new System.Drawing.Point(12, 22);
             this.lblFutureApiXmlDesc.Name = "lblFutureApiXmlDesc";
-            this.lblFutureApiXmlDesc.Size = new System.Drawing.Size(400, 24);
+            this.lblFutureApiXmlDesc.Size = new System.Drawing.Size(488, 36);
             this.lblFutureApiXmlDesc.TabIndex = 0;
-            this.lblFutureApiXmlDesc.Text = "週刊のApiXML.dbを蓄積マージする機能を将来ここに追加します。\r\n中身は#41着手時に埋めるため、今は操作できません。";
-            //
+            this.lblFutureApiXmlDesc.Text = "SP用にApiXML.dbに半年分の週刊データを共有データから自動取得する機能を将来ここに追加します。\r\n（API得時間短縮・スナップショット取得後に削除された動" +
+    "画情報の回収のため）\r\n今は操作できません。";
+            // 
             // tbFutureApiXmlFolder
-            //
+            // 
             this.tbFutureApiXmlFolder.Enabled = false;
-            this.tbFutureApiXmlFolder.Location = new System.Drawing.Point(12, 60);
+            this.tbFutureApiXmlFolder.Location = new System.Drawing.Point(12, 62);
             this.tbFutureApiXmlFolder.Name = "tbFutureApiXmlFolder";
             this.tbFutureApiXmlFolder.Size = new System.Drawing.Size(590, 19);
             this.tbFutureApiXmlFolder.TabIndex = 1;
-            //
+            // 
             // btnFutureApiXmlFolder
-            //
+            // 
             this.btnFutureApiXmlFolder.Enabled = false;
-            this.btnFutureApiXmlFolder.Location = new System.Drawing.Point(608, 58);
+            this.btnFutureApiXmlFolder.Location = new System.Drawing.Point(608, 60);
             this.btnFutureApiXmlFolder.Name = "btnFutureApiXmlFolder";
             this.btnFutureApiXmlFolder.Size = new System.Drawing.Size(75, 23);
             this.btnFutureApiXmlFolder.TabIndex = 2;
             this.btnFutureApiXmlFolder.Text = "参照";
             this.btnFutureApiXmlFolder.UseVisualStyleBackColor = true;
-            //
+            // 
             // btnFutureApiXmlExec
-            //
+            // 
             this.btnFutureApiXmlExec.Enabled = false;
-            this.btnFutureApiXmlExec.Location = new System.Drawing.Point(689, 58);
+            this.btnFutureApiXmlExec.Location = new System.Drawing.Point(689, 60);
             this.btnFutureApiXmlExec.Name = "btnFutureApiXmlExec";
             this.btnFutureApiXmlExec.Size = new System.Drawing.Size(75, 23);
             this.btnFutureApiXmlExec.TabIndex = 3;
             this.btnFutureApiXmlExec.Text = "実行";
             this.btnFutureApiXmlExec.UseVisualStyleBackColor = true;
-            //
+            // 
             // frmMain
-            //
+            // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(836, 714);
@@ -1300,7 +1297,6 @@
             this.groupBox1.PerformLayout();
             this.tabPageOut.ResumeLayout(false);
             this.tabPageMaint.ResumeLayout(false);
-            this.tabPageMaint.PerformLayout();
             this.grpVacuum.ResumeLayout(false);
             this.grpVacuum.PerformLayout();
             this.grpFutureApiXml.ResumeLayout(false);
