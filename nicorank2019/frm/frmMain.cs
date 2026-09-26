@@ -196,6 +196,10 @@ namespace nicorank2019.frm
             CheckBox[] checkBoxes = { chkVacuumLogOfficial, chkVacuumNicoranHistory, chkVacuumApiXml, chkVacuumDailylog };
             Label[] beforeLabels = { lblVacuumBeforeLogOfficial, lblVacuumBeforeNicoranHistory, lblVacuumBeforeApiXml, lblVacuumBeforeDailylog };
             Label[] afterLabels = { lblVacuumAfterLogOfficial, lblVacuumAfterNicoranHistory, lblVacuumAfterApiXml, lblVacuumAfterDailylog };
+            // 件数・順序のずれは別DBの行への誤表示・範囲外例外になるため、開発時に検出する
+            System.Diagnostics.Debug.Assert(definitions.Count == checkBoxes.Length
+                && definitions.Count == beforeLabels.Length
+                && definitions.Count == afterLabels.Length, "メンテナンスタブの対象配列は GetDefaultTargets() と件数・順序を合わせること");
             // チェック状態の読み取りはUIスレッドで行う（タグ検索のTagExecuteContextと同一理由）
             var targets = new List<VacuumUiTarget>();
             for (int i = 0; i < definitions.Count; i++)
@@ -281,25 +285,27 @@ namespace nicorank2019.frm
             public Label AfterLabel;
         }
 
-        // 最適化開始前の btnAnalyzeTag の有効状態。タグタブは条件未入力・件数超過で意図的に無効化する運用のため、
-        // 完了時に無条件で true に戻すとその状態を壊す。退避値を戻す方式にする。
-        private bool _btnAnalyzeTagEnabledBeforeVacuum = true;
+        // 最適化の実行中フラグ。ResetTagCountState が実行中の条件編集で集計ボタンを復活させないために見る。
+        // 完了時は退避値ではなく現在の条件から求め直すため、開始前の Enabled 退避は持たない。
+        private bool _vacuumRunning = false;
 
         /// <summary>
         /// 実行中の二重実行・同時集計を防ぐため、実行系の有効・無効を切り替える。
+        /// 完了時はタグボタンを現在の条件（件数超過時は無効のまま）から求め直す。
+        /// 退避値戻しにしないのは、実行中の条件編集を取りこぼすため。
         /// </summary>
         private void SetVacuumRunning(bool running)
         {
+            _vacuumRunning = running;
             SetVacuumControlsEnabled(!running);
             btnAnalyze.Enabled = !running;
             if (running)
             {
-                _btnAnalyzeTagEnabledBeforeVacuum = btnAnalyzeTag.Enabled;
                 btnAnalyzeTag.Enabled = false;
             }
             else
             {
-                btnAnalyzeTag.Enabled = _btnAnalyzeTagEnabledBeforeVacuum;
+                btnAnalyzeTag.Enabled = !_tagCountOverLimit && !string.IsNullOrWhiteSpace(tbTagCondition.Text);
             }
         }
 
@@ -388,8 +394,8 @@ namespace nicorank2019.frm
                 return;
             }
             _tagCountOverLimit = false;
-            // 未入力ならランキング計算は押せない
-            btnAnalyzeTag.Enabled = !string.IsNullOrWhiteSpace(tbTagCondition.Text);
+            // 最適化実行中は無効のままにする（実行中の条件編集で集計ボタンを復活させない。同時実行防止）
+            btnAnalyzeTag.Enabled = !_vacuumRunning && !string.IsNullOrWhiteSpace(tbTagCondition.Text);
             lblTagWarn.Visible = false;
             lblTagCount.Text = "検索件数: 未確認（上限50000件）";
         }

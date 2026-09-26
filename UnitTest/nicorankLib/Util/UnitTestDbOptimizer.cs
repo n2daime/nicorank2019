@@ -64,6 +64,8 @@ namespace UnitTest.nicorankLib.Util
                 Assert.IsTrue(result.Success, "成功すること: " + result.ErrorMessage);
                 Assert.AreEqual(sizeBefore, result.SizeBefore, "実行前サイズが一致すること");
                 Assert.IsTrue(result.SizeAfter > 0, "実行後サイズが取れること");
+                // 前提：SQLiteCtrl.Open は auto_vacuum を設定しないため、DELETE分の断片化はVACUUMまで残る。
+                // 将来 auto_vacuum を有効化するとDELETE時点で縮み、このassertは失敗しうる。その場合は前提に合わせて見直すこと。
                 Assert.IsTrue(result.SizeAfter < result.SizeBefore, "断片化の解消で縮小すること（500行中400行削除のため確実に縮む）");
                 using (var dbCtrl = new SQLiteCtrl())
                 {
