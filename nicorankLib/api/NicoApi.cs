@@ -561,60 +561,6 @@ namespace nicorankLib.api
             }
             return true;
         }
-
-        //protected bool convertMovieID( string srcID , out string dstID)
-        //{
-        //    if (!srcID.StartsWith("so"))
-        //    {//チャンネル動画以外の場合、変換は不要
-        //        dstID = srcID;
-        //        return true;
-        //    }
-        //    //DBにデータが存在するかチェックする
-        //    using (var aCmd = dbCtrl.Connection.CreateCommand())
-        //    {
-        //        aCmd.CommandText =
-        //            @"SELECT ThreadID FROM IDConvert
-        //              WHERE ID = @ID";
-        //        aCmd.Parameters.AddWithValue("@ID", srcID);
-
-        //        using (var reader = aCmd.ExecuteReader())
-        //        {
-        //            if( reader.Read() )
-        //            {// 変換データあり
-        //                dstID = reader["ThreadID"].ToString();
-        //                if( dstID == "DELETE")
-        //                {
-        //                    return false;
-        //                }
-        //                return true;
-        //            }
-        //        }
-        //        //変換データ無し
-        //        string url = $"{CONVERTID_API_URL}{srcID}";
-        //        if (!InternetUtil.TxtDownLoad(url, out string strXml))
-        //        {
-        //            dstID = srcID;
-        //            return false;
-        //        }
-        //        var responseObj = XmlSerializerUtil.Deserialize<VideoResponse>(strXml);
-        //        if(responseObj.Status != "ok")
-        //        {
-        //            // 不正なXMLファイル or 情報がもうない(NOT_FOUND)
-        //        }
-        //        dstID = responseObj.Video_info.Thread.Id;
-
-        //        aCmd.CommandText =
-        //        @"INSERT INTO IDConvert(ID,ThreadID)
-        //          VALUES(@ID,@ThreadID)";
-
-        //        aCmd.Parameters.AddWithValue("@ID", srcID);
-        //        aCmd.Parameters.AddWithValue("@ThreadID", dstID);
-        //        aCmd.ExecuteNonQuery();
-
-        //        aCmd.Transaction.Commit();
-
-        //    }
-        //}
         #region IDisposable Support
         private bool disposedValue = false; // 重複する呼び出しを検出するには
 
