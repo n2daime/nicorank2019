@@ -285,6 +285,7 @@
     <Compile Include="SnapShot\SnapShotVersionPoller.cs" />
     <Compile Include="SnapShot\TagConditionParser.cs" />
     <Compile Include="SnapShot\TagSearchQuery.cs" />
+    <Compile Include="SnapShot\TagSnapshotTimestamp.cs" />
     <Compile Include="Analyze\model\EAnalyzeMode.cs" />
     <Compile Include="Analyze\Option\Ext\UserInfoReader.cs" />
     <Compile Include="Factory\ModeFactoryBase.cs" />

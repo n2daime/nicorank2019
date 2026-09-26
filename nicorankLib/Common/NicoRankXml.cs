@@ -92,6 +92,17 @@ namespace nicorankLib.Common
         public UserInfoXml UserInfo { get; set; }
         [XmlElement(ElementName = "CheckDateOver")]
         public string CheckDateOver { get; set; }
+        // SP専用の補正モード（Issue #39）。いずれも任意要素であり、なければ共通の最上位要素を使う。
+        // なぜ任意にするか：既存nicorank.xmlに節内OFFSETがなくても従来通り読めるようにし、
+        // 1項目だけ変えたいときに4項目全部書かせず済ませるためである。
+        [XmlElement(ElementName = "COMMENT_OFFSET")]
+        public COMMENT_OFFSET COMMENT_OFFSET { get; set; }
+        [XmlElement(ElementName = "MYLIST_OFFSET")]
+        public MYLIST_OFFSET MYLIST_OFFSET { get; set; }
+        [XmlElement(ElementName = "PLAY_OFFSET")]
+        public PLAY_OFFSET PLAY_OFFSET { get; set; }
+        [XmlElement(ElementName = "POINTALL_OFFSET")]
+        public POINTALL_OFFSET POINTALL_OFFSET { get; set; }
     }
 
     [XmlRoot(ElementName = "TAGRANK")]
@@ -107,6 +118,15 @@ namespace nicorankLib.Common
         public UserInfoXml UserInfo { get; set; }
         [XmlElement(ElementName = "CheckDateOver")]
         public string CheckDateOver { get; set; }
+        // タグ検索専用の補正モード（Issue #39）。SP節と同様に任意要素とし、なければ共通を使う。
+        [XmlElement(ElementName = "COMMENT_OFFSET")]
+        public COMMENT_OFFSET COMMENT_OFFSET { get; set; }
+        [XmlElement(ElementName = "MYLIST_OFFSET")]
+        public MYLIST_OFFSET MYLIST_OFFSET { get; set; }
+        [XmlElement(ElementName = "PLAY_OFFSET")]
+        public PLAY_OFFSET PLAY_OFFSET { get; set; }
+        [XmlElement(ElementName = "POINTALL_OFFSET")]
+        public POINTALL_OFFSET POINTALL_OFFSET { get; set; }
     }
 
     [XmlRoot(ElementName = "COMMENT_OFFSET")]
