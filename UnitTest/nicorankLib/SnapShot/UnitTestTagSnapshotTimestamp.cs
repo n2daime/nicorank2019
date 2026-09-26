@@ -88,5 +88,43 @@ namespace UnitTest.nicorankLib.SnapShot
             Assert.IsFalse(ok);
             Assert.IsNull(label);
         }
+
+        [TestMethod]
+        public void TryFormat_NotUpdatedWithLastModified_ReturnsTrue()
+        {
+            // NotUpdatedでもlast_modified自体は有効なためラベルは出す（確認ではなく表示が本Issueの方針）。
+            // 中断するのは確認不能（Unknown）のみであることを固定する
+            var result = new SnapShotVersionResult
+            {
+                Status = SnapShotVersionStatus.NotUpdated,
+                LastModifiedRaw = "2026-09-25T07:08:34+09:00",
+                LastModified = new DateTimeOffset(2026, 9, 25, 7, 8, 34, TimeSpan.FromHours(9))
+            };
+
+            bool ok = TagSnapshotTimestamp.TryFormat(result, out string label);
+
+            Assert.IsTrue(ok);
+            Assert.AreEqual("09/25 05:00 時点のスナップショットで集計", label);
+        }
+
+        [TestMethod]
+        public void Format_JustAfterMidnightAndBeforeMidnight_UsesEachJstDate()
+        {
+            // 日付境界の両側を確認する。JSTで00:00直後と23:59がそれぞれの日付になること
+            string early = TagSnapshotTimestamp.Format(new DateTimeOffset(2026, 9, 26, 0, 0, 30, TimeSpan.FromHours(9)));
+            string late = TagSnapshotTimestamp.Format(new DateTimeOffset(2026, 9, 26, 23, 59, 0, TimeSpan.FromHours(9)));
+
+            Assert.AreEqual("09/26 05:00 時点のスナップショットで集計", early);
+            Assert.AreEqual("09/26 05:00 時点のスナップショットで集計", late);
+        }
+
+        [TestMethod]
+        public void Format_DataTimeItself_DisplaysFixed0500()
+        {
+            // last_modified自体が05:00ちょうどの場合も表示は05:00のまま変わらないこと
+            string label = TagSnapshotTimestamp.Format(new DateTimeOffset(2026, 9, 26, 5, 0, 0, TimeSpan.FromHours(9)));
+
+            Assert.AreEqual("09/26 05:00 時点のスナップショットで集計", label);
+        }
     }
 }

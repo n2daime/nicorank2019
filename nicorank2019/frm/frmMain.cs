@@ -96,7 +96,9 @@ namespace nicorank2019.frm
         }
 
         /// <summary>
-        /// 集計を実行して結果を報告する（集計タブ・タグタブ共通）
+        /// 集計を実行して結果を報告する（集計タブ・タグタブ共通）。
+        /// 集計中はタブ切替も止める。タブ切替で IsSP／IsTagRank が変わると、Ranking.CalcPoint が
+        /// Config を都度読むため残りの動画が別モードのOFFSETで計算され得る。これを防ぐためである。
         /// </summary>
         private async Task ExecuteAnalyzeAsync(Button execButton)
         {
@@ -105,6 +107,7 @@ namespace nicorank2019.frm
                 execButton.Enabled = false;
                 // 集計実行中は最適化を開始できないようにする（逆方向の同時実行防止。最適化側も集計ボタンを止める）
                 SetVacuumControlsEnabled(false);
+                tabPageOut.Enabled = false;
 
                 bool result = await AnalyzeAsync();
                 if (!result)
@@ -128,6 +131,7 @@ namespace nicorank2019.frm
             {
                 execButton.Enabled = true;
                 SetVacuumControlsEnabled(true);
+                tabPageOut.Enabled = true;
             }
         }
 
@@ -492,6 +496,9 @@ namespace nicorank2019.frm
             catch (Exception ex)
             {
                 lblTagCount.Text = "検索件数: 取得失敗";
+                // 前回成功の時点表示が残ると誤解されるため、例外時も非表示に戻す
+                lblTagSnapshotTime.Visible = false;
+                lblTagSnapshotTime.Text = "";
                 MessageBox.Show(GetExceptionMessages(ex), "システムエラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
@@ -534,6 +541,9 @@ namespace nicorank2019.frm
             catch (Exception ex)
             {
                 MessageBox.Show(GetExceptionMessages(ex), "システムエラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // 前回成功の時点表示が残ると誤解されるため、例外時も非表示に戻す
+                lblTagSnapshotTime.Visible = false;
+                lblTagSnapshotTime.Text = "";
                 btnAnalyzeTag.Enabled = true;
                 return;
             }

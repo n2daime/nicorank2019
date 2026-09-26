@@ -142,7 +142,7 @@ AnalyzeRank():
 
 ## Common
 
-- `Config` — **シングルトン**。`nicorank.xml` を `NicoRankXml` にデシリアライズして保持。ほぼ全クラスから参照。`IsSP` フラグで RANK/RANKED/UserInfo/POINT が SP 用 XML 節に切り替わる。`IsTagRank` で TAGRANK 節に切り替わる（節なし・項目欠落は週間フォールバック。Issue #30）。OFFSET4種（`CalcCommentKind`／`CalcCommentUnderLimit`／`CalcMyListKind`／`CalcPlayKind`／`CalcPointAllKind`）はIssue #39でSP／TAGRANK節別化し、節内に対応要素があれば節内値・なければ共通を使う（項目単位フォールバック。1項目だけ変えたい要求への適合と既存XML互換のため）
+- `Config` — **シングルトン**。`nicorank.xml` を `NicoRankXml` にデシリアライズして保持。ほぼ全クラスから参照。`IsSP` フラグで RANK/RANKED/UserInfo/POINT が SP 用 XML 節に切り替わる。`IsTagRank` で TAGRANK 節に切り替わる（節なし・項目欠落は週間フォールバック。Issue #30）。OFFSET4種（`CalcCommentKind`／`CalcCommentUnderLimit`／`CalcMyListKind`／`CalcPlayKind`／`CalcPointAllKind`）はIssue #39でSP／TAGRANK節別化し、読み取りは節内に対応要素があれば節内値・なければ共通を使う（項目単位フォールバック。1項目だけ変えたい要求への適合と既存XML互換のため）。書き込みはモード別の節へ書く（なければ共通の現在値を引き継いで生成し、共通への波及を防ぐ）。集計中はタブ切替を止めてモード変化を防ぐ
 - `NicoRankXml` — nicorank.xml の POCO 群（`TAGRANK` は SP 同型。Issue #30）。`SP`／`TAGRANK` 節はIssue #39でOFFSET4種（`COMMENT_OFFSET`／`MYLIST_OFFSET`／`PLAY_OFFSET`／`POINTALL_OFFSET`）を任意要素として持てる。なければ共通の最上位要素を使う
 
 ## Util

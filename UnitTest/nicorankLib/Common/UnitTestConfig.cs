@@ -325,5 +325,47 @@ namespace UnitTest.nicorankLib.Common
                 TestConfigBuilder.ResetInstance();
             }
         }
+
+        [TestMethod]
+        public void TestConfigOffset_Setter_WithPartialSection_DoesNotAffectCommon()
+        {
+            // reviewer指摘（中）の再現検証。節内要素なしの状態でタグ検索モードに保存しても、
+            // 節内が生成されて書かれ、共通（週間値）が変わらないこと。共通へのフォールバック書き込みはしない
+            try
+            {
+                string partialTagRank = "<TAGRANK><POINT><CALC_MYLIST>5</CALC_MYLIST><CALC_PLAY>6</CALC_PLAY>" +
+                    "<CALC_COMMENT>7</CALC_COMMENT><CALC_LIKE>8</CALC_LIKE></POINT>" +
+                    "<RANK Num=\"30\" Tyouki=\"0\"/><RANKED Num=\"300\"/>" +
+                    "<UserInfo Num=\"500\"/><CheckDateOver>20240101</CheckDateOver>" +
+                    "<MYLIST_OFFSET Mode=\"0\"/></TAGRANK>";
+                TestConfigBuilder.LoadFromXmlString(string.Format(XmlBaseWithOffsets, SpSectionWithoutOffsets, partialTagRank));
+                var config = Config.GetInstance();
+
+                config.IsSP = false;
+                config.IsTagRank = true;
+                // COMMENTは節内なしのため読みは共通（2）。保存したら節内に生成されて節内値になる
+                Assert.AreEqual(2, config.CalcCommentKind);
+                config.CalcCommentKind = 0;
+                Assert.AreEqual(0, config.CalcCommentKind);
+
+                // 共通（週間値）は変わっていないこと
+                config.IsSP = false;
+                config.IsTagRank = false;
+                Assert.AreEqual(2, config.CalcCommentKind);
+                Assert.AreEqual(1, config.CalcMyListKind);
+
+                // タグ側に戻ると保存値が残っていること
+                config.IsSP = false;
+                config.IsTagRank = true;
+                Assert.AreEqual(0, config.CalcCommentKind);
+                Assert.AreEqual(0, config.CalcMyListKind);
+            }
+            finally
+            {
+                Config.GetInstance().IsSP = false;
+                Config.GetInstance().IsTagRank = false;
+                TestConfigBuilder.ResetInstance();
+            }
+        }
     }
 }

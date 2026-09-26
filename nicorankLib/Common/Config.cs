@@ -87,31 +87,34 @@ namespace nicorankLib.Common
 
         /// <summary>
         /// コメントポイント補正を行うか？
-        /// Issue #39でSP／TAGRANK節別化した。節内に対応要素があれば節内値を、なければ共通を使う（項目単位フォールバック）。
+        /// Issue #39でSP／TAGRANK節別化した。読み取りは節内に対応要素があれば節内値を、なければ共通を使う（項目単位フォールバック）。
         /// なぜ節単位（UseTagRankのような全部必須）にしないか：1項目だけ変えたいときに4項目全部書かせるのは手間であり、
         /// 既存nicorank.xml（節内OFFSETなし）との互換を保ちつつ段階的に移行するためである。
+        /// 書き込みは読み取りと異なり、モード別の節へ書く（なければ生成する）。共通へのフォールバック書き込みはしない。
+        /// なぜ生成するか：節内要素なしのまま共通へ書くと、タグ用のつもりが週間共通値を書き換え、
+        /// Issue #39が解消しようとしたモード間の波及が再発するためである。
         /// </summary>
-        public int CalcCommentKind { get { return EffectiveCommentOffset.Mode; } set { EffectiveCommentOffset.Mode = value; } }
+        public int CalcCommentKind { get { return EffectiveCommentOffset.Mode; } set { CommentOffsetForWrite.Mode = value; } }
 
         /// <summary>
-        /// ポイント全体補正を行うか？（Issue #39でSP／TAGRANK節別化。なければ共通）
+        /// ポイント全体補正を行うか？（Issue #39でSP／TAGRANK節別化。読みはフォールバック・書きは節内生成）
         /// </summary>
-        public int CalcPointAllKind { get { return EffectivePointAllOffset.Mode; } set { EffectivePointAllOffset.Mode = value; } }
+        public int CalcPointAllKind { get { return EffectivePointAllOffset.Mode; } set { PointAllOffsetForWrite.Mode = value; } }
 
         /// <summary>
-        /// コメントポイント補正の下限値（COMMENT_OFFSET節に付随するためCOMMENT_OFFSETと同一のフォールバックに従う）
+        /// コメントポイント補正の下限値（COMMENT_OFFSET節に付随するためCOMMENT_OFFSETと同一のフォールバック・書込先に従う）
         /// </summary>
-        public double CalcCommentUnderLimit{ get { return EffectiveCommentOffset.UnderLimit ; } set { EffectiveCommentOffset.UnderLimit = value; } }
+        public double CalcCommentUnderLimit{ get { return EffectiveCommentOffset.UnderLimit ; } set { CommentOffsetForWrite.UnderLimit = value; } }
 
         /// <summary>
-        /// マイリストポイント補正を行うか？（Issue #39でSP／TAGRANK節別化。なければ共通）
+        /// マイリストポイント補正を行うか？（Issue #39でSP／TAGRANK節別化。読みはフォールバック・書きは節内生成）
         /// </summary>
-        public int CalcMyListKind { get { return EffectiveMylistOffset.Mode; } set { EffectiveMylistOffset.Mode = value; } }
+        public int CalcMyListKind { get { return EffectiveMylistOffset.Mode; } set { MylistOffsetForWrite.Mode = value; } }
 
         /// <summary>
-        /// 再生ポイント補正を行うか？（Issue #39でSP／TAGRANK節別化。なければ共通）
+        /// 再生ポイント補正を行うか？（Issue #39でSP／TAGRANK節別化。読みはフォールバック・書きは節内生成）
         /// </summary>
-        public int CalcPlayKind { get { return EffectivePlayOffset.Mode; } set { EffectivePlayOffset.Mode = value; } }
+        public int CalcPlayKind { get { return EffectivePlayOffset.Mode; } set { PlayOffsetForWrite.Mode = value; } }
 
         /// <summary>
         /// 有効なCOMMENT_OFFSETを返す（タグ検索節→SP節→共通の優先順）。節内要素なしは共通にフォールバックする。
@@ -156,6 +159,138 @@ namespace nicorankLib.Common
             {
                 if (IsTagRank && xml != null && xml.TAGRANK != null && xml.TAGRANK.POINTALL_OFFSET != null) { return xml.TAGRANK.POINTALL_OFFSET; }
                 if (IsSP && xml != null && xml.SP != null && xml.SP.POINTALL_OFFSET != null) { return xml.SP.POINTALL_OFFSET; }
+                return xml.POINTALL_OFFSET;
+            }
+        }
+
+        /// <summary>
+        /// 書き込み先のCOMMENT_OFFSETを返す。モード別の節へ書くため、節・要素がなければ生成する。
+        /// 生成時の初期値は共通の現在値を引き継ぐ。共通自体がない場合（最小XML）は現行既定値を使う。
+        /// なぜ引き継ぐか：生成直後の読み値が従来の有効値と変わらず、パネル保存の前後で表示値が跳ねないようにするためである。
+        /// </summary>
+        private COMMENT_OFFSET CommentOffsetForWrite
+        {
+            get
+            {
+                if (IsTagRank)
+                {
+                    if (xml.TAGRANK == null) { xml.TAGRANK = new TAGRANK(); }
+                    if (xml.TAGRANK.COMMENT_OFFSET == null)
+                    {
+                        var fallback = xml.COMMENT_OFFSET;
+                        xml.TAGRANK.COMMENT_OFFSET = new COMMENT_OFFSET()
+                        {
+                            Mode = fallback != null ? fallback.Mode : 2,
+                            UnderLimit = fallback != null ? fallback.UnderLimit : 0.01
+                        };
+                    }
+                    return xml.TAGRANK.COMMENT_OFFSET;
+                }
+                if (IsSP)
+                {
+                    if (xml.SP == null) { xml.SP = new SP(); }
+                    if (xml.SP.COMMENT_OFFSET == null)
+                    {
+                        var fallback = xml.COMMENT_OFFSET;
+                        xml.SP.COMMENT_OFFSET = new COMMENT_OFFSET()
+                        {
+                            Mode = fallback != null ? fallback.Mode : 2,
+                            UnderLimit = fallback != null ? fallback.UnderLimit : 0.01
+                        };
+                    }
+                    return xml.SP.COMMENT_OFFSET;
+                }
+                if (xml.COMMENT_OFFSET == null) { xml.COMMENT_OFFSET = new COMMENT_OFFSET() { Mode = 2, UnderLimit = 0.01 }; }
+                return xml.COMMENT_OFFSET;
+            }
+        }
+
+        /// <summary>書き込み先のMYLIST_OFFSETを返す（生成方針はCOMMENT_OFFSETと同一）</summary>
+        private MYLIST_OFFSET MylistOffsetForWrite
+        {
+            get
+            {
+                if (IsTagRank)
+                {
+                    if (xml.TAGRANK == null) { xml.TAGRANK = new TAGRANK(); }
+                    if (xml.TAGRANK.MYLIST_OFFSET == null)
+                    {
+                        var fallback = xml.MYLIST_OFFSET;
+                        xml.TAGRANK.MYLIST_OFFSET = new MYLIST_OFFSET() { Mode = fallback != null ? fallback.Mode : 1 };
+                    }
+                    return xml.TAGRANK.MYLIST_OFFSET;
+                }
+                if (IsSP)
+                {
+                    if (xml.SP == null) { xml.SP = new SP(); }
+                    if (xml.SP.MYLIST_OFFSET == null)
+                    {
+                        var fallback = xml.MYLIST_OFFSET;
+                        xml.SP.MYLIST_OFFSET = new MYLIST_OFFSET() { Mode = fallback != null ? fallback.Mode : 1 };
+                    }
+                    return xml.SP.MYLIST_OFFSET;
+                }
+                if (xml.MYLIST_OFFSET == null) { xml.MYLIST_OFFSET = new MYLIST_OFFSET() { Mode = 1 }; }
+                return xml.MYLIST_OFFSET;
+            }
+        }
+
+        /// <summary>書き込み先のPLAY_OFFSETを返す（生成方針はCOMMENT_OFFSETと同一）</summary>
+        private PLAY_OFFSET PlayOffsetForWrite
+        {
+            get
+            {
+                if (IsTagRank)
+                {
+                    if (xml.TAGRANK == null) { xml.TAGRANK = new TAGRANK(); }
+                    if (xml.TAGRANK.PLAY_OFFSET == null)
+                    {
+                        var fallback = xml.PLAY_OFFSET;
+                        xml.TAGRANK.PLAY_OFFSET = new PLAY_OFFSET() { Mode = fallback != null ? fallback.Mode : 2 };
+                    }
+                    return xml.TAGRANK.PLAY_OFFSET;
+                }
+                if (IsSP)
+                {
+                    if (xml.SP == null) { xml.SP = new SP(); }
+                    if (xml.SP.PLAY_OFFSET == null)
+                    {
+                        var fallback = xml.PLAY_OFFSET;
+                        xml.SP.PLAY_OFFSET = new PLAY_OFFSET() { Mode = fallback != null ? fallback.Mode : 2 };
+                    }
+                    return xml.SP.PLAY_OFFSET;
+                }
+                if (xml.PLAY_OFFSET == null) { xml.PLAY_OFFSET = new PLAY_OFFSET() { Mode = 2 }; }
+                return xml.PLAY_OFFSET;
+            }
+        }
+
+        /// <summary>書き込み先のPOINTALL_OFFSETを返す（生成方針はCOMMENT_OFFSETと同一）</summary>
+        private POINTALL_OFFSET PointAllOffsetForWrite
+        {
+            get
+            {
+                if (IsTagRank)
+                {
+                    if (xml.TAGRANK == null) { xml.TAGRANK = new TAGRANK(); }
+                    if (xml.TAGRANK.POINTALL_OFFSET == null)
+                    {
+                        var fallback = xml.POINTALL_OFFSET;
+                        xml.TAGRANK.POINTALL_OFFSET = new POINTALL_OFFSET() { Mode = fallback != null ? fallback.Mode : 0 };
+                    }
+                    return xml.TAGRANK.POINTALL_OFFSET;
+                }
+                if (IsSP)
+                {
+                    if (xml.SP == null) { xml.SP = new SP(); }
+                    if (xml.SP.POINTALL_OFFSET == null)
+                    {
+                        var fallback = xml.POINTALL_OFFSET;
+                        xml.SP.POINTALL_OFFSET = new POINTALL_OFFSET() { Mode = fallback != null ? fallback.Mode : 0 };
+                    }
+                    return xml.SP.POINTALL_OFFSET;
+                }
+                if (xml.POINTALL_OFFSET == null) { xml.POINTALL_OFFSET = new POINTALL_OFFSET() { Mode = 0 }; }
                 return xml.POINTALL_OFFSET;
             }
         }
@@ -239,6 +374,18 @@ namespace nicorankLib.Common
             if (this.xml.SYSTEM.Download.UserIcon == null)
             {//設定がない場合のデフォルトは20
                 this.xml.SYSTEM.Download.UserIcon = new UserIcon() { Retry = 20 };
+            }
+            if (this.xml.COMMENT_OFFSET == null)
+            {//設定がない場合の既定は現行共通値（Mode=2・UnderLimit=0.01）。欠落XMLでのNullReferenceを防ぐ
+                this.xml.COMMENT_OFFSET = new COMMENT_OFFSET() { Mode = 2, UnderLimit = 0.01 };
+            }
+            if (this.xml.MYLIST_OFFSET == null)
+            {//設定がない場合の既定は現行共通値（Mode=1）
+                this.xml.MYLIST_OFFSET = new MYLIST_OFFSET() { Mode = 1 };
+            }
+            if (this.xml.PLAY_OFFSET == null)
+            {//設定がない場合の既定は現行共通値（Mode=2）
+                this.xml.PLAY_OFFSET = new PLAY_OFFSET() { Mode = 2 };
             }
             if (this.xml.POINTALL_OFFSET == null)
             {//設定がない場合 補正なしにする
