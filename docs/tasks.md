@@ -15,15 +15,6 @@
 
 ## 未完了タスク
 
-### タグ検索v2最新値のデータ時点表示＋OFFSET節別化（Issue #39）
-
-> Issue本文＋2026-09-26コメント（MYLIST_OFFSET節別化）を同Issueで対応する。ユーザー回答で確定済み：文言は `MM/DD 05:00 時点のスナップショットで集計`（APIのHH:mmは使わず05:00固定。仕様上のデータ時点が5:00のため）・表示場所はタグ検索タブの件数確認近傍でON時のみ・取得は件数確認のたび・確認不能時はエラー中断・OFFSETは4種（COMMENT/PLAY/MYLIST/POINTALL）をSP/TAGRANK節別化。
-
-- [ ] 39.1 v2最新値モードで件数確認時にデータ時点ラベルが表示される（`SnapShotVersionChecker` 使い回し・`await Task.Run` でUIブロックなし・OFF時は非表示）
-- [ ] 39.2 version取得失敗時は件数確認自体を失敗扱いにし集計に進めない
-- [ ] 39.3 SP/TAGRANK節にOFFSET4種を持てるようにし、なければ共通設定を使う（項目単位フォールバック）
-- [ ] 39.4 dotnet test＋ビルド成功（EXIT CODE=0）・specs/design/knowledge更新・reviewer再レビュー問題なし・ユーザー実機確認
-
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。
@@ -45,6 +36,7 @@
 
 | タスク | 完了日 | 主な成果物 |
 |---|---|---|
+| タグ検索v2最新値のデータ時点表示＋OFFSET節別化(#39)✅ | 2026-09-26 | lblTagSnapshotTime新設（ON時のみ表示・MM/DD 05:00固定・確認不能時は中断）・TagSnapshotTimestamp新設（JST日・定数05:00・TryFormat）・SP/TAGRANK節にOFFSET4種（項目単位フォールバック・書込は節内生成）・集計中タブ固定・Initilize既定生成・配布テンプレートTAGRANK-OFFSET全0化・UnitTest16件追加（計260件）・specs/design/knowledge更新・reviewer再レビュー2回でマージ可（低4件対応）・ユーザー実機検証OK・developマージ |
 | メンテナンスタブにDBの最適化(#32)✅ | 2026-09-26 | tabPageMaint新設（4DBチェック既定ON・実行前後2列・#41予告枠・ログ欄なし）・DbOptimizer新設（DBごとにDROP→DELETE→VACUUM・削除行数＋前後サイズ・実行日起点1年前・種別パラメータ化・境界固定）・convertMovieID除去・非同期実行＋同時実行ガード（両方向・実行中フラグ）・UnitTest10件追加（計244件）・specs/design/knowledge更新・AGENTSにIssueコメント全件読み追加・reviewer再レビュー4回でマージ可（低見送り3件）・ユーザー実機検証OK・developマージ |
 | ApiXML削除判定の順位影響排除(#40)✅ | 2026-09-26 | NicoApiのisDelete除去・最新行読み・Reader中断廃止・SP予備補完SpMovieInfoFallback（案B。LastResultタイトル＋LogOfficial初見日）・週刊事前取得（oldlogが全ID約26000件をApiXML.dbへ・2019が取込）・削除目印【集計後削除】・並列数のconfig.json管理（ThreadMaxOverride）・UnitTest20件追加（計234件）・specs/design/knowledge更新・reviewer再レビュー問題なし（低2件見送り）・週刊実機検証（26770件取込・取得2372件に削減・有無両経路）・SP実機検証（エラーなし・マーカー0件正常）・developマージ |
 | Snapshot API v2更新チェック(#38)✅ | 2026-09-23 | SnapShotVersionChecker/Poller新設（version取得・JST日付比較・更新済み/未更新/確認不能の3値判定・5分×最大1時間待機）・取得開始時にlast_modifiedをStatusLog出力・WinForm未更新時に日時入りOK/キャンセル確認ダイアログ・CLIタイムアウト時は取得せず終了コード2＋リトライタイムアウト記録・UnitTest17件追加（計214件）・specs/design/knowledge更新（切替時刻実測・競合注意）・reviewer再レビュー問題なし・NAS実機検証（9/21に8回未更新→更新検知→全期間取得・終了コード0）・調査スクリプトはマージ前除外・developマージ |
