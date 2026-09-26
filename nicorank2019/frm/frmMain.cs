@@ -196,7 +196,7 @@ namespace nicorank2019.frm
             CheckBox[] checkBoxes = { chkVacuumLogOfficial, chkVacuumNicoranHistory, chkVacuumApiXml, chkVacuumDailylog };
             Label[] beforeLabels = { lblVacuumBeforeLogOfficial, lblVacuumBeforeNicoranHistory, lblVacuumBeforeApiXml, lblVacuumBeforeDailylog };
             Label[] afterLabels = { lblVacuumAfterLogOfficial, lblVacuumAfterNicoranHistory, lblVacuumAfterApiXml, lblVacuumAfterDailylog };
-            // 件数・順序のずれは別DBの行への誤表示・範囲外例外になるため、開発時に検出する
+            // 件数ずれは別DBの行への誤表示・範囲外例外になるため開発時に検出する（件数一致を検証。順序は単体テストが担保）。
             System.Diagnostics.Debug.Assert(definitions.Count == checkBoxes.Length
                 && definitions.Count == beforeLabels.Length
                 && definitions.Count == afterLabels.Length, "メンテナンスタブの対象配列は GetDefaultTargets() と件数・順序を合わせること");
