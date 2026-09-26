@@ -136,14 +136,14 @@ AnalyzeRank():
 - `SnapShotRequest` — スナップショット検索API v2 の型付きリクエスト（Issue #19）。`q/targets/fields/filters/jsonFilter/_sort/_limit/_offset/_context` を保持し値のみ `EscapeDataString` で URL 生成。`_context` 既定 `WeeklyNicoranProgram`、`_limit/_offset` クランプ。`CreateTagSearch` はタグ検索用（jsonFilter＋数値・日付・種別を `filters[]` で指定。Issue #30）
 - `TagConditionParser` — タグ条件式（`A&B|C*`）を jsonFilter に変換（Issue #30）。`*` は末尾1文字のみ許可
 - `TagSearchQuery` — タグ検索条件の受け渡し用 DTO（Issue #30）。`UseLiveCounter`（既定false。真ならv2最新値モード。Issue #35）
+- `TagSnapshotTimestamp` — データ時点ラベルの純粋整形（Issue #39）。`Format`（JST日＋05:00固定）・`TryFormat`（確認不能時はfalse）・`DataHour`／`DataMinute` 定数を持つ。UIから分離して単体テストで縛る
 - `SnapShotDB` — `LogSnapshot{yyyyMMdd}.db` の作成・登録（5000件バッチコミット・INSERT OR IGNORE・パラメータ再利用）。`ISQLiteCtrl` 注入可。旧 JSON ファイル読込（`GetJsonData`）も保持
 - `SnapShotJson` — レスポンス POCO
 
 ## Common
 
-- `Config` — **シングルトン**。`nicorank.xml` を `NicoRankXml` にデシリアライズして保持。ほぼ全クラスから参照。`IsSP` フラグで RANK/RANKED/UserInfo/POINT が SP 用 XML 節に切り替わる。`IsTagRank` で TAGRANK 節に切り替わる（節なし・項目欠落は週間フォールバック。Issue #30）
-- `NicoRankXml` — nicorank.xml の POCO 群（`TAGRANK` は SP 同型。Issue #30）
-- `NicoRankXml` — nicorank.xml の POCO 群
+- `Config` — **シングルトン**。`nicorank.xml` を `NicoRankXml` にデシリアライズして保持。ほぼ全クラスから参照。`IsSP` フラグで RANK/RANKED/UserInfo/POINT が SP 用 XML 節に切り替わる。`IsTagRank` で TAGRANK 節に切り替わる（節なし・項目欠落は週間フォールバック。Issue #30）。OFFSET4種（`CalcCommentKind`／`CalcCommentUnderLimit`／`CalcMyListKind`／`CalcPlayKind`／`CalcPointAllKind`）はIssue #39でSP／TAGRANK節別化し、節内に対応要素があれば節内値・なければ共通を使う（項目単位フォールバック。1項目だけ変えたい要求への適合と既存XML互換のため）
+- `NicoRankXml` — nicorank.xml の POCO 群（`TAGRANK` は SP 同型。Issue #30）。`SP`／`TAGRANK` 節はIssue #39でOFFSET4種（`COMMENT_OFFSET`／`MYLIST_OFFSET`／`PLAY_OFFSET`／`POINTALL_OFFSET`）を任意要素として持てる。なければ共通の最上位要素を使う
 
 ## Util
 

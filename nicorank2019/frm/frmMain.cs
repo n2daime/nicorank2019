@@ -57,6 +57,8 @@ namespace nicorank2019.frm
                 _panel3SyukeiLocation = panel3.Location;
                 lblTagCount.Text = "検索件数: 未確認（上限50000件）";
                 lblTagWarn.Visible = false;
+                lblTagSnapshotTime.Visible = false;
+                lblTagSnapshotTime.Text = "";
                 // v2最新値チェックの切替配線はコード側で行う（Designerの再生成差分を増やさないため）。初期状態（既定ON）もここで反映する
                 chkUseLiveCounter.CheckedChanged += new EventHandler(this.chkUseLiveCounter_CheckedChanged);
                 UpdateLiveCounterControls();
@@ -398,6 +400,9 @@ namespace nicorank2019.frm
             btnAnalyzeTag.Enabled = !_vacuumRunning && !string.IsNullOrWhiteSpace(tbTagCondition.Text);
             lblTagWarn.Visible = false;
             lblTagCount.Text = "検索件数: 未確認（上限50000件）";
+            // 古い時点表示が残ると誤解されるため、条件変更時は時点ラベルも消して非表示に戻す
+            lblTagSnapshotTime.Visible = false;
+            lblTagSnapshotTime.Text = "";
         }
 
         /// <summary>
@@ -413,9 +418,12 @@ namespace nicorank2019.frm
         }
 
         /// <summary>
-        /// 件数確認して上限超過なら実行ボタンを押せなくする。超過でなければ件数を返す
+        /// 件数確認して上限超過なら実行ボタンを押せなくする。超過でなければ件数を返す。
+        /// v2最新値モード（query.UseLiveCounter）では件数取得成功後に version を取得してデータ時点ラベルを出す。
+        /// version確認不能時はエラー中断（null返却）し、不明な時点のまま集計させない。
+        /// 取得は await Task.Run で行い、UIスレッドをブロックしない（#38と同型の罠回避）。
         /// </summary>
-        /// <returns>集計に進める件数。進めない場合（超過・取得失敗）は null</returns>
+        /// <returns>集計に進める件数。進めない場合（超過・取得失敗・時点確認不能）は null</returns>
         private async Task<long?> CheckTagCountAsync(TagSearchQuery query)
         {
             var analyzer = new TagRankAnalyze(DateTime.Now, query);
@@ -425,6 +433,8 @@ namespace nicorank2019.frm
             {
                 _tagCountOverLimit = false;
                 lblTagCount.Text = "検索件数: 取得失敗";
+                lblTagSnapshotTime.Visible = false;
+                lblTagSnapshotTime.Text = "";
                 MessageBox.Show("検索件数の取得に失敗しました。ネットワークと条件を確認してください", "検索エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return null;
             }
@@ -435,10 +445,32 @@ namespace nicorank2019.frm
                 lblTagWarn.Text = $"検索結果が多すぎます。({count}件) {TagRankAnalyze.MaxTotalCount}件以下になるように条件を追加して下さい";
                 lblTagWarn.Visible = true;
                 btnAnalyzeTag.Enabled = false;
+                lblTagSnapshotTime.Visible = false;
+                lblTagSnapshotTime.Text = "";
                 return null;
             }
             _tagCountOverLimit = false;
             lblTagWarn.Visible = false;
+            // DB使用モード（UseLiveCounter=OFF）は時点表示の対象外のため、ラベルは非表示のままにする
+            if (query == null || !query.UseLiveCounter)
+            {
+                lblTagSnapshotTime.Visible = false;
+                lblTagSnapshotTime.Text = "";
+                return count;
+            }
+            // 件数確認のたびに version を取得する（タブ滞在中の使い回しはせず、常に最新の切り替え日時を掴む）
+            var versionResult = await Task.Run(() => new SnapShotVersionChecker().Check());
+            string snapshotLabel;
+            if (!TagSnapshotTimestamp.TryFormat(versionResult, out snapshotLabel))
+            {
+                // 確認不能時はエラーとして中断する。不明な時点表示のまま集計させないためラベルは出さない
+                lblTagSnapshotTime.Visible = false;
+                lblTagSnapshotTime.Text = "";
+                MessageBox.Show("データ時点（スナップショットversion）の取得に失敗しました。ネットワークを確認して件数確認をやり直してください", "検索エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return null;
+            }
+            lblTagSnapshotTime.Text = snapshotLabel;
+            lblTagSnapshotTime.Visible = true;
             return count;
         }
 
@@ -556,13 +588,19 @@ namespace nicorank2019.frm
         }
 
         /// <summary>
-        /// v2最新値モードONなら集計日DB欄を無効化する（DBなし実行のため）
+        /// v2最新値モードONなら集計日DB欄を無効化する（DBなし実行のため）。
+        /// OFF（DB使用モード）では時点ラベルは対象外のため、切り替え時に非表示に戻す。
         /// </summary>
         private void UpdateLiveCounterControls()
         {
             bool useDb = !chkUseLiveCounter.Checked;
             tbAnalyzeDB_Tag.Enabled = useDb;
             btnAnalyzeDB_Tag.Enabled = useDb;
+            if (useDb)
+            {
+                lblTagSnapshotTime.Visible = false;
+                lblTagSnapshotTime.Text = "";
+            }
         }
 
         // ポイント計算パネルを集計タブとタグタブで付け替える（タグ選択時はTAGRANK値に切り替える）

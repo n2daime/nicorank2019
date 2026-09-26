@@ -64,6 +64,7 @@
 - 前回結果CSVは任意。未指定なら前回順位なし、指定ありならSP同様に前回順位を付与する
 - 基準日DBは任意。未指定なら差分なしで集計日DBの累積値をそのまま集計値にする（`Count = Total`）。指定ありならSP同様に差分計算する。基準なし時の `BaseDay` は `TargetDay` と同値にする
 - v2最新値モード（UIの「検索APIから直接集計する」ON・`TagSearchQuery.UseLiveCounter`）では集計日DBを使わない。ライブ検索で得た4数値を累積値として採用する（`Count = Total`）。基準日DBありならライブ値から基準値を引いて差分計算する（新着救済の基準-7日を含む考え方はSnapshotDB差分と同一）。集計日は実行日とし、基準なし時は `BaseDay = TargetDay = 実行日`、基準あり時は `TargetDay = 実行日・BaseDay = 基準日DBのDBVersion.集計日` とする。DBVersionを読まないためSnapshotDBの取得待ちが不要になる。低再生の古動画（SnapshotDBの1000再生足切りに該当）はSnapshotDB版に含まれず1件程度の出入りがあり得る（2026-09検証で1件確認）
+- v2最新値モードの件数確認時（`btnTagSearch_Click`／`btnAnalyzeTag_Click` 内の `CheckTagCountAsync`）はデータ時点ラベルを表示する（Issue #39）。文言は `MM/DD 05:00 時点のスナップショットで集計` とし、日付部は versionエンドポイントの `last_modified` をJST化した日付、時刻は `05:00` 固定とする。時刻を固定にするのは、`last_modified` の時刻がDB反映完了時刻であり仕様上のデータ時点（5:00）と異なるため、完了時刻を出すと誤解されるからである。`UseLiveCounter=OFF`（DB使用モード）では表示せず非表示のままとする。取得は件数確認のたびに `SnapShotVersionChecker` で行い（タブ滞在中の使い回しはしない）、`await Task.Run` でUIスレッドをブロックしない。確認不能時（取得失敗・パース失敗）は件数確認自体を失敗扱いにして集計に進めない（不明な時点のまま集計させないため）
 - 出力はSPと同一（履歴登録・長期判定なしの7種。上書き）
 
 ### 紹介枠（GetRank）
@@ -141,11 +142,11 @@
 | `ICONDL_PATH` | — | ローカル設定 | ED用アイコン DL 先 |
 | `POINT` | `CALC_MYLIST` / `CALC_PLAY` / `CALC_COMMENT` / `CALC_LIKE` | 40/1/1/10（SP 20/1/1/20） | 各ポイント倍率 |
 | `SP.CheckDateOver` | — | 20170701 | lastresultSP.csv チェック用（前回 SP の集計日） |
-| `TAGRANK`（POINT/RANK/RANKED/UserInfo/CheckDateOver） | — | RANK 30/Tyouki 0・RANKED 200・POINTはSP同値・UserInfo 1000・CheckDateOverは未使用（空） | タグ検索モード専用設定。節がなければ週間設定を使う。OFFSET系は共通のため含まない |
-| `COMMENT_OFFSET` | `Mode` / `UnderLimit` | 2 / 0.01 | コメント補正モード・下限 |
-| `MYLIST_OFFSET` | `Mode` | 1 | マイリスト補正モード |
-| `PLAY_OFFSET` | `Mode` | 2 | 再生補正モード |
-| `POINTALL_OFFSET` | `Mode` | 0 | 全体補正モード（1=VCOLE2023） |
+| `TAGRANK`（POINT/RANK/RANKED/UserInfo/CheckDateOver/OFFSET4種） | — | RANK 30/Tyouki 0・RANKED 200・POINTはSP同値・UserInfo 1000・CheckDateOverは未使用（空）・OFFSET4種はSP同値（いずれも任意。なければ共通を使う） | タグ検索モード専用設定。節がなければ週間設定を使う。OFFSET系はIssue #39で節別化し、節内に対応要素がなければ共通にフォールバックする（項目単位） |
+| `COMMENT_OFFSET` | `Mode` / `UnderLimit` | 2 / 0.01 | コメント補正モード・下限。SP／TAGRANK節内にあれば節内値を使う（Issue #39） |
+| `MYLIST_OFFSET` | `Mode` | 1 | マイリスト補正モード。SP／TAGRANK節内にあれば節内値を使う（Issue #39） |
+| `PLAY_OFFSET` | `Mode` | 2 | 再生補正モード。SP／TAGRANK節内にあれば節内値を使う（Issue #39） |
+| `POINTALL_OFFSET` | `Mode` | 0 | 全体補正モード（1=VCOLE2023）。SP／TAGRANK節内にあれば節内値を使う（Issue #39） |
 | `SYSTEM.ResultCsv` | `Code` | 0 | result.csv の文字コード（0=shift-jis / 1=Unicode） |
 | `SYSTEM.Thread` | `Max` | 16 | マルチスレッドの最大スレッド数 |
 | `SYSTEM.Download.NicoAPI` | `Retry` | 20 | NicoApi 取得のリトライ回数（SP に影響） |

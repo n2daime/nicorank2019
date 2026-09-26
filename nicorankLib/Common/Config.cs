@@ -87,28 +87,78 @@ namespace nicorankLib.Common
 
         /// <summary>
         /// コメントポイント補正を行うか？
+        /// Issue #39でSP／TAGRANK節別化した。節内に対応要素があれば節内値を、なければ共通を使う（項目単位フォールバック）。
+        /// なぜ節単位（UseTagRankのような全部必須）にしないか：1項目だけ変えたいときに4項目全部書かせるのは手間であり、
+        /// 既存nicorank.xml（節内OFFSETなし）との互換を保ちつつ段階的に移行するためである。
         /// </summary>
-        public int CalcCommentKind { get { return xml.COMMENT_OFFSET.Mode; } set { xml.COMMENT_OFFSET.Mode = value; } }
+        public int CalcCommentKind { get { return EffectiveCommentOffset.Mode; } set { EffectiveCommentOffset.Mode = value; } }
 
         /// <summary>
-        /// ポイント全体補正を行うか？
+        /// ポイント全体補正を行うか？（Issue #39でSP／TAGRANK節別化。なければ共通）
         /// </summary>
-        public int CalcPointAllKind { get { return xml.POINTALL_OFFSET.Mode; } set { xml.POINTALL_OFFSET.Mode = value; } }
+        public int CalcPointAllKind { get { return EffectivePointAllOffset.Mode; } set { EffectivePointAllOffset.Mode = value; } }
 
         /// <summary>
-        /// コメントポイント補正の下限値
+        /// コメントポイント補正の下限値（COMMENT_OFFSET節に付随するためCOMMENT_OFFSETと同一のフォールバックに従う）
         /// </summary>
-        public double CalcCommentUnderLimit{ get { return xml.COMMENT_OFFSET.UnderLimit ; } set { xml.COMMENT_OFFSET.UnderLimit = value; } }
+        public double CalcCommentUnderLimit{ get { return EffectiveCommentOffset.UnderLimit ; } set { EffectiveCommentOffset.UnderLimit = value; } }
 
         /// <summary>
-        /// マイリストポイント補正を行うか？
+        /// マイリストポイント補正を行うか？（Issue #39でSP／TAGRANK節別化。なければ共通）
         /// </summary>
-        public int CalcMyListKind { get { return xml.MYLIST_OFFSET.Mode; } set { xml.MYLIST_OFFSET.Mode = value; } }
+        public int CalcMyListKind { get { return EffectiveMylistOffset.Mode; } set { EffectiveMylistOffset.Mode = value; } }
 
         /// <summary>
-        /// 再生ポイント補正を行うか？
+        /// 再生ポイント補正を行うか？（Issue #39でSP／TAGRANK節別化。なければ共通）
         /// </summary>
-        public int CalcPlayKind { get { return xml.PLAY_OFFSET.Mode; } set { xml.PLAY_OFFSET.Mode = value; } }
+        public int CalcPlayKind { get { return EffectivePlayOffset.Mode; } set { EffectivePlayOffset.Mode = value; } }
+
+        /// <summary>
+        /// 有効なCOMMENT_OFFSETを返す（タグ検索節→SP節→共通の優先順）。節内要素なしは共通にフォールバックする。
+        /// タグ検索とSPは同時に立たない運用（SelectTagMode／SelectSyukeiModeで排他）のため、タグ検索を先に見る。
+        /// </summary>
+        private COMMENT_OFFSET EffectiveCommentOffset
+        {
+            get
+            {
+                if (IsTagRank && xml != null && xml.TAGRANK != null && xml.TAGRANK.COMMENT_OFFSET != null) { return xml.TAGRANK.COMMENT_OFFSET; }
+                if (IsSP && xml != null && xml.SP != null && xml.SP.COMMENT_OFFSET != null) { return xml.SP.COMMENT_OFFSET; }
+                return xml.COMMENT_OFFSET;
+            }
+        }
+
+        /// <summary>有効なMYLIST_OFFSETを返す（優先順はCOMMENT_OFFSETと同一）</summary>
+        private MYLIST_OFFSET EffectiveMylistOffset
+        {
+            get
+            {
+                if (IsTagRank && xml != null && xml.TAGRANK != null && xml.TAGRANK.MYLIST_OFFSET != null) { return xml.TAGRANK.MYLIST_OFFSET; }
+                if (IsSP && xml != null && xml.SP != null && xml.SP.MYLIST_OFFSET != null) { return xml.SP.MYLIST_OFFSET; }
+                return xml.MYLIST_OFFSET;
+            }
+        }
+
+        /// <summary>有効なPLAY_OFFSETを返す（優先順はCOMMENT_OFFSETと同一）</summary>
+        private PLAY_OFFSET EffectivePlayOffset
+        {
+            get
+            {
+                if (IsTagRank && xml != null && xml.TAGRANK != null && xml.TAGRANK.PLAY_OFFSET != null) { return xml.TAGRANK.PLAY_OFFSET; }
+                if (IsSP && xml != null && xml.SP != null && xml.SP.PLAY_OFFSET != null) { return xml.SP.PLAY_OFFSET; }
+                return xml.PLAY_OFFSET;
+            }
+        }
+
+        /// <summary>有効なPOINTALL_OFFSETを返す（優先順はCOMMENT_OFFSETと同一）</summary>
+        private POINTALL_OFFSET EffectivePointAllOffset
+        {
+            get
+            {
+                if (IsTagRank && xml != null && xml.TAGRANK != null && xml.TAGRANK.POINTALL_OFFSET != null) { return xml.TAGRANK.POINTALL_OFFSET; }
+                if (IsSP && xml != null && xml.SP != null && xml.SP.POINTALL_OFFSET != null) { return xml.SP.POINTALL_OFFSET; }
+                return xml.POINTALL_OFFSET;
+            }
+        }
 
         /// <summary>
         /// result.csv系について Unicodeで出力

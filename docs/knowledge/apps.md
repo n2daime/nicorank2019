@@ -7,7 +7,8 @@
 - 起動: 引数なし。UI モードのみ（コンソール切替なし）
 - `Program.cs`: 埋め込み DLL（Costura.Fody）を `AppDomain.AssemblyResolve` で解決 → `StatusLog.SetLogWriter(new ConsolWriter())` → `Application.Run(new frmMain())`
 - `frm/frmMain.cs`: メインフォーム。Load 時に `SelectMode()`。`btnAnalyze_Click` で `Config` に補正値を設定し `AnalyzeAsync()` を実行
-- `frm/frmMainSyukei.cs`: `frmMain` の partial。モード選択（Weekly/Tyukan/SP）＋タグ検索タブ（TagRank）→ `GetModeFactory()` → 集計フロー実行
+- `frm/frmMainSyukei.cs`: `frmMain` の partial。モード選択（Weekly/Tyukan/SP）＋タグ検索タブ（TagRank）→ `GetModeFactory()` → 集計フロー実行。ポイント計算パネルの表示・書戻し（`LoadPointCalcPanel`／`SavePointCalcPanel`）は `Config` 経由のため、OFFSET節別化（Issue #39）後もコード不変でモード別表示・保存になる
+- タグ検索タブの件数確認（`btnTagSearch_Click`／`btnAnalyzeTag_Click` 内の `CheckTagCountAsync`）では、v2最新値モード（`chkUseLiveCounter` ON）の件数取得成功後に `SnapShotVersionChecker` で version を取得し、`lblTagSnapshotTime` に `MM/DD 05:00 時点のスナップショットで集計` と出す（Issue #39）。日付は `last_modified` のJST日・時刻は05:00固定（反映完了時刻との混同防止）。OFF時・未確認時・条件変更時は非表示に戻す。確認不能時は件数確認自体を失敗扱いにして集計に進めない。取得は `await Task.Run` でUIブロックしない
 - タブ構成: 「集計」「タグ検索集計」「メンテナンス」の3タブ。ポイント計算パネル（`panel3`）は実体1つを集計・タグ検索の2タブ切替で付け替えて共有する（相対配置でAutoScaleずれ対策。Issue #30）。メンテナンスタブ（Issue #32・`tabPageMaint`）は集計モードと無関係のため `panel3` に触らず、モード切替も行わない。ログ欄も持たず、集計タブと同様にコンソール側へ出す運用
 - メンテナンスタブの内訳: `grpVacuum`（DB最適化。対象4DBのチェック既定ON・実行前後2列サイズ欄・実行ボタン・状態＋進捗・注意文。中身実装は32.2）＋ `grpFutureApiXml`（長期キャッシュ再構築の場所予約。Issue #41着手時に埋める。操作部は無効化表示）
 - `frm/frmMesseageDialog.cs`: `RunFunction` デリゲートを `BackgroundWorker` で実行するモーダルダイアログ。`StatusLog` の出力先を TextBox に差し替え

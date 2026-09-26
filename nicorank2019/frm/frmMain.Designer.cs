@@ -57,6 +57,7 @@
             this.tbViewMin = new System.Windows.Forms.TextBox();
             this.lblViewMin = new System.Windows.Forms.Label();
             this.grpTag = new System.Windows.Forms.GroupBox();
+            this.lblTagSnapshotTime = new System.Windows.Forms.Label();
             this.lblTagWarn = new System.Windows.Forms.Label();
             this.lblTagCount = new System.Windows.Forms.Label();
             this.btnTagSearch = new System.Windows.Forms.Button();
@@ -448,6 +449,7 @@
             // 
             // grpTag
             // 
+            this.grpTag.Controls.Add(this.lblTagSnapshotTime);
             this.grpTag.Controls.Add(this.lblTagWarn);
             this.grpTag.Controls.Add(this.lblTagCount);
             this.grpTag.Controls.Add(this.btnTagSearch);
@@ -459,6 +461,17 @@
             this.grpTag.TabIndex = 0;
             this.grpTag.TabStop = false;
             this.grpTag.Text = "1. タグ条件";
+            // 
+            // lblTagSnapshotTime
+            // データ時点の表示（Issue #39）。v2最新値モードの件数確認成功時にだけ文言を入れて可視化する。
+            // OFF時・未確認時・失敗時は非表示のままにし、古い時点が残って誤解されるのを防ぐ。
+            // 
+            this.lblTagSnapshotTime.AutoSize = true;
+            this.lblTagSnapshotTime.Location = new System.Drawing.Point(8, 102);
+            this.lblTagSnapshotTime.Name = "lblTagSnapshotTime";
+            this.lblTagSnapshotTime.Size = new System.Drawing.Size(0, 12);
+            this.lblTagSnapshotTime.TabIndex = 5;
+            this.lblTagSnapshotTime.Visible = false;
             // 
             // lblTagWarn
             // 
@@ -1335,6 +1348,7 @@
         private System.Windows.Forms.TextBox tbViewMin;
         private System.Windows.Forms.Label lblViewMin;
         private System.Windows.Forms.GroupBox grpTag;
+        private System.Windows.Forms.Label lblTagSnapshotTime;
         private System.Windows.Forms.Label lblTagWarn;
         private System.Windows.Forms.Label lblTagCount;
         private System.Windows.Forms.Button btnTagSearch;
