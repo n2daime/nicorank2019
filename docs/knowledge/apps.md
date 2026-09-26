@@ -8,7 +8,8 @@
 - `Program.cs`: 埋め込み DLL（Costura.Fody）を `AppDomain.AssemblyResolve` で解決 → `StatusLog.SetLogWriter(new ConsolWriter())` → `Application.Run(new frmMain())`
 - `frm/frmMain.cs`: メインフォーム。Load 時に `SelectMode()`。`btnAnalyze_Click` で `Config` に補正値を設定し `AnalyzeAsync()` を実行
 - `frm/frmMainSyukei.cs`: `frmMain` の partial。モード選択（Weekly/Tyukan/SP）＋タグ検索タブ（TagRank）→ `GetModeFactory()` → 集計フロー実行
-- タブ構成: 「集計」「タグ検索集計」「出力1（無効・死にタブ）」の3タブ。ポイント計算パネル（`panel3`）は実体1つをタブ切替で付け替えて共有する（相対配置でAutoScaleずれ対策。Issue #30）
+- タブ構成: 「集計」「タグ検索集計」「メンテナンス」の3タブ。ポイント計算パネル（`panel3`）は実体1つを集計・タグ検索の2タブ切替で付け替えて共有する（相対配置でAutoScaleずれ対策。Issue #30）。メンテナンスタブ（Issue #32・`tabPageMaint`）は集計モードと無関係のため `panel3` に触らず、モード切替も行わない。ログ欄も持たず、集計タブと同様にコンソール側へ出す運用
+- メンテナンスタブの内訳: `grpVacuum`（DB最適化。対象4DBのチェック既定ON・実行前後2列サイズ欄・実行ボタン・状態＋進捗・注意文。中身実装は32.2）＋ `grpFutureApiXml`（長期キャッシュ再構築の場所予約。Issue #41着手時に埋める。操作部は無効化表示）
 - `frm/frmMesseageDialog.cs`: `RunFunction` デリゲートを `BackgroundWorker` で実行するモーダルダイアログ。`StatusLog` の出力先を TextBox に差し替え
 
 **ビルド**: .NET Framework 4.8。Costura.Fody 6.2.0（単一 EXE 化）。packages.config 方式。PostBuild で「依存ファイル」を xcopy。`AnyCPU Prefer32Bit=false` で `64bit` 起動。
