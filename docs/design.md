@@ -323,6 +323,26 @@
 
 ---
 
+## BasicOption の破棄経路整備（Issue #44・提案元 #42）
+
+### Context
+
+- #40 で `SnapShotSabunReader.Dispose` / `TagRankLiveSabunReader.Dispose` の中身は直し、予備補完が自前で開いた接続も閉じるようにした。しかし呼び出し側が `Dispose` を呼ばないため、実運用では閉じられなかった。`frmMainSyukei` が `MainFactory` を保持したまま集計し、完了後も Reader を破棄しない。既存のライフサイクル設計に起因する問題である。
+- 1回の集計後にプロセスが終了する通常運用では実害は小さいが、同一プロセスで再集計するとハンドルが積み上がる。SP の1回集計で最大4本（集計日DB・基準日DB・予備補完2本）の接続が開く。
+- `BasicOptionBase` が `IDisposable` を継承していなかったため、呼び出し側は個別の型を知らないと破棄できなかった。破棄の契約が型に表れていないことが根本原因である。
+
+### Decisions
+
+- **`BasicOptionBase : IDisposable` 化＋空の仮想 `Dispose`**：呼び出し側（`RankingAnalyze`）はリストとして一括破棄するため、個別の型を知らなくても破棄できる必要がある。資源を持たない7件（`HiddenMovieDelete`・`SabunReader`・`LastRankReader`・`LastRankCsvReader`・`GenreInfoReader`・`MovieInfoReader`・`TagRankLiveTotalReader`）は集計メソッド内で `using` / `try-finally` の都度破棄であり、集計後に残る資源を持たないことを実コードで確認済みのため、基底の空実装のまま何も書かない。将来資源を持つ派生が増えたら、そのクラスだけ `override` を追加すればよく、呼び出し側の修正は不要になる。
+- **資源持ち3件は `override` に寄せ替え**：`SnapShotSabunReader` / `TagRankLiveSabunReader` / `TagRankTotalReader` の明示的実装（`void IDisposable.Dispose`）を `public override void Dispose` に変える。明示的実装のままだと、基底参照からの呼び出しでは基底の空実装が呼ばれて接続が残るため。冗長な `, IDisposable` 宣言は除去する。
+- **注入接続の所有権は `SpMovieInfoFallback` と同一流儀**：3 Reader に `_ownsDbCtrl` フラグを持たせ、自前生成分のみ閉じる。コンストラクタはテスト差し替えのために注入を受け付けるが、読み手の接続を閉じると呼び出し側の所有権を壊すため。本番経路は常に `null` 渡しのため挙動は変わらない。
+- **破棄の連鎖は Factory→RankingAnalyze→BasicOption**：保持と実行順の管理を担う `RankingAnalyze` が `BaseOptionList` を一括破棄し、生成責任を持つ `ModeFactoryBase` が `RankingAnalyze` の破棄に委譲する。`RankingList` は破棄しない（マネージの結果列表であり、出力処理が集計後に使うため）。`RankingAnalyze` / `ModeFactoryBase` の `Dispose` は冪等・null 安全とし、1件の破棄失敗でも残りを続けて `ErrLog` に残す。両者ともマネージドのみを保持するためファイナライザは付けない。
+- **UI 側は付け替え前と出力後に破棄**：`frmMainSyukei.AnalyzeAsync` で新 Factory の代入前に旧 Factory を破棄し（再集計時の積み上がりの主犯対策。失敗経路でも漏らさない）、出力処理を `try-finally` で包んで終了後に破棄する。`RankingHistory` の `using` 破棄と対称にする。
+- **失敗経路でも生成物を残さない**：`ModeFactroySP` / `ModeFactoryTagRank` の `Open` 失敗時は Reader を破棄してから `false` を返す。成功時は `RankingAnalyze` に渡して Factory 経由で破棄する一方通行とし、二重所有にしない。`TyukanAnalyze` 内側の使い捨て `RankingAnalyze`（中身は資源なしの `SabunReader` のみ）は `using` 化し、日別ループでの積み上がりに備える。
+- **Ext 側は対象外（見送り）**：`IExtOptionBase` はインターフェースであり、.NET Framework 4.8 の C# では空の既定実装を付けにくい。現状の実装（`FavoriteTagReader`・`UserInfoReader`・`TyokiHantei`）は呼び出しごとに自前接続を生成して `finally` で破棄するため持ち越しがなく、今回の漏れの主犯ではない。将来の net8 移行時に再検討する。
+
+---
+
 ## 実装済みの設計判断（要点）
 
 詳細は `docs/knowledge/db.md`・`docs/knowledge/testing.md` を参照。

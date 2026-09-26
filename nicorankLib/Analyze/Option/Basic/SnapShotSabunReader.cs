@@ -11,7 +11,7 @@ namespace nicorankLib.Analyze.Option.Basic
     /// <summary>
     /// スナップショットAPIで差分を計算するクラス
     /// </summary>
-    public class SnapShotSabunReader : BasicOptionBase, IDisposable
+    public class SnapShotSabunReader : BasicOptionBase
     {
         public DateTime AnalyzeTime { get; protected set; }
         public DateTime BaseTime { get; protected set; }
@@ -22,6 +22,11 @@ namespace nicorankLib.Analyze.Option.Basic
         ISQLiteCtrl dbCtrlAnalyze;
         ISQLiteCtrl dbCtrlBase;
 
+        //注入された接続は呼び出し側の所有物のため破棄しない。自前生成分のみ破棄する（SpMovieInfoFallbackと同一の流儀）。
+        //なぜ所有権を追うか: コンストラクタはテスト差し替えのために注入を受け付けるが、読み手の接続を
+        //閉じてしまうと呼び出し側の所有権を壊すため。受け入れ条件「注入接続は閉じないこと」の根拠（Issue #44）。
+        protected bool _ownsDbCtrl;
+
         //動画情報が取れなかった場合の予備補完（案B・Issue #40）。テストで差し替え可能にするため注入可。
         protected SpMovieInfoFallback _fallback;
 
@@ -30,6 +35,7 @@ namespace nicorankLib.Analyze.Option.Basic
             AnalyzeDB = analyzeDB;
             BaseDB = baseDB;
 
+            _ownsDbCtrl = dbCtrl == null;
             dbCtrlAnalyze = dbCtrl ?? new SQLiteCtrl();
             dbCtrlBase = dbCtrl ?? new SQLiteCtrl();
             _fallback = fallback ?? new SpMovieInfoFallback();
@@ -207,8 +213,12 @@ namespace nicorankLib.Analyze.Option.Basic
                 if (disposing)
                 {
                     // TODO: マネージ状態を破棄します (マネージ オブジェクト)。
-                    dbCtrlAnalyze.Close();
-                    dbCtrlBase.Close();
+                    //自前生成の接続だけ閉じる。注入された接続は呼び出し側の所有物のため触らない。
+                    if (_ownsDbCtrl)
+                    {
+                        dbCtrlAnalyze.Close();
+                        dbCtrlBase.Close();
+                    }
                     //予備補完が自前で開いた接続も閉じる（注入接続は先方が閉じるため触らない）
                     _fallback?.Close();
                 }
@@ -231,7 +241,10 @@ namespace nicorankLib.Analyze.Option.Basic
         }
 
         // このコードは、破棄可能なパターンを正しく実装できるように追加されました。
-        void IDisposable.Dispose()
+        // 基底 BasicOptionBase の仮想 Dispose を上書きする。なぜ override が必要か:
+        // 明示的実装（void IDisposable.Dispose）のままだと、基底参照からの呼び出しでは
+        // 基底の空実装が呼ばれて接続が残るため。呼び出し側はリストとして一括破棄するから。
+        public override void Dispose()
         {
             // このコードを変更しないでください。クリーンアップ コードを上の Dispose(bool disposing) に記述します。
             Dispose(true);

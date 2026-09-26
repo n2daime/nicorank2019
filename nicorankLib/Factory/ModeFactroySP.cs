@@ -35,6 +35,10 @@ namespace nicorankLib.Factory
 
             if (!snapShotSabunReader.Open())
             {
+                // 開けなかった Reader 自体も破棄する。なぜここで閉じるか:
+                // 生成済みの SQLiteCtrl（未接続・fallback 未開）は残っても実害は小さいが、
+                // 所有権を Factory が持つ以上、失敗経路でも残さないのが一貫するため。
+                snapShotSabunReader.Dispose();
                 return false;
             }
             TargetDay = snapShotSabunReader.AnalyzeTime;

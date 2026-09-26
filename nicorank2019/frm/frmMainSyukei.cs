@@ -213,6 +213,12 @@ namespace nicorank2019.frm
                         }
                         else
                         {
+                            // 前回集計の Factory が残っていれば付け替え前に破棄する。
+                            // なぜここか: 同一プロセスでの再集計時に旧接続が積み上がるのが本 Issue の主犯であり、
+                            // 付け替え前に閉じることで、失敗経路（CreateAnalyzer 失敗等）でも漏らさないため。
+                            // MainFactory の破棄は RankingList に触れないため、出力処理への影響はない。
+                            this.MainFactory?.Dispose();
+                            this.MainFactory = null;
                             this.MainFactory = GetModeFactory();
                             if (this.MainFactory == null)
                             {
@@ -234,26 +240,44 @@ namespace nicorank2019.frm
                     history.Close();
                 }
 
-                if (returnVal)
+                // 集計終了後に Factory（ひいては Reader 群の接続）を破棄する。成功・失敗・出力中例外のいずれでも実行する。
+                // なぜ try-finally か: 出力処理の途中で例外が出ても接続を残さないため。
+                // 破棄は RankingAnalyze のみを対象とし、RankingList 自体は残すため出力後の参照に影響しない。
+                // 次回集計時の付け替え前にも破棄するため、二重破棄になるが冪等であり問題ない。
+                try
                 {
-                    var outputList = new List<OutputBase>()
+                    if (returnVal)
                     {
-                        MainFactory.CreateHistory(),
-                        MainFactory.TyokiHantei,
-                        MainFactory.CreateNRMRank(),
-                        MainFactory.CreateNRMRank1000(),
-                        MainFactory.CreateNRMRankED(),
-                        MainFactory.CreateOutputCSV(),
-                        MainFactory.CreateOutputHTML(),
-                        MainFactory.CreateOutputMovieIconGet(),
-                        MainFactory.CreateOutputUserIconGet(),
-                        MainFactory.CreateOutputWORK(),
-                        MainFactory.CreateOutputJson_rankDB()
-                     };
+                        var outputList = new List<OutputBase>()
+                        {
+                            MainFactory.CreateHistory(),
+                            MainFactory.TyokiHantei,
+                            MainFactory.CreateNRMRank(),
+                            MainFactory.CreateNRMRank1000(),
+                            MainFactory.CreateNRMRankED(),
+                            MainFactory.CreateOutputCSV(),
+                            MainFactory.CreateOutputHTML(),
+                            MainFactory.CreateOutputMovieIconGet(),
+                            MainFactory.CreateOutputUserIconGet(),
+                            MainFactory.CreateOutputWORK(),
+                            MainFactory.CreateOutputJson_rankDB()
+                         };
 
-                    foreach (var output in outputList)
+                        foreach (var output in outputList)
+                        {
+                            output?.Execute(MainFactory.RankingList);
+                        }
+                    }
+                }
+                finally
+                {
+                    try
                     {
-                        output?.Execute(MainFactory.RankingList);
+                        MainFactory?.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        ErrLog.GetInstance().Write(ex);
                     }
                 }
             });

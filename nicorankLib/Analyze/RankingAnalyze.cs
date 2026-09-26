@@ -14,7 +14,14 @@ using nicorankLib.Util;
 
 namespace nicorankLib.Analyze
 {
-    public class RankingAnalyze
+    /// <summary>
+    /// 集計パイプラインの制御。所有する BasicOption の破棄責任を持つ。
+    /// なぜここで破棄するか: BasicOption の生成は Factory が行うが、集計中の保持と実行順の管理は
+    /// このクラスが担うため、使い終わった後の一括破棄もここに寄せるのが自然だから。
+    /// ExtOption は今回対象外とする（IExtOptionBase は破棄契約を持たず、現状持ち越しもないため。Issue #44）。
+    /// Input も破棄対象外とする（InputBase は破棄契約を持たないため）。
+    /// </summary>
+    public class RankingAnalyze : IDisposable
     {
         /// <summary>
         /// 基本となるランキングデータを取得するクラス
@@ -102,6 +109,45 @@ namespace nicorankLib.Analyze
             }
 
             return true;
+        }
+
+        private bool _disposed = false;
+
+        /// <summary>
+        /// 所有する BasicOption を一括破棄する。二重呼び出しでも例外を出さない。
+        /// 1件の破棄失敗で残りを諦めない（1件ずつ try/catch で継続する。
+        /// なぜ握りつぶすか: 破棄時の例外で集計成功の記録まで壊さないため。破棄失敗は ErrLog に残す）。
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+            if (disposing)
+            {
+                if (BaseOptionList != null)
+                {
+                    foreach (var option in BaseOptionList)
+                    {
+                        try
+                        {
+                            option?.Dispose();
+                        }
+                        catch (Exception ex)
+                        {
+                            ErrLog.GetInstance().Write(ex);
+                        }
+                    }
+                }
+            }
+            _disposed = true;
         }
 
 

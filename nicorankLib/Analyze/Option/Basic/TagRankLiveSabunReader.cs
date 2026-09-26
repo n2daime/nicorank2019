@@ -15,7 +15,7 @@ namespace nicorankLib.Analyze.Option.Basic
     /// 投稿日による新着救済（基準-7日）・MovieInfoへの基準日渡しはSnapShotSabunReaderと同一の考え方。
     /// 数値の出所はTagRankAnalyze.LiveCounters（工場が同一インスタンスを両者に渡す共有参照）。
     /// </summary>
-    public class TagRankLiveSabunReader : BasicOptionBase, IDisposable
+    public class TagRankLiveSabunReader : BasicOptionBase
     {
         public DateTime AnalyzeTime { get; protected set; }
         public DateTime BaseTime { get; protected set; }
@@ -26,6 +26,9 @@ namespace nicorankLib.Analyze.Option.Basic
 
         ISQLiteCtrl dbCtrlBase;
 
+        //注入された接続は呼び出し側の所有物のため破棄しない。自前生成分のみ破棄する（SpMovieInfoFallbackと同一の流儀。Issue #44）。
+        protected bool _ownsDbCtrl;
+
         //動画情報が取れなかった場合の予備補完（案B・Issue #40）。テストで差し替え可能にするため注入可。
         protected SpMovieInfoFallback _fallback;
 
@@ -34,6 +37,7 @@ namespace nicorankLib.Analyze.Option.Basic
             Input = input;
             AnalyzeTime = analyzeTime;
             BaseDB = baseDB;
+            _ownsDbCtrl = dbCtrl == null;
             dbCtrlBase = dbCtrl ?? new SQLiteCtrl();
             _fallback = fallback ?? new SpMovieInfoFallback();
         }
@@ -216,7 +220,11 @@ namespace nicorankLib.Analyze.Option.Basic
             {
                 if (disposing)
                 {
-                    dbCtrlBase.Close();
+                    //自前生成の接続だけ閉じる。注入された接続は呼び出し側の所有物のため触らない。
+                    if (_ownsDbCtrl)
+                    {
+                        dbCtrlBase.Close();
+                    }
                     //予備補完が自前で開いた接続も閉じる（注入接続は先方が閉じるため触らない）
                     _fallback?.Close();
                 }
@@ -233,7 +241,9 @@ namespace nicorankLib.Analyze.Option.Basic
             Dispose(false);
         }
 
-        void IDisposable.Dispose()
+        // 基底 BasicOptionBase の仮想 Dispose を上書きする。なぜ override が必要か:
+        // 明示的実装のままだと、基底参照からの呼び出しでは基底の空実装が呼ばれて接続が残るため。
+        public override void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
