@@ -180,6 +180,17 @@ namespace nicorank2019.frm
         }
 
         /// <summary>
+        /// メンテナンスタブの「DBの最適化を実行」ボタン(Issue #32・UIモック段階)
+        /// 見た目の配線確認のため未実装メッセージを出すだけで、DBには触れない。
+        /// 中身(VACUUM発行・サイズ取得・非同期化)はレイアウト確定後の実装フェーズで行う。
+        /// 実行ログは集計タブと同様にコンソール側へ出す運用のため、タブ内にログ欄は持たない。
+        /// </summary>
+        private void btnVacuumExec_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("UIモックのため未実装です", "メンテナンス", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        /// <summary>
         /// タグタブの入力値から検索条件を組み立てる
         /// </summary>
         private bool TryBuildTagSearchQuery(out TagSearchQuery query, out string error)
@@ -423,6 +434,7 @@ namespace nicorank2019.frm
         }
 
         // ポイント計算パネルを集計タブとタグタブで付け替える（タグ選択時はTAGRANK値に切り替える）
+        // メンテナンスタブ選択時は何もしない（集計モードと無関係のためpanel3は触らず、モード切替も行わない）
         // 固定座標はAutoScaleの対象外でずれるため、スケール済みのコントロールを基準に相対配置する
         private void tabPageOut_SelectedIndexChanged(object sender, EventArgs e)
         {
