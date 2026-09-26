@@ -9,7 +9,7 @@ dotnet test UnitTest/UnitTest.csproj
 
 - 環境: **.NET Framework 4.8 ターゲットだが .NET 10 SDK でビルド・実行**（Windows）
 - テストフレームワーク: MSTest 3.5.2 / モック: Moq 4.20.72
-- 全 **214 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件を追加）
+- 全 **234 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件を追加）
 
 ## 構成
 
@@ -29,12 +29,12 @@ UnitTest/
     ├── output/     UnitTestOutput(8)
     ├── SnapShot/   UnitTestSnapShotRequest(12) / UnitTestTagConditionParser(7) / UnitTestTagSearchRequest(7) / UnitTestSnapShotVersionChecker(12) / UnitTestSnapShotVersionPoller(5)
     ├── Analyze/     UnitTestRankingAnalyze(9)
-    ├── Analyze/model/ UnitTestRanking(6) / UnitTestRankingDisplayTags(5)
+    ├── Analyze/model/ UnitTestRanking(6) / UnitTestRankingDisplayTags(5) / UnitTestRankingDeletedMarker(2)
     ├── Analyze/Input/ UnitTestTagRankAnalyze(8)
     ├── Analyze/Official/ UnitTestRankingHistorySoHistory(15)
-    ├── Analyze/Option/Basic/ UnitTestTagRankTotalReader(4) / UnitTestTagRankLiveReader(7)
+    ├── Analyze/Option/Basic/ UnitTestTagRankTotalReader(4) / UnitTestTagRankLiveReader(7) / UnitTestSpMovieInfoFallback(4)
     ├── Analyze/Option/Ext/ UnitTestFavoriteTagReader(9)
-    └── api/        UnitTestNicoApiLockedTags(6)
+    └── api/        UnitTestNicoApiLockedTags(6) / UnitTestNicoApiNoDelete(9) / UnitTestApiXmlCacheImporter(5)
 ```
 
 ### テスト一覧（観点）
@@ -52,8 +52,12 @@ UnitTest/
 | `UnitTestConfig` | 8 | Config シングルトン、デフォルト値、SP モード、XML 文字列出力、TAGRANK節あり・なし・フラグOFF・項目欠落フォールバック（Issue #30） |
 | `UnitTestOutput` | 8 | ResultCsv と NrmOutput の一時ディレクトリへの実出力検証（タグ列・上限3・全件・カテゴリ除外。Issue #27） |
 | `UnitTestRankingDisplayTags` | 6 | `GetDisplayTags` のカテゴリ除外・順序・Trim・重複・非破壊・null（Issue #27） |
-| `UnitTestFavoriteTagReader` | 9 | 人気タグ＋ロックタグ全件補完・重複除外・対象外・確保失敗・null行・`isLocalOnly`×2（Issue #27） |
+| `UnitTestFavoriteTagReader` | 9 | 人気タグ＋ロックタグ全件補完・重複除外・対象外・確保失敗でも中断せず続ける・null行・`isLocalOnly`×2（Issue #27。確保失敗の扱いはIssue #40で変更） |
 | `UnitTestNicoApiLockedTags` | 6 | `GetLockedTags` のlock抽出・行なし・最新取得日・非ok・破損XML（Issue #27） |
+| `UnitTestNicoApiNoDelete` | 9 | `GetUserInfo`/`GetMovieInfo` の非ok・行なしでも除外せず中断しない・最新取得日読みの両方向・ThreadMax解決の優先順（Issue #40） |
+| `UnitTestSpMovieInfoFallback` | 4 | LastResultタイトル補完・期間内初見日・予備なし残留・取得済み非上書き（Issue #40） |
+| `UnitTestRankingDeletedMarker` | 2 | 空欄タイトルへの【集計後削除】付与・取得済み非変更（Issue #40） |
+| `UnitTestApiXmlCacheImporter` | 5 | 新規取込・本地が新しい場合の保持・運搬が新しい場合の置換・同取得日の保持・Status NULL行の取込（Issue #40） |
 | `UnitTestRanking` | 6 | PointTotal/HoseiAllPoint の補正計算（VOCACOLE2023実測、補正なし、sqrt、削除動画、ゼロ、境界値 0.25〜1.0） |
 | `UnitTestRankingAnalyze` | 9 | 同点時タイブレーク（Issue #34。ID数値認識のsm20/sm199・桁境界・sm/so種別・非数値フォールバックと群分離順序・null/同一・空文字・前ゼロ・総合数値順・入力順反転の決定性・副順位数値順） |
 | `UnitTestTagConditionParser` | 7 | タグ条件式→jsonFilter（完全一致・部分一致・AND/OR優先・Trim・空条件・空トークン・末尾外`*`却下。Issue #30） |

@@ -34,7 +34,9 @@
 ### ApiXML.db
 
 - **NicovideoThumb**: 動画 ID / 取得日 / Status（ok=1 / その他 0）/ XML（getthumbinfo の生XML）
-- 取得日（`MAX(取得日)`）が指定日より古いものだけ更新対象
+- 取得日（`MAX(取得日)`）が指定日より古いものだけ更新対象。同一IDは最新の行を読む
+- 取得失敗・Status非ok・行なしでも除外（`isDelete`）しない。表示補完のみに使う（Issue #40）
+- 週刊は oldlog が週刊JSON全IDの一括取得分を日付フォルダ（`old-ranking/weekly/YYYY-MM-DD/ApiXML.db`）に置き、2019側が `ApiXmlCacheImporter` で取り込む（新しい取得日だけ置き換え）
 - キャッシュ扱いのためDBVersion管理の対象外（Issue #28。最悪作り直しで対応）
 
 ### Dailylog.db

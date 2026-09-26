@@ -1,4 +1,5 @@
 ﻿using nicorankLib.Analyze.model;
+using nicorankLib.api;
 using nicorankLib.Util;
 using nicorankLib.Util.Text;
 using Newtonsoft.Json;
@@ -538,9 +539,76 @@ namespace nicorank_oldlog
                         }
                     }
                     Console.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} の結果を保存しました　----");
+
+                    //週刊の場合のみ、全ジャンルのID一覧で動画情報キャッシュを作る（Issue #40）
+                    //2019側の週刊集計が取り込むことで取得時点を固定し、欠落を減らす
+                    if (this.RankInfo.term == "week")
+                    {
+                        SaveApiXmlCache();
+                    }
                 }
             }
             return true;
+        }
+
+        /// <summary>
+        /// 週刊JSONに出たID全部の動画情報を一括取得し、日付フォルダへ ApiXML.db として保存する（Issue #40）。
+        /// 書きかけを掴ませないよう一時名で作ってから置き換える。失敗してもJSON保存の成否には影響させない。
+        /// </summary>
+        protected void SaveApiXmlCache()
+        {
+            string tmpPath = Path.Combine(this.TargetSaveDir, "ApiXML.tmp");
+            string dstPath = Path.Combine(this.TargetSaveDir, ApiXmlCacheImporter.CacheFileName);
+            try
+            {
+                var idList = this.GenreResultList
+                    .SelectMany(genre => genre.rankLogJsonList)
+                    .Select(item => item.Id)
+                    .Where(id => !string.IsNullOrWhiteSpace(id))
+                    .Distinct()
+                    .ToList();
+                if (idList.Count == 0)
+                {
+                    return;
+                }
+                Console.WriteLine($"---- {this.RankInfo.folder}:動画情報キャッシュ {idList.Count}件を取得します ----");
+
+                var rankingList = idList.Select(id => new Ranking() { ID = id }).ToList();
+
+                try { if (File.Exists(tmpPath)) { File.Delete(tmpPath); } } catch { }
+                //SQLiteCtrl.Open は存在チェックを行うため、空ファイルを用意してから開く
+                File.Create(tmpPath).Dispose();
+
+                using (var api = new NicoApi())
+                {
+                    //スレッド数はconfig.json側で管理し、nicorank.xmlに依存しない（Issue #40）
+                    api.ThreadMaxOverride = ConvertConfig.GetInstance()?.nicoapi_thread_max;
+                    if (!api.OpenDB(tmpPath) || !api.EnsureCacheTable())
+                    {
+                        Console.WriteLine($"---- {this.RankInfo.folder}:動画情報キャッシュDBを開けませんでした ----");
+                        return;
+                    }
+                    //取得日は実行日（週刊フォルダの日付）に統一する。2019側の取得日判定と合わせるため
+                    if (!api.UpdateTumbInfo(rankingList, DateTime.Today))
+                    {
+                        Console.WriteLine($"---- {this.RankInfo.folder}:動画情報キャッシュの取得に失敗しました ----");
+                        return;
+                    }
+                    api.CloseDB();
+                }
+                //一時名から本名へ置き換える（書きかけ配置の防止。旧ファイルの削除→移動では移動失敗時に前回分まで失うため上書き移動する）
+                File.Move(tmpPath, dstPath, true);
+                Console.WriteLine($"---- {this.RankInfo.folder}:動画情報キャッシュを保存しました ----");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"---- {this.RankInfo.folder}:動画情報キャッシュの保存でエラー ----");
+                ErrLog.GetInstance().Write(e);
+            }
+            finally
+            {
+                try { if (File.Exists(tmpPath)) { File.Delete(tmpPath); } } catch { }
+            }
         }
     }
 }

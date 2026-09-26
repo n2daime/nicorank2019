@@ -169,15 +169,16 @@ namespace nicorankLib.Analyze.Option
             {
                 if (ownsApi && !api.OpenDB())
                 {
-                    StatusLog.WriteLine("DB/ApiXML.dbを開けませんでした。");
-                    return false;
+                    //ApiXML.db は表示用キャッシュのため、開けなくても集計は続ける（Issue #40）
+                    StatusLog.WriteLine("DB/ApiXML.dbを開けませんでした。タグロック補完なしで続けます");
+                    return true;
                 }
                 // 不足分を確保する（無ければ取得。UserInfoReaderと重複してもキャッシュヒットのためAPI実打撃なし）
                 // isLocalOnly時は外部取得を行わず、キャッシュ参照のみで補完する（中間集計用）
+                //確保に失敗しても集計は続ける。取れない動画は補完なしのまま残し、除外しない
                 if (!IsLocalOnly && !api.UpdateTumbInfo(targetList, EndTime))
                 {
-                    StatusLog.WriteLine("タグロックの補完中にエラーが発生しました:UpdateTumbInfo");
-                    return false;
+                    StatusLog.WriteLine("タグロックの更新に失敗した動画があります:UpdateTumbInfo。取得済み分で続けます");
                 }
                 foreach (var wRank in targetList)
                 {

@@ -259,6 +259,25 @@ namespace nicorankLib.Analyze.model
         [JsonProperty("isDelete")]
         public bool isDelete = false;
 
+        /// <summary>
+        /// 集計には残したが動画情報が取れなかった場合にタイトル先頭へ付ける目印。
+        /// 列の追加・順序変更を避けるため既存のタイトル欄に付ける（Issue #40）。
+        /// なぜ目印が必要か: 削除動画は公式にデータがないため取れず、空欄のままだと欠落に気づけないから。
+        /// </summary>
+        public const string DeletedTitlePrefix = "【集計後削除】";
+
+        /// <summary>
+        /// タイトルが空欄の場合に削除の目印を付ける。既に目印付きなら何もしない。
+        /// 順位・ポイントには触らない（表示だけの変更）。
+        /// </summary>
+        public void ApplyDeletedTitleMarker()
+        {
+            if (string.IsNullOrWhiteSpace(Title))
+            {
+                Title = DeletedTitlePrefix;
+            }
+        }
+
         public void clear()
         {
             ID = "";

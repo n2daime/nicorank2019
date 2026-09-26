@@ -22,13 +22,17 @@ namespace nicorankLib.Analyze.Option.Basic
         ISQLiteCtrl dbCtrlAnalyze;
         ISQLiteCtrl dbCtrlBase;
 
-        public SnapShotSabunReader(string analyzeDB, string baseDB, ISQLiteCtrl dbCtrl = null)
+        //動画情報が取れなかった場合の予備補完（案B・Issue #40）。テストで差し替え可能にするため注入可。
+        protected SpMovieInfoFallback _fallback;
+
+        public SnapShotSabunReader(string analyzeDB, string baseDB, ISQLiteCtrl dbCtrl = null, SpMovieInfoFallback fallback = null)
         {
             AnalyzeDB = analyzeDB;
             BaseDB = baseDB;
 
             dbCtrlAnalyze = dbCtrl ?? new SQLiteCtrl();
             dbCtrlBase = dbCtrl ?? new SQLiteCtrl();
+            _fallback = fallback ?? new SpMovieInfoFallback();
         }
 
         /// <summary>
@@ -137,6 +141,10 @@ namespace nicorankLib.Analyze.Option.Basic
                     return false;
                 }
 
+                //動画情報が取れなかった分は予備情報で補う（案B）。取れなくても除外しない。
+                //なぜここか: 投稿日は直後の新着救済判定に使うため、判定前に埋める必要があるから。
+                _fallback.ComplementMovieInfo(rankingList, this.BaseTime, this.AnalyzeTime);
+
                 StatusLog.WriteLine("基準日からの差分値を計算しています...");
 
                 //差分データが無くても許容する投稿日の基準を計算する
@@ -175,6 +183,11 @@ namespace nicorankLib.Analyze.Option.Basic
                 }
                 //データが取得できたものだけ抽出
                 rankingList = rankingList.Where(wRank => !wRank.isDelete).ToList();
+                //動画情報が最後まで埋まらなかった分は目印を付けて残す（除外しない。Issue #40）
+                foreach (var wRank in rankingList)
+                {
+                    wRank.ApplyDeletedTitleMarker();
+                }
             }
             catch(Exception ex)
             {
@@ -196,12 +209,15 @@ namespace nicorankLib.Analyze.Option.Basic
                     // TODO: マネージ状態を破棄します (マネージ オブジェクト)。
                     dbCtrlAnalyze.Close();
                     dbCtrlBase.Close();
+                    //予備補完が自前で開いた接続も閉じる（注入接続は先方が閉じるため触らない）
+                    _fallback?.Close();
                 }
 
                 // TODO: アンマネージ リソース (アンマネージ オブジェクト) を解放し、下のファイナライザーをオーバーライドします。
                 // TODO: 大きなフィールドを null に設定します。
                 dbCtrlAnalyze = null;
                 dbCtrlBase = null;
+                _fallback = null;
 
                 disposedValue = true;
             }

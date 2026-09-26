@@ -16,6 +16,10 @@
     </PackageReference>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
+    <!-- nicorankLibはpackages.config形式のためSQLiteのDLLがtransitiveに流れてこない。
+         週刊の動画情報キャッシュ保存（SaveApiXmlCache）でSQLiteを使うため、CLIと同一の実証済み方式で直接参照する。
+         バージョンはnicorankLibと同一の10.0.11（SQLitePCLRaw 2.1.12系）に統一する（3.xは競合・AnyCPU禁止のため不可。pitfalls 4f参照） -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
   </ItemGroup>
 
   <ItemGroup>

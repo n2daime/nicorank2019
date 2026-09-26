@@ -258,6 +258,7 @@
     <Compile Include="Analyze\Option\Basic\MovieInfoReader.cs" />
     <Compile Include="Analyze\Option\Basic\SabunReader.cs" />
     <Compile Include="Analyze\Option\Basic\SnapShotSabunReader.cs" />
+    <Compile Include="Analyze\Option\Basic\SpMovieInfoFallback.cs" />
     <Compile Include="Analyze\Option\Basic\TagRankTotalReader.cs" />
     <Compile Include="Analyze\Option\Basic\TagRankLiveTotalReader.cs" />
     <Compile Include="Analyze\Option\Basic\TagRankLiveSabunReader.cs" />
@@ -303,6 +304,7 @@
     <Compile Include="Analyze\Input\TyukanAnalyze.cs" />
     <Compile Include="api\model\ThumbinfoBase.cs" />
     <Compile Include="api\NicoApi.cs" />
+    <Compile Include="api\ApiXmlCacheImporter.cs" />
     <Compile Include="Common\Config.cs" />
     <Compile Include="Common\NicoRankXml.cs" />
     <Compile Include="output\OutputBase.cs" />

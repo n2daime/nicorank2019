@@ -67,6 +67,21 @@
   - `App.config` の `bindingRedirect` は `SQLitePCLRaw.core 2.1.12.3116` と `System.ValueTuple 4.0.5.0` を単一 `assemblyBinding` 内に集約し `probing` と分離。`AutoGenerateBindingRedirects=true` のままでは二重 `assemblyBinding` が生成され後者が無視されるため `csproj:14` で `false` にし手動管理。
   - EXE 側 `App.config` の redirect は `nicorankLib/app.config` と整合させること。食い違うと `MSB3276` になる（#25 で `System.Memory` が EXE 側 `4.0.1.2`・Lib 側 `4.0.5.0` に乖離して発覚。詳細ログの「マップし直してください」が正解バージョンを示す）。
 
+### 4g. net8プロジェクトからnicorankLibのSQLiteを使う場合のDLL不足（2026-09・Issue #40）
+- **症状**: `nicorank_oldlog`（net8.0）で `new SQLiteCtrl()` しただけで `TypeInitializationException` → 内側 `FileNotFoundException: SQLitePCLRaw.batteries_v2`。`SaveApiXmlCache`（週刊の動画情報キャッシュ保存）で発覚
+- **原因**: `nicorankLib` は packages.config 形式のため、SQLiteのDLL（`Microsoft.Data.Sqlite` / `SQLitePCLRaw.*` / `runtimes/` ネイティブ）が参照元のSDK-styleプロジェクトに出力されない。oldlogは今回初めてSQLiteを使ったため今まで見えなかった
+- **対策（実証済み・`nicorank_SnapShot.Cli` と同一方式）**:
+  - 参照側csprojに `<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />` を直接追加する。バージョンはnicorankLibと同一の10.0.11（SQLitePCLRaw 2.1.12系）に統一する（3.xは競合・AnyCPU禁止のため不可。4f参照）
+  - 参照側にCosturaがある場合は `FodyWeavers.xml` の `ExcludeAssemblies` にSQLite5件（`SQLitePCLRaw.core|batteries_v2|provider.dynamic_cdecl|provider.e_sqlite3|Microsoft.Data.Sqlite`）を追加する。埋め込むと `batteries_v2.Location` が空になりネイティブ探索に必ず失敗する（4c参照）
+  - 確認: 出力直下に `SQLitePCLRaw.batteries_v2.dll` 等がファイルとして存在し、`runtimes/win-x64/native/e_sqlite3.dll`（win-x86も）があること
+
+### 4h. oldlog配置時の新旧DLL混在とJIT解決失敗のtry透過（2026-09・Issue #40）
+
+- **症状**: NAS側で `MissingMethodException: set_ThreadMaxOverride` が `SaveApiXmlCache` から上がり、DB登録前に終了する。メソッド内のtry/catchでは捕まらない
+- **原因**: 配置ミス。`nicorank_oldlog.dll` だけ新版に替え、`nicorankLib.dll` が旧版のままだった。新旧不整合の検出方法は例外名（`MissingMethodException`＝呼ぶ側と呼ばれる側の版ずれ、`FileNotFoundException`＝欠落）で切り分ける
+- **対策**: Release出力一式（exe/dll・`nicorankLib.dll`・SQLite群・`runtimes/`・runtimeconfig・config.json・cookie.txt）をまとめて配置する。単品配置はしない
+- **注意**: メンバー解決の失敗は実行前のJIT解決時点で起きるため、メソッド内のtry/catchを透過して呼び出し元へ飛ぶ。最善努力（best-effort）扱いにしたい処理でも配置不整合だけは防げない
+
 ### 4f. `packages.config` と `buildTransitive` の不一致（2026-08）
 
 - `SQLitePCLRaw.lib.e_sqlite3 2.1.12` は `build/` がなく `buildTransitive/net461` のみ。`packages.config` 形式では自動 `Import` されないため `csproj` で `Import Project="..\packages\...\buildTransitive\net461\..."` を明示。`EnsureNuGetPackageBuildImports` の `Exists` チェックも `buildTransitive\net461` に合わせる。存在しない `build\net471\*.props` をチェックすると `MSB3030` で必ず失敗する。
