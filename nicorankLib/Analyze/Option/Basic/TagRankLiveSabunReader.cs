@@ -15,7 +15,7 @@ namespace nicorankLib.Analyze.Option.Basic
     /// 投稿日による新着救済（基準-7日）・MovieInfoへの基準日渡しはSnapShotSabunReaderと同一の考え方。
     /// 数値の出所はTagRankAnalyze.LiveCounters（工場が同一インスタンスを両者に渡す共有参照）。
     /// </summary>
-    public class TagRankLiveSabunReader : BasicOptionBase, IDisposable
+    public class TagRankLiveSabunReader : BasicOptionBase
     {
         public DateTime AnalyzeTime { get; protected set; }
         public DateTime BaseTime { get; protected set; }
@@ -233,7 +233,9 @@ namespace nicorankLib.Analyze.Option.Basic
             Dispose(false);
         }
 
-        void IDisposable.Dispose()
+        // 基底 BasicOptionBase の仮想 Dispose を上書きする。なぜ override が必要か:
+        // 明示的実装のままだと、基底参照からの呼び出しでは基底の空実装が呼ばれて接続が残るため。
+        public override void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);

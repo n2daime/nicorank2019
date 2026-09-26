@@ -213,6 +213,12 @@ namespace nicorank2019.frm
                         }
                         else
                         {
+                            // 前回集計の Factory が残っていれば付け替え前に破棄する。
+                            // なぜここか: 同一プロセスでの再集計時に旧接続が積み上がるのが本 Issue の主犯であり、
+                            // 付け替え前に閉じることで、失敗経路（CreateAnalyzer 失敗等）でも漏らさないため。
+                            // MainFactory の破棄は RankingList に触れないため、出力処理への影響はない。
+                            this.MainFactory?.Dispose();
+                            this.MainFactory = null;
                             this.MainFactory = GetModeFactory();
                             if (this.MainFactory == null)
                             {
@@ -255,6 +261,18 @@ namespace nicorank2019.frm
                     {
                         output?.Execute(MainFactory.RankingList);
                     }
+                }
+                // 集計終了後に Factory（ひいては Reader 群の接続）を破棄する。成功・失敗問わず実行する。
+                // なぜ outputs の後か: 出力処理が MainFactory.RankingList を使うため。
+                // 破棄は RankingAnalyze のみを対象とし、RankingList 自体は残すため出力後の参照に影響しない。
+                // 次回集計時の付け替え前にも破棄するため、二重破棄になるが冪等であり問題ない。
+                try
+                {
+                    MainFactory?.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    ErrLog.GetInstance().Write(ex);
                 }
             });
             return returnVal;

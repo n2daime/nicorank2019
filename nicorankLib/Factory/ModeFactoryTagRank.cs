@@ -52,6 +52,8 @@ namespace nicorankLib.Factory
                     var liveTotalReader = new TagRankLiveTotalReader(inputBase, analyzeTime);
                     if (!liveTotalReader.Open())
                     {
+                        // 失敗経路でも生成物を残さない（SP 側と同一理由。LiveTotal は資源なしだが一貫のため）。
+                        liveTotalReader.Dispose();
                         return false;
                     }
                     BaseDay = analyzeTime;
@@ -63,6 +65,8 @@ namespace nicorankLib.Factory
 
                     if (!liveSabunReader.Open())
                     {
+                        // 失敗経路でも生成物を残さない（基準日DB・fallback の持ち越し防止）。
+                        liveSabunReader.Dispose();
                         return false;
                     }
                     BaseDay = liveSabunReader.BaseTime;
@@ -75,6 +79,8 @@ namespace nicorankLib.Factory
                 var totalReader = new TagRankTotalReader(AnalyzeDB);
                 if (!totalReader.Open())
                 {
+                    // 失敗経路でも生成物を残さない（集計日DB の持ち越し防止）。
+                    totalReader.Dispose();
                     return false;
                 }
                 analyzeTime = totalReader.AnalyzeTime;
@@ -91,6 +97,8 @@ namespace nicorankLib.Factory
 
                 if (!snapShotSabunReader.Open())
                 {
+                    // 失敗経路でも生成物を残さない（集計日DB・基準日DB・fallback の持ち越し防止）。
+                    snapShotSabunReader.Dispose();
                     return false;
                 }
                 analyzeTime = snapShotSabunReader.AnalyzeTime;

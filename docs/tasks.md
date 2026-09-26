@@ -15,6 +15,13 @@
 
 ## 未完了タスク
 
+### BasicOption破棄経路の整備（案B・Issue #44。提案元 #42）
+
+- 依存: #40 の予備補完（`SpMovieInfoFallback` の所有権流儀は維持する）
+- 対象: `BasicOptionBase`（`IDisposable` 化＋空の仮想 `Dispose`）、`RankingAnalyze`（`IDisposable` 化＋ `BaseOptionList` 破棄）、`ModeFactoryBase`（`IDisposable` 化＋ `RankingAnalyze` 破棄委譲）、`frmMainSyukei.AnalyzeAsync`（集計後の `MainFactory` 破棄）
+- 受け入れ条件: SP／タグ検索（基準あり・なし・v2最新値）の集計後に自前接続が閉じること、注入接続は閉じないこと、二重 `Dispose` で例外が出ないこと、既存テスト全件成功＋ソリューションビルド成功（EXIT CODE=0）、design／knowledge 更新（Ext 見送り理由を含む）
+- 備考: `IExtOptionBase` 側は対象外とする。インターフェースであり .NET Framework 4.8 の C# では空の既定実装を付けにくく、現状持ち越しもないため。将来の net8 移行時に再検討する。
+
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。

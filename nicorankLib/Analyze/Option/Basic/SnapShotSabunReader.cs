@@ -11,7 +11,7 @@ namespace nicorankLib.Analyze.Option.Basic
     /// <summary>
     /// スナップショットAPIで差分を計算するクラス
     /// </summary>
-    public class SnapShotSabunReader : BasicOptionBase, IDisposable
+    public class SnapShotSabunReader : BasicOptionBase
     {
         public DateTime AnalyzeTime { get; protected set; }
         public DateTime BaseTime { get; protected set; }
@@ -231,7 +231,10 @@ namespace nicorankLib.Analyze.Option.Basic
         }
 
         // このコードは、破棄可能なパターンを正しく実装できるように追加されました。
-        void IDisposable.Dispose()
+        // 基底 BasicOptionBase の仮想 Dispose を上書きする。なぜ override が必要か:
+        // 明示的実装（void IDisposable.Dispose）のままだと、基底参照からの呼び出しでは
+        // 基底の空実装が呼ばれて接続が残るため。呼び出し側はリストとして一括破棄するから。
+        public override void Dispose()
         {
             // このコードを変更しないでください。クリーンアップ コードを上の Dispose(bool disposing) に記述します。
             Dispose(true);

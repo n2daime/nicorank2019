@@ -11,7 +11,7 @@ namespace nicorankLib.Analyze.Option.Basic
     /// タグ検索集計の基準日DBなし用。集計日DBの累積値をそのまま集計値にする（差分なし）。
     /// SnapShotSabunReaderを使わない経路のためSP側には影響しない。
     /// </summary>
-    public class TagRankTotalReader : BasicOptionBase, IDisposable
+    public class TagRankTotalReader : BasicOptionBase
     {
         public DateTime AnalyzeTime { get; protected set; }
 
@@ -159,7 +159,9 @@ namespace nicorankLib.Analyze.Option.Basic
             Dispose(false);
         }
 
-        void IDisposable.Dispose()
+        // 基底 BasicOptionBase の仮想 Dispose を上書きする。なぜ override が必要か:
+        // 明示的実装のままだと、基底参照からの呼び出しでは基底の空実装が呼ばれて接続が残るため。
+        public override void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
