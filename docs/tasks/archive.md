@@ -545,3 +545,27 @@
   - reviewerレビュー＋再レビューで総合判定マージ可（中3件：注入所有権・design反映・自前接続テスト、低3件：finally・継続テスト・テスト後始末をすべて対応。低の見送りなし）
   - ユーザーSP実機検証OK（集計後にworkファイル的なものが全部消えた＝DBが閉じたことを確認）
 - **残課題**: なし（#44完結）。単一 `dbCtrl` を Analyze/Base 両方へ注入すると後開き側に張り替わる既存挙動は残るが、所有権とは独立のため別扱い。Ext の契約化は net8 移行時に検討
+---
+
+## 2026-09-27 ライブラリ層の直接コンソール出力を表示抽象へ寄せる（Issue #43）
+
+- **Issue**: #43（OPENの既存Issueをそのまま使用し、新規作成なし。本文が仕様、コメント0件）
+- **ブランチ**: `feature/t043-console-to-statuslog` を `develop` へ `--no-ff` でマージ。ブランチ削除済み
+- **背景**: #40でNicoApiの進捗をStatusLog化した際に同種の層分離違反が残っていることが分かり束ねたもの。ライブラリ直書きではWinForm呼び出し・Linux CLI運用・ログリダイレクト時の振る舞いが不定になる。Plan modeで調査（全Console棚卸し約60行・呼び出し元3経路・受け手5箇所・TextBoxWriter矛盾を特定）し、oldlog統一範囲と進捗ヘルパー共通化は調査後に判断する方針で着手した
+- **実施内容**:
+  - `SnapShotAnalyze.cs:91` の件数表示を `StatusLog` 化（3経路の受け手不整合を解消。文面不変）
+  - `UIConfig.GetWch` から `Console.ReadLine` を除去して既定値返却のみに（SilentMode／LocalXmlは互換のため温存。どちらも書き換えなしのデッドフラグであり削除は別タスク）
+  - `InternetUtil.cs:76` のコメント残骸を除去（編集中に `delayMax` 行の巻き込みミスを起こし即時修復。以後は境界の小さいeditと直後readを徹底する）
+  - `NicoRankiApi` 約25行を `StatusLog`／`ErrLog` 化（進捗・状態はStatusLog、例外詳細はErrLog。呼び出し側が黙ってfalseを返す経路では両書きで可視性を維持。文面は一字一句不変）
+  - `RankApi2Json` 系・`Program` 系・Cli結果を `StatusLog`／`ErrLog` 化（`--help` の使い方表示と終了コード0/1/2は維持。起動失敗2件はファイル側にも残す）
+  - `frmMesseageDialog.TextBoxWriter` を `TextBox` 参照＋ `BeginInvoke` 対応に修正（保持TextBox無視の矛盾が将来の罠になるため。ダイアログ自体は現在 `new` なし。ダイアログの削除・配線復活は別スコープ）
+  - 見送り: 進捗ヘルパー共通化（`\r`＋間引きの第二利用者なしの先取り抽象のため）・フラグ削除・`--help` のStatusLog化
+  - `UnitTestUIConfig` 2件追加（計272件。当初3件だったがreviewer指摘の重複で統合）。`specs.md` §7・`design.md`・`knowledge`（nicorankLib／apps／testing）・`pitfalls` 項目24（ErrLog排他は別タスク）を更新
+- **設計判断**:
+  - oldlog全体の統一を行った。libだけ直すと同一実行内で2系統が残り#43の目的が半減するため。文面・終了コード不変のためNAS運用への影響は表示先の統一のみに閉じる
+  - 例外詳細のファイル化で `nicorankerr.log` が増える（起動失敗・API例外時）。従来はコンソールにしか残らなかった記録が残る改善であり、ユーザー実行確認で受け入れ済み
+- **検証**:
+  - `dotnet test` 272件PASS・slnビルド成功（EXIT CODE=0。修正前は273件だったが重複整理で272件）
+  - reviewerレビューで総合判定マージ可（高・中なし。低5件：重複テスト統合・インデント・タスク文修正に対応、ErrLog排他はpitfalls記録＋別タスク化、運用影響は実行確認で受入。再レビュー不要）
+  - ユーザー実機検証OK（`\\ds224\Temp\nicorankOld2025` へ新モジュール11ファイルを配置。旧版は `bak20260927` に退避。config.json／cookie.txt・old-ranking・runtimesは不変。`/checklogin` 等の見た目維持を確認）
+- **残課題**: `ErrLog.Write` 全体の `lock` 硬化（pitfalls項目24。並列経路での排他不足。別タスク）。`SilentMode`／`LocalXml` 削除（別タスク）。`frmMesseageDialog` の削除・配線復活判断（別スコープ）
