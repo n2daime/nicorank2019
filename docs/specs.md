@@ -339,3 +339,14 @@
 - **接続文字列**: `Data Source=<dbFilePath>;Pooling=False;Default Timeout=30` の単純な接続文字列を使用し、`SqliteConnectionStringBuilder` に依存しないこと。
 - **パラメータ再利用**: `SqliteParameter` はループ外で一度生成し、ループ内では `.Value` プロパティのみを更新すること（10,000件以上の大量データ挿入時も新たな `AddWithValue` 呼び出しを行わないこと）。
 - **プロジェクト設定**: nicorankLib.csproj / packages.config / app.config の各設定ファイルを移行に合わせて更新すること（Reference 置換、パッケージ置換、DbProviderFactories 削除）。
+
+---
+
+## 7. 表示・ログの経路（Issue #43）
+
+ライブラリ層（nicorankLib・oldlog/RankAPI）は直接Consoleに書かず、表示は `StatusLog`・記録は `ErrLog` 経由にする。WinForm呼び出し・Linux CLI運用・ログリダイレクト時の振る舞いを一定にするため。
+
+- 進捗・状態通知・成否報告（取得中・検出・保存しました・リトライします・集計終了・ログインチェック結果）は `StatusLog` へ出す。各エントリポイントの受け手（コンソール／TextBox）が描画するため、文面は変えず経路だけ寄せる
+- 例外の詳細は `ErrLog`（`nicorankerr.log`）へ残す。呼び出し側が黙って `false` を返す経路ではコンソールの可視性が失われるため、その場合に限り `StatusLog` との両書きにする
+- CLIの使い方表示（`--help`）と終了コード規約（0=成功／1=設定不在／2=エラー）は変えない。使い方表示はログではなく引数応答であり、受け手の有無に依存させないため
+- `UIConfig.GetWch` は常時既定値を返し、入力待ち（`Console.ReadLine`）しない。非コンソール環境でのブロックを防ぐため

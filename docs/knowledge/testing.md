@@ -9,7 +9,7 @@ dotnet test UnitTest/UnitTest.csproj
 
 - 環境: **.NET Framework 4.8 ターゲットだが .NET 10 SDK でビルド・実行**（Windows）
 - テストフレームワーク: MSTest 3.5.2 / モック: Moq 4.20.72
-- 全 **270 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件・#39で16件・#44で10件を追加）
+- 全 **273 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件・#39で16件・#44で10件・#43で3件を追加）
 
 ## 構成
 
@@ -48,6 +48,7 @@ UnitTest/
 | `UnitTestDbError` | 4 | ファイル不在、未接続/多重 Dispose、複数インスタンス同時接続 |
 | `UnitTestDbCommandReuse` | 6 | 同一コマンド再利用（Clearなし重複の例外・DELETEループ・DELETE→INSERT切替・SELECT切替・ALTER同一トランザクション・外部コマンド使い回し。Issue #22） |
 | `UnitTestStatusLog` | 3 | StatusLog の Write/WriteLine/null writer（モック IStatusLogWriter） |
+| `UnitTestUIConfig` | 3 | GetWch の既定値返却（SilentMode時・非SilentMode時・例外なし。即時復帰と入力待ちなしの回帰防止。Issue #43） |
 | `UnitTestTextUtil` | 6 | TextUtil.ReadCsv（List版/Dictionary版/ファイル不在） |
 | `UnitTestConfig` | 14 | Config シングルトン、デフォルト値、SP モード、XML 文字列出力、TAGRANK節あり・なし・フラグOFF・項目欠落フォールバック（Issue #30）・OFFSET節別化の節あり・なし・部分あり・setter書込先・部分節／節なしsetterの共通不変（Issue #39） |
 | `UnitTestOutput` | 8 | ResultCsv と NrmOutput の一時ディレクトリへの実出力検証（タグ列・上限3・全件・カテゴリ除外。Issue #27） |

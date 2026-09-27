@@ -15,6 +15,21 @@
 
 ## 未完了タスク
 
+### ライブラリ層の直接コンソール出力を表示抽象へ寄せる（Issue #43）
+
+> #40でNicoApiの進捗表示をStatusLog化した際に、同種の層分離違反が残っていることが分かったため束ねたもの。ライブラリ（nicorankLib・oldlog/RankAPI）が直接Consoleを触ると、WinForm呼び出し・Linux CLI運用・ログリダイレクト時の振る舞いが不定になる。表示はStatusLog／ErrLog経由に寄せ、ライブラリ内の直接Console操作をなくす。調査（2026-09-27）はPlan modeで実施済みで、oldlog統一範囲と進捗ヘルパー共通化は調査後に判断する方針だったが、調査の結果、oldlog全体の統一は行い、進捗ヘルパー新設・フラグ削除・ダイアログ生死判断は見送ると確定した。詳細な理由・メリデメはIssue #43の調査報告コメントを参照。
+
+- [ ] 43.1 SnapShotAnalyzeの件数表示をStatusLog化する（`nicorankLib/SnapShot/SnapShotAnalyze.cs:91`。呼び出し3経路の受け手不整合を解消するため）
+- [ ] 43.2 UIConfig.GetWchからConsole.ReadLineを除去する（既定値返却のみにし、SilentMode／LocalXmlフラグ自体は互換のため温存する。現状どちらも書き換えなしのデッドフラグだが、削除は別タスクとするため）
+- [ ] 43.3 InternetUtilのコメントアウト残骸を除去する（`nicorankLib/Util/InternetUtil.cs:76`。次回棚卸しのノイズになるため）
+- [ ] 43.4 NicoRankiApi約25行をStatusLog／ErrLogに寄せる（進捗・状態はStatusLog、異常詳細はErrLogへ1対1対応。oldlogは既にConsoleLogWriter注入済みのため二重表示の片側をなくす）
+- [ ] 43.5 RankApi2Json系・Program系の進捗・結果をStatusLog／ErrLogに寄せる（`--help`の使い方表示と終了コード規約は維持する。libだけ直すと同一実行内で2系統が残るため）
+- [ ] 43.6 frmMesseageDialog.TextBoxWriterをTextBox参照＋Invoke対応に修正する（保持したTextBoxを無視してConsoleに書く矛盾が将来の罠になるため。ダイアログ自体の削除・配線復活は別スコープとする）
+- [ ] 43.7 単体テストを追加し、`dotnet test UnitTest/UnitTest.csproj`とビルドを通す（StatusLog捕捉・GetWch既定値・TextBoxWriter相当の検証。既存270件を維持する）
+- [ ] 43.8 specs.md／design.md／knowledgeを更新する（表示先の定義・寄せた理由・共通化見送り理由を残す）
+
+受け入れ条件: ライブラリ層（nicorankLib・oldlog/RankAPI）に直接のConsole出力・入力が残らないこと（受け手の正規実装と`--help`を除く）。`--help`・終了コード・文面の見た目（cronメールの1行内容）は変えないこと。テスト＋ビルドが成功すること（`$LASTEXITCODE = 0`）。
+
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。

@@ -9,6 +9,12 @@ using nicorank_oldlog.RankAPI;
 
 namespace nicorank_oldlog
 {
+    /// <summary>
+    /// ランキング取得からJSON保存までを担う制御クラス（oldlog専用）。
+    /// 表示方針（Issue #43）：進捗・状態通知・成否報告はStatusLogに寄せ、直接Consoleには書かない。
+    /// なぜ寄せるか: エントリポイントでStatusLog受け手（ConsoleLogWriter）を注入済みであり、直書きでは出力先が二重化し、5並列の取得でも受け手が統一されないため。
+    /// 例外自体の記録はErrLog側（catch内のErrLog.Write）に任せ、ここでは運用の可視性（コンソール／NASメール）を保つ。
+    /// </summary>
     public class RankApi2Json
     {
         /// <summary>
@@ -133,14 +139,14 @@ namespace nicorank_oldlog
                     // ジャンルランキングを取得する
                     if (genreResult.genreInfo.isGenreRank)
                     {
-                        Console.WriteLine($@"{this.RankInfo.folder}:{genreResult.genreInfo.genre}のジャンルランキングを取得中...");
+                        StatusLog.WriteLine($@"{this.RankInfo.folder}:{genreResult.genreInfo.genre}のジャンルランキングを取得中...");
 
                         for (uint retry = 0; retry <= 3; retry++)
                         {
                             bool result = nicoApi.GetGenreRanking(this.RankInfo.term, genreResult.genreInfo.genrekey, out var genreRankingItemsList);
                             if (!result || genreRankingItemsList.Count == 0)
                             {
-                                Console.WriteLine($@"{this.RankInfo.folder}:{genreResult.genreInfo.genre}のジャンルランキング取得エラー。リトライします...{retry}n回目");
+                                StatusLog.WriteLine($@"{this.RankInfo.folder}:{genreResult.genreInfo.genre}のジャンルランキング取得エラー。リトライします...{retry}n回目");
                             }
                             else
                             {
@@ -201,18 +207,18 @@ namespace nicorank_oldlog
                         string tagName = (string?)genreResult.genreInfo.tag ?? "";
                         if (string.IsNullOrEmpty(tagName))
                         {
-                            Console.WriteLine($@"{this.RankInfo.folder}:{genreResult.genreInfo.genre}の定番ランキングを取得中...");
+                            StatusLog.WriteLine($@"{this.RankInfo.folder}:{genreResult.genreInfo.genre}の定番ランキングを取得中...");
                         }
                         else
                         {
-                            Console.WriteLine($@"{this.RankInfo.folder}:{genreResult.genreInfo.genre}:{tagName}の定番ランキングを取得中...");
+                            StatusLog.WriteLine($@"{this.RankInfo.folder}:{genreResult.genreInfo.genre}:{tagName}の定番ランキングを取得中...");
                         }
                         for (uint retry = 0; retry <= 3; retry++)
                         {
                             bool result = nicoApi.GetTeibanRanking(this.RankInfo.term, genreResult.genreInfo.featuredKey, tagName, out var teibanRankingItemsList);
                             if (!result || teibanRankingItemsList.Count == 0)
                             {
-                                Console.WriteLine($@"{this.RankInfo.folder}:{genreResult.genreInfo.genre}:{tagName}の定番ランキング取得エラー。リトライします...{retry}n回目");
+                                StatusLog.WriteLine($@"{this.RankInfo.folder}:{genreResult.genreInfo.genre}:{tagName}の定番ランキング取得エラー。リトライします...{retry}n回目");
                             }
                             else
                             {
@@ -287,7 +293,7 @@ namespace nicorank_oldlog
                     var lastResult = JsonConvert.DeserializeObject<LastRankResult>(strLastJson);
                     if (lastResult == null)
                     {
-                        Console.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} lastResultの書式が不正です　---- ");
+                        StatusLog.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} lastResultの書式が不正です　---- ");
                         return false;
                     }
 
@@ -295,7 +301,7 @@ namespace nicorank_oldlog
                     var workGenreList = this.GenreResultList.Where(x => x.genreInfo.genre == "全ジャンル");
                     if (workGenreList.Count() != 1)
                     {
-                        Console.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} 全ジャンルの情報取得でエラー　---- ");
+                        StatusLog.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} 全ジャンルの情報取得でエラー　---- ");
                         return false;
                     }
 
@@ -350,17 +356,17 @@ namespace nicorank_oldlog
                                 }
                                 if (!result)
                                 {
-                                    Console.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} ジャンル更新チェックでエラーが発生しました　---- ");
+                                    StatusLog.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} ジャンル更新チェックでエラーが発生しました　---- ");
                                     return false;
                                 }
                                 if (isUpdate)
                                 {
-                                    Console.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} ジャンルランキング更新を検出しました　---- ");
+                                    StatusLog.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} ジャンルランキング更新を検出しました　---- ");
                                     break;
                                 }
                                 else
                                 {
-                                    Console.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} ジャンルランキング更新がありませんでした。5分後にリトライします　---- ");
+                                    StatusLog.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} ジャンルランキング更新がありませんでした。5分後にリトライします　---- ");
                                     // 5分間隔でチェックする
                                     Task.Delay(60000 * 5).Wait();
                                 }
@@ -409,17 +415,17 @@ namespace nicorank_oldlog
                                 }
                                 if (!result)
                                 {
-                                    Console.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} 定番更新チェックでエラーが発生しました　---- ");
+                                    StatusLog.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} 定番更新チェックでエラーが発生しました　---- ");
                                     return false;
                                 }
                                 if (isUpdate)
                                 {
-                                    Console.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} 定番ランキング更新を検出しました　---- ");
+                                    StatusLog.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} 定番ランキング更新を検出しました　---- ");
                                     break;
                                 }
                                 else
                                 {
-                                    Console.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} 定番ランキング更新がありませんでした。5分後にリトライします　---- ");
+                                    StatusLog.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} 定番ランキング更新がありませんでした。5分後にリトライします　---- ");
                                     // 5分間隔でチェックする
                                     Task.Delay(60000 * 5).Wait();
                                 }
@@ -538,7 +544,7 @@ namespace nicorank_oldlog
                             }
                         }
                     }
-                    Console.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} の結果を保存しました　----");
+                    StatusLog.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} の結果を保存しました　----");
 
                     //週刊の場合のみ、全ジャンルのID一覧で動画情報キャッシュを作る（Issue #40）
                     //2019側の週刊集計が取り込むことで取得時点を固定し、欠落を減らす
@@ -571,7 +577,7 @@ namespace nicorank_oldlog
                 {
                     return;
                 }
-                Console.WriteLine($"---- {this.RankInfo.folder}:動画情報キャッシュ {idList.Count}件を取得します ----");
+                StatusLog.WriteLine($"---- {this.RankInfo.folder}:動画情報キャッシュ {idList.Count}件を取得します ----");
 
                 var rankingList = idList.Select(id => new Ranking() { ID = id }).ToList();
 
@@ -585,24 +591,24 @@ namespace nicorank_oldlog
                     api.ThreadMaxOverride = ConvertConfig.GetInstance()?.nicoapi_thread_max;
                     if (!api.OpenDB(tmpPath) || !api.EnsureCacheTable())
                     {
-                        Console.WriteLine($"---- {this.RankInfo.folder}:動画情報キャッシュDBを開けませんでした ----");
+                        StatusLog.WriteLine($"---- {this.RankInfo.folder}:動画情報キャッシュDBを開けませんでした ----");
                         return;
                     }
                     //取得日は実行日（週刊フォルダの日付）に統一する。2019側の取得日判定と合わせるため
                     if (!api.UpdateTumbInfo(rankingList, DateTime.Today))
                     {
-                        Console.WriteLine($"---- {this.RankInfo.folder}:動画情報キャッシュの取得に失敗しました ----");
+                        StatusLog.WriteLine($"---- {this.RankInfo.folder}:動画情報キャッシュの取得に失敗しました ----");
                         return;
                     }
                     api.CloseDB();
                 }
                 //一時名から本名へ置き換える（書きかけ配置の防止。旧ファイルの削除→移動では移動失敗時に前回分まで失うため上書き移動する）
                 File.Move(tmpPath, dstPath, true);
-                Console.WriteLine($"---- {this.RankInfo.folder}:動画情報キャッシュを保存しました ----");
+                StatusLog.WriteLine($"---- {this.RankInfo.folder}:動画情報キャッシュを保存しました ----");
             }
             catch (Exception e)
             {
-                Console.WriteLine($"---- {this.RankInfo.folder}:動画情報キャッシュの保存でエラー ----");
+                StatusLog.WriteLine($"---- {this.RankInfo.folder}:動画情報キャッシュの保存でエラー ----");
                 ErrLog.GetInstance().Write(e);
             }
             finally

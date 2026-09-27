@@ -11,7 +11,7 @@
 - タグ検索タブの件数確認（`btnTagSearch_Click`／`btnAnalyzeTag_Click` 内の `CheckTagCountAsync`）では、v2最新値モード（`chkUseLiveCounter` ON）の件数取得成功後に `SnapShotVersionChecker` で version を取得し、`lblTagSnapshotTime` に `MM/DD 05:00 時点のスナップショットで集計` と出す（Issue #39）。日付は `last_modified` のJST日・時刻は05:00固定（反映完了時刻との混同防止）。OFF時・未確認時・条件変更時は非表示に戻す。確認不能時は件数確認自体を失敗扱いにして集計に進めない。取得は `await Task.Run` でUIブロックしない
 - タブ構成: 「集計」「タグ検索集計」「メンテナンス」の3タブ。ポイント計算パネル（`panel3`）は実体1つを集計・タグ検索の2タブ切替で付け替えて共有する（相対配置でAutoScaleずれ対策。Issue #30）。メンテナンスタブ（Issue #32・`tabPageMaint`）は集計モードと無関係のため `panel3` に触らず、モード切替も行わない。ログ欄も持たず、集計タブと同様にコンソール側へ出す運用
 - メンテナンスタブの内訳: `grpVacuum`（DB最適化。対象4DBのチェック既定ON・実行前後2列サイズ欄・実行ボタン・状態＋進捗・注意文。中身実装は32.2）＋ `grpFutureApiXml`（長期キャッシュ再構築の場所予約。Issue #41着手時に埋める。操作部は無効化表示）
-- `frm/frmMesseageDialog.cs`: `RunFunction` デリゲートを `BackgroundWorker` で実行するモーダルダイアログ。`StatusLog` の出力先を TextBox に差し替え
+- `frm/frmMesseageDialog.cs`: `RunFunction` デリゲートを `BackgroundWorker` で実行するモーダルダイアログ。`StatusLog` の出力先を TextBox に差し替え（`TextBoxWriter` は `BeginInvoke` でUIスレッドへ寄せて追記する。以前はTextBoxを無視してConsoleに書いていた。Issue #43。現在は生成箇所なし）
 
 **ビルド**: .NET Framework 4.8。Costura.Fody 6.2.0（単一 EXE 化）。packages.config 方式。PostBuild で「依存ファイル」を xcopy。`AnyCPU Prefer32Bit=false` で `64bit` 起動。
 
@@ -31,6 +31,7 @@
 
 - 起動: `--help` / `-h` で使い方表示（終了コード 0）。それ以外（引数なし含む）は更新確認後に取得を実行する（既存コンソールモードが引数の中身を解釈しない運用に合わせた）
 - 取得前に `SnapShotVersionPoller` で更新待ち（Issue #38）。未更新／確認不能の間は5分ごとに最大1時間リトライし、毎回 `last_modified` をログ出力。更新検知したら通常取得、1時間待っても更新なしなら取得せず終了コード2（`InitilizeDB` に触れない。リトライタイムアウトであることを `nicorankerr.log` に記録しNASメールで通知）
+- 終了報告・エラー要約も `StatusLog` に一本化する（`--help` の使い方表示はログではなく引数応答のため `Console` のまま。Issue #43）
 - 終了コード: 0=成功 / 2=エラー（`nicorank_oldlog` と同じ規約）。`SnapController` の catch で例外時に `false` を返すよう修正したため、例外時も 2 になる（従来は成功扱いだった）
 - 依存しないもの: `nicorank.xml`・`DB/` フォルダは使わない（SnapShot 経路に参照なし）。成果物はカレント直下の `LogSnapshot_yyyyMMdd.db`、エラー時のみ `nicorankerr.log`。定期実行では出力先の `WorkingDirectory` を固定する運用が必要
 - 持たないもの: 開始ボタン・サスペンド・TaskDialog（`Form1` 由来）。電源管理は cron / systemd 側の責務
@@ -51,8 +52,8 @@
   - `/folderappend:<文字列>` — 保存フォルダ名にサフィックス追加
   - 終了コード: 0=成功 / 1=config.json か cookie.txt 不在 / 2=エラー
 - フロー: `ConvertConfig.GetInstance()`（config.json）→ `NicoRankiApi.GetInstance()`（cookie.txt の user_session）→ `RankApi2JsonContoller` → term 別に `RankApi2Json` / `RankApi2JsonDaily` を並列実行 → 保存
-- `RankAPI/NicoRankiApi.cs`: シングルトン。nvapi に user_session クッキー + UA を付与して GET。GenreList / TeibanGenreList / TrendTagList / GenreRanking（hasNext まで最大20ページ）/ TeibanRanking
-- `RankApi2Json.cs`: ジャンル/定番取得（失敗時3回リトライ）、ID 重複排除マージ、`lastweekly_all.json` / `lastmonthly_all.json` との更新チェック（更新なしなら5分ポーリング）
+- `RankAPI/NicoRankiApi.cs`: シングルトン。nvapi に user_session クッキー + UA を付与して GET。GenreList / TeibanGenreList / TrendTagList / GenreRanking（hasNext まで最大20ページ）/ TeibanRanking。表示は進捗・状態を `StatusLog`、例外詳細を `ErrLog` に寄せ、直接Consoleには書かない（Issue #43）
+- `RankApi2Json.cs`: ジャンル/定番取得（失敗時3回リトライ）、ID 重複排除マージ、`lastweekly_all.json` / `lastmonthly_all.json` との更新チェック（更新なしなら5分ポーリング）。進捗・成否報告は `StatusLog` 経由（Issue #43）
 - 週刊保存時は全ジャンルのID一覧（約26000件）で動画情報を一括取得し、日付フォルダへ `ApiXML.db` も置く（2019側の週刊集計が取り込む。取得時点固定で欠落を減らす。Issue #40。一時名で作ってから置き換え）
 - `RankApi2JsonDaily.cs`: 派生クラス。トレンドタグ展開 + タグ別定番ランキング追加取得
 - **ビルド**: net8.0、SDK-style。Newtonsoft.Json / Costura.Fody。**nicorankLib（net48）を参照するハイブリッド構成**
