@@ -5,6 +5,12 @@ using nicorankLib.Util;
 
 namespace nicorank_oldlog.RankAPI
 {
+    /// <summary>
+    /// nvapi経由でランキングを取得するシングルトン（oldlog専用）。
+    /// 表示方針（Issue #43）：進捗・状態通知はStatusLog、例外の詳細はErrLog（ファイル）に寄せ、直接Consoleには書かない。
+    /// なぜ分けるか: oldlogのエントリポイントは既にStatusLog受け手（ConsoleLogWriter）を注入しており、直書きでは出力先が二重化し単体テストでも捕捉できないため。
+    /// 呼び出し側（RankApi2Json系）がfalse時にリトライ表示をStatusLogへ出すため、コンソール／NASメールの可視性は保たれる。
+    /// </summary>
     public class NicoRankiApi
     {
         protected static NicoRankiApi? Instance = null;
@@ -115,7 +121,8 @@ namespace nicorank_oldlog.RankAPI
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"{apiurl} でエラーが発生しました: {ex.Message}");
+                    // 例外の詳細はファイルに残す。コンソール側の可視性は呼び出し側のリトライ表示で保たれる（Issue #43）。
+                    ErrLog.GetInstance().Write(ex);
                 }
             }
             return default;
@@ -141,7 +148,7 @@ namespace nicorank_oldlog.RankAPI
 
                 if (resObj == null)
                 {
-                    Console.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます null");
+                    StatusLog.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます null");
                     return false;
                 }
                 else if (resObj.meta.status != 200)
@@ -150,16 +157,16 @@ namespace nicorank_oldlog.RankAPI
                     switch (resObj.meta.status)
                     {
                         case 400:
-                            Console.WriteLine($"{apiUrl} :ログインセッションが無効");
+                            StatusLog.WriteLine($"{apiUrl} :ログインセッションが無効");
                             break;
                         default:
-                            Console.WriteLine($"{apiUrl} :エラーが返されました: {resObj.meta.status}");
+                            StatusLog.WriteLine($"{apiUrl} :エラーが返されました: {resObj.meta.status}");
                             break;
                     }
                 }
                 else if (resObj.data == null || resObj.data.genres == null)
                 {
-                    Console.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます 構造エラー");
+                    StatusLog.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます 構造エラー");
                     return false;
                 }
 
@@ -169,7 +176,9 @@ namespace nicorank_oldlog.RankAPI
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{apiUrl} :の取得でエラーが発生しました: {ex.Message}");
+                // 予期せぬ例外はファイルとコンソールの両方に残す。呼び出し側が黙ってfalseを返す経路もあるため、コンソール側の可視性も保つ（Issue #43）。
+                ErrLog.GetInstance().Write(ex);
+                StatusLog.WriteLine($"{apiUrl} :の取得でエラーが発生しました: {ex.Message}");
                 return false;
             }
         }
@@ -194,7 +203,7 @@ namespace nicorank_oldlog.RankAPI
 
                 if (resObj == null)
                 {
-                    Console.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます null");
+                    StatusLog.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます null");
                     return false;
                 }
                 else if (resObj.meta.status != 200)
@@ -203,16 +212,16 @@ namespace nicorank_oldlog.RankAPI
                     switch (resObj.meta.status)
                     {
                         case 400:
-                            Console.WriteLine($"{apiUrl} :ログインセッションが無効");
+                            StatusLog.WriteLine($"{apiUrl} :ログインセッションが無効");
                             break;
                         default:
-                            Console.WriteLine($"{apiUrl} :エラーが返されました: {resObj.meta.status}");
+                            StatusLog.WriteLine($"{apiUrl} :エラーが返されました: {resObj.meta.status}");
                             break;
                     }
                 }
                 else if (resObj.data == null || resObj.data.items == null)
                 {
-                    Console.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます 構造エラー");
+                    StatusLog.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます 構造エラー");
                     return false;
                 }
 
@@ -223,7 +232,9 @@ namespace nicorank_oldlog.RankAPI
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{apiUrl} :の取得でエラーが発生しました: {ex.Message}");
+                // 予期せぬ例外はファイルとコンソールの両方に残す。呼び出し側が黙ってfalseを返す経路もあるため、コンソール側の可視性も保つ（Issue #43）。
+                ErrLog.GetInstance().Write(ex);
+                StatusLog.WriteLine($"{apiUrl} :の取得でエラーが発生しました: {ex.Message}");
                 return false;
             }
         }
@@ -249,7 +260,7 @@ namespace nicorank_oldlog.RankAPI
 
                 if (resObj == null)
                 {
-                    Console.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます null");
+                    StatusLog.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます null");
                     return false;
                 }
                 else if (resObj.meta.status != 200)
@@ -258,16 +269,16 @@ namespace nicorank_oldlog.RankAPI
                     switch (resObj.meta.status)
                     {
                         case 400:
-                            Console.WriteLine($"{apiUrl} :ログインセッションが無効");
+                            StatusLog.WriteLine($"{apiUrl} :ログインセッションが無効");
                             break;
                         default:
-                            Console.WriteLine($"{apiUrl} :エラーが返されました: {resObj.meta.status}");
+                            StatusLog.WriteLine($"{apiUrl} :エラーが返されました: {resObj.meta.status}");
                             break;
                     }
                 }
                 else if (resObj.data == null || resObj.data.trendTags == null)
                 {
-                    Console.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます 構造エラー");
+                    StatusLog.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます 構造エラー");
                     return false;
                 }
 
@@ -278,7 +289,9 @@ namespace nicorank_oldlog.RankAPI
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{apiUrl} :の取得でエラーが発生しました: {ex.Message}");
+                // 予期せぬ例外はファイルとコンソールの両方に残す。呼び出し側が黙ってfalseを返す経路もあるため、コンソール側の可視性も保つ（Issue #43）。
+                ErrLog.GetInstance().Write(ex);
+                StatusLog.WriteLine($"{apiUrl} :の取得でエラーが発生しました: {ex.Message}");
                 return false;
             }
         }
@@ -325,7 +338,7 @@ namespace nicorank_oldlog.RankAPI
                     if (resObj == null)
                     {
                         getResult = false;
-                        Console.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます null");
+                        StatusLog.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます null");
                         break;
                     }
                     else if (resObj.meta.status != 200)
@@ -334,17 +347,17 @@ namespace nicorank_oldlog.RankAPI
                         switch (resObj.meta.status)
                         {
                             case 400:
-                                Console.WriteLine($"{apiUrl} :ログインセッションが無効");
+                                StatusLog.WriteLine($"{apiUrl} :ログインセッションが無効");
                                 break;
                             default:
-                                Console.WriteLine($"{apiUrl} :エラーが返されました: {resObj.meta.status}");
+                                StatusLog.WriteLine($"{apiUrl} :エラーが返されました: {resObj.meta.status}");
                                 break;
                         }
                     }
                     else if (resObj.data == null)
                     {
                         getResult = false;
-                        Console.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます 構造エラー");
+                        StatusLog.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます 構造エラー");
                         break;
                     }
 
@@ -364,7 +377,9 @@ namespace nicorank_oldlog.RankAPI
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{apiUrl} :の取得でエラーが発生しました: {ex.Message}");
+                // 予期せぬ例外はファイルとコンソールの両方に残す。呼び出し側が黙ってfalseを返す経路もあるため、コンソール側の可視性も保つ（Issue #43）。
+                ErrLog.GetInstance().Write(ex);
+                StatusLog.WriteLine($"{apiUrl} :の取得でエラーが発生しました: {ex.Message}");
                 return false;
             }
         }
@@ -405,7 +420,8 @@ namespace nicorank_oldlog.RankAPI
                     else
                     {
                         // tag指定は term=24h/hour の場合のみ有効（公式仕様）のため省略する
-                        Console.WriteLine($"{apiUrl} : tag指定は term=24h/hour の場合のみ有効のため省略します (term={term})");
+                        // tag省略は仕様通りの動作であり、進捗としてコンソール側に残す（Issue #43）。
+                        StatusLog.WriteLine($"{apiUrl} : tag指定は term=24h/hour の場合のみ有効のため省略します (term={term})");
                     }
                 }
 
@@ -423,7 +439,7 @@ namespace nicorank_oldlog.RankAPI
 
                     if (resObj == null)
                     {
-                        Console.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます null");
+                        StatusLog.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます null");
                         break;
                     }
                     else if (resObj.meta.status != 200)
@@ -432,16 +448,16 @@ namespace nicorank_oldlog.RankAPI
                         switch (resObj.meta.status)
                         {
                             case 400:
-                                Console.WriteLine($"{apiUrl} :ログインセッションが無効");
+                                StatusLog.WriteLine($"{apiUrl} :ログインセッションが無効");
                                 break;
                             default:
-                                Console.WriteLine($"{apiUrl} :エラーが返されました: {resObj.meta.status}");
+                                StatusLog.WriteLine($"{apiUrl} :エラーが返されました: {resObj.meta.status}");
                                 break;
                         }
                     }
                     else if (resObj.data == null)
                     {
-                        Console.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます 構造エラー");
+                        StatusLog.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます 構造エラー");
                         break;
                     }
 
@@ -461,7 +477,9 @@ namespace nicorank_oldlog.RankAPI
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{apiUrl} :の取得でエラーが発生しました: {ex.Message}");
+                // 予期せぬ例外はファイルとコンソールの両方に残す。呼び出し側が黙ってfalseを返す経路もあるため、コンソール側の可視性も保つ（Issue #43）。
+                ErrLog.GetInstance().Write(ex);
+                StatusLog.WriteLine($"{apiUrl} :の取得でエラーが発生しました: {ex.Message}");
                 return false;
             }
         }

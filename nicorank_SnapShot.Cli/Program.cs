@@ -40,21 +40,24 @@ try
     }
 
     // 成果物はカレントディレクトリの LogSnapshot_yyyyMMdd.db に保存される（SnapShotDB の仕様）。
+    // 終了報告もStatusLogに一本化する。受け手がコンソールのためcronメールの見た目は変わらない（Issue #43）。
+    // なお --help の使い方表示はログではなく引数応答のためConsoleのまま残す。
     bool ok = await new SnapController().GetSnapShotAsync();
     if (ok)
     {
-        Console.WriteLine("集計終了");
+        StatusLog.WriteLine("集計終了");
         return 0;
     }
-    Console.WriteLine("集計がエラーになりました。nicorankerr.log を確認してください。");
+    StatusLog.WriteLine("集計がエラーになりました。nicorankerr.log を確認してください。");
     return 2;
 }
 catch (Exception e)
 {
     // SnapController 内で握りつぶされなかった例外の受け皿。nicorank_oldlog と同じ終了コード規約（0=成功/2=エラー）にする。
     // 画面にも1行残す。ファイルだけだと cron 運用で失敗理由に気づくのが遅れるため。
+    // StatusLog経由に寄せ、直接Consoleには書かない（Issue #43）。
     ErrLog.GetInstance().Write(e);
-    Console.WriteLine("集計がエラーになりました。nicorankerr.log を確認してください。");
+    StatusLog.WriteLine("集計がエラーになりました。nicorankerr.log を確認してください。");
     return 2;
 }
 

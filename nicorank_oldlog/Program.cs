@@ -10,13 +10,19 @@ try
     var convConfig = ConvertConfig.GetInstance();
     if (convConfig == null)
     {
-        Console.WriteLine("config.jsonが見つかりません");
+        // 起動失敗は即時終了するが、事後切り分けのためファイル側にも残す。コンソール側の文面と終了コード1は変えない（Issue #43）。
+        const string missingConfig = "config.jsonが見つかりません";
+        StatusLog.WriteLine(missingConfig);
+        ErrLog.GetInstance().Write(missingConfig);
         return 1;
     }
     var api = NicoRankiApi.GetInstance();
     if (api == null)
     {
-        Console.WriteLine("cookie.txtが見つかりません");
+        // cookie.txt不在も同様に両方へ残す（Issue #43）。
+        const string missingCookie = "cookie.txtが見つかりません";
+        StatusLog.WriteLine(missingCookie);
+        ErrLog.GetInstance().Write(missingCookie);
         return 1;
     }
 
@@ -29,20 +35,21 @@ try
         {
             if (!workGenreList.Any(x => x.key == "r18"))
             {
-                Console.WriteLine("ログインチェック：r18カテが取得できません");
-                Console.WriteLine("→原因候補1: アカウント設定で「センシティブなコンテンツの表示」がOFFになっている");
-                Console.WriteLine("→原因候補2: ユーザーログインセッションが切れている");
+                // NASの定期チェック（/checklogin）の成否はNASメールの本文になるため、文面は変えずStatusLog経由にする（Issue #43）。
+                StatusLog.WriteLine("ログインチェック：r18カテが取得できません");
+                StatusLog.WriteLine("→原因候補1: アカウント設定で「センシティブなコンテンツの表示」がOFFになっている");
+                StatusLog.WriteLine("→原因候補2: ユーザーログインセッションが切れている");
                 return 2;
             }
             else
             {
-                Console.WriteLine("ログインチェック：OK");
+                StatusLog.WriteLine("ログインチェック：OK");
                 return 0;
             }
         }
         else
         {
-            Console.WriteLine("ログインチェック：APIに接続できません");
+            StatusLog.WriteLine("ログインチェック：APIに接続できません");
             return 2;
         }
     }
@@ -56,7 +63,8 @@ try
     // r18が存在するかどうかで確認する
     if (!genreList.Any(x => x.genrekey == "r18"))
     {
-        Console.WriteLine("ユーザーログインセッション切れの可能性があります");
+        // 警告のみで続行する運用のため、文面は変えずStatusLog経由にする（Issue #43）。
+        StatusLog.WriteLine("ユーザーログインセッション切れの可能性があります");
  //       return 2;
     }
 
@@ -77,7 +85,8 @@ try
     // See https://aka.ms/new-console-template for more information
     //RankApi2Json.SaveOldRankingData(api2jsonList);
 
-    Console.WriteLine("集計終了");
+    // 終了報告もStatusLogに一本化する。受け手がコンソールのためcronメールの見た目は変わらない（Issue #43）。
+    StatusLog.WriteLine("集計終了");
 
 }
 catch (Exception e)

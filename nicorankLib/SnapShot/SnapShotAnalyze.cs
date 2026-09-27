@@ -88,7 +88,9 @@ namespace nicorankLib.SnapShot
                     break;
                 }
             }
-            Console.WriteLine($"{dateTime.ToShortDateString()} ～{dateTime.Add(addDate).ToShortDateString()} 投稿動画のデータ {snapShotInfo?.Meta.TotalCount} 件を取得しています...");
+            // 進捗はStatusLog経由で出す。直接Consoleに書くと、WinForm・コンソール・Linux CLIの3経路で受け手がばらつき、画面欠落や書式不統一になるため（Issue #43）。
+            // SnapControllerの前後行は既にStatusLogであり、ここだけConsoleでは不整合になる。
+            StatusLog.WriteLine($"{dateTime.ToShortDateString()} ～{dateTime.Add(addDate).ToShortDateString()} 投稿動画のデータ {snapShotInfo?.Meta.TotalCount} 件を取得しています...");
             // マルチスレッドで取得する
             int threadMax = 4;// config.ThreadMax;
             var snapShotTaskList = new List<TaskOffset>(threadMax);

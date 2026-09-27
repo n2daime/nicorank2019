@@ -377,3 +377,22 @@
 - モック: Moq 4.x（.NET Framework 4.8 対応・MSTest との互換性・広く使われている）
 - テストデータ: `UnitTest/Fixtures/` に配置し、ビルド時に出力ディレクトリへコピー（絶対パス依存の排除）
 - 既存の実行不能テストは削除し、書き直し（`TestPointCalc_POINTALL_VOCACOLE2023` は維持）
+
+---
+
+## ライブラリ層の表示抽象への寄せ（Issue #43）
+
+### Context
+
+- #40で `NicoApi` の進捗表示を `StatusLog` 経由の `\r`＋間引き方式に直した際に、同種の層分離違反が残っていることが分かり束ねたもの。ライブラリが直接 `Console` を触ると、WinForm呼び出し・Linux CLI運用・ログリダイレクト時の振る舞いが不定になる。
+- oldlogのエントリポイントは既に `StatusLog` 受け手（`ConsoleLogWriter`）を注入済み（#40）であり、lib直書き分は受け手経由分と出力先が二重化していた。`Cli` の `skipMessage` では `StatusLog`＋`ErrLog` の分け方で二重表示を避けた前例がある。
+- `UIConfig.SilentMode`／`LocalXml` はどちらも書き換え箇所がなく常時既定値のデッドフラグであり、`GetWch` の `Console.ReadLine` 分岐と `ErrLog.Close` の待ち分岐は到達不能だった。
+- `frmMesseageDialog.TextBoxWriter` は保持した `TextBox` を無視して `Console` に書く矛盾があり、ダイアログに何も表示されなかった。ダイアログ自体は現在 `new` されていないが、名前と実装の矛盾は将来の罠になる。
+
+### Decisions
+
+- **進捗・状態通知は `StatusLog`、例外の詳細は `ErrLog` に寄せる**：`SnapShotAnalyze` の件数表示・`NicoRankiApi` の状態通知・`RankApi2Json` 系の進捗・`Program` 系の結果報告は `StatusLog` へ出す。受け手がコンソールのため cron メールの見た目は変わらない。例外を伴う箇所は `ErrLog`（ファイル）に残す。なぜ分けるか: 進捗は運用の可視性（コンソール／メール）が主であり、例外詳細は事後切り分け（ファイル）が主だから。呼び出し側が黙って `false` を返す経路ではコンソール可視性が失われるため、その場合に限り両書きにする。
+- **文面・終了コード・`--help` は変えない**：表示先の統一のみを行い、運用（NASメールの本文・終了コード判定）に影響させない。`--help` の使い方表示はログではなく引数応答であり、受け手の有無に依存させないため `Console` のまま残す。
+- **`GetWch` は既定値返却のみにし、フラグ自体は温存する**：`Console.ReadLine` を除去して非コンソール環境のブロック懸念を消す。`SilentMode`／`LocalXml` の削除は `ErrLog.Close`・`NicoApi` まで波及し今回の目的を超えるため別タスクとする。
+- **`TextBoxWriter` は `TextBox` 参照＋ `Invoke` 対応に修正する**：`BackgroundWorker` の `DoWork`（別スレッド）から呼ばれるため `BeginInvoke` で UI スレッドへ寄せる（pitfalls項目19と同型）。ダイアログ自体の削除・配線復活は別スコープとする。
+- **進捗ヘルパーの共通化は見送る**：`\r` 上書き＋間引きが要るのは `NicoApi` の大量並列取得のみであり、`SnapShotAnalyze`（窓ごとに1行）・oldlog（ジャンル単位の低頻度行）は `WriteLine` の1行ずつで足りる。第二の利用者がいない共通化は先取り抽象になるため、高頻度進捗の利用者が出たら再検討する。

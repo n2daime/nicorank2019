@@ -136,7 +136,7 @@ AnalyzeRank():
 - `SnapController` — スナップショット一括取得エントリ。20070306 から現在まで 15 日間隔でループ。直近1年以内は 1000 再生制限なし URL、それ以前は制限あり URL。10000 件ごとに `SnapShotDB.RegistDB`
 - `SnapShotVersionChecker` — 更新チェック（Issue #38）。version エンドポイントの `last_modified` と実行日をJST日付比較し更新済み/未更新/確認不能の3値を返す。取得実行はしない（事後動作は呼び出し側）。日時パースは `DateParseHandling.None`（pitfalls 項目22）
 - `SnapShotVersionPoller` — 更新待ち制御（Issue #38）。5分ごと再チェック・最大1時間（定数化）。時計・待機は注入可（単体テストで実時間待ちなし）
-- `SnapShotAnalyze` — snapshot API リクエスト構築・並列ページング（4 並列）。総件数 5 万超なら期間を狭めて再試行。`":null"` → `":0"` 置換
+- `SnapShotAnalyze` — snapshot API リクエスト構築・並列ページング（4 並列）。総件数 5 万超なら期間を狭めて再試行。`":null"` → `":0"` 置換。進捗の件数表示は `StatusLog` 経由（WinForm・コンソール・Linux CLIの3経路で受け手を統一するため。Issue #43）
 - `SnapShotRequest` — スナップショット検索API v2 の型付きリクエスト（Issue #19）。`q/targets/fields/filters/jsonFilter/_sort/_limit/_offset/_context` を保持し値のみ `EscapeDataString` で URL 生成。`_context` 既定 `WeeklyNicoranProgram`、`_limit/_offset` クランプ。`CreateTagSearch` はタグ検索用（jsonFilter＋数値・日付・種別を `filters[]` で指定。Issue #30）
 - `TagConditionParser` — タグ条件式（`A&B|C*`）を jsonFilter に変換（Issue #30）。`*` は末尾1文字のみ許可
 - `TagSearchQuery` — タグ検索条件の受け渡し用 DTO（Issue #30）。`UseLiveCounter`（既定false。真ならv2最新値モード。Issue #35）
@@ -159,12 +159,12 @@ AnalyzeRank():
 | `IDbMigratable` | 集計開始時のDB更新確認IF（`TargetDb` / `EnsureMigrated()`。実処理は各DB担当クラスが持つ。Issue #28） |
 | `DbMigrationCoordinator` | 集計開始時の更新指示の司令塔（`EnsureAllAtAnalyzeStart()`。失敗時は中断。具象には依存しない。Issue #28） |
 | `DbOptimizer`（static） | 手動DB最適化の実行本体（Issue #32・壁打ちコメント準拠）。`GetDefaultTargets()`（4DB・UI表示順）/ `Optimize(dbPath[, today])`（不在はスキップ・DBごとにDROP→DELETE→VACUUM・削除行数＋実行前後サイズ付き結果）/ `CutoffOneYearAgo()`（実行日起点の1年前yyyyMMdd）/ `FormatFileSize()`。ApiXML／Dailylogのパス定数も持つ |
-| `StatusLog` | 静的。`IStatusLogWriter` を注入するプラグイン方式（UI 側が実装を注入。未設定なら何も出さない） |
-| `ErrLog` | シングルトン。`nicorankerr.log` に追記（UTF8）。`Close()` で非 SilentMode ならキー入力待ち |
+| `StatusLog` | 静的。`IStatusLogWriter` を注入するプラグイン方式（UI 側が実装を注入。未設定なら何も出さない）。ライブラリ層の進捗・状態通知・成否報告の唯一の表示経路（Issue #43。`--help` と受け手自体を除く） |
+| `ErrLog` | シングルトン。`nicorankerr.log` に追記（UTF8）。例外の詳細の記録先（Issue #43）。`Close()` で非 SilentMode ならキー入力待ちの表示のみ行う（入力待ち自体はしない） |
 | `DateConvert` | 日付 ↔ 文字列（yyyyMMdd / yyyyMMddHHmmss）変換 |
 | `InternetUtil` | HTTP ダウンロード（UA "WeeklyNicoranProgram"）。最大20回リトライ。403 相当（application/xml の ProtocolError）は即断念。それ以外は指数バックオフ |
 | `RegLib` | 正規表現置換ラッパー |
-| `UIConfig` | シングルトン。SilentMode（既定 true）/ LocalXml。`GetWch` は SilentMode なら既定値 |
+| `UIConfig` | シングルトン。SilentMode（既定 true）/ LocalXml。`GetWch` は常時既定値を返し入力待ちしない（Issue #43。どちらも書き換えなしのデッドフラグであり、削除は別タスク） |
 | `Text/CsvUtil` | CSV/TSV 書き込み・読み込み（TextFieldParser） |
 | `Text/TextUtil` | テキスト読み書き。文字コード自動判別（JIS/EUC/SJIS/UTF8/Unicode/ASCII）。`ReadCsv` はカラム名から動的に検出して Ranking リスト/辞書に変換（新旧両対応・人気タグはOption・マイリストポイントを含む補正系・ポイント内訳と運営列は読取対象外。ファイル不在時は false + 空 List） |
 | `Text/XmlSerializerUtil` | XmlSerializer ラッパー |

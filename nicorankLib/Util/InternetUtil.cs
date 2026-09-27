@@ -73,7 +73,7 @@ namespace nicorankLib.Util
                             //真面目にやるのであれば中身をちゃんと解析するべきだが、AccessDeniedと見直して、再試行を抜ける
                             break;
                         }
-                        //Console.WriteLine($"\nWebException:{ex.Message} retry:{count}");
+                        // リトライ時は指数バックオフで待つ。進捗の直接Console出力は行わない（表示は呼び出し側のStatusLogに任せる。Issue #43）。
                         int delayMax = calculateDelayMax(count);
                         int delay = random.Next(1000, delayMax);
                         Thread.Sleep(delay);
