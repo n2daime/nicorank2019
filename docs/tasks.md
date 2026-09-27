@@ -25,7 +25,7 @@
 - [ ] 43.4 NicoRankiApi約25行をStatusLog／ErrLogに寄せる（進捗・状態はStatusLog、異常詳細はErrLogへ1対1対応。oldlogは既にConsoleLogWriter注入済みのため二重表示の片側をなくす）
 - [ ] 43.5 RankApi2Json系・Program系の進捗・結果をStatusLog／ErrLogに寄せる（`--help`の使い方表示と終了コード規約は維持する。libだけ直すと同一実行内で2系統が残るため）
 - [ ] 43.6 frmMesseageDialog.TextBoxWriterをTextBox参照＋Invoke対応に修正する（保持したTextBoxを無視してConsoleに書く矛盾が将来の罠になるため。ダイアログ自体の削除・配線復活は別スコープとする）
-- [ ] 43.7 単体テストを追加し、`dotnet test UnitTest/UnitTest.csproj`とビルドを通す（StatusLog捕捉・GetWch既定値・TextBoxWriter相当の検証。既存270件を維持する）
+- [ ] 43.7 単体テストを追加し、`dotnet test UnitTest/UnitTest.csproj`とビルドを通す（GetWch既定値の回帰テスト。TextBoxWriterはWinForms側にありUnitTestから参照できないため、BeginInvoke対応は目視・手動確認に留める。既存270件を維持する）
 - [ ] 43.8 specs.md／design.md／knowledgeを更新する（表示先の定義・寄せた理由・共通化見送り理由を残す）
 
 受け入れ条件: ライブラリ層（nicorankLib・oldlog/RankAPI）に直接のConsole出力・入力が残らないこと（受け手の正規実装と`--help`を除く）。`--help`・終了コード・文面の見た目（cronメールの1行内容）は変えないこと。テスト＋ビルドが成功すること（`$LASTEXITCODE = 0`）。

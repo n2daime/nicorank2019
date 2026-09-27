@@ -176,7 +176,7 @@ namespace nicorank_oldlog.RankAPI
             }
             catch (Exception ex)
             {
-                                // 予期せぬ例外はファイルとコンソールの両方に残す。呼び出し側が黙ってfalseを返す経路もあるため、コンソール側の可視性も保つ（Issue #43）。
+                // 予期せぬ例外はファイルとコンソールの両方に残す。呼び出し側が黙ってfalseを返す経路もあるため、コンソール側の可視性も保つ（Issue #43）。
                 ErrLog.GetInstance().Write(ex);
                 StatusLog.WriteLine($"{apiUrl} :の取得でエラーが発生しました: {ex.Message}");
                 return false;
@@ -232,7 +232,7 @@ namespace nicorank_oldlog.RankAPI
             }
             catch (Exception ex)
             {
-                                // 予期せぬ例外はファイルとコンソールの両方に残す。呼び出し側が黙ってfalseを返す経路もあるため、コンソール側の可視性も保つ（Issue #43）。
+                // 予期せぬ例外はファイルとコンソールの両方に残す。呼び出し側が黙ってfalseを返す経路もあるため、コンソール側の可視性も保つ（Issue #43）。
                 ErrLog.GetInstance().Write(ex);
                 StatusLog.WriteLine($"{apiUrl} :の取得でエラーが発生しました: {ex.Message}");
                 return false;
@@ -289,7 +289,7 @@ namespace nicorank_oldlog.RankAPI
             }
             catch (Exception ex)
             {
-                                // 予期せぬ例外はファイルとコンソールの両方に残す。呼び出し側が黙ってfalseを返す経路もあるため、コンソール側の可視性も保つ（Issue #43）。
+                // 予期せぬ例外はファイルとコンソールの両方に残す。呼び出し側が黙ってfalseを返す経路もあるため、コンソール側の可視性も保つ（Issue #43）。
                 ErrLog.GetInstance().Write(ex);
                 StatusLog.WriteLine($"{apiUrl} :の取得でエラーが発生しました: {ex.Message}");
                 return false;
@@ -377,7 +377,7 @@ namespace nicorank_oldlog.RankAPI
             }
             catch (Exception ex)
             {
-                                // 予期せぬ例外はファイルとコンソールの両方に残す。呼び出し側が黙ってfalseを返す経路もあるため、コンソール側の可視性も保つ（Issue #43）。
+                // 予期せぬ例外はファイルとコンソールの両方に残す。呼び出し側が黙ってfalseを返す経路もあるため、コンソール側の可視性も保つ（Issue #43）。
                 ErrLog.GetInstance().Write(ex);
                 StatusLog.WriteLine($"{apiUrl} :の取得でエラーが発生しました: {ex.Message}");
                 return false;
@@ -477,7 +477,7 @@ namespace nicorank_oldlog.RankAPI
             }
             catch (Exception ex)
             {
-                                // 予期せぬ例外はファイルとコンソールの両方に残す。呼び出し側が黙ってfalseを返す経路もあるため、コンソール側の可視性も保つ（Issue #43）。
+                // 予期せぬ例外はファイルとコンソールの両方に残す。呼び出し側が黙ってfalseを返す経路もあるため、コンソール側の可視性も保つ（Issue #43）。
                 ErrLog.GetInstance().Write(ex);
                 StatusLog.WriteLine($"{apiUrl} :の取得でエラーが発生しました: {ex.Message}");
                 return false;
