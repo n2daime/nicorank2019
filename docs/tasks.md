@@ -21,7 +21,7 @@
 
 - 依存: #31（LogOfficial Ver1・実測2.01GB・SoHistory約24万行）・#32（DbOptimizerと住み分け）・#40（週刊ApiXML運搬・SP予備補完）・#43（表示はStatusLog・記録はErrLog）・#44（自前接続のみ閉じる所有権）。週刊ApiXMLの蓄積マージは #41 に委ね、本件に含めない。
 - 対象: `LogOfficial.db` と `NicoranHistory.db` のベースライン配布（DBごとにzip分離）。`ApiXML.db`・`Dailylog.db` は配布せず不在時は自動生成する。
-- 配布場所のルール化: PG配布（GitHub Releaseのホワイトリスト、DB含まず）と連動させない。`\\ds224\web\nicorank\baseline\` に置くと `https://2daime.myds.me/nicorank/baseline/` で参照できるNAS Web公開を使い、最新ポインタは `baseline.json` とする。更新は3〜6か月ごと、直近2〜3世代保持とする。
+- 配布場所のルール化: PG配布（GitHub Releaseのホワイトリスト、DB含まず）と連動させない。`\\ds224\web\nicorank\baseline\` に置くと `https://2daime.myds.me/nicorank/baseline/` で参照できるNAS Web公開を使い、最新ポインタは `baseline.json` とする。zip名は固定（`LogOfficial.zip`／`NicoranHistory.zip`）とし改名作業はしない。更新は3〜6か月ごと、単一最新の運用とし世代は残さない（残したい場合は人間が事前に退避する）。
 - `baseline.json` はスクリプトが自動作成する（人間は手書きしない）。日付・ファイル名・サイズ・sha256を必須とし、サイズやハッシュの桁写しによる取り違えをなくす。発火条件は本地ファイル不在時とし、通常起動だけで最新化できるようにする（手動配置のみは従来運用と変わらないため見送る）。
 - 受け入れ条件: ベースライン展開後に通常集計起動だけで最新化できること。ホット1年分のみで `UpdateOfficialRankingDB()` が成功すること。週刊差分と長期判定が壊れないこと。テスト＋ビルド成功、reviewerレビュー完了。
 
