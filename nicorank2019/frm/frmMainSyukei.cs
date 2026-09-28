@@ -201,58 +201,57 @@ namespace nicorank2019.frm
                 else
                 {
                     using (var history = new RankingHistory())
-
-                {
-                    if (!history.Open())
                     {
-                        StatusLog.WriteLine("データベースがOpenできません");
-                        returnVal = false;
-                    }
-                    else
-                    {
-                        // 集計開始時に各DBの更新確認を指示する（失敗時は中断）
-                        var migrationCoordinator = new DbMigrationCoordinator(new List<IDbMigratable>
+                        if (!history.Open())
                         {
-                            history,
-                            // モードは移行処理に無関係のためWeeklyを仮指定する。将来の移行処理もMode依存禁止
-                            new ResultHistory(EAnalyzeMode.Weekly)
-                        });
-                        if (!migrationCoordinator.EnsureAllAtAnalyzeStart())
-                        {
-                            returnVal = false;
-                        }
-                        else if (!history.UpdateOfficialRankingDB())
-                        {
+                            StatusLog.WriteLine("データベースがOpenできません");
                             returnVal = false;
                         }
                         else
                         {
-                            // 前回集計の Factory が残っていれば付け替え前に破棄する。
-                            // なぜここか: 同一プロセスでの再集計時に旧接続が積み上がるのが本 Issue の主犯であり、
-                            // 付け替え前に閉じることで、失敗経路（CreateAnalyzer 失敗等）でも漏らさないため。
-                            // MainFactory の破棄は RankingList に触れないため、出力処理への影響はない。
-                            this.MainFactory?.Dispose();
-                            this.MainFactory = null;
-                            this.MainFactory = GetModeFactory();
-                            if (this.MainFactory == null)
+                            // 集計開始時に各DBの更新確認を指示する（失敗時は中断）
+                            var migrationCoordinator = new DbMigrationCoordinator(new List<IDbMigratable>
                             {
-                                StatusLog.WriteLine("集計モードを特定できません");
-                                returnVal = false;
-                            }
-                            else if (!this.MainFactory.CreateAnalyzer())
-                            {
-                                StatusLog.WriteLine("集計の準備に失敗しました");
-                                returnVal = false;
-                            }
-                            else if (!MainFactory.AnalyzeRank())
+                                history,
+                                // モードは移行処理に無関係のためWeeklyを仮指定する。将来の移行処理もMode依存禁止
+                                new ResultHistory(EAnalyzeMode.Weekly)
+                            });
+                            if (!migrationCoordinator.EnsureAllAtAnalyzeStart())
                             {
                                 returnVal = false;
                             }
-                            StatusLog.WriteLine("集計成功");
+                            else if (!history.UpdateOfficialRankingDB())
+                            {
+                                returnVal = false;
+                            }
+                            else
+                            {
+                                // 前回集計の Factory が残っていれば付け替え前に破棄する。
+                                // なぜここか: 同一プロセスでの再集計時に旧接続が積み上がるのが本 Issue の主犯であり、
+                                // 付け替え前に閉じることで、失敗経路（CreateAnalyzer 失敗等）でも漏らさないため。
+                                // MainFactory の破棄は RankingList に触れないため、出力処理への影響はない。
+                                this.MainFactory?.Dispose();
+                                this.MainFactory = null;
+                                this.MainFactory = GetModeFactory();
+                                if (this.MainFactory == null)
+                                {
+                                    StatusLog.WriteLine("集計モードを特定できません");
+                                    returnVal = false;
+                                }
+                                else if (!this.MainFactory.CreateAnalyzer())
+                                {
+                                    StatusLog.WriteLine("集計の準備に失敗しました");
+                                    returnVal = false;
+                                }
+                                else if (!MainFactory.AnalyzeRank())
+                                {
+                                    returnVal = false;
+                                }
+                                StatusLog.WriteLine("集計成功");
+                            }
                         }
+                        history.Close();
                     }
-                    history.Close();
-                }
                 }
 
                 // 集計終了後に Factory（ひいては Reader 群の接続）を破棄する。成功・失敗・出力中例外のいずれでも実行する。

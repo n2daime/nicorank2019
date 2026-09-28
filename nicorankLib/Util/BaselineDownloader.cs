@@ -157,6 +157,7 @@ namespace nicorankLib.Util
         /// キャッシュ扱いの DB（ApiXML／Dailylog）がなければ空から作る（Issue #36 方針）。
         /// なぜ失敗でも true か：キャッシュの確保失敗を理由に集計全体を止めると、1件の取得失敗が全件失敗に見えるためである。
         /// 除外の判断は入力側に残し、ここでは best-effort で確保だけ行う（Issue #40 と同一の考え方）。
+        /// ファイルごとに try/catch を分ける。片方の失敗がもう片方の確保を巻き込まないためである（re-review指摘対応）。
         /// </summary>
         /// <returns>常に true（確保失敗時はログに残して続ける）</returns>
         public bool EnsureCacheFiles()
@@ -164,12 +165,20 @@ namespace nicorankLib.Util
             try
             {
                 EnsureApiXmlFile();
+            }
+            catch (Exception ex)
+            {
+                ErrLog.GetInstance().Write(ex);
+                StatusLog.WriteLine("動画情報キャッシュの確保に失敗しましたが、集計を続けます");
+            }
+            try
+            {
                 EnsureDailylogFile();
             }
             catch (Exception ex)
             {
                 ErrLog.GetInstance().Write(ex);
-                StatusLog.WriteLine("キャッシュDBの確保に失敗しましたが、集計を続けます");
+                StatusLog.WriteLine("中間集計キャッシュの確保に失敗しましたが、集計を続けます");
             }
             return true;
         }
@@ -394,9 +403,13 @@ namespace nicorankLib.Util
             }
             catch
             {
+                // 新規作成時は本体と -wal/-shm を消して次回リトライ可能にする。
+                // Open は WAL 化するため異常終了経路で付随ファイルが残り得る。既存ファイルは消さない。
                 if (created)
                 {
                     try { if (File.Exists(path)) { File.Delete(path); } } catch { }
+                    try { if (File.Exists(path + "-wal")) { File.Delete(path + "-wal"); } } catch { }
+                    try { if (File.Exists(path + "-shm")) { File.Delete(path + "-shm"); } } catch { }
                 }
                 throw;
             }
@@ -436,6 +449,8 @@ namespace nicorankLib.Util
                 if (created)
                 {
                     try { if (File.Exists(path)) { File.Delete(path); } } catch { }
+                    try { if (File.Exists(path + "-wal")) { File.Delete(path + "-wal"); } } catch { }
+                    try { if (File.Exists(path + "-shm")) { File.Delete(path + "-shm"); } } catch { }
                 }
                 throw;
             }
