@@ -11,7 +11,7 @@ namespace nicorankLib.Analyze.Option.Basic
     /// <summary>
     /// スナップショットAPIで差分を計算するクラス
     /// </summary>
-    public class SnapShotSabunReader : BasicOptionBase, IDisposable
+    public class SnapShotSabunReader : BasicOptionBase
     {
         public DateTime AnalyzeTime { get; protected set; }
         public DateTime BaseTime { get; protected set; }
@@ -22,13 +22,23 @@ namespace nicorankLib.Analyze.Option.Basic
         ISQLiteCtrl dbCtrlAnalyze;
         ISQLiteCtrl dbCtrlBase;
 
-        public SnapShotSabunReader(string analyzeDB, string baseDB, ISQLiteCtrl dbCtrl = null)
+        //注入された接続は呼び出し側の所有物のため破棄しない。自前生成分のみ破棄する（SpMovieInfoFallbackと同一の流儀）。
+        //なぜ所有権を追うか: コンストラクタはテスト差し替えのために注入を受け付けるが、読み手の接続を
+        //閉じてしまうと呼び出し側の所有権を壊すため。受け入れ条件「注入接続は閉じないこと」の根拠（Issue #44）。
+        protected bool _ownsDbCtrl;
+
+        //動画情報が取れなかった場合の予備補完（案B・Issue #40）。テストで差し替え可能にするため注入可。
+        protected SpMovieInfoFallback _fallback;
+
+        public SnapShotSabunReader(string analyzeDB, string baseDB, ISQLiteCtrl dbCtrl = null, SpMovieInfoFallback fallback = null)
         {
             AnalyzeDB = analyzeDB;
             BaseDB = baseDB;
 
+            _ownsDbCtrl = dbCtrl == null;
             dbCtrlAnalyze = dbCtrl ?? new SQLiteCtrl();
             dbCtrlBase = dbCtrl ?? new SQLiteCtrl();
+            _fallback = fallback ?? new SpMovieInfoFallback();
         }
 
         /// <summary>
@@ -137,6 +147,10 @@ namespace nicorankLib.Analyze.Option.Basic
                     return false;
                 }
 
+                //動画情報が取れなかった分は予備情報で補う（案B）。取れなくても除外しない。
+                //なぜここか: 投稿日は直後の新着救済判定に使うため、判定前に埋める必要があるから。
+                _fallback.ComplementMovieInfo(rankingList, this.BaseTime, this.AnalyzeTime);
+
                 StatusLog.WriteLine("基準日からの差分値を計算しています...");
 
                 //差分データが無くても許容する投稿日の基準を計算する
@@ -175,6 +189,11 @@ namespace nicorankLib.Analyze.Option.Basic
                 }
                 //データが取得できたものだけ抽出
                 rankingList = rankingList.Where(wRank => !wRank.isDelete).ToList();
+                //動画情報が最後まで埋まらなかった分は目印を付けて残す（除外しない。Issue #40）
+                foreach (var wRank in rankingList)
+                {
+                    wRank.ApplyDeletedTitleMarker();
+                }
             }
             catch(Exception ex)
             {
@@ -194,14 +213,21 @@ namespace nicorankLib.Analyze.Option.Basic
                 if (disposing)
                 {
                     // TODO: マネージ状態を破棄します (マネージ オブジェクト)。
-                    dbCtrlAnalyze.Close();
-                    dbCtrlBase.Close();
+                    //自前生成の接続だけ閉じる。注入された接続は呼び出し側の所有物のため触らない。
+                    if (_ownsDbCtrl)
+                    {
+                        dbCtrlAnalyze.Close();
+                        dbCtrlBase.Close();
+                    }
+                    //予備補完が自前で開いた接続も閉じる（注入接続は先方が閉じるため触らない）
+                    _fallback?.Close();
                 }
 
                 // TODO: アンマネージ リソース (アンマネージ オブジェクト) を解放し、下のファイナライザーをオーバーライドします。
                 // TODO: 大きなフィールドを null に設定します。
                 dbCtrlAnalyze = null;
                 dbCtrlBase = null;
+                _fallback = null;
 
                 disposedValue = true;
             }
@@ -215,7 +241,10 @@ namespace nicorankLib.Analyze.Option.Basic
         }
 
         // このコードは、破棄可能なパターンを正しく実装できるように追加されました。
-        void IDisposable.Dispose()
+        // 基底 BasicOptionBase の仮想 Dispose を上書きする。なぜ override が必要か:
+        // 明示的実装（void IDisposable.Dispose）のままだと、基底参照からの呼び出しでは
+        // 基底の空実装が呼ばれて接続が残るため。呼び出し側はリストとして一括破棄するから。
+        public override void Dispose()
         {
             // このコードを変更しないでください。クリーンアップ コードを上の Dispose(bool disposing) に記述します。
             Dispose(true);

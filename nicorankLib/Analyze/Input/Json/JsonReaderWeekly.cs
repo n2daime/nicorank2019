@@ -1,4 +1,5 @@
 ﻿using nicorankLib.Analyze.model;
+using nicorankLib.api;
 using nicorankLib.Util;
 using System;
 using nicorankLib.Analyze.Input;
@@ -60,6 +61,31 @@ namespace nicorankLib.Analyze.Json
                 analyzeDay = analyzeDay.AddDays(-1);
             }
             this.calcAnalyzeDay = analyzeDay;
+        }
+
+        /// <summary>
+        /// 週刊JSONの取得後に、oldlogが用意した動画情報キャッシュを取り込む。
+        /// 取得時点をoldlog実行時に固定し、2019側の再実行で欠落が変わらないようにするため（Issue #40）。
+        /// 取込に失敗しても本地キャッシュのまま続ける（戻り値は基底の成否のみ）。
+        /// </summary>
+        /// <param name="rankings"></param>
+        /// <returns></returns>
+        public override bool AnalyzeRank(out List<Ranking> rankings)
+        {
+            bool result = base.AnalyzeRank(out rankings);
+            if (result)
+            {
+                try
+                {
+                    var importer = new ApiXmlCacheImporter();
+                    importer.ImportWeeklyCache(getAnalyzeDay());
+                }
+                catch (Exception ex)
+                {
+                    ErrLog.GetInstance().Write(ex);
+                }
+            }
+            return result;
         }
     }
 }

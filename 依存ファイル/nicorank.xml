@@ -45,6 +45,12 @@
 		
 		<!-- lastresultSP.csvチェック用。前回SPの”集計日”を指定すること -->
 		<CheckDateOver>20170701</CheckDateOver>
+
+		<!-- SP専用の補正モード（Issue #39。いずれも任意。なければ共通を使う。値は共通と同値の例示） -->
+		<COMMENT_OFFSET Mode="2" UnderLimit="0.01"/>
+		<MYLIST_OFFSET Mode="1"/>
+		<PLAY_OFFSET Mode="2"/>
+		<POINTALL_OFFSET Mode="0"/>
 	</SP>
 	
 	<TAGRANK>
@@ -65,6 +71,12 @@
 		
 		<!-- タグ検索では前回結果CSVが任意のため未使用 -->
 		<CheckDateOver></CheckDateOver>
+
+		<!-- タグ検索専用の補正モード（Issue #39。いずれも任意。なければ共通を使う。配布既定はすべて補正なし） -->
+		<COMMENT_OFFSET Mode="0" UnderLimit="0.01"/>
+		<MYLIST_OFFSET Mode="0"/>
+		<PLAY_OFFSET Mode="0"/>
+		<POINTALL_OFFSET Mode="0"/>
 	</TAGRANK>
 	
 	<!-- コメントポイント補正を行うか？ -->

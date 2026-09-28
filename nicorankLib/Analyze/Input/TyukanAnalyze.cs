@@ -243,10 +243,16 @@ namespace nicorankLib.Analyze.Input
                             new SabunReader(BaseDay) 
                         };
 
-                        var dailyInput = new RankingAnalyze(new JsonReaderDaily(targetDate),options);
-                        if (!dailyInput.AnalyzeRank(out var rakingDailyList))
+                        // 日次集計の使い捨てパイプライン。using で破棄する。
+                        // なぜここでも閉じるか: 中身は現状資源を持たない SabunReader だけだが、
+                        // 日別ループで繰り返し生成されるため、将来資源持ちが混ざっても積み上がらないようにするため。
+                        List<Ranking> rakingDailyList;
+                        using (var dailyInput = new RankingAnalyze(new JsonReaderDaily(targetDate), options))
                         {
-                            return false;
+                            if (!dailyInput.AnalyzeRank(out rakingDailyList))
+                            {
+                                return false;
+                            }
                         }
                         try
                         {

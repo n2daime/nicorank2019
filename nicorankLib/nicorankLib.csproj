@@ -243,7 +243,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Analyze\Input\GenreAnalyze.cs" />
     <Compile Include="Analyze\Input\Json\JsonReaderBase.cs" />
     <Compile Include="Analyze\Input\Json\JsonReaderDaily.cs" />
     <Compile Include="Analyze\Input\Json\JsonReaderMonthly.cs" />
@@ -259,7 +258,10 @@
     <Compile Include="Analyze\Option\Basic\MovieInfoReader.cs" />
     <Compile Include="Analyze\Option\Basic\SabunReader.cs" />
     <Compile Include="Analyze\Option\Basic\SnapShotSabunReader.cs" />
+    <Compile Include="Analyze\Option\Basic\SpMovieInfoFallback.cs" />
     <Compile Include="Analyze\Option\Basic\TagRankTotalReader.cs" />
+    <Compile Include="Analyze\Option\Basic\TagRankLiveTotalReader.cs" />
+    <Compile Include="Analyze\Option\Basic\TagRankLiveSabunReader.cs" />
     <Compile Include="Analyze\Option\Ext\IExtOptionBase.cs" />
     <Compile Include="Analyze\Option\Basic\LastRankCsvReader.cs" />
     <Compile Include="Analyze\Option\Basic\GenreInfoReader.cs" />
@@ -279,8 +281,11 @@
     <Compile Include="SnapShot\SnapController.cs" />
     <Compile Include="SnapShot\SnapShotAnalyze.cs" />
     <Compile Include="SnapShot\SnapShotRequest.cs" />
+    <Compile Include="SnapShot\SnapShotVersionChecker.cs" />
+    <Compile Include="SnapShot\SnapShotVersionPoller.cs" />
     <Compile Include="SnapShot\TagConditionParser.cs" />
     <Compile Include="SnapShot\TagSearchQuery.cs" />
+    <Compile Include="SnapShot\TagSnapshotTimestamp.cs" />
     <Compile Include="Analyze\model\EAnalyzeMode.cs" />
     <Compile Include="Analyze\Option\Ext\UserInfoReader.cs" />
     <Compile Include="Factory\ModeFactoryBase.cs" />
@@ -293,12 +298,14 @@
     <Compile Include="Analyze\Input\InputBase.cs" />
     <Compile Include="Analyze\model\RankGenreJson.cs" />
     <Compile Include="Analyze\model\Ranking.cs" />
+    <Compile Include="Analyze\model\RankingIdComparer.cs" />
     <Compile Include="Analyze\model\RankLogJson.cs" />
     <Compile Include="Analyze\Official\RankingHistory.cs" />
     <Compile Include="Analyze\RankingAnalyze.cs" />
     <Compile Include="Analyze\Input\TyukanAnalyze.cs" />
     <Compile Include="api\model\ThumbinfoBase.cs" />
     <Compile Include="api\NicoApi.cs" />
+    <Compile Include="api\ApiXmlCacheImporter.cs" />
     <Compile Include="Common\Config.cs" />
     <Compile Include="Common\NicoRankXml.cs" />
     <Compile Include="output\OutputBase.cs" />
@@ -313,6 +320,8 @@
     <Compile Include="Util\ISQLiteCtrl.cs" />
     <Compile Include="Util\IDbMigratable.cs" />
     <Compile Include="Util\DbMigrationCoordinator.cs" />
+    <Compile Include="Util\BaselineDownloader.cs" />
+    <Compile Include="Util\DbOptimizer.cs" />
     <Compile Include="Util\RegLib.cs" />
     <Compile Include="Util\SQLiteCtrl.cs" />
     <Compile Include="Util\StatusLog.cs" />

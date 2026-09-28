@@ -1,7 +1,11 @@
 ﻿using nicorank_oldlog.RankAPI;
+using nicorankLib.Util;
 
 namespace nicorank_oldlog
 {
+    /// <summary>
+    /// デイリー派生（トレンドタグ展開付き）。表示は基底と同一方針でStatusLogに寄せる（Issue #43）。
+    /// </summary>
     public class RankApi2JsonDaily : RankApi2Json
     {
         /// <summary>
@@ -36,7 +40,7 @@ namespace nicorank_oldlog
                     continue;
                 }
 
-                Console.WriteLine($@"{this.RankInfo.folder}:{genreinfo.genre} のトレンドタグを取得しています...");
+                StatusLog.WriteLine($@"{this.RankInfo.folder}:{genreinfo.genre} のトレンドタグを取得しています...");
                 //トレンドタグの取得
                 bool getResult = nicoApi.GetTrendTagList(genreinfo.featuredKey, out var trendTagList);
 
@@ -67,7 +71,7 @@ namespace nicorank_oldlog
                     tagCount++;
 
                     this.GenreResultList.Add(new GenreRankResult(workGenre, this.TargetSaveDir));
-                    Console.WriteLine($@"{workGenre.file}:{workGenre.tag}");
+                    StatusLog.WriteLine($@"{workGenre.file}:{workGenre.tag}");
                 }
 
             }

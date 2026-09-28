@@ -6,11 +6,13 @@
 nicorank2019.sln
 ├── nicorankLib/          .NET Framework 4.8 クラスライブラリ（全プロジェクトの共通コア）
 ├── nicorank2019/         .NET Framework 4.8 WinForms アプリ（集計メイン UI）
-├── nicorank_SnapShot/    .NET Framework 4.8 WinForms アプリ（スナップショット取得ツール）
+├── nicorank_SnapShot/    .NET Framework 4.8 WinForms アプリ（スナップショット取得ツール。Windows 用）
+├── nicorank_SnapShot.Cli/ net8.0 コンソール（スナップショット取得の Linux 版。WinForms・サスペンドなし。Issue #37）
 ├── nicorank_oldlog/      .NET 8 コンソールアプリ（公式過去ランキング回収ツール、SDK-style）
 ├── UnitTest/             .NET Framework 4.8 MSTest テストプロジェクト（SDK-style、75件）
 ├── 依存ファイル/           nicorank.xml・DB/*.db（ソリューションフォルダ）
 ├── docs/                 ドキュメント（proposal / specs / design / tasks / knowledge）
+├── tools/                運用スクリプト（make-baseline.ps1・ベースライン配布物作成。Issue #36。配布物には含めない）
 └── packages/             NuGet パッケージ（packages.config 用）
 ※ SQLite マネージド DLL 4件（Microsoft.Data.Sqlite/SQLitePCLRaw.core/batteries_v2/provider.dynamic_cdecl）+ ネイティブ e_sqlite3.dll 3種（win-x64/x86/arm）はビルド時に `bin/{Debug,Release}/lib` へ配置（`lib` は出力物、ソリューション直下には存在しない。Costura 埋め込み除外）
 ```
@@ -20,6 +22,7 @@ nicorank2019.sln
 ```
 nicorank2019 ──→ nicorankLib
 nicorank_SnapShot ──→ nicorankLib
+nicorank_SnapShot.Cli ──→ nicorankLib（net8.0 から net48 ライブラリを参照するハイブリッド。nicorank_oldlog と同じ）
 nicorank_oldlog ──→ nicorankLib（net48 ライブラリを net8.0 から参照するハイブリッド）
 UnitTest ──→ nicorankLib
 ```
@@ -29,6 +32,7 @@ UnitTest ──→ nicorankLib
 ```
 nicorank_SnapShot ──(引数あり)→ SnapController（コンソールモード）┐
                  └──(引数なし)→ Form1（UI）                     ├→ nicorankLib コア
+nicorank_SnapShot.Cli ──→ SnapController（Linux/CLI。--help 以外は取得実行）┘
 nicorank2019 ──→ frmMain → ModeFactory(Weekly/Tyukan/SP/TagRank) ──────┘
 nicorank_oldlog ──(net8.0 別系統)──→ NicoRankiApi → old-ranking/ へ JSON 保存
 UnitTest ──→ nicorankLib を net48 で直接テスト（インメモリ SQLite）
@@ -58,7 +62,7 @@ UnitTest ──→ nicorankLib を net48 で直接テスト（インメモリ SQ
 1. **UI / 実行**: `frmMain` / `frmMainSyukei`（WinForms）— モード選択 → ファクトリ取得 → 非同期解析
 2. **ファクトリ**: `ModeFactoryBase`（基底）/ `ModeFactoryWeekly` / `ModeFactoryTyukan` / `ModeFactroySP` — モードに合わせた入力セットアップと出力生成
 3. **集計**: `RankingAnalyze` — パイプライン制御（Input → BasicOption → calcRanking → ExtOption）
-4. **入力**: `JsonReader*`（公式ランキング JSON）/ `SPAnalyze`（IDリスト）/ `TyukanAnalyze`（中間）/ `GenreAnalyze`（ジャンル特化）
+4. **入力**: `JsonReader*`（公式ランキング JSON）/ `SPAnalyze`（IDリスト）/ `TyukanAnalyze`（中間）/ `TagRankAnalyze`（タグ検索）
 5. **過去データ管理**: `RankingHistory` — LogOfficial.db の更新・参照、メンテ日判定
 6. **出力**: `OutputBase` 派生（`NrmOutput` / `ResultCsv` / `ResultJsonRankDB` / `ResultImageget*` / `ResultHistory`）
 7. **ユーティリティ**: `Config`（設定シングルトン）/ `StatusLog` / `ErrLog` / `SQLiteCtrl` / `ISQLiteCtrl` / `TextUtil` 等

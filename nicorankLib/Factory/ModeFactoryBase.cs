@@ -13,7 +13,13 @@ using System.Threading.Tasks;
 
 namespace nicorankLib.Factory
 {
-    public abstract class ModeFactoryBase
+    /// <summary>
+    /// モード別の集計組み立て。保持する RankingAnalyze の破棄責任を持つ。
+    /// なぜ Factory で委譲するか: Reader の生成は各派生の CreateAnalyzer が行うが、生成物の保持先は
+    /// 基底の RankingAnalyze プロパティであり、UI からは Factory 経由でしか後片付けできないから。
+    /// RankingList は破棄しない（マネージの結果列表であり、出力処理が集計後に使うため）。
+    /// </summary>
+    public abstract class ModeFactoryBase : IDisposable
     {
         protected const string OUTPUTDIR = "Output";
 
@@ -75,6 +81,42 @@ namespace nicorankLib.Factory
             {
                 return config.Rank;
             }
+        }
+
+        private bool _disposed = false;
+
+        /// <summary>
+        /// 保持する RankingAnalyze（ひいては BasicOption 群）を破棄する。二重呼び出しでも例外を出さない。
+        /// CreateAnalyzer 失敗時など RankingAnalyze が未生成の場合は何もしない。
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+            if (disposing)
+            {
+                try
+                {
+                    RankingAnalyze?.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    ErrLog.GetInstance().Write(ex);
+                }
+                finally
+                {
+                    RankingAnalyze = null;
+                }
+            }
+            _disposed = true;
         }
     }
 }

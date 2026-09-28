@@ -15,7 +15,7 @@
 | 週刊（Weekly） | 公式週間ランキング JSON | 週次集計の本体。先週差分・長期判定あり |
 | 中間（Tyukan） | 日次ランキング JSON + Dailylog | 土日に行う仮集計。メンテ日を除外して日別集計→期間合計 |
 | SP（SP） | 動画IDリスト + スナップショットDB差分 | 半期/年間 SP 動画用 |
-| タグ検索（TagRank） | スナップショットv2ライブ検索のID列 + スナップショットDB差分 | SP相当の出力・差分方式。前回CSV任意 |
+| タグ検索（TagRank） | スナップショットv2ライブ検索のID列＋4数値 + スナップショットDB差分 or v2最新値 | SP相当の出力・差分方式。前回CSV任意。v2最新値モードは集計日DB不要 |
 
 ### 週刊集計の入力分岐
 
@@ -29,9 +29,19 @@
 - `Ranking.FavoriteTags` は `List<string>` で挿入順を保持する（人気タグ→タグロック定義順）
 - 出力: `Ranking.GetDisplayTags()` が挿入順のままカテゴリ名と同名のタグを除外する（`Trim` 後完全一致。空カテゴリは除外なし）。ファイル別の件数制限は `NrmOutput` の上限パラメータで行う（TSV系は3件。`result(UTF8).csv`・`result_DB登録用(UTF8).json` のみ全件）。Issue #28で見直しなしを確定し全件仕様を維持する
 
-### 差分集計と so 新着偽造判定（SabunReader）
+### 動画情報キャッシュと削除判定の分離（Issue #40）
+
+- `ApiXML.db`（NicovideoThumb）は表示用キャッシュであり、取得の成否を順位・ポイントに影響させない。`NicoApi.GetUserInfo` / `GetMovieInfo` は取得失敗・Status非ok・行なしの場合も `isDelete` を立てず、空欄・既定値のまま残して処理を続ける。除外の判断はスナップショット差分・Sabun・Hidden側に任せる
+- 同一IDが複数取得日で存在する場合は最新の行を読む（`ORDER BY 取得日 DESC LIMIT 1`。タグロック取得と同一）。行選択の不定をなくすため
+- `MovieInfoReader` / `GenreInfoReader` / `UserInfoReader` / `FavoriteTagReader` の補完は、確保・読取の失敗があっても集計を中断しない。取れない動画は空欄のまま残す
+- 週刊の動画情報は oldlog が週刊JSONに出たID全部（約26000件）を一括取得し、日付フォルダ（`old-ranking/weekly/YYYY-MM-DD/`）へ `ApiXML.db` として置く。並列数は `config.json` の `nicoapi_thread_max` で管理する（既定6。`nicorank.xml` には依存しない）。2019側の週刊JSON取得後（`JsonReaderWeekly`）に一時置き場へ落として本地へ取り込む（IDごとに運搬側の取得日が本地より新しい場合だけ置き換え。本地にしかない貯金は残す）。運搬ファイルがなければ本地のまま流す。書きかけ配置の防止のため一時名で作ってから置き換える
+- SPで動画情報が取れない場合は予備情報で補う（案B）。優先順位は ApiXML → `NicoranHistory.db` の `LastResult` 最新タイトル → `LogOfficial.db` の `Ranking` から集計期間内で初めて見かけた集計日（参考投稿日）→ 空のまま残す（除外しない）。ジャンル空欄は許容する。タグ検索は数字なし除外を維持するが、ApiXML不調だけでは除外しない
+- 集計には残したが動画情報が最後まで埋まらなかった場合、タイトル欄の先頭に【集計後削除】を付ける。列の追加・順序変更はしない（ニコランWeb手動アップロード互換のため）
+
+### 差分集計と so 新着偽造判定（SabunReader・Issue #31）
 
 - 差分は LogOfficial.db の過去ランキングから取得する（`CheckSoMovieNeedSabun` / `GetRankingSabunDataLogOfficial`）。過去ログにデータがなければ差分なし
+- `CheckSoMovieNeedSabun` は `Ranking` に見つからない場合 `SoHistory`（消えた行のうち最新の差分元）で補う。どちらにもなければ差分なし。`SoHistory` 表自体がない旧DBでも新着扱いで正常終了する。問合せは基準日以前の行だけ使う（基準日より新しい行が混ざっていても無視する）。通常の集計では基準日は直近のため、過去期間の再集計は運用外とする。読み取りは2クエリ逐次（`Ranking` 優先・なければ `SoHistory`。結合・VIEW化は見送り）
 - 過去ログに差分が取れない so 動画（公式チャンネル）は ID 番号で新着判定する:
   - so + 数値が **40000000 未満 → 新着偽造**（非公開→再公開で過去にランクイン済みとみなし、`isDelete` で集計対象外）
   - **40000000 以上 → 新着**として通常集計
@@ -42,6 +52,8 @@
 
 - 総合順位（PointTotal 降順）/ 再生順位 / コメント順位 / マイリスト順位 / いいね順位 / カテゴリ順位
 - 6 種類の計算は `Task.Run` で並列実行（`RankingAnalyze.calcRanking`）。
+- 同点時は動画IDの数値認識順で決定的にする（Issue #34）。IDを種別（先頭の非数字部。sm/so等）→数字部の順に比べ、数字化できないIDは全体の辞書式（Ordinal）にフォールバックする。最終段も辞書式のため常に決定的になる。順位値は連番のまま（同順位スキップはしない）。
+- なぜIDか：投稿日・再生数も同点があり得るため、重複なしのIDだけが単一の第二キーで完全決定的になる。辞書式ではなく数値認識にするのは、辞書式では桁違いのID順が数値順と一致しないため（例：sm199 が sm20 より先になる）。IDの大小を割り当て順と直感的に一致させる。
 
 ### タグ検索集計の入力（TagRank・Issue #30）
 
@@ -51,6 +63,8 @@
 - 件数取得（`_limit=0`）でヒット件数を確認し、5万件超過時は集計せず「検索結果が多すぎます。(xxx件) 50000件以下になるように条件を追加して下さい」と通知する。取得は100件ページングを4並列で行い、IDは重複除去・ID順にする
 - 前回結果CSVは任意。未指定なら前回順位なし、指定ありならSP同様に前回順位を付与する
 - 基準日DBは任意。未指定なら差分なしで集計日DBの累積値をそのまま集計値にする（`Count = Total`）。指定ありならSP同様に差分計算する。基準なし時の `BaseDay` は `TargetDay` と同値にする
+- v2最新値モード（UIの「検索APIから直接集計する」ON・`TagSearchQuery.UseLiveCounter`）では集計日DBを使わない。ライブ検索で得た4数値を累積値として採用する（`Count = Total`）。基準日DBありならライブ値から基準値を引いて差分計算する（新着救済の基準-7日を含む考え方はSnapshotDB差分と同一）。集計日は実行日とし、基準なし時は `BaseDay = TargetDay = 実行日`、基準あり時は `TargetDay = 実行日・BaseDay = 基準日DBのDBVersion.集計日` とする。DBVersionを読まないためSnapshotDBの取得待ちが不要になる。低再生の古動画（SnapshotDBの1000再生足切りに該当）はSnapshotDB版に含まれず1件程度の出入りがあり得る（2026-09検証で1件確認）
+- v2最新値モードの件数確認時（`btnTagSearch_Click`／`btnAnalyzeTag_Click` 内の `CheckTagCountAsync`）はデータ時点ラベルを表示する（Issue #39）。文言は `MM/DD 05:00 時点のスナップショットで集計` とし、日付部は versionエンドポイントの `last_modified` をJST化した日付、時刻は `05:00` 固定とする。時刻を固定にするのは、`last_modified` の時刻がDB反映完了時刻であり仕様上のデータ時点（5:00）と異なるため、完了時刻を出すと誤解されるからである。`UseLiveCounter=OFF`（DB使用モード）では表示せず非表示のままとする。取得は件数確認のたびに `SnapShotVersionChecker` で行い（タブ滞在中の使い回しはしない）、`await Task.Run` でUIスレッドをブロックしない。確認不能時（取得失敗・パース失敗）は件数確認自体を失敗扱いにして集計に進めない（不明な時点のまま集計させないため）
 - 出力はSPと同一（履歴登録・長期判定なしの7種。上書き）
 
 ### 紹介枠（GetRank）
@@ -128,11 +142,11 @@
 | `ICONDL_PATH` | — | ローカル設定 | ED用アイコン DL 先 |
 | `POINT` | `CALC_MYLIST` / `CALC_PLAY` / `CALC_COMMENT` / `CALC_LIKE` | 40/1/1/10（SP 20/1/1/20） | 各ポイント倍率 |
 | `SP.CheckDateOver` | — | 20170701 | lastresultSP.csv チェック用（前回 SP の集計日） |
-| `TAGRANK`（POINT/RANK/RANKED/UserInfo/CheckDateOver） | — | RANK 30/Tyouki 0・RANKED 200・POINTはSP同値・UserInfo 1000・CheckDateOverは未使用（空） | タグ検索モード専用設定。節がなければ週間設定を使う。OFFSET系は共通のため含まない |
-| `COMMENT_OFFSET` | `Mode` / `UnderLimit` | 2 / 0.01 | コメント補正モード・下限 |
-| `MYLIST_OFFSET` | `Mode` | 1 | マイリスト補正モード |
-| `PLAY_OFFSET` | `Mode` | 2 | 再生補正モード |
-| `POINTALL_OFFSET` | `Mode` | 0 | 全体補正モード（1=VCOLE2023） |
+| `TAGRANK`（POINT/RANK/RANKED/UserInfo/CheckDateOver/OFFSET4種） | — | RANK 30/Tyouki 0・RANKED 200・POINTはSP同値・UserInfo 1000・CheckDateOverは未使用（空）・OFFSET4種は配布既定すべて0（補正なし。いずれも任意。なければ共通を使う） | タグ検索モード専用設定。節がなければ週間設定を使う。OFFSET系はIssue #39で節別化し、読み取りは節内に対応要素がなければ共通にフォールバックする（項目単位）。ポイント計算パネルの保存はモード別の節へ書き、なければ共通値を初期値に生成する |
+| `COMMENT_OFFSET` | `Mode` / `UnderLimit` | 2 / 0.01 | コメント補正モード・下限。SP／TAGRANK節内にあれば節内値を使う（Issue #39） |
+| `MYLIST_OFFSET` | `Mode` | 1 | マイリスト補正モード。SP／TAGRANK節内にあれば節内値を使う（Issue #39） |
+| `PLAY_OFFSET` | `Mode` | 2 | 再生補正モード。SP／TAGRANK節内にあれば節内値を使う（Issue #39） |
+| `POINTALL_OFFSET` | `Mode` | 0 | 全体補正モード（1=VCOLE2023）。SP／TAGRANK節内にあれば節内値を使う（Issue #39） |
 | `SYSTEM.ResultCsv` | `Code` | 0 | result.csv の文字コード（0=shift-jis / 1=Unicode） |
 | `SYSTEM.Thread` | `Max` | 16 | マルチスレッドの最大スレッド数 |
 | `SYSTEM.Download.NicoAPI` | `Retry` | 20 | NicoApi 取得のリトライ回数（SP に影響） |
@@ -165,21 +179,30 @@
 
 | DB ファイル | 定数 | 用途 |
 |---|---|---|
-| `DB/LogOfficial.db` | `LOG_OFFICEIAL` | 公式過去ランキング（Ranking / Movie / RankingDate） |
+| `DB/LogOfficial.db` | `LOG_OFFICEIAL` | 公式過去ランキング（Ranking / RankingDate / SoHistory） |
 | `DB/NicoranHistory.db` | `NiCORAN_HISTORY` | 集計履歴（History / LastResult / LastResultInfo） |
 | `DB/ApiXML.db` | — | NicoApi キャッシュ（NicovideoThumb） |
 | `DB/Dailylog.db` | — | 中間集計の日別キャッシュ（Dailylog） |
 | `LogSnapshot{yyyyMMdd}.db` | `LOG_SNAPSHOT` | スナップショット DB（Ranking / DBVersion）。nicorank_SnapShot が日次作成 |
 
-### Ranking テーブル（LogOfficial.db）
+### Ranking テーブル（LogOfficial.db・Issue #31）
 
 列: `ID`（動画ID）/ `集計日`（INTEGER・yyyyMMdd）/ `再生数` / `コメント数` / `マイリスト数` / `いいね数` / `人気のタグ`（JSON文字列）
 - 集計日は主キーの一部（同一動画の日別履歴を持つ）
 - いいね数は ALTER TABLE で自動追加される（ない場合のみ）
+- 直近の保持期間分だけ残し、それより古い日は日次更新時に削除する（境界当日は残す）。境界はDB内の最新集計日を起点にさかのぼって決める
+- `集計日` の索引を持ち、日付削除に使う
 
-### Movie テーブル（LogOfficial.db）
+### SoHistory テーブル（LogOfficial.db・Issue #31）
 
-動画の基本情報（ID / タイトル / 投稿日時等）。Ranking と JOIN して使用。
+列: `ID`（so動画ID・主キー）/ `集計日`（INTEGER・yyyyMMdd）/ `再生数` / `コメント数` / `マイリスト数` / `いいね数`
+- `Ranking` から消えた行のうち最新のものだけ保持する差分元。消す直前に拾い、入っている日付より新しい消去行だけ置き換える。当日分は `Ranking` に残るため拾わない
+- 日次更新時に消去行を拾い、Ver1移行時に保持境界より古い行の最新を初期退避する（境界当日以降は退避しない）
+
+### Movie テーブル（LogOfficial.db・Issue #31で廃止）
+
+- Ver1移行で `DROP TABLE IF EXISTS` により廃止する。読み手（`GenreAnalyze`）は呼出元なし、日次更新での書込みも行わない
+- 廃止後に表が残っていても読み書きされない
 
 ### RankingDate テーブル（LogOfficial.db）
 
@@ -190,6 +213,7 @@
 - 対象は `LogOfficial.db` / `NicoranHistory.db` の2DBのみ（ニコ動仕様変更で構成が変わり得るDB）。各DBに `DBVersion` テーブル（`Ver` INTEGER）を持ち、旧DB（テーブルなし）はVer0扱いとする
 - 集計開始時（`frmMainSyukei.AnalyzeAsync`・DBオープン直後・公式DB更新前）に `DbMigrationCoordinator` が各DB担当クラスに更新を指示する。1件でも失敗したら集計を中断する
 - Ver0の内容：いいね列追加＋旧SP種別行の削除（`LastResult` / `LastResultInfo`。旧SP集計の残骸。SPはCSV経路でDBを使わない）＋JSON列DROP＋VACUUM。DROP失敗時はフォールバックなしで集計中断する
+- Ver1の内容（LogOfficialのみ。現行バージョンは1）：SoHistory作成＋保持境界より古い行の最新を初期退避（条件付き置換で冪等）＋境界以降の混入行清掃＋古いRanking削除＋Movie廃止＋初回のみVACUUM。以後は日次更新時にprune駆動で維持する（VACUUMなし）
 - `Dailylog.db` / `ApiXML.db` はキャッシュ扱い（最悪作り直し）のためバージョン管理の対象外とする
 - `result_DB登録用(UTF8).json` の FavoriteTag は見直しなし（全件仕様を維持）
 
@@ -209,6 +233,30 @@
 - `Ranking`（ID 主キー / 再生数 / コメント数 / マイリスト数 / いいね数）— `INSERT OR IGNORE` で追記
 - `DBVersion`（集計日 / Ver 1.0.1.0）
 
+### 手動DB最適化（メンテナンスタブ・Issue #32）
+
+- メンテナンスタブの「DBの最適化を実行」で、チェックされたDBを壁打ち準拠の手順で最適化する。順序はDROP→DELETE→VACUUM
+- `DB/ApiXML.db`：未使用の `IDConvert` を `DROP TABLE IF EXISTS` で落とし、`NicovideoThumb` の1年以上未更新行（`取得日 < 1年前`）を削除してからVACUUMする。削除行は再取得で自己回復する
+- `DB/Dailylog.db`：中間集計の日別キャッシュを全行削除してからVACUUMする（`DROP TABLE`禁止。本番コードに`CREATE`経路がないため。再集計で自己回復する）
+- `DB/NicoranHistory.db`：`LastResult` のWeekly・総合ランク1001位以下・1年以上前（`集計日 <= 1年前`）だけ削除してからVACUUMする。SP削除はしない（Ver0移行で削除済み）。`LastResultInfo`には触れない
+- `DB/LogOfficial.db`：VACUUMのみ（#31の日次pruneと住み分け）
+- 1年前境界は実行日起点のローリング計算（yyyyMMdd整数比較）。1000位ちょうどは残し、1年前当日を含む
+- ファイル不在のDBはスキップし、サイズ欄に「なし」と出す（Dailylog.db等は未実行モードでは存在しないのが正常のため、失敗にしない）
+- 実行前後のサイズ欄には `.db` 本体のみのサイズを出す（`-wal` / `-shm` の合算はしない。接続クローズ時のチェックポイント後に測るため前後比較が成立する）
+- prune＋VACUUMの失敗時はそのDBだけ「失敗」とし、残りを続ける。理由は `nicorankerr.log` に残し、最後に件数サマリを通知する
+- 数十分かかりうるため非同期で実行し、実行中は実行系ボタン（最適化・各集計）を無効化する（集計との同時実行によるDBロック競合を防ぐ。VACUUM自体は原子性があるため、最悪でも失敗に留まり破損しない）
+- 実行ログは集計タブと同様にコンソール側へ出す（タブ内にログ欄は持たない）
+
+### ベースラインDB配布と不在時自動取得（Issue #36）
+
+- 配布するのは `LogOfficial.db`（Ver1・直近1年＋SoHistory）と `NicoranHistory.db`（全期間）の2種。DBごとにzip分離する（部分欠損対応の所有分離を守るため）。`ApiXML.db`・`Dailylog.db` はキャッシュ扱いのため配布しない
+- 配布場所は NAS の Web 公開配下（`\\ds224\web\nicorank\baseline\` → `https://2daime.myds.me/nicorank/baseline/`）。最新ポインタは `baseline.json`（UTF-8。日付・ファイル名・サイズ・sha256を必須とし、配布スクリプト `tools/make-baseline.ps1` が自動作成する）。zip名は固定（`LogOfficial.zip`／`NicoranHistory.zip`）とし、改名作業はしない。日付は `baseline.json` の中にだけ持つ。更新は3〜6か月ごと、単一最新の運用とし世代は残さない（世代を残したい場合は人間が事前に退避する）
+- 配布スクリプトは配布フォルダに置いたまま使う（出力はスクリプト自身の場所、DBフォルダは `-DbDir` で指定し省略時はカレント。実行場所に依存させないため。2GB級の圧縮中は進捗バーを出さず開始と完了だけ表示する）
+- 参照先は `nicorank.xml` の `SYSTEM/URL_BASELINE`（任意。なければ `https://2daime.myds.me/nicorank/baseline/baseline.json` を使う）
+- 集計開始時（`RankingHistory.Open` の前）に本地の不足を検出したら自動取得する。不在の DB だけ落とし、サイズ・sha256 照合後に展開して `DB/` へ配置し、`EnsureMigrated()` へ進む。既存環境の DB は置き換えない。取得失敗時は中断する（fail-fast 維持）
+- `ApiXML.db` がなければ空ファイル＋`NicovideoThumb` 表確保、`Dailylog.db` がなければ空ファイル＋`Dailylog` 表確保を行い、集計を続ける（キャッシュのため中断しない）
+- 案内表示は `StatusLog`、詳細は `ErrLog` に出す（§7 の経路分離に従う）
+
 ### SQLite 接続設定（SQLiteCtrl.Open）
 
 - 接続文字列: `Pooling=False` / `JournalMode=Wal` / `DefaultTimeout=30`
@@ -221,7 +269,9 @@
 
 ### NicoApi（nicorankLib/api/NicoApi.cs）
 
-- `https://ext.nicovideo.jp/api/getthumbinfo/` — 動画情報 XML 取得。キャッシュは `DB/ApiXML.db` の `NicovideoThumb`（取得日ごとに管理）
+- `https://ext.nicovideo.jp/api/getthumbinfo/` — 動画情報 XML 取得。キャッシュは `DB/ApiXML.db` の `NicovideoThumb`（取得日ごとに管理）。同一IDは最新の行を読む
+- `GetUserInfo` / `GetMovieInfo` は表示補完だけを行い、取得失敗・Status非ok・行なしでも除外（`isDelete`）せず集計を続ける（Issue #40）
+- 週刊の日付フォルダには oldlog が用意した `ApiXML.db` が置かれる。2019側は `ApiXmlCacheImporter` で取り込む（新しい取得日だけ置き換え。失敗時は本地継続）
 - `https://api.ce.nicovideo.jp/nicoapi/v1/video.info?v=` — video.info（現在 `convertMovieID` は未使用）
 - 取得は `Parallel.ForEach`（`Config.ThreadMax` 並列）。失敗時は**全スレッド一時停止 + 指数バックオフ**（403 対策。後述の pitfalls 参照）
 
@@ -260,6 +310,15 @@
 - 1000再生以上フィルタ（直近1年以外）。5万件を超える期間は 1日ずつ狭めて再取得
 - 100件ページングを 4 並列で取得。`":null"` は `":0"` に置換してからデシリアライズ（カウンタが `long` 直結のため置換が必須。回帰テストで担保。Issue #19 で検証済み）
 
+### スナップショット API の更新チェック（Issue #38）
+
+- データ更新は毎日 AM5:00（JST）時点だが参照可能になる時刻は後ろ倒し傾向のため、取得前に `https://snapshot.search.nicovideo.jp/api/v2/snapshot/version` の `last_modified` で更新有無を判定する
+- 判定: `last_modified` のJST日付 == 実行日のJST日付 → 更新済み。両方をJSTに寄せて比べる（NASのTZがJSTでない場合の日付境界ずれを防ぐ）。取得失敗・パース失敗は「確認不能」
+- 取得開始時に `last_modified` の生値と判定結果を `StatusLog` に出力する（CLIではNASメールの実行ログに残り、更新時刻と9時タスクとの余裕を追跡できる）
+- WinForm（`Form1`）: 未更新時はOK/キャンセル確認ダイアログ（実行日 `YYYY/MM/DD`＋`last_modified` の `YYYY/MM/DD HH:mm` を表示）。キャンセルは取得せず終了、OKは取得。確認不能時はエラーダイアログで中断
+- CLI（`nicorank_SnapShot.Cli` のみ。Windowsコンソールモードは対象外）: 未更新／確認不能の間は5分ごとに最大1時間リトライ（簡易待機でよく精度不要。毎回ログ出力）。リトライ中に更新検知したら通常通り取得（終了コード0）。1時間待っても更新なしなら取得せず終了コード2（`SnapShotDB.InitilizeDB` には触れない。DBエラーではなくリトライタイムアウトであることを `nicorankerr.log` に記録し、NASのエラーメールで9時枠見直しのトリガーにする）
+- 実測（2026-09-20〜23・versionと実データ件数の同時測定）: 切替時刻は 07:08／07:14／07:09／07:07 と日々バラつく（単調な長期化ではない）。いずれも実データの可視化ステップと一致し、`last_modified` は信用できる。将来の遅延判断の比較基準にする
+
 ### ニコ動 nvapi（nicorank_oldlog/RankAPI/NicoRankiApi.cs）
 
 - `nvapi.nicovideo.jp` — ジャンル/定番/トレンドタグのランキング取得。user_session クッキー + UA 付与
@@ -290,3 +349,14 @@
 - **接続文字列**: `Data Source=<dbFilePath>;Pooling=False;Default Timeout=30` の単純な接続文字列を使用し、`SqliteConnectionStringBuilder` に依存しないこと。
 - **パラメータ再利用**: `SqliteParameter` はループ外で一度生成し、ループ内では `.Value` プロパティのみを更新すること（10,000件以上の大量データ挿入時も新たな `AddWithValue` 呼び出しを行わないこと）。
 - **プロジェクト設定**: nicorankLib.csproj / packages.config / app.config の各設定ファイルを移行に合わせて更新すること（Reference 置換、パッケージ置換、DbProviderFactories 削除）。
+
+---
+
+## 7. 表示・ログの経路（Issue #43）
+
+ライブラリ層（nicorankLib・oldlog/RankAPI）は直接Consoleに書かず、表示は `StatusLog`・記録は `ErrLog` 経由にする。WinForm呼び出し・Linux CLI運用・ログリダイレクト時の振る舞いを一定にするため。
+
+- 進捗・状態通知・成否報告（取得中・検出・保存しました・リトライします・集計終了・ログインチェック結果）は `StatusLog` へ出す。各エントリポイントの受け手（コンソール／TextBox）が描画するため、文面は変えず経路だけ寄せる
+- 例外の詳細は `ErrLog`（`nicorankerr.log`）へ残す。呼び出し側が黙って `false` を返す経路ではコンソールの可視性が失われるため、その場合に限り `StatusLog` との両書きにする
+- CLIの使い方表示（`--help`）と終了コード規約（0=成功／1=設定不在／2=エラー）は変えない。使い方表示はログではなく引数応答であり、受け手の有無に依存させないため
+- `UIConfig.GetWch` は常時既定値を返し、入力待ち（`Console.ReadLine`）しない。非コンソール環境でのブロックを防ぐため

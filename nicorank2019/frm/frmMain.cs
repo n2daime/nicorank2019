@@ -57,6 +57,11 @@ namespace nicorank2019.frm
                 _panel3SyukeiLocation = panel3.Location;
                 lblTagCount.Text = "検索件数: 未確認（上限50000件）";
                 lblTagWarn.Visible = false;
+                lblTagSnapshotTime.Visible = false;
+                lblTagSnapshotTime.Text = "";
+                // v2最新値チェックの切替配線はコード側で行う（Designerの再生成差分を増やさないため）。初期状態（既定ON）もここで反映する
+                chkUseLiveCounter.CheckedChanged += new EventHandler(this.chkUseLiveCounter_CheckedChanged);
+                UpdateLiveCounterControls();
                 _tagMockLoaded = true;
             }
             catch (Exception ex)
@@ -91,13 +96,18 @@ namespace nicorank2019.frm
         }
 
         /// <summary>
-        /// 集計を実行して結果を報告する（集計タブ・タグタブ共通）
+        /// 集計を実行して結果を報告する（集計タブ・タグタブ共通）。
+        /// 集計中はタブ切替も止める。タブ切替で IsSP／IsTagRank が変わると、Ranking.CalcPoint が
+        /// Config を都度読むため残りの動画が別モードのOFFSETで計算され得る。これを防ぐためである。
         /// </summary>
         private async Task ExecuteAnalyzeAsync(Button execButton)
         {
             try
             {
                 execButton.Enabled = false;
+                // 集計実行中は最適化を開始できないようにする（逆方向の同時実行防止。最適化側も集計ボタンを止める）
+                SetVacuumControlsEnabled(false);
+                tabPageOut.Enabled = false;
 
                 bool result = await AnalyzeAsync();
                 if (!result)
@@ -120,6 +130,8 @@ namespace nicorank2019.frm
             finally
             {
                 execButton.Enabled = true;
+                SetVacuumControlsEnabled(true);
+                tabPageOut.Enabled = true;
             }
         }
 
@@ -177,6 +189,146 @@ namespace nicorank2019.frm
         }
 
         /// <summary>
+        /// メンテナンスタブの「DBの最適化を実行」ボタン(Issue #32)。
+        /// チェックされたDBを1件ずつVACUUMする。数十分かかりうるため実処理は集計スレッド側で行い、
+        /// UI更新はawait復帰後のUIスレッドで行う（集計スレッドからコントロールに触らない。pitfalls項目19）。
+        /// 実行ログは集計タブと同様にコンソール側（StatusLog）へ出すため、タブ内にログ欄は持たない。
+        /// </summary>
+        private async void btnVacuumExec_Click(object sender, EventArgs e)
+        {
+            // パスの単一源は DbOptimizer.GetDefaultTargets() とし、UI側にパス値を二重定義しない。
+            // 配列の並び順は GetDefaultTargets() の順序と対応させること（順序を変えると対応がずれる）。
+            var definitions = DbOptimizer.GetDefaultTargets();
+            CheckBox[] checkBoxes = { chkVacuumLogOfficial, chkVacuumNicoranHistory, chkVacuumApiXml, chkVacuumDailylog };
+            Label[] beforeLabels = { lblVacuumBeforeLogOfficial, lblVacuumBeforeNicoranHistory, lblVacuumBeforeApiXml, lblVacuumBeforeDailylog };
+            Label[] afterLabels = { lblVacuumAfterLogOfficial, lblVacuumAfterNicoranHistory, lblVacuumAfterApiXml, lblVacuumAfterDailylog };
+            // 件数ずれは別DBの行への誤表示・範囲外例外になるため開発時に検出する（件数一致を検証。順序は単体テストが担保）。
+            System.Diagnostics.Debug.Assert(definitions.Count == checkBoxes.Length
+                && definitions.Count == beforeLabels.Length
+                && definitions.Count == afterLabels.Length, "メンテナンスタブの対象配列は GetDefaultTargets() と件数・順序を合わせること");
+            // チェック状態の読み取りはUIスレッドで行う（タグ検索のTagExecuteContextと同一理由）
+            var targets = new List<VacuumUiTarget>();
+            for (int i = 0; i < definitions.Count; i++)
+            {
+                if (checkBoxes[i].Checked)
+                {
+                    targets.Add(new VacuumUiTarget { DbPath = definitions[i].DbPath, BeforeLabel = beforeLabels[i], AfterLabel = afterLabels[i] });
+                }
+            }
+            if (targets.Count == 0)
+            {
+                MessageBox.Show("最適化するDBにチェックを入れてください", "メンテナンス", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            // 実行中は二重実行と集計との同時実行（DBロック競合）を防ぐため、実行系ボタンを止める
+            SetVacuumRunning(true);
+            progressVacuum.Maximum = targets.Count;
+            progressVacuum.Value = 0;
+            lblVacuumStatus.Text = "状態: 実行中...";
+            int successCount = 0;
+            int skipCount = 0;
+            int failCount = 0;
+            try
+            {
+                foreach (var target in targets)
+                {
+                    // 不在判定は Optimize 側に一本化する。UI側で事前判定すると、
+                    // 判定と実行の隙にファイルが消えた場合に残りのDB処理ごと中断してしまうため
+                    // （specs「そのDBだけ失敗とし残りを続ける」を守る）。
+                    target.AfterLabel.Text = "実行後: 実行中...";
+                    DbOptimizeResult result = await System.Threading.Tasks.Task.Run(() => DbOptimizer.Optimize(target.DbPath));
+                    if (!result.Executed)
+                    {
+                        target.BeforeLabel.Text = "実行前: なし";
+                        target.AfterLabel.Text = "実行後: なし";
+                        skipCount++;
+                    }
+                    else
+                    {
+                        target.BeforeLabel.Text = "実行前: " + DbOptimizer.FormatFileSize(result.SizeBefore);
+                        if (result.Success)
+                        {
+                            target.AfterLabel.Text = "実行後: " + DbOptimizer.FormatFileSize(result.SizeAfter);
+                            successCount++;
+                        }
+                        else
+                        {
+                            target.AfterLabel.Text = "実行後: 失敗";
+                            failCount++;
+                        }
+                    }
+                    progressVacuum.Value++;
+                }
+                if (failCount == 0)
+                {
+                    lblVacuumStatus.Text = "状態: 完了";
+                    MessageBox.Show($"最適化が完了しました（成功 {successCount}件・スキップ {skipCount}件）", "メンテナンス", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    lblVacuumStatus.Text = "状態: 一部失敗";
+                    MessageBox.Show($"最適化で失敗がありました（成功 {successCount}件・スキップ {skipCount}件・失敗 {failCount}件）。コンソールとnicorankerr.logを確認してください", "メンテナンス", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                lblVacuumStatus.Text = "状態: 失敗";
+                MessageBox.Show(GetExceptionMessages(ex), "システムエラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                SetVacuumRunning(false);
+            }
+        }
+
+        /// <summary>
+        /// メンテナンスタブの実行対象1件分（UIスレッドで退避した表示先付き）。
+        /// </summary>
+        private class VacuumUiTarget
+        {
+            public string DbPath;
+            public Label BeforeLabel;
+            public Label AfterLabel;
+        }
+
+        // 最適化の実行中フラグ。ResetTagCountState が実行中の条件編集で集計ボタンを復活させないために見る。
+        // 完了時は退避値ではなく現在の条件から求め直すため、開始前の Enabled 退避は持たない。
+        private bool _vacuumRunning = false;
+
+        /// <summary>
+        /// 実行中の二重実行・同時集計を防ぐため、実行系の有効・無効を切り替える。
+        /// 完了時はタグボタンを現在の条件（件数超過時は無効のまま）から求め直す。
+        /// 退避値戻しにしないのは、実行中の条件編集を取りこぼすため。
+        /// </summary>
+        private void SetVacuumRunning(bool running)
+        {
+            _vacuumRunning = running;
+            SetVacuumControlsEnabled(!running);
+            btnAnalyze.Enabled = !running;
+            if (running)
+            {
+                btnAnalyzeTag.Enabled = false;
+            }
+            else
+            {
+                btnAnalyzeTag.Enabled = !_tagCountOverLimit && !string.IsNullOrWhiteSpace(tbTagCondition.Text);
+            }
+        }
+
+        /// <summary>
+        /// 最適化タブ側の操作部だけを切り替える。集計実行中にも最適化を開始できないよう、
+        /// ExecuteAnalyzeAsync 側からも呼ぶ（逆方向の同時実行防止）。
+        /// </summary>
+        private void SetVacuumControlsEnabled(bool enabled)
+        {
+            btnVacuumExec.Enabled = enabled;
+            chkVacuumLogOfficial.Enabled = enabled;
+            chkVacuumNicoranHistory.Enabled = enabled;
+            chkVacuumApiXml.Enabled = enabled;
+            chkVacuumDailylog.Enabled = enabled;
+        }
+
+        /// <summary>
         /// タグタブの入力値から検索条件を組み立てる
         /// </summary>
         private bool TryBuildTagSearchQuery(out TagSearchQuery query, out string error)
@@ -209,7 +361,8 @@ namespace nicorank2019.frm
                 UseDateFilter = chkDateFilter.Checked,
                 StartGte = dtStart.Value.Date,
                 StartLt = dtEnd.Value.Date,
-                ContentType = contentType
+                ContentType = contentType,
+                UseLiveCounter = chkUseLiveCounter.Checked
             };
             error = null;
             return true;
@@ -247,10 +400,13 @@ namespace nicorank2019.frm
                 return;
             }
             _tagCountOverLimit = false;
-            // 未入力ならランキング計算は押せない
-            btnAnalyzeTag.Enabled = !string.IsNullOrWhiteSpace(tbTagCondition.Text);
+            // 最適化実行中は無効のままにする（実行中の条件編集で集計ボタンを復活させない。同時実行防止）
+            btnAnalyzeTag.Enabled = !_vacuumRunning && !string.IsNullOrWhiteSpace(tbTagCondition.Text);
             lblTagWarn.Visible = false;
             lblTagCount.Text = "検索件数: 未確認（上限50000件）";
+            // 古い時点表示が残ると誤解されるため、条件変更時は時点ラベルも消して非表示に戻す
+            lblTagSnapshotTime.Visible = false;
+            lblTagSnapshotTime.Text = "";
         }
 
         /// <summary>
@@ -266,9 +422,12 @@ namespace nicorank2019.frm
         }
 
         /// <summary>
-        /// 件数確認して上限超過なら実行ボタンを押せなくする。超過でなければ件数を返す
+        /// 件数確認して上限超過なら実行ボタンを押せなくする。超過でなければ件数を返す。
+        /// v2最新値モード（query.UseLiveCounter）では件数取得成功後に version を取得してデータ時点ラベルを出す。
+        /// version確認不能時はエラー中断（null返却）し、不明な時点のまま集計させない。
+        /// 取得は await Task.Run で行い、UIスレッドをブロックしない（#38と同型の罠回避）。
         /// </summary>
-        /// <returns>集計に進める件数。進めない場合（超過・取得失敗）は null</returns>
+        /// <returns>集計に進める件数。進めない場合（超過・取得失敗・時点確認不能）は null</returns>
         private async Task<long?> CheckTagCountAsync(TagSearchQuery query)
         {
             var analyzer = new TagRankAnalyze(DateTime.Now, query);
@@ -278,6 +437,8 @@ namespace nicorank2019.frm
             {
                 _tagCountOverLimit = false;
                 lblTagCount.Text = "検索件数: 取得失敗";
+                lblTagSnapshotTime.Visible = false;
+                lblTagSnapshotTime.Text = "";
                 MessageBox.Show("検索件数の取得に失敗しました。ネットワークと条件を確認してください", "検索エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return null;
             }
@@ -288,10 +449,32 @@ namespace nicorank2019.frm
                 lblTagWarn.Text = $"検索結果が多すぎます。({count}件) {TagRankAnalyze.MaxTotalCount}件以下になるように条件を追加して下さい";
                 lblTagWarn.Visible = true;
                 btnAnalyzeTag.Enabled = false;
+                lblTagSnapshotTime.Visible = false;
+                lblTagSnapshotTime.Text = "";
                 return null;
             }
             _tagCountOverLimit = false;
             lblTagWarn.Visible = false;
+            // DB使用モード（UseLiveCounter=OFF）は時点表示の対象外のため、ラベルは非表示のままにする
+            if (query == null || !query.UseLiveCounter)
+            {
+                lblTagSnapshotTime.Visible = false;
+                lblTagSnapshotTime.Text = "";
+                return count;
+            }
+            // 件数確認のたびに version を取得する（タブ滞在中の使い回しはせず、常に最新の切り替え日時を掴む）
+            var versionResult = await Task.Run(() => new SnapShotVersionChecker().Check());
+            string snapshotLabel;
+            if (!TagSnapshotTimestamp.TryFormat(versionResult, out snapshotLabel))
+            {
+                // 確認不能時はエラーとして中断する。不明な時点表示のまま集計させないためラベルは出さない
+                lblTagSnapshotTime.Visible = false;
+                lblTagSnapshotTime.Text = "";
+                MessageBox.Show("データ時点（スナップショットversion）の取得に失敗しました。ネットワークを確認して件数確認をやり直してください", "検索エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return null;
+            }
+            lblTagSnapshotTime.Text = snapshotLabel;
+            lblTagSnapshotTime.Visible = true;
             return count;
         }
 
@@ -313,6 +496,9 @@ namespace nicorank2019.frm
             catch (Exception ex)
             {
                 lblTagCount.Text = "検索件数: 取得失敗";
+                // 前回成功の時点表示が残ると誤解されるため、例外時も非表示に戻す
+                lblTagSnapshotTime.Visible = false;
+                lblTagSnapshotTime.Text = "";
                 MessageBox.Show(GetExceptionMessages(ex), "システムエラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
@@ -328,8 +514,9 @@ namespace nicorank2019.frm
                 MessageBox.Show(buildError, "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            // 集計日DBは必須。基準日DBと前回結果CSVは任意（基準なしは差分なしで累積値を使う）
-            if (!IsExistingFile(tbAnalyzeDB_Tag.Text))
+            // 集計日DBの要否はv2最新値モードで変わる。最新値モードはDBなし実行のため存在確認自体を行わない
+            // （無効化された欄に古い不正パスが残っていてもブロックしない。工場もAnalyzeDBを無視する）
+            if (!query.UseLiveCounter && !IsExistingFile(tbAnalyzeDB_Tag.Text))
             {
                 MessageBox.Show("集計日のDBを指定してください", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
@@ -354,6 +541,9 @@ namespace nicorank2019.frm
             catch (Exception ex)
             {
                 MessageBox.Show(GetExceptionMessages(ex), "システムエラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // 前回成功の時点表示が残ると誤解されるため、例外時も非表示に戻す
+                lblTagSnapshotTime.Visible = false;
+                lblTagSnapshotTime.Text = "";
                 btnAnalyzeTag.Enabled = true;
                 return;
             }
@@ -399,7 +589,32 @@ namespace nicorank2019.frm
             ResetTagCountState();
         }
 
+        /// <summary>
+        /// v2最新値モードの切替で集計日DB欄の有効・無効を切り替える
+        /// </summary>
+        private void chkUseLiveCounter_CheckedChanged(object sender, EventArgs e)
+        {
+            UpdateLiveCounterControls();
+        }
+
+        /// <summary>
+        /// v2最新値モードONなら集計日DB欄を無効化する（DBなし実行のため）。
+        /// OFF（DB使用モード）では時点ラベルは対象外のため、切り替え時に非表示に戻す。
+        /// </summary>
+        private void UpdateLiveCounterControls()
+        {
+            bool useDb = !chkUseLiveCounter.Checked;
+            tbAnalyzeDB_Tag.Enabled = useDb;
+            btnAnalyzeDB_Tag.Enabled = useDb;
+            if (useDb)
+            {
+                lblTagSnapshotTime.Visible = false;
+                lblTagSnapshotTime.Text = "";
+            }
+        }
+
         // ポイント計算パネルを集計タブとタグタブで付け替える（タグ選択時はTAGRANK値に切り替える）
+        // メンテナンスタブ選択時は何もしない（集計モードと無関係のためpanel3は触らず、モード切替も行わない）
         // 固定座標はAutoScaleの対象外でずれるため、スケール済みのコントロールを基準に相対配置する
         private void tabPageOut_SelectedIndexChanged(object sender, EventArgs e)
         {

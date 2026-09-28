@@ -10,7 +10,7 @@ nicorankLib/
 ├── Factory/       モード分岐（ModeFactoryBase / Weekly / Tyukan / SP）
 ├── Analyze/       集計パイプライン・入力・過去データ管理
 │   ├── RankingAnalyze.cs   パイプライン制御
-│   ├── Input/              入力（JsonReader系 / SPAnalyze / TyukanAnalyze / GenreAnalyze）
+│   ├── Input/              入力（JsonReader系 / SPAnalyze / TyukanAnalyze / TagRankAnalyze）
 │   ├── Official/           公式ランキング DB 管理（RankingHistory）
 │   ├── Option/             オプション処理（Basic: 順位計算前 / Ext: 順位計算後）
 │   └── model/              ドメインモデル（Ranking / DB / EAnalyzeMode / 各種 JSON モデル）
@@ -26,15 +26,15 @@ nicorankLib/
 
 | クラス | 責務 |
 |---|---|
-| `ModeFactoryBase` | 抽象基底。`AnalyzeRank()` は `RankingAnalyze.AnalyzeRank` を呼び結果を `RankingList` に格納。出力系は抽象メソッド（`CreateAnalyzer` / `CreateHistory` / `CreateOutputCSV` / `CreateNRMRank` 等） |
+| `ModeFactoryBase` | 抽象基底。`AnalyzeRank()` は `RankingAnalyze.AnalyzeRank` を呼び結果を `RankingList` に格納。出力系は抽象メソッド（`CreateAnalyzer` / `CreateHistory` / `CreateOutputCSV` / `CreateNRMRank` 等）。`IDisposable`（保持する `RankingAnalyze` の破棄に委譲。`RankingList` は破棄しない。Issue #44） |
 | `ModeFactoryWeekly` | 週間集計。メンテ日は `RankingHistory.CheckMaintananceDay` で中間集計に代替。BasicOption: HiddenMovieDelete → SabunReader → LastRankReader → GenreInfoReader。ExtOption: FavoriteTagReader → UserInfoReader → TyokiHantei |
 | `ModeFactoryTyukan` | 中間集計。TyokiHantei = null、履歴DB登録なし。`CreateNRMRank1000` は固定 1000 位 |
 | `ModeFactroySP` | **ファイル名タイポは元コードのまま**。`ModeFactoryWeekly` 継承。4種の入力ファイルを `SetInputFile` で設定（analyzeDB / baseDB / movieList / 前回結果CSV） |
-| `ModeFactoryTagRank` | タグ検索集計。`ModeFactoryWeekly` 継承・SP相当（履歴null・7種出力）。`TagRankAnalyze`＋Base有無で `SnapShotSabunReader` / `TagRankTotalReader` を切替。前回CSV・基準DBは任意 |
+| `ModeFactoryTagRank` | タグ検索集計。`ModeFactoryWeekly` 継承・SP相当（履歴null・7種出力）。SnapshotDB時は `TagRankAnalyze`＋Base有無で `SnapShotSabunReader` / `TagRankTotalReader` を切替。v2最新値時（`Query.UseLiveCounter`）はDB不要で `TagRankLiveSabunReader` / `TagRankLiveTotalReader` を切替（集計日=実行日）。前回CSV・基準DBは任意 |
 
 ## Analyze / RankingAnalyze
 
-`RankingAnalyze.cs` — 集計パイプライン制御。
+`RankingAnalyze.cs` — 集計パイプライン制御。`IDisposable`（所有する BasicOption 群を一括破棄する。冪等・null 安全・1件失敗でも継続して `ErrLog` に記録。Input と Ext は破棄対象外。Issue #44）。
 
 ```
 AnalyzeRank():
@@ -45,7 +45,7 @@ AnalyzeRank():
   IExtOptionBase.AnalyzeRank(list)     … 順位計算後の付加処理
 ```
 
-`calcRanking` の6種の順位（すべて並列）: 総合（PointTotal 降順）/ 再生 / コメント / マイリスト / いいね / カテゴリ（`!isDelete` のみ、Category グループごとに PointTotal 降順）。
+`calcRanking` の6種の順位（すべて並列）: 総合（PointTotal 降順）/ 再生 / コメント / マイリスト / いいね / カテゴリ（`!isDelete` のみ、Category グループごとに PointTotal 降順）。同点時は `RankingIdComparer`（種別→数字の数値認識、失敗時はOrdinalフォールバック）で決定的にする（Issue #34）。順位値は連番維持。
 
 ## Analyze/Input
 
@@ -53,10 +53,10 @@ AnalyzeRank():
 |---|---|
 | `InputBase` | 抽象基底。`AnalyzeDay` / `AnalyzeRank(out List<Ranking>)` を規定 |
 | `JsonReaderBase` | 公式過去ランキング JSON 取得の基底。`file_name_list.json` → ジャンル別 JSON を `Config.ThreadMax` 並列でダウンロード → `Ranking` に変換 → `MergeRankingList` で重複 ID マージ。`CheckAnalyzeTime`（当日 1:00 前は集計不可判定） |
+| `JsonReaderWeekly` | 週刊用。JSON取得後に oldlog 配布の `ApiXML.db` を `ApiXmlCacheImporter` で取り込む（失敗時は本地継続。Issue #40） |
 | `JsonReaderDaily` / `Weekly` / `Monthly` / `Total` | 種別ごと。Weekly は直近の月曜まで遡る、Monthly は直近の1日まで |
-| `GenreAnalyze` | 「演奏してみた」ジャンル特化入力。LogOfficial.db の Movie と Ranking を JOIN |
 | `SPAnalyze` | SP 用。動画 ID リスト（改行区切り）を読み込み Ranking リスト化 |
-| `TagRankAnalyze` | タグ検索用。snapshot v2 ライブ検索でID列を生成（件数→5万判定→100件×4並列→重複除去・ID順）。差分は後段の SabunReader / TotalReader が行う |
+| `TagRankAnalyze` | タグ検索用。snapshot v2 ライブ検索でID列を生成（件数→5万判定→100件×4並列→重複除去・ID順）。`LiveCounters`（ID→4数値）も保持しv2最新値モードの材料にする。差分は後段の SabunReader / TotalReader が行う |
 | `TyukanAnalyze` | 中間集計。`Dailylog.db` を使用。対象日リスト（メンテ日除外）を日別に `JsonReaderDaily` + `SabunReader` で集計し Dailylog に INSERT → 期間合計で中間ランキング生成 |
 
 ## Analyze/Official
@@ -64,10 +64,10 @@ AnalyzeRank():
 `RankingHistory.cs` — LogOfficial.db（公式過去ランキング DB）の更新・参照。`IDisposable`。
 
 - `Open()` / `Close()`: LogOfficial を開閉（注入済みの開接続は再利用）
-- `EnsureMigrated()`（`IDbMigratable`）: RankingDate確保＋DBVersion（Ver INTEGER・Ver0開始）確保。集計開始時に司令塔から呼ばれる
+- `EnsureMigrated()`（`IDbMigratable`）: RankingDate確保＋DBVersion確保＋Ver1でSoHistory・prune用索引・古いRanking削除・Movie廃止。集計開始時に司令塔から呼ばれる
 - `UpdateOfficialRankingDB()`: RankingDate の `Max(集計日)+1`（初期値 20190610）から今日までを日別に取得・登録。0 件の日はメンテナンス日として登録（UI で確認）
 - `CheckMaintananceDay(DateTime)`: RankingDate でメンテ日判定
-- `CheckSoMovieNeedSabun(id, baseTime)`: 公式チャンネル動画（so）の差分取得判定。過去ランキング既出なら差分データ、なければ `ranking = null`（差分なし）。DB 非オープン・例外時は false
+- `CheckSoMovieNeedSabun(id, baseTime)`: 公式チャンネル動画（so）の差分取得判定。過去ランキング既出なら差分データ、なければ `ranking = null`（差分なし）。`Ranking` に見つからない場合は `SoHistory`（消えた行のうち最新の差分元）を基準日以前の行に限って参照し、それもなければ新着扱いとする。`SoHistory` 表自体がない旧DBでも新着扱いで正常終了する。DB 非オープン・例外時は false
 - `GetRankingSabunDataLogOfficial(id, baseTime, baseTime2)`: 過去ログから差分候補を取得（7日間に無ければ baseTime 以降の最古データを採用）
 - `ISQLiteCtrl` コンストラクタ注入可
 
@@ -75,18 +75,25 @@ AnalyzeRank():
 
 ### Basic（順位計算前に実行、`AnalyzeRank(ref List<Ranking>)`）
 
+基底 `BasicOptionBase` は `IDisposable` であり、空の仮想 `Dispose` を持つ。なぜ基底で契約するか: 呼び出し側（`RankingAnalyze`）はリストとして一括破棄するため、個別の型を知らなくても破棄できる必要があるから。資源を持たない派生は空実装のまま何も書かず、資源を持つ派生だけ `override` する（Issue #44）。注入された接続は呼び出し側の所有物のため破棄せず、自前生成分のみ破棄する（`_ownsDbCtrl` フラグ。`SpMovieInfoFallback` と同一流儀）。
+
 | クラス | 責務 |
 |---|---|
 | `HiddenMovieDelete` | サムネイル `/video_deleted` の動画を `isDelete=true` に |
 | `SabunReader` | 基準日との差分計算。so 動画は差分が取れなければ ID 番号で新着判定（so40000000 未満は新着偽造で isDelete）。DB エラー等で判定不能な場合も isDelete |
 | `LastRankReader` | NicoranHistory.db の Lastresult から前回総合ランク/ポイントをセット |
 | `LastRankCsvReader` | SP 用。前回 result CSV から前回順位を付与 |
-| `GenreInfoReader` | カテゴリ不明の動画を NicoApi で補完 |
-| `MovieInfoReader` | NicoApi で動画情報（タイトル・投稿日）を取得 |
-| `SnapShotSabunReader` | SP 集計の中核。スナップショット DB 2本（AnalyzeDB/BaseDB）の累積値差分を計算。`IDisposable` |
-| `TagRankTotalReader` | タグ検索の基準DBなし専用。AnalyzeDBの累積値をそのまま集計値にする（差分なし）。`IDisposable` |
+| `GenreInfoReader` | カテゴリ不明の動画を NicoApi で補完。失敗しても中断せず空欄のまま残す（Issue #40） |
+| `MovieInfoReader` | NicoApi で動画情報（タイトル・投稿日）を取得。失敗しても中断せず空欄のまま残す（Issue #40） |
+| `SnapShotSabunReader` | SP 集計の中核。スナップショット DB 2本（AnalyzeDB/BaseDB）の累積値差分を計算。動画情報の後に `SpMovieInfoFallback` で予備補完し、残欠落には削除目印を付ける（Issue #40）。`Dispose` を `override` して自前接続のみ閉じる（Issue #44） |
+| `SpMovieInfoFallback` | SPの予備補完（Issue #40・案B）。タイトル空欄分だけ LastResult 最新タイトル（種別=Weekly優先の2段引き）＋LogOfficial 期間内初見日で埋める。新規取得なし・失敗でも中断しない |
+| `TagRankTotalReader` | タグ検索の基準DBなし専用。AnalyzeDBの累積値をそのまま集計値にする（差分なし）。`Dispose` を `override` して自前接続のみ閉じる（Issue #44） |
+| `TagRankLiveTotalReader` | v2最新値の基準DBなし専用。`TagRankAnalyze.LiveCounters` をそのまま集計値にする（DB不要。`ApplyLiveTotals` は純粋処理で共用） |
+| `TagRankLiveSabunReader` | v2最新値の基準DBあり専用。Target=ライブ値・Base=基準日DBで差分計算（新着救済はSabunReaderと同一）。動画情報の後に `SpMovieInfoFallback` で予備補完する（Issue #40）。`Dispose` を `override` して自前接続のみ閉じる（Issue #44） |
 
 ### Ext（順位計算後に実行、`bool AnalyzeRank(List<Ranking>)`）
+
+`IExtOptionBase` は破棄契約を持たない。なぜ付けないか: インターフェースであり .NET Framework 4.8 の C# では空の既定実装を付けにくく、現状の実装（`FavoriteTagReader`・`UserInfoReader`・`TyokiHantei`）は呼び出しごとに自前接続を生成して `finally` で破棄するため持ち越しがないから（Issue #44 で見送り）。将来の net8 移行時に再検討する。
 
 | クラス | 責務 |
 |---|---|
@@ -96,7 +103,8 @@ AnalyzeRank():
 
 ## Analyze/model
 
-- `Ranking` — 集計結果1件。`CalcPoint()`（ポイント計算、キャッシュ付き）・`PointCalcReset()`・`MergeRankingList`・`IsChannel`（`so` 始まり）。計算式の詳細は `../specs.md` セクション2
+- `Ranking` — 集計結果1件。`CalcPoint()`（ポイント計算、キャッシュ付き）・`PointCalcReset()`・`MergeRankingList`・`IsChannel`（`so` 始まり）。`DeletedTitlePrefix`＋`ApplyDeletedTitleMarker()`（情報欠落時の目印付け。Issue #40）。計算式の詳細は `../specs.md` セクション2
+- `RankingIdComparer` — 動画IDの決定的な比較子（Issue #34）。種別→数字の数値認識、同点時だけ呼ばれるThenBy二次キー用
 - `EAnalyzeMode` — Weekly / SP / Tyukan / Daily / Mothly（タイポ）/ TagRank / Unknown
 - `DB` — DB ファイルパス定数（`LOG_OFFICEIAL` / `NiCORAN_HISTORY` / `LOG_SNAPSHOT`）
 - `RankGenreJson` / `RankLogJson` — 公式ランキング JSON のデシリアライズ用モデル（`JsonReaderBase` / `RankApi2Json` で使用）
@@ -119,24 +127,27 @@ AnalyzeRank():
 
 ## api
 
-- `NicoApi` — getthumbinfo API 取得 + `DB/ApiXML.db`（NicovideoThumb）キャッシュ。`Parallel.ForEach`（`Config.ThreadMax`）。失敗時は全スレッド一時停止 + 指数バックオフ（pitfalls 参照）
+- `NicoApi` — getthumbinfo API 取得 + `DB/ApiXML.db`（NicovideoThumb）キャッシュ。`Parallel.ForEach`（`Config.ThreadMax`。設定がなければ既定4）。失敗時は全スレッド一時停止 + 指数バックオフ（pitfalls 参照）。`GetUserInfo/GetMovieInfo` は表示補完のみで除外しない・最新行読み（Issue #40）。`OpenDB(path)` で既定外の場所も開ける（oldlog配布DB作成用）
+- `ApiXmlCacheImporter` — 週刊キャッシュの受け渡し（Issue #40）。`EnsureNicovideoThumbTable`（表確保）・`ImportWeeklyCache`（日付フォルダから取得→取込。失敗時は本地継続）・`MergeCacheFile`（新しい取得日だけ置き換え。5000件バッチ）
 - `model/ThumbinfoBase` / `model/VideoResponse` — レスポンスデシリアライズ用 POCO。`GetUserID/GetUserName/GetUserIconUrl` はユーザー動画なら `user_*`、チャンネルなら `ch_*` を返す
 
 ## SnapShot
 
 - `SnapController` — スナップショット一括取得エントリ。20070306 から現在まで 15 日間隔でループ。直近1年以内は 1000 再生制限なし URL、それ以前は制限あり URL。10000 件ごとに `SnapShotDB.RegistDB`
-- `SnapShotAnalyze` — snapshot API リクエスト構築・並列ページング（4 並列）。総件数 5 万超なら期間を狭めて再試行。`":null"` → `":0"` 置換
+- `SnapShotVersionChecker` — 更新チェック（Issue #38）。version エンドポイントの `last_modified` と実行日をJST日付比較し更新済み/未更新/確認不能の3値を返す。取得実行はしない（事後動作は呼び出し側）。日時パースは `DateParseHandling.None`（pitfalls 項目22）
+- `SnapShotVersionPoller` — 更新待ち制御（Issue #38）。5分ごと再チェック・最大1時間（定数化）。時計・待機は注入可（単体テストで実時間待ちなし）
+- `SnapShotAnalyze` — snapshot API リクエスト構築・並列ページング（4 並列）。総件数 5 万超なら期間を狭めて再試行。`":null"` → `":0"` 置換。進捗の件数表示は `StatusLog` 経由（WinForm・コンソール・Linux CLIの3経路で受け手を統一するため。Issue #43）
 - `SnapShotRequest` — スナップショット検索API v2 の型付きリクエスト（Issue #19）。`q/targets/fields/filters/jsonFilter/_sort/_limit/_offset/_context` を保持し値のみ `EscapeDataString` で URL 生成。`_context` 既定 `WeeklyNicoranProgram`、`_limit/_offset` クランプ。`CreateTagSearch` はタグ検索用（jsonFilter＋数値・日付・種別を `filters[]` で指定。Issue #30）
 - `TagConditionParser` — タグ条件式（`A&B|C*`）を jsonFilter に変換（Issue #30）。`*` は末尾1文字のみ許可
-- `TagSearchQuery` — タグ検索条件の受け渡し用 DTO（Issue #30）
+- `TagSearchQuery` — タグ検索条件の受け渡し用 DTO（Issue #30）。`UseLiveCounter`（既定false。真ならv2最新値モード。Issue #35）
+- `TagSnapshotTimestamp` — データ時点ラベルの純粋整形（Issue #39）。`Format`（JST日＋05:00固定）・`TryFormat`（確認不能時はfalse）・`DataHour`／`DataMinute` 定数を持つ。UIから分離して単体テストで縛る
 - `SnapShotDB` — `LogSnapshot{yyyyMMdd}.db` の作成・登録（5000件バッチコミット・INSERT OR IGNORE・パラメータ再利用）。`ISQLiteCtrl` 注入可。旧 JSON ファイル読込（`GetJsonData`）も保持
 - `SnapShotJson` — レスポンス POCO
 
 ## Common
 
-- `Config` — **シングルトン**。`nicorank.xml` を `NicoRankXml` にデシリアライズして保持。ほぼ全クラスから参照。`IsSP` フラグで RANK/RANKED/UserInfo/POINT が SP 用 XML 節に切り替わる。`IsTagRank` で TAGRANK 節に切り替わる（節なし・項目欠落は週間フォールバック。Issue #30）
-- `NicoRankXml` — nicorank.xml の POCO 群（`TAGRANK` は SP 同型。Issue #30）
-- `NicoRankXml` — nicorank.xml の POCO 群
+- `Config` — **シングルトン**。`nicorank.xml` を `NicoRankXml` にデシリアライズして保持。ほぼ全クラスから参照。`IsSP` フラグで RANK/RANKED/UserInfo/POINT が SP 用 XML 節に切り替わる。`IsTagRank` で TAGRANK 節に切り替わる（節なし・項目欠落は週間フォールバック。Issue #30）。OFFSET4種（`CalcCommentKind`／`CalcCommentUnderLimit`／`CalcMyListKind`／`CalcPlayKind`／`CalcPointAllKind`）はIssue #39でSP／TAGRANK節別化し、読み取りは節内に対応要素があれば節内値・なければ共通を使う（項目単位フォールバック。1項目だけ変えたい要求への適合と既存XML互換のため）。書き込みはモード別の節へ書く（なければ共通の現在値を引き継いで生成し、共通への波及を防ぐ）。集計中はタブ切替を止めてモード変化を防ぐ
+- `NicoRankXml` — nicorank.xml の POCO 群（`TAGRANK` は SP 同型。Issue #30）。`SP`／`TAGRANK` 節はIssue #39でOFFSET4種（`COMMENT_OFFSET`／`MYLIST_OFFSET`／`PLAY_OFFSET`／`POINTALL_OFFSET`）を任意要素として持てる。なければ共通の最上位要素を使う
 
 ## Util
 
@@ -147,12 +158,13 @@ AnalyzeRank():
 | `ISQLiteCtrl` | SQLite 操作の抽象化（`SqliteConnection` 公開。テストでインメモリ実装に差し替え） |
 | `IDbMigratable` | 集計開始時のDB更新確認IF（`TargetDb` / `EnsureMigrated()`。実処理は各DB担当クラスが持つ。Issue #28） |
 | `DbMigrationCoordinator` | 集計開始時の更新指示の司令塔（`EnsureAllAtAnalyzeStart()`。失敗時は中断。具象には依存しない。Issue #28） |
-| `StatusLog` | 静的。`IStatusLogWriter` を注入するプラグイン方式（UI 側が実装を注入。未設定なら何も出さない） |
-| `ErrLog` | シングルトン。`nicorankerr.log` に追記（UTF8）。`Close()` で非 SilentMode ならキー入力待ち |
+| `DbOptimizer`（static） | 手動DB最適化の実行本体（Issue #32・壁打ちコメント準拠）。`GetDefaultTargets()`（4DB・UI表示順）/ `Optimize(dbPath[, today])`（不在はスキップ・DBごとにDROP→DELETE→VACUUM・削除行数＋実行前後サイズ付き結果）/ `CutoffOneYearAgo()`（実行日起点の1年前yyyyMMdd）/ `FormatFileSize()`。ApiXML／Dailylogのパス定数も持つ |
+| `StatusLog` | 静的。`IStatusLogWriter` を注入するプラグイン方式（UI 側が実装を注入。未設定なら何も出さない）。ライブラリ層の進捗・状態通知・成否報告の唯一の表示経路（Issue #43。`--help` と受け手自体を除く） |
+| `ErrLog` | シングルトン。`nicorankerr.log` に追記（UTF8）。例外の詳細の記録先（Issue #43）。`Close()` で非 SilentMode ならキー入力待ちの表示のみ行う（入力待ち自体はしない） |
 | `DateConvert` | 日付 ↔ 文字列（yyyyMMdd / yyyyMMddHHmmss）変換 |
 | `InternetUtil` | HTTP ダウンロード（UA "WeeklyNicoranProgram"）。最大20回リトライ。403 相当（application/xml の ProtocolError）は即断念。それ以外は指数バックオフ |
 | `RegLib` | 正規表現置換ラッパー |
-| `UIConfig` | シングルトン。SilentMode（既定 true）/ LocalXml。`GetWch` は SilentMode なら既定値 |
+| `UIConfig` | シングルトン。SilentMode（既定 true）/ LocalXml。`GetWch` は常時既定値を返し入力待ちしない（Issue #43。どちらも書き換えなしのデッドフラグであり、削除は別タスク） |
 | `Text/CsvUtil` | CSV/TSV 書き込み・読み込み（TextFieldParser） |
 | `Text/TextUtil` | テキスト読み書き。文字コード自動判別（JIS/EUC/SJIS/UTF8/Unicode/ASCII）。`ReadCsv` はカラム名から動的に検出して Ranking リスト/辞書に変換（新旧両対応・人気タグはOption・マイリストポイントを含む補正系・ポイント内訳と運営列は読取対象外。ファイル不在時は false + 空 List） |
 | `Text/XmlSerializerUtil` | XmlSerializer ラッパー |
@@ -165,8 +177,10 @@ AnalyzeRank():
 | `RankingHistory` | SQLiteCtrl, JsonReader 4種 | ModeFactoryWeekly, TyukanAnalyze, SabunReader, frmMainSyukei |
 | `SabunReader` | RankingHistory | ModeFactoryWeekly, TyukanAnalyze |
 | `TyokiHantei` | SQLiteCtrl | ModeFactoryWeekly |
-| `SnapShotSabunReader` | SQLiteCtrl×2, MovieInfoReader | ModeFactroySP |
+| `SnapShotSabunReader` | SQLiteCtrl×2, MovieInfoReader, SpMovieInfoFallback | ModeFactroySP |
+| `SpMovieInfoFallback` | SQLiteCtrl×2（NicoranHistory・LogOfficial。失敗時は開かず続行） | SnapShotSabunReader / TagRankLiveSabunReader |
+| `TagRankLiveSabunReader` | SQLiteCtrl, MovieInfoReader, SpMovieInfoFallback | ModeFactoryTagRank |
 | `NicoApi` | — | GenreInfoReader / MovieInfoReader / UserInfoReader |
 | `ModeFactory*` | — | `frmMainSyukei.cs`（Weekly:86 / Tyukan:93 / SP:99 で切替） |
 
-テスト容易性のための `_dbCtrlOverride` パターン（`ISQLiteCtrl` コンストラクタ注入）は `RankingHistory` / `TyukanAnalyze` / `SnapShotSabunReader` / `LastRankReader` / `TyokiHantei` / `FavoriteTagReader` / `GenreAnalyze` に実装済み。
+テスト容易性のための `_dbCtrlOverride` パターン（`ISQLiteCtrl` コンストラクタ注入）は `RankingHistory` / `TyukanAnalyze` / `SnapShotSabunReader` / `LastRankReader` / `TyokiHantei` / `FavoriteTagReader` に実装済み。

@@ -1,3 +1,6 @@
 ﻿<Weavers xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="FodyWeavers.xsd">
-  <Costura />
+  <!-- SQLitePCLRaw系・Microsoft.Data.SqliteはCostura埋め込みから除外する（nicorankLibと同一理由）。
+       batteries_v2.dllは自アセンブリのLocation基準でruntimes/{rid}/native/e_sqlite3.dllを探すため、
+       埋め込むとLocationが空になり必ず失敗する。 -->
+  <Costura ExcludeAssemblies="SQLitePCLRaw.core|SQLitePCLRaw.batteries_v2|SQLitePCLRaw.provider.dynamic_cdecl|SQLitePCLRaw.provider.e_sqlite3|Microsoft.Data.Sqlite" />
 </Weavers>

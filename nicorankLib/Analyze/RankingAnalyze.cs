@@ -14,7 +14,14 @@ using nicorankLib.Util;
 
 namespace nicorankLib.Analyze
 {
-    public class RankingAnalyze
+    /// <summary>
+    /// 集計パイプラインの制御。所有する BasicOption の破棄責任を持つ。
+    /// なぜここで破棄するか: BasicOption の生成は Factory が行うが、集計中の保持と実行順の管理は
+    /// このクラスが担うため、使い終わった後の一括破棄もここに寄せるのが自然だから。
+    /// ExtOption は今回対象外とする（IExtOptionBase は破棄契約を持たず、現状持ち越しもないため。Issue #44）。
+    /// Input も破棄対象外とする（InputBase は破棄契約を持たないため）。
+    /// </summary>
+    public class RankingAnalyze : IDisposable
     {
         /// <summary>
         /// 基本となるランキングデータを取得するクラス
@@ -104,6 +111,45 @@ namespace nicorankLib.Analyze
             return true;
         }
 
+        private bool _disposed = false;
+
+        /// <summary>
+        /// 所有する BasicOption を一括破棄する。二重呼び出しでも例外を出さない。
+        /// 1件の破棄失敗で残りを諦めない（1件ずつ try/catch で継続する。
+        /// なぜ握りつぶすか: 破棄時の例外で集計成功の記録まで壊さないため。破棄失敗は ErrLog に残す）。
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+            if (disposing)
+            {
+                if (BaseOptionList != null)
+                {
+                    foreach (var option in BaseOptionList)
+                    {
+                        try
+                        {
+                            option?.Dispose();
+                        }
+                        catch (Exception ex)
+                        {
+                            ErrLog.GetInstance().Write(ex);
+                        }
+                    }
+                }
+            }
+            _disposed = true;
+        }
+
 
         /// <summary>
         /// ランキングを計算する
@@ -124,11 +170,24 @@ namespace nicorankLib.Analyze
 
                 StatusLog.WriteLine("ランキングを計算しています．．");
 
+                // ポイントを単一スレッドで確定させる。Ranking.CalcPointのキャッシュ(workPointTotal)は
+                // スレッドセーフでなく、計算途中の部分値を書き込みながら進めるため、並列タスク内で
+                // 初回計算が重なると別タスクが部分値を読んで順序が不定になる。同点タイブレークの
+                // 決定的保証のために、並列ソートの前に全件確定させる（読むだけなら競合しない）。
+                foreach (var rank in rakingList)
+                {
+                    _ = rank.PointTotal;
+                }
+
                 var taskList = new List<Task>();
+                // 同点時はIDの数値認識順で決定的にする。入力は並列取得のため順序が不定であり、
+                // 単一キー降順だけでは同点の並びが実行ごとに変わり前回順位が±1ずれる（Issue #34）。
+                // ThenByの二次比較子は一次キーが等しい同点ペアにだけ呼ばれるため処理コストは最小になる。
+                // 順位値は連番のまま変えない（同順位スキップはしない）。
                 taskList.Add(Task.Run(() =>
                 {// 総合順位
                     long rank = 1;
-                    var workList = rakingList.OrderByDescending(ranking => ranking.PointTotal).ToList();
+                    var workList = rakingList.OrderByDescending(ranking => ranking.PointTotal).ThenBy(ranking => ranking.ID, RankingIdComparer.Instance).ToList();
                     foreach (var wRank in workList)
                     {
                         wRank.RankTotal = rank;
@@ -138,7 +197,7 @@ namespace nicorankLib.Analyze
                 taskList.Add(Task.Run(() =>
                 {// 再生順位
                     long rank = 1;
-                    var workList = rakingList.OrderByDescending(ranking => ranking.CountPlay).ToList();
+                    var workList = rakingList.OrderByDescending(ranking => ranking.CountPlay).ThenBy(ranking => ranking.ID, RankingIdComparer.Instance).ToList();
                     foreach (var wRank in workList)
                     {
                         wRank.RankPlay = rank;
@@ -148,7 +207,7 @@ namespace nicorankLib.Analyze
                 taskList.Add(Task.Run(() =>
                 {// コメント順位
                     long rank = 1;
-                    var workList = rakingList.OrderByDescending(ranking => ranking.CountComment).ToList();
+                    var workList = rakingList.OrderByDescending(ranking => ranking.CountComment).ThenBy(ranking => ranking.ID, RankingIdComparer.Instance).ToList();
                     foreach (var wRank in workList)
                     {
                         wRank.RankComment = rank;
@@ -158,7 +217,7 @@ namespace nicorankLib.Analyze
                 taskList.Add(Task.Run(() =>
                 {// マイリスト順位
                     long rank = 1;
-                    var workList = rakingList.OrderByDescending(ranking => ranking.CountMyList).ToList();
+                    var workList = rakingList.OrderByDescending(ranking => ranking.CountMyList).ThenBy(ranking => ranking.ID, RankingIdComparer.Instance).ToList();
                     foreach (var wRank in workList)
                     {
                         wRank.RankMyList = rank;
@@ -168,7 +227,7 @@ namespace nicorankLib.Analyze
                 taskList.Add(Task.Run(() =>
                 {// いいね順位
                     long rank = 1;
-                    var workList = rakingList.OrderByDescending(ranking => ranking.CountLike).ToList();
+                    var workList = rakingList.OrderByDescending(ranking => ranking.CountLike).ThenBy(ranking => ranking.ID, RankingIdComparer.Instance).ToList();
                     foreach (var wRank in workList)
                     {
                         wRank.RankLike = rank;
@@ -181,7 +240,7 @@ namespace nicorankLib.Analyze
                     foreach (var cateRankList in categoryRankList)
                     {
                         long rank = 1;
-                        var workList = cateRankList.OrderByDescending(ranking => ranking.PointTotal).ToList();
+                        var workList = cateRankList.OrderByDescending(ranking => ranking.PointTotal).ThenBy(ranking => ranking.ID, RankingIdComparer.Instance).ToList();
                         foreach (var wRank in workList)
                         {
                             wRank.RankCategory = rank;

@@ -186,74 +186,112 @@ namespace nicorank2019.frm
             bool returnVal = true;
             await Task.Run(() =>
             {
-                using (var history = new RankingHistory())
-
+                // ベースラインDBの不足時は配布場所から自動取得する（Issue #36）。
+                // なぜここか：RankingHistory.Open はファイル不在で失敗し、その後の EnsureMigrated まで到達しないため、
+                // 開く前に不足を解消する必要がある。キャッシュDB（ApiXML／Dailylog）の確保も同時に行う。
+                // 集計スレッドからコントロールには触れない（取得はネットワークとファイルのみ）。
+                // 取得失敗時は明示的に落とす。LogOfficial 不在は後の Open でも止まるが、
+                // NicoranHistory 不在（長期判定に効く）の失敗を見逃さないためである（reviewer指摘対応）。
+                var baseline = new BaselineDownloader();
+                baseline.EnsureCacheFiles();
+                if (!baseline.EnsureBaseline())
                 {
-                    if (!history.Open())
+                    returnVal = false;
+                }
+                else
+                {
+                    using (var history = new RankingHistory())
                     {
-                        StatusLog.WriteLine("データベースがOpenできません");
-                        returnVal = false;
-                    }
-                    else
-                    {
-                        // 集計開始時に各DBの更新確認を指示する（失敗時は中断）
-                        var migrationCoordinator = new DbMigrationCoordinator(new List<IDbMigratable>
+                        if (!history.Open())
                         {
-                            history,
-                            // モードは移行処理に無関係のためWeeklyを仮指定する。将来の移行処理もMode依存禁止
-                            new ResultHistory(EAnalyzeMode.Weekly)
-                        });
-                        if (!migrationCoordinator.EnsureAllAtAnalyzeStart())
-                        {
-                            returnVal = false;
-                        }
-                        else if (!history.UpdateOfficialRankingDB())
-                        {
+                            StatusLog.WriteLine("データベースがOpenできません");
                             returnVal = false;
                         }
                         else
                         {
-                            this.MainFactory = GetModeFactory();
-                            if (this.MainFactory == null)
+                            // 集計開始時に各DBの更新確認を指示する（失敗時は中断）
+                            var migrationCoordinator = new DbMigrationCoordinator(new List<IDbMigratable>
                             {
-                                StatusLog.WriteLine("集計モードを特定できません");
-                                returnVal = false;
-                            }
-                            else if (!this.MainFactory.CreateAnalyzer())
-                            {
-                                StatusLog.WriteLine("集計の準備に失敗しました");
-                                returnVal = false;
-                            }
-                            else if (!MainFactory.AnalyzeRank())
+                                history,
+                                // モードは移行処理に無関係のためWeeklyを仮指定する。将来の移行処理もMode依存禁止
+                                new ResultHistory(EAnalyzeMode.Weekly)
+                            });
+                            if (!migrationCoordinator.EnsureAllAtAnalyzeStart())
                             {
                                 returnVal = false;
                             }
-                            StatusLog.WriteLine("集計成功");
+                            else if (!history.UpdateOfficialRankingDB())
+                            {
+                                returnVal = false;
+                            }
+                            else
+                            {
+                                // 前回集計の Factory が残っていれば付け替え前に破棄する。
+                                // なぜここか: 同一プロセスでの再集計時に旧接続が積み上がるのが本 Issue の主犯であり、
+                                // 付け替え前に閉じることで、失敗経路（CreateAnalyzer 失敗等）でも漏らさないため。
+                                // MainFactory の破棄は RankingList に触れないため、出力処理への影響はない。
+                                this.MainFactory?.Dispose();
+                                this.MainFactory = null;
+                                this.MainFactory = GetModeFactory();
+                                if (this.MainFactory == null)
+                                {
+                                    StatusLog.WriteLine("集計モードを特定できません");
+                                    returnVal = false;
+                                }
+                                else if (!this.MainFactory.CreateAnalyzer())
+                                {
+                                    StatusLog.WriteLine("集計の準備に失敗しました");
+                                    returnVal = false;
+                                }
+                                else if (!MainFactory.AnalyzeRank())
+                                {
+                                    returnVal = false;
+                                }
+                                StatusLog.WriteLine("集計成功");
+                            }
                         }
+                        history.Close();
                     }
-                    history.Close();
                 }
 
-                if (returnVal)
+                // 集計終了後に Factory（ひいては Reader 群の接続）を破棄する。成功・失敗・出力中例外のいずれでも実行する。
+                // なぜ try-finally か: 出力処理の途中で例外が出ても接続を残さないため。
+                // 破棄は RankingAnalyze のみを対象とし、RankingList 自体は残すため出力後の参照に影響しない。
+                // 次回集計時の付け替え前にも破棄するため、二重破棄になるが冪等であり問題ない。
+                try
                 {
-                    var outputList = new List<OutputBase>()
+                    if (returnVal)
                     {
-                        MainFactory.CreateHistory(),
-                        MainFactory.TyokiHantei,
-                        MainFactory.CreateNRMRank(),
-                        MainFactory.CreateNRMRank1000(),
-                        MainFactory.CreateNRMRankED(),
-                        MainFactory.CreateOutputCSV(),
-                        MainFactory.CreateOutputHTML(),
-                        MainFactory.CreateOutputMovieIconGet(),
-                        MainFactory.CreateOutputUserIconGet(),
-                        MainFactory.CreateOutputWORK(),
-                        MainFactory.CreateOutputJson_rankDB()
-                     };
+                        var outputList = new List<OutputBase>()
+                        {
+                            MainFactory.CreateHistory(),
+                            MainFactory.TyokiHantei,
+                            MainFactory.CreateNRMRank(),
+                            MainFactory.CreateNRMRank1000(),
+                            MainFactory.CreateNRMRankED(),
+                            MainFactory.CreateOutputCSV(),
+                            MainFactory.CreateOutputHTML(),
+                            MainFactory.CreateOutputMovieIconGet(),
+                            MainFactory.CreateOutputUserIconGet(),
+                            MainFactory.CreateOutputWORK(),
+                            MainFactory.CreateOutputJson_rankDB()
+                         };
 
-                    foreach (var output in outputList)
+                        foreach (var output in outputList)
+                        {
+                            output?.Execute(MainFactory.RankingList);
+                        }
+                    }
+                }
+                finally
+                {
+                    try
                     {
-                        output?.Execute(MainFactory.RankingList);
+                        MainFactory?.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        ErrLog.GetInstance().Write(ex);
                     }
                 }
             });

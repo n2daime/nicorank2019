@@ -48,22 +48,25 @@ namespace nicorankLib.Analyze.Option
                 {
                     if (!api.OpenDB())
                     {
-                        return false;
+                        //ApiXML.db は表示用キャッシュのため、開けなくても集計は続ける（Issue #40）
+                        StatusLog.WriteLine("DB/ApiXML.dbを開けませんでした。ジャンル不明のまま集計を続けます");
                     }
-                    // DBを更新する
-                    if (!api.UpdateTumbInfo(targetList, TargetTime))
+                    else
                     {
-                        StatusLog.WriteLine("ジャンルを取得中にエラーが発生しました:UpdateTumbInfo");
-                        return false;
-                    }
+                        // DBを更新する
+                        //不足分の確保・読取に失敗しても集計は続ける。取れない動画は空欄のまま残し、除外しない
+                        if (!api.UpdateTumbInfo(targetList, TargetTime))
+                        {
+                            StatusLog.WriteLine("ジャンルの更新に失敗した動画があります:UpdateTumbInfo。取得済み分で続けます");
+                        }
 
-                    // DBから値を取得する
-                    if (!api.GetUserInfo(targetList))
-                    {
-                        StatusLog.WriteLine("ジャンルを取得中にエラーが発生しました:GetUserInfo");
-                        return false;
+                        // DBから値を取得する
+                        if (!api.GetUserInfo(targetList))
+                        {
+                            StatusLog.WriteLine("ジャンルの取得に失敗した動画があります:GetUserInfo。取得済み分で続けます");
+                        }
+                        api.CloseDB();
                     }
-                    api.CloseDB();
                 }
                 StatusLog.WriteLine("");
                 StatusLog.WriteLine("ジャンルを取得終了");

@@ -49,6 +49,10 @@ namespace nicorank2019.frm
             backgroundWorker1.RunWorkerAsync();
         }
 
+        /// <summary>
+        /// StatusLogをダイアログ内のテキストボックスに出す受け手。
+        /// 以前は保持したTextBoxを無視してConsoleに書いていたため、ダイアログに何も表示されなかった（Issue #43）。
+        /// </summary>
         public class TextBoxWriter : IStatusLogWriter
         {
             TextBox textBox;
@@ -59,7 +63,16 @@ namespace nicorank2019.frm
 
             void IStatusLogWriter.Write(string log)
             {
-                Console.Write(log);
+                // backgroundWorkerのDoWork（別スレッド）から呼ばれるため、UIスレッドへ寄せて追記する。
+                // 直接触るとスレッド間操作例外になる（pitfalls項目19と同型）。
+                if (textBox.InvokeRequired)
+                {
+                    textBox.BeginInvoke(new Action(() => textBox.AppendText(log)));
+                }
+                else
+                {
+                    textBox.AppendText(log);
+                }
             }
         }
 

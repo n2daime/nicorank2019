@@ -195,8 +195,151 @@
 - **5万件の自主規制は件数取得で判定**: `_limit=0` で `totalCount` を取得し、超過時は集計せず通知する（スナップショット取得側の5万で期間短縮する方式ではなく中断方式）。ページングは100件×4並列でIDを重複除去・ID順にする
 - **TAGRANK節は節単位切替**: `Config.UseTagRank`（`IsTagRank && TAGRANK節あり`）で分岐し、節がなければ週間設定にフォールバックする。項目単位の補完はしない。OFFSET系は共通のためTAGRANK節に含めない
 - **基準なし時は SnapShotSabunReader を使わない**: 差分なし専用の `TagRankTotalReader : BasicOptionBase`（AnalyzeDBのみ→`Total` 取得→`MovieInfoReader` 補完→全件 `Count=Total`。差分ループを持たない）を新設し、`ModeFactoryTagRank` でBase有無で分岐する（なし時は `BaseDay = TargetDay`）。`MovieInfoReader` には `AnalyzeTime`（＝`TargetDay`）を渡す（SPの `BaseTime` 渡しとは意図的に異なる。新規取得のため再取得寄りでよい）。SP共用クラスにTagRank専用分岐を入れない。空DBダミー案は不採用（`BaseTime` の置き方で古動画の误删・タグ範囲肥大が起き、分岐明示より見通しが悪いため）
+- **v2最新値モードはReader分離・Input共有参照（Issue #35）**: `TagRankAnalyze.LiveCounters`（ID→4数値。従来は捨てていた `DefaultFields` のカウンタを保持）にし、新規 `TagRankLiveTotalReader`（基準なし）・`TagRankLiveSabunReader`（基準あり。Target=ライブ・Base=基準日DB）が参照する。なぜInput参照か: `RankingAnalyze` はInput→Optionの順に実行されるためOption実行時点では取得結果が確定しており、工場作成時点の未取得を共有参照で橋渡しできる。Input内完結案は入力と集計値の二役で肥大化するため不採用。純粋処理 `ApplyLiveTotals` は `TagRankLiveTotalReader` のstaticに置き両Readerで共用・単体テストで直接検証する（MovieInfoはネットワークのためReader成功系の結合テストは行わない前例を踏襲）。`TagSearchQuery.UseLiveCounter`（既定false）を唯一の切替とし、`SetInputFile` の引数は変えない（既存テスト・SP経路への影響を避けるため）。ポイント係数の見直しはコードと切り離し `TAGRANK` 節の運用調整に委ねる（累積値は桁が大きくSP同値のままでは順位の意味が変わるため）
 - **共有パネルは実行時付け替え＋相対配置**: `panel3` の実体は1つのままタブ切替で親を付け替える（複製方式は同期ずれの温床のため不採用）。固定座標はAutoScaleの対象外でずれるため、`grpDb.Bottom` 基準の相対配置にする。タブ切替時はパネル値の保存（旧モード）→モード切替→読込（新モード）を行い、不正値があれば切替を中断して元のタブに戻す
 - **いいね倍率の保存漏れを修正**: 従来の書戻しは `CALC_LIKE` を保存していなかった（表示のみ）。TAGRANK対応で全モード共通の `SavePointCalcPanel` に一本化する際に保存対象に加える。振る舞い変更として記録する
+
+---
+
+## LogOfficialの1年保持とSoHistory併設（Issue #31）
+
+### Context
+
+- `LogOfficial.db` が7年運用で10GB超。年2GB弱の増加に対し、1年超データの用途はso再公開チェックの差分元のみだった
+- 過去無制限に遡る問合せは `CheckSoMovieNeedSabun` の1箇所のみ。他はID点照会か直近窓のため、差分元さえ別に残せば古い `Ranking` を消せる
+- `Movie` は削除動画専用の記録で読み手は呼出元なし。`集計日` 列がなく日付pruneのキーにできない
+
+### Decisions
+
+- **保持境界はDB内最新日起点**: 実行日ではなく `RankingDate` のMAXからさかのぼる。更新停止期間があっても窓がずれず、2環境比較でも安定する
+- **SoHistoryはID＋4数値＋集計日**: 差分計算に使う分のみ。タグは差分に使わず `FavoriteTagReader` が別経路で取るため含めない。ID主キーで消えた行のうち最新のみ
+- **読み側はRanking優先・SoHistoryは補い**: `CheckSoMovieNeedSabun` は `Ranking` ヒットなしのときだけ `SoHistory` を見る2クエリ逐次。`SoHistory` 側にも基準日以前の絞りを付け、混入行があっても基準日より新しい値は使わない二重化で守る。表なし旧DBでは新着扱いで正常終了し、DB異常扱いにしない（新着動画を誤除外しないため）。結合・VIEWの1本化は見送り（共通ケースで速くもならず読みにくくなるため）
+- **SoHistoryはprune駆動で維持する**: 消す直前に消去行を拾い、入っている日付より新しい消去行だけ置き換える。当日分の上書きはしない（当日分は `Ranking` に残るため不要で、置き換えると基準日より新しい値になり再公開チェックが効かなくなる）。この不変条件（SoHistoryの日付は常に保持境界より古い）により、無制限履歴の「基準日以前の最新行」と同じ結果になる
+- **Ver1移行は日付区切り確定**: 初回の大量削除を一括トランザクションにせず集計日ごとに確定する（一括はWAL肥大で破損の前例あり）。退避は境界より古い行のみ新しい日から順に無視方式で入れ、削除とDROPは存在確認系でやり直し可能。バージョン記録は全工程の成功後に行う。VACUUMは確定後の1回のみ
+- **日次は同日トランザクションに同梱・VACUUMなし**: 当日分更新＋消去行拾い上げ＋古い分削除を同じ区切りにする。毎日の最適化は重いため将来の手動最適化（#32）に委ねる
+- **prune用索引を恒久化**: PKが(ID,集計日)のため集計日だけの削除が全走査になる。`Ranking(集計日)` の索引を作り、日次削除を索引経路にする
+- **Movieは表ごと廃止**: 孤児判定のpruneより表削除が単純で、容量も同じ最適化で回収できる。`GenreAnalyze` 本体＋csproj参照＋日次書込みを削除する。`SPAnalyze` の同名フィールドは別物（`Ranking` 系）のため残す。テスト側のMovieヘルパーは汎用JOIN確認として温存する
+
+### 将来検討（今回対応外）
+
+- 手動のDB最適化タブ（#32）。日次削除の断片化が気になったら使う
+
+## 順位計算の同点時タイブレーク（Issue #34）
+
+### Context
+
+- #31対策の前後比較で前回順位が2件だけ1ずつずれた。今週の計算は完全一致で、ずれは先週時点で発生していた（同点で順位だけ±1）
+- `RankingAnalyze.calcRanking` の6種は単一キー降順＋連番のみで、同点時の順序が入力順依存だった。入力は並列取得のため実行ごとに変わり得る
+
+### Decisions
+
+- **第二キーはIDのみ・6種すべて・連番維持**: 投稿日・再生数も同点があり得るため、重複なしのIDだけが単一キーで完全決定的になる。対象は総合・再生・コメント・マイリスト・いいね・カテゴリの6種すべて（絞ると他種で同じ不定が残るため）。順位値は連番のまま変えず、同順位スキップはしない（差分最小・T31比較への影響最小化のため）
+- **辞書式ではなく数値認識（種別→数字）**: 単純Ordinalでは桁違いのID順が数値順と一致しない（sm199 が sm20 より先になる）。IDの大小を割り当て順と直感的に一致させるため、`RankingIdComparer`（`nicorankLib/Analyze/model`）で種別→数字の順に比べる。数字化できないIDが混ざっても例外にせず決定的順序を保つため、数値化の有無で群を分けてから群内で辞書式比較し、数値化できる正規IDを先にする（直接フォールバックすると推移律が崩れ sm10・sm10a・sm9 の循環になるため）。最終段も辞書式のため常に決定的になる
+- **Comparer1個にまとめる**: ThenByの二次比較子は一次キーが等しい同点ペアにだけ呼ばれるため、同点時だけ分解すれば処理コストが最小になる。キー抽出をThenBy2段に分けると全件分解が毎回走るため不採用。`SabunReader` の `Substring(2)＋TryParse` と同型の defensive な扱いにする
+- **並列ソート前にポイントを単一スレッドで確定させる**: `Ranking.CalcPoint` のキャッシュ（`workPointTotal`）はスレッドセーフでなく計算途中の部分値を書き込みながら進めるため、6タスクの並列初回計算が重なると別タスクが部分値を読んで順序が不定になる（単体テストの全件実行で1回だけカテゴリ順位がずれて発覚した既存の競合）。タイブレークの決定的保証のために `Task.Run` 群の前で全件の `PointTotal` を読んで確定させる。読むだけなら競合しない。`CalcPoint` 自体へのロックは範囲が広がるため見送る
+- **T31ブランチにも取り込む**: 本来#34は#31比較終了後に着手する建前だったが、順位が安定しないと1ヶ月比較自体がやりにくいため、developと `feature/t031-logofficial-prune-sohistory` の両方へマージする（#35と同一方式）
+
+---
+
+## Snapshot API v2更新チェック（Issue #38）
+
+### Context
+
+- スナップショット v2 のデータは AM5:00（JST）時点だが参照可能になる時刻はデータ蓄積とともに後ろ倒し（2026-09-20実測で `last_modified=07:08`）。更新完了の後ろ倒しに合わせ定期タスクの開始時刻を見直してきた経緯があるが、それでも前日データをつかむ危険があり、前日DBで後段の差分がすべてずれる
+- 公式ガイドに切り替え日時エンドポイント（`.../api/v2/snapshot/version` → `{"last_modified": "..."}`）があるため推測ロジックは不要
+- WinForm（手動）とCLI（無人・NASメール運用）で事後動作が異なる。「取得成功なのに異常終了」を作ると運用の切り分けが難しくなるため、タイムアウト時は取得自体をやめて異常終了する方式にした
+
+### Decisions
+
+- **判定と待機と取得を3分離**: `SnapShotVersionChecker`（取得→パース→JST日付比較の3値判定）・`SnapShotVersionPoller`（5分×最大1時間の待機）・`SnapController`（取得専任のまま）。待機と取得を分けると「タイムアウト時は取得せず終了」が呼び出し側に素直に書ける。取得成功＋遅延の畳み込み（終了コードの意味が二重になる案）は不採用
+- **JST比較は `ToOffset(+09:00)` で寄せる**: `DateTime.Today` は実行環境TZ依存でNAS側設定次第で日付境界がずれる。`last_modified` のオフセットと実行時刻の両方をJST化してから `Date` 比較する
+- **タイムアウト時は `InitilizeDB` に触れない**: 既存DB削除を伴うため、前日データでの上書きも当日ファイルの破壊も起きない。終了コード2でNASメールが飛び9時枠見直しのトリガーになる。DBエラーとの切り分けのため `nicorankerr.log` にリトライタイムアウトであることを記録する
+- **version日時パースは `DateParseHandling.None`**: `JObject.Parse` 既定ではISO日時が `Date` トークンに化けて `+09:00` が落ちる（実装中に単体テスト8件失敗で発覚）。`JsonTextReader` で None を指定し文字列のまま `DateTimeOffset.TryParse` に回す。詳細は `pitfalls` 項目22
+- **Winコンソールモードは対象外**: Linux CLIのみにリトライを実装し、Windows引数あり起動は従来通り。揃える場合は別タスクとする
+- **待機の数え方は経過時間ベース**: 初回＋12回再チェックで約60分。精度不要のため超過分の延びは許容する。`RetryInterval`/`Timeout` は定数化し変更時はIssue見直しと判断するためテストで縛る
+
+---
+
+## ApiXML由来の削除判定を順位に影響させない（Issue #40）
+
+### Context
+
+- `ApiXML.db` は表示用キャッシュの位置づけだったが、`NicoApi.GetUserInfo` / `GetMovieInfo` が取得失敗・Status非ok・行なしで `isDelete` を立てていた
+- `isDelete` は順位計算前の除外（SP・タグ検索）やポイント0化（週刊）に使われるため、取得タイミング次第で順位全体がずれた。再取得の有無は実行日で変わり、読む行も最新指定がなく不定だった
+- SPは動画IDの一覧から出発し投稿日・タイトルを動画情報に頼るため、取れないだけで除外が起きていた
+
+### Decisions
+
+- **表示と存否の分離**: `GetUserInfo` / `GetMovieInfo` から `isDelete` 代入を除去し、失敗時は空欄・既定値のまま残す。各Reader（`MovieInfo` / `Genre` / `UserInfo` / `FavoriteTag`）も確保・読取の失敗で集計中断しない。なぜ中断しないか: キャッシュ扱い（最悪作り直し）のものを理由に集計全体を止めると、1件の取得失敗が全件失敗に見えるから。除外の判断は入力側（スナップショット差分・Sabun・Hidden）に残す
+- **最新行読みに統一**: `GetLockedTags` と同じ `ORDER BY 取得日 DESC LIMIT 1` にする。複数行が残った場合の不定読みをなくすため
+- **SPの欠落は案B（あるものを使う）**: `SpMovieInfoFallback` がタイトル空欄分だけ `LastResult` 最新タイトルと `LogOfficial` 期間内初見日（`MIN(集計日)`）で補う。新規取得はしない。初見日は本物の投稿日ではなく生成時刻の代わりの参考値であり、除外には使わない（方針は「残す」。検索下限が基準-7日のため除外分岐にも到達しない）。どちらもなければ空のまま残す。タイトル検索は `種別=Weekly` 限定で主キー経路を引き、なければ全体にフォールバックする（`LastResult` の主キーは種別・集計日・IDのためID単独では全表走査になる）。案A（スナップショットDBへの文字情報追加）は約900万行の肥大化と取得負荷のため見送り、Issue #41 に分離する。ジャンル空欄は許容し、影響が大きければ案Aを再検討する
+- **週刊は事前取得で欠落自体を減らす**: oldlog週刊保存時に全ID約26000件を一括取得して日付フォルダへ `ApiXML.db` を置く。DB形式にした理由は、2019側が今のまま開けて読み書きコードが要らないから（json/tsvは取込コードが要る）。一時名で作ってから置き換え、2019側は一時置き場経由で新しい取得日だけ取り込む。運搬なしでも本地継続する
+- **削除表示はタイトル欄の目印**: `Ranking.DeletedTitlePrefix`（【集計後削除】）を空欄タイトルに付ける。列追加・順序変更をしない理由は、手動アップロード先への互換を守るため。Status明言と行なしの区別はしない（区別のための再取得がタイミング依存を戻すため）
+
+## 手動DB最適化（Issue #32）
+
+### Context
+
+- #31の日次pruneではVACUUMしないため、断片化が気になったときに手動で最適化する置き場所が必要になった
+- 要求はIssue #32の壁打ちコメント（2026-09-08）にあり、DBごとに処理が異なる。素のVACUUMだけでは満たせない（VACUUMのみの初版はこの見落としで作り直した。経緯はarchive参照）
+- UIは先にモック（32.1）で固めた。対象4DB・実行前後2列・#41予告枠・ログ欄なし・実行ボタン文言まで確定済みのため、中身実装ではレイアウトを変えない
+
+### Decisions
+
+- **`DbOptimizer` は `Util` の static クラス**: `DbMigrationCoordinator` と同層に置き、UIに依存させない。staticにしたのは状態を持たないため（`ApiUrlBuilder` と同型）。`Optimize(dbPath[, today])`・`FormatFileSize`・`GetDefaultTargets()`・`CutoffOneYearAgo(today)` を公開し、単体テストから直接呼べる。日付指定付き overload は境界テストの決定性のため
+- **DBごとにprune＋VACUUM（順序DROP→DELETE→VACUUM）**: `PruneByDb` でパス判別する。VACUUM手順自体は移行時と同一（`SQLiteCtrl` で開いて `VACUUM;` を1発。トランザクションで包まない）。PRAGMA系は `Open()` 側で面倒を見るため呼び出し側では触らない
+- **ApiXMLはDROP＋1年削除**: `IDConvert` は有効な読み書きがコメントアウト内のみで `CREATE` がないため、`DELETE` ではなく `DROP TABLE IF EXISTS` で表ごと落とす（冪等）。`NicovideoThumb` は `取得日 < 1年前` を削除する。取得日はyyyyMMdd文字列・INTEGERの両格納がありうるが、どちらも数値比較できるため整数パラメータで比較する（`ApiXmlCacheImporter` の比較と同一考え）。コメントアウト `convertMovieID` は実装時に除去する（壁打ち申送り通り）
+- **DailylogはDELETE限定・DROP禁止**: 本番コードに `CREATE` 経路がなく、表を消すと再作成されないため。全削除でも再集計で自己回復する
+- **NicoranHistoryはWeekly旧下位のみ**: `LastResult` の `種別=Weekly AND 総合ランク>1001位以下 AND 集計日<=1年前` を削除する。SP削除はしない（Ver0移行で削除済みのため毎回0件の空振りになる）。`LastResultInfo` には触れない（上位1000行が残る日の設定XMLを守るため）。種別はパラメータ化する（ダブルクォート直書き回避）。境界は1000位ちょうど残す・1年前当日を含む
+- **1年前境界は実行日起点のローリング計算**: `CutoffOneYearAgo(today)` でyyyyMMdd整数にする。#31の保持境界（DB内最新日起点）とは起点が異なる。#31は日次更新の窓ずれ防止、こちらは手動実行の直感（押した日の1年前）のため。変える場合はIssueで合意する
+- **ファイル不在はスキップ扱い（失敗にしない）**: Dailylog.db等は未実行モードでは存在しないのが正常であり、不在自体は異常ではないため。UIはサイズ欄に「なし」と出す
+- **サイズは `.db` 本体のみ**: `-wal` / `-shm` の合算はしない。接続クローズ時のチェックポイント後に本体サイズを測るため前後比較は成立する（VACUUM自体の効果ではなく測定順序が根拠のため、順序を変えると壊れる）。合算すると実行前後で測り方がぶれるため採用しない
+- **表なしDBへのpruneは失敗させる**: 期待する表がないDBは異常状態であり、黙ってVACUUM成功にすると異常を見逃す。fail-fastで理由を残す（移行時の失敗時中断と同一考え）
+- **非同期は `Task.Run` + `await`（`BackgroundWorker` 不使用）**: 既存の `ExecuteAnalyzeAsync` と同型にする。DB件数ステップで進捗を更新でき、UI更新はawait復帰後のUIスレッドに寄るため、pitfalls項目19（集計スレッドからのコントロール参照禁止）に触れない。条件の退避もタグ検索の `TagExecuteContext` と同一理由で行う。`_vacuumRunning` フラグで実行中の条件編集によるボタン復活も抑止する
+- **実行中は実行系ボタンを無効化**: 最適化ボタン・チェック4件・各集計ボタンを止め、逆方向（集計実行中の最適化開始）も `ExecuteAnalyzeAsync` 側で止める。集計との同時実行によるDBロック競合を防ぐ。VACUUM自体は原子性があるため、最悪でも失敗表示に留まり破損しない。タグ集計同士の相互ガードは既存挙動であり今回の範囲外（別扱い）
+- **ApiXML／Dailylogのパス定数は `DbOptimizer` に持つ**: `DB.cs` に定数がないため、`NicoApi`／`ApiXmlCacheImporter`／`TyukanAnalyze` と同一値をここに定義する。値ずれは最適化対象と集計参照先の食い違いになるため、変更時は同時更新すること（単体テスト `GetDefaultTargets_MatchesKnownPaths` で既知値との一致を縛る）
+- **サイズ表示の進数は1024固定**: Windowsのエクスプローラ表示と合わせるため。`BytesPerUnit` として定数化する（マジックナンバー抑止）。保持年数・順位境界も定数化する（仕様値のため。`RetentionYears`／`WeeklyRankKeepLimit`）
+
+---
+
+## タグ検索のデータ時点表示とOFFSET節別化（Issue #39）
+
+### Context
+
+- v2最新値モードは集計日DBを使わないため、画面上にデータ時点が残らず切り分けができなかった。参照インデックスは日次更新のスナップショットであり、表示すべき値は `last_modified` が正しい
+- `MYLIST_OFFSET` をタグ検索用に変えると週刊・SPに波及した。`POINT` 系はSP／TAGRANK節で独立しているが、OFFSET系は共通1つのみだった
+- ユーザー回答で確定した条件：時刻は `05:00` 固定・表示はON時のみ・取得は件数確認のたび・確認不能時は中断・OFFSETは4種すべて節別化
+
+### Decisions
+
+- **時刻は `05:00` 固定・日付は `last_modified` のJST日**：`last_modified` の時刻はDB反映完了時刻（実測07:07〜07:14）であり、仕様上のデータ時点（5:00）と異なる。完了時刻を出すと「その時刻の値」と誤解されるため、日付だけ使い時刻は固定する。JST化は `SnapShotVersionChecker.ToJst` に寄せる（#38と同一。NASのTZずれ防止）。`DataHour`／`DataMinute` は定数化し、変更時はIssue見直しと判断するためテストで縛る
+- **表示場所は `grpTag` 内の件数近傍・OFF時は非表示**：要求の主語が「検索APIを直接たたく検索画面の機能」であり、DB使用モードに `DBVersion.集計日` 表示まで広げるとDB読み追加と分岐が増える。変更範囲最小のためON時のみ表示し、OFF時・未確認時・条件変更時は非表示に戻して古い時点の残留を防ぐ
+- **取得は `CheckTagCountAsync` 内で件数成功後に直列**：Issueの「件数確認時点のデータ切り替え日時」に合わせる。件数失敗時は version を叩かず無駄打ちしない。並列化は見送り（件数失敗か version 失敗かの切り分けが不明瞭になるため）。`await Task.Run` でUIブロックしない（#38と同型の罠回避）
+- **確認不能時は件数確認自体を失敗扱い（`null` 返却）**：不明な時点のまま集計すると切り分け不能な成果物が残る。ラベルは出さずエラーダイアログで中断し、両呼び出し（件数確認ボタン・ランキング計算ボタン）とも集計に進めない
+- **整形は `TagSnapshotTimestamp` に分離**：WinFormsのラベルは単体テストで駆動しにくい。日付整形だけ純粋処理に切り出すと `05:00` 固定・JST日付・`Z` 表記・Unknown時をテストできる
+- **OFFSET4種は項目単位フォールバック（読み）・節内生成（書き）**：`POINT` 系の節単位切替（4項目全部必須）を流用すると、1項目だけ変えたいときに4項目全部書く必要が生じる。コメントの要求（MYLISTだけ変えたい）に素直に対応するため、読み取りは節内に対応要素があれば節内値・なければ共通を使う。書き込みは読み取りと異なりモード別の節へ書く（なければ共通の現在値を引き継いで生成する）。なぜ生成するか：節内要素なしのまま共通へ書くと、タグ用のつもりが週間共通値を書き換え、Issueの目的であるモード間の波及防止が崩れるためである（reviewer指摘で発覚し修正した）。節そのものがない旧XMLでは空の節を新設してから要素を生成するが、`UseTagRank` の節単位判定には影響せず他項目は週間フォールバックのままである。なお節新設により `GetXMLString` の設定スナップショット（NicoranHistory.dbの `LastResultInfo`）に空節＋生成OFFSETが載ることがあるが、アプリは `nicorank.xml` 自体を書き戻さないためファイル肥大はなく、設定スナップショットとしての差分は許容する。既定値は `Config` 内の定数に集約する（将来の既定値変更での修正漏れ防止）
+- **`Load`／`Save` の呼び出し側は不変**：タブ切替時の既存 `Load`・`Save` がそのままモード別表示・保存になる。参照・書込先の切り替えは `Config` 内に閉じる
+- **集計中はタブ切替を止める**：`Ranking.CalcPoint` は `Config` を都度読むため、タグ検索集計の途中でタブを切り替えると残りの動画が別モードのOFFSETで計算され得る（ポイント倍率系の既存露出でもある）。`ExecuteAnalyzeAsync` で `tabPageOut.Enabled = false` にし、集計中のモード切替自体を塞ぐ。完了時は必ず戻す
+
+---
+
+## BasicOption の破棄経路整備（Issue #44・提案元 #42）
+
+### Context
+
+- #40 で `SnapShotSabunReader.Dispose` / `TagRankLiveSabunReader.Dispose` の中身は直し、予備補完が自前で開いた接続も閉じるようにした。しかし呼び出し側が `Dispose` を呼ばないため、実運用では閉じられなかった。`frmMainSyukei` が `MainFactory` を保持したまま集計し、完了後も Reader を破棄しない。既存のライフサイクル設計に起因する問題である。
+- 1回の集計後にプロセスが終了する通常運用では実害は小さいが、同一プロセスで再集計するとハンドルが積み上がる。SP の1回集計で最大4本（集計日DB・基準日DB・予備補完2本）の接続が開く。
+- `BasicOptionBase` が `IDisposable` を継承していなかったため、呼び出し側は個別の型を知らないと破棄できなかった。破棄の契約が型に表れていないことが根本原因である。
+
+### Decisions
+
+- **`BasicOptionBase : IDisposable` 化＋空の仮想 `Dispose`**：呼び出し側（`RankingAnalyze`）はリストとして一括破棄するため、個別の型を知らなくても破棄できる必要がある。資源を持たない7件（`HiddenMovieDelete`・`SabunReader`・`LastRankReader`・`LastRankCsvReader`・`GenreInfoReader`・`MovieInfoReader`・`TagRankLiveTotalReader`）は集計メソッド内で `using` / `try-finally` の都度破棄であり、集計後に残る資源を持たないことを実コードで確認済みのため、基底の空実装のまま何も書かない。将来資源を持つ派生が増えたら、そのクラスだけ `override` を追加すればよく、呼び出し側の修正は不要になる。
+- **資源持ち3件は `override` に寄せ替え**：`SnapShotSabunReader` / `TagRankLiveSabunReader` / `TagRankTotalReader` の明示的実装（`void IDisposable.Dispose`）を `public override void Dispose` に変える。明示的実装のままだと、基底参照からの呼び出しでは基底の空実装が呼ばれて接続が残るため。冗長な `, IDisposable` 宣言は除去する。
+- **注入接続の所有権は `SpMovieInfoFallback` と同一流儀**：3 Reader に `_ownsDbCtrl` フラグを持たせ、自前生成分のみ閉じる。コンストラクタはテスト差し替えのために注入を受け付けるが、読み手の接続を閉じると呼び出し側の所有権を壊すため。本番経路は常に `null` 渡しのため挙動は変わらない。
+- **破棄の連鎖は Factory→RankingAnalyze→BasicOption**：保持と実行順の管理を担う `RankingAnalyze` が `BaseOptionList` を一括破棄し、生成責任を持つ `ModeFactoryBase` が `RankingAnalyze` の破棄に委譲する。`RankingList` は破棄しない（マネージの結果列表であり、出力処理が集計後に使うため）。`RankingAnalyze` / `ModeFactoryBase` の `Dispose` は冪等・null 安全とし、1件の破棄失敗でも残りを続けて `ErrLog` に残す。両者ともマネージドのみを保持するためファイナライザは付けない。
+- **UI 側は付け替え前と出力後に破棄**：`frmMainSyukei.AnalyzeAsync` で新 Factory の代入前に旧 Factory を破棄し（再集計時の積み上がりの主犯対策。失敗経路でも漏らさない）、出力処理を `try-finally` で包んで終了後に破棄する。`RankingHistory` の `using` 破棄と対称にする。
+- **失敗経路でも生成物を残さない**：`ModeFactroySP` / `ModeFactoryTagRank` の `Open` 失敗時は Reader を破棄してから `false` を返す。成功時は `RankingAnalyze` に渡して Factory 経由で破棄する一方通行とし、二重所有にしない。`TyukanAnalyze` 内側の使い捨て `RankingAnalyze`（中身は資源なしの `SabunReader` のみ）は `using` 化し、日別ループでの積み上がりに備える。
+- **Ext 側は対象外（見送り）**：`IExtOptionBase` はインターフェースであり、.NET Framework 4.8 の C# では空の既定実装を付けにくい。現状の実装（`FavoriteTagReader`・`UserInfoReader`・`TyokiHantei`）は呼び出しごとに自前接続を生成して `finally` で破棄するため持ち越しがなく、今回の漏れの主犯ではない。将来の net8 移行時に再検討する。
 
 ---
 
@@ -234,3 +377,44 @@
 - モック: Moq 4.x（.NET Framework 4.8 対応・MSTest との互換性・広く使われている）
 - テストデータ: `UnitTest/Fixtures/` に配置し、ビルド時に出力ディレクトリへコピー（絶対パス依存の排除）
 - 既存の実行不能テストは削除し、書き直し（`TestPointCalc_POINTALL_VOCACOLE2023` は維持）
+
+---
+
+## ライブラリ層の表示抽象への寄せ（Issue #43）
+
+### Context
+
+- #40で `NicoApi` の進捗表示を `StatusLog` 経由の `\r`＋間引き方式に直した際に、同種の層分離違反が残っていることが分かり束ねたもの。ライブラリが直接 `Console` を触ると、WinForm呼び出し・Linux CLI運用・ログリダイレクト時の振る舞いが不定になる。
+- oldlogのエントリポイントは既に `StatusLog` 受け手（`ConsoleLogWriter`）を注入済み（#40）であり、lib直書き分は受け手経由分と出力先が二重化していた。`Cli` の `skipMessage` では `StatusLog`＋`ErrLog` の分け方で二重表示を避けた前例がある。
+- `UIConfig.SilentMode`／`LocalXml` はどちらも書き換え箇所がなく常時既定値のデッドフラグであり、`GetWch` の `Console.ReadLine` 分岐と `ErrLog.Close` の待ち分岐は到達不能だった。
+- `frmMesseageDialog.TextBoxWriter` は保持した `TextBox` を無視して `Console` に書く矛盾があり、ダイアログに何も表示されなかった。ダイアログ自体は現在 `new` されていないが、名前と実装の矛盾は将来の罠になる。
+
+### Decisions
+
+- **進捗・状態通知は `StatusLog`、例外の詳細は `ErrLog` に寄せる**：`SnapShotAnalyze` の件数表示・`NicoRankiApi` の状態通知・`RankApi2Json` 系の進捗・`Program` 系の結果報告は `StatusLog` へ出す。受け手がコンソールのため cron メールの見た目は変わらない。例外を伴う箇所は `ErrLog`（ファイル）に残す。なぜ分けるか: 進捗は運用の可視性（コンソール／メール）が主であり、例外詳細は事後切り分け（ファイル）が主だから。呼び出し側が黙って `false` を返す経路ではコンソール可視性が失われるため、その場合に限り両書きにする。
+- **文面・終了コード・`--help` は変えない**：表示先の統一のみを行い、運用（NASメールの本文・終了コード判定）に影響させない。`--help` の使い方表示はログではなく引数応答であり、受け手の有無に依存させないため `Console` のまま残す。
+- **`GetWch` は既定値返却のみにし、フラグ自体は温存する**：`Console.ReadLine` を除去して非コンソール環境のブロック懸念を消す。`SilentMode`／`LocalXml` の削除は `ErrLog.Close`・`NicoApi` まで波及し今回の目的を超えるため別タスクとする。
+- **`TextBoxWriter` は `TextBox` 参照＋ `Invoke` 対応に修正する**：`BackgroundWorker` の `DoWork`（別スレッド）から呼ばれるため `BeginInvoke` で UI スレッドへ寄せる（pitfalls項目19と同型）。ダイアログ自体の削除・配線復活は別スコープとする。
+- **進捗ヘルパーの共通化は見送る**：`\r` 上書き＋間引きが要るのは `NicoApi` の大量並列取得のみであり、`SnapShotAnalyze`（窓ごとに1行）・oldlog（ジャンル単位の低頻度行）は `WriteLine` の1行ずつで足りる。第二の利用者がいない共通化は先取り抽象になるため、高頻度進捗の利用者が出たら再検討する。
+
+---
+
+## ベースライン配布と自動取得（Issue #36）
+
+### Context
+
+- `old-ranking` の日別 JSON は2019年からの蓄積で数百GB規模になり、Web 側を直近1年に整理すると空 DB からの追いつき再構築ができなくなる。対策は完成済み DB のコピー配布で行い、日別 JSON 互換の維持にはこだわらない。
+- PG 配布（GitHub Release のホワイトリスト、DB 含まず）と連動させると、2GB の肥大化と MOTW（pitfalls 項目16）や個人データ上書きの危険が戻る。データ配布は別寿命にする必要がある。
+- 取得失敗を順位に響かせない分離（#40）、表示と記録の経路分離（#43）、自前接続のみ閉じる所有権（#44）がそろい、不在時取得を載せられる状態になった。週刊 `ApiXML` の蓄積は #41 に委ねる。
+
+### Decisions
+
+- **配布場所は NAS の Web 公開＋ `baseline.json` を最新ポインタにする**：`\\ds224\web\nicorank\baseline\` → `https://2daime.myds.me/nicorank/baseline/`。過去ランキング JSON（`Config.URL_JSON_TARGET` 既定）と週刊 `ApiXML.db` 運搬（`ApiXmlCacheImporter`）ですでに同ホストの参照実績があり、`InternetUtil.FileDownLoad` の経路を延長できる。nicoplayer の家庭内配布（`updates/`＋`version.json`）と同型の運用にする。
+- **`baseline.json` はスクリプト自動作成・sha256 必須にする**：日付・ファイル名・サイズ・sha256 はすべて機械から取れる値であり、人間が写すと桁や文字列の取り違えが起きる。機械が書いて機械が読むことで運用負荷を増やさず検証を強くする。配布スクリプトは `tools/make-baseline.ps1` が原本であり、運用は配布フォルダのコピーを使う（PCのどこに置いたかを探す手間をなくすため）。
+- **zip名は固定し改名作業はしない**：`LogOfficial.zip`／`NicoranHistory.zip` のまま置くだけにする。日付入りの長い名前に直す作業自体が取り違えの元だからである。日付は `baseline.json` の中にだけ持つ。単一最新の運用とし世代は残さない（世代を残したい場合は人間が事前に退避し、ツールでは対応しない）。
+- **スクリプトは実行場所に依存させない**：出力先はスクリプト自身の場所（`$PSScriptRoot`）にし、DBフォルダは `-DbDir` で指定する（省略時はカレント）。カレント依存の既定値では置き場所と実行場所のずれで誤動作するためである。2GB級の圧縮では進捗バーが長時間出て不安になるため抑止し、開始と完了だけ表示する。
+- **発火条件は本地ファイル不在時に絞る**：既存環境の DB を勝手に置き換えると蓄積データの上書き事故になる。不在の新規環境だけが通常起動で最新化できれば「手動と変わらない」状態は解消できる。取得失敗時は `EnsureMigrated` 前に中断する（fail-fast 維持）。
+- **参照先は `SYSTEM/URL_BASELINE` の任意要素にする**：なければ既定 URL を使う。既存 `nicorank.xml` に要素がなくても従来通り読めるようにし、配布場所を変えたい場合だけ書けば済むようにするためである（#39 の OFFSET 節別化と同一の考え方）。
+- **キャッシュ2種の確保は best-effort とする**：`ApiXML`（空ファイル＋`NicovideoThumb` 表確保）・`Dailylog`（空ファイル＋`Dailylog` 表確保。本番コードに CREATE 経路がないためここで持つ）。確保失敗を理由に集計全体を止めると 1 件の失敗が全件失敗に見えるため、中断しない（#40 と同一の考え方）。
+- **zip は DB ごとに分離する**：一式 zip にすると部分欠損対応の中央管理者が必要になり、`DbMigrationCoordinator` の所有分離と逆方向になるためである（Issue #36 本文の方針を維持）。
+- **取得本体は `Util` に置き UI に依存させない**：`DbMigrationCoordinator`・`DbOptimizer` と同層にし、取得処理の差し替え口を持たせて単体テストから直接呼べる。表示は `StatusLog`・記録は `ErrLog` に寄せる。

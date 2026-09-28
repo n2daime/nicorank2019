@@ -4,7 +4,7 @@
 
 | DB ファイル | 定数（DB.cs） | 用途 | 作成・更新元 |
 |---|---|---|---|
-| `DB/LogOfficial.db` | `LOG_OFFICEIAL` | 公式過去ランキング（Ranking / Movie / RankingDate） | RankingHistory（nicorank2019 起動時） |
+| `DB/LogOfficial.db` | `LOG_OFFICEIAL` | 公式過去ランキング（Ranking / RankingDate / SoHistory） | RankingHistory（nicorank2019 起動時） |
 | `DB/NicoranHistory.db` | `NiCORAN_HISTORY` | 集計履歴（History / LastResult / LastResultInfo） | ResultHistory / LastRankReader / TyokiHantei |
 | `DB/ApiXML.db` | — | NicoApi 動画情報キャッシュ（NicovideoThumb） | NicoApi |
 | `DB/Dailylog.db` | — | 中間集計の日別キャッシュ（Dailylog） | TyukanAnalyze |
@@ -15,10 +15,13 @@
 ### LogOfficial.db
 
 - **Ranking**: `ID` / `集計日`（INTEGER・yyyyMMdd）/ `再生数` / `コメント数` / `マイリスト数` / `いいね数` / `人気のタグ`（JSON文字列）
-  - 集計日は主キーの一部（同一動画の日別履歴）。いいね数は ALTER TABLE で自動追加（無い場合のみ）
-- **Movie**: 動画の基本情報（Ranking と JOIN して使用）
-- **RankingDate**: 集計日とメンテナンスフラグ。`CheckMaintananceDay` でメンテ日判定。初期値 20190610
-- **DBVersion**: `Ver` INTEGER（Issue #28。旧DBはテーブルなし→Ver0扱い。集計開始時の自動移行でVer=0を1行追加）
+  - 実スキーマは `PRIMARY KEY(ID, 集計日)`（同一動画の日別履歴）。コード内に `CREATE TABLE Ranking` はなく持込みDBが前提。ID点照会は複合PKのインデックス経路を使う
+  - いいね数は ALTER TABLE で自動追加（無い場合のみ）
+  - 直近の保持期間分だけ残し、古い日は日次更新時に削除する（境界当日は残す）。境界は `RankingDate` のMAX起点。`集計日` の索引（prune用）を恒久化している
+- **SoHistory**: `ID`（so動画ID・主キー）/ `集計日` / `再生数` / `コメント数` / `マイリスト数` / `いいね数`（Issue #31）。soのIDごとに最新1件だけ保持する差分元
+- **Movie**: Issue #31で廃止（Ver1移行でDROP）。廃止後にファイル内の表が残っていても読み書きされない（消してもよい）
+- **RankingDate**: 集計日とメンテナンスフラグ。`CheckMaintananceDay` でメンテ日判定＋更新再開位置のしおり（`Max(集計日)+1` から日別取得）。初期値 20190610
+- **DBVersion**: `Ver` INTEGER（Issue #28。旧DBはテーブルなし→Ver0扱い。LogOfficialはVer0→Ver1の順に自動移行を適用し、最終的に現行値（現在1）を1行で記録する）
 - 更新フロー: 集計開始時に `DbMigrationCoordinator` が LogOfficial→NicoranHistory の順に更新確認（失敗時は中断）→ `UpdateOfficialRankingDB()` が RankingDate の `Max(集計日)+1` から今日までを日別取得。データ 0 件の日はメンテナンス日として登録（UI で確認）
 
 ### NicoranHistory.db
@@ -31,7 +34,9 @@
 ### ApiXML.db
 
 - **NicovideoThumb**: 動画 ID / 取得日 / Status（ok=1 / その他 0）/ XML（getthumbinfo の生XML）
-- 取得日（`MAX(取得日)`）が指定日より古いものだけ更新対象
+- 取得日（`MAX(取得日)`）が指定日より古いものだけ更新対象。同一IDは最新の行を読む
+- 取得失敗・Status非ok・行なしでも除外（`isDelete`）しない。表示補完のみに使う（Issue #40）
+- 週刊は oldlog が週刊JSON全IDの一括取得分を日付フォルダ（`old-ranking/weekly/YYYY-MM-DD/ApiXML.db`）に置き、2019側が `ApiXmlCacheImporter` で取り込む（新しい取得日だけ置き換え）
 - キャッシュ扱いのためDBVersion管理の対象外（Issue #28。最悪作り直しで対応）
 
 ### Dailylog.db
@@ -45,6 +50,13 @@
 - **Ranking**: `ID`（主キー）/ `再生数` / `コメント数` / `マイリスト数` / `いいね数`。`INSERT OR IGNORE` で追記
 - **DBVersion**: `集計日` / `Ver`（1.0.1.0）
 - `InitilizeDB()` が既存ファイルを**削除して再作成**
+
+## ベースライン配布（Issue #36）
+
+- 配布物: `LogOfficial.db`（Ver1・直近1年＋SoHistory）と `NicoranHistory.db`（全期間）のDBごとzip（固定名 `LogOfficial.zip`／`NicoranHistory.zip`。改名作業はしない）。`ApiXML.db`／`Dailylog.db` は対象外
+- 最新ポインタ: `https://2daime.myds.me/nicorank/baseline/baseline.json`（`nicorank.xml` の `SYSTEM/URL_BASELINE` で上書き可）。中身は日付・ファイル名・サイズ・sha256で、配布スクリプト `tools/make-baseline.ps1` が自動作成する
+- 取得本体: `nicorankLib/Util/BaselineDownloader.cs`。集計開始時（`RankingHistory.Open` の前）に本地不足だけ自動取得し、サイズ・sha256照合後に展開する。キャッシュ2種の確保（`ApiXML` は `EnsureNicovideoThumbTable`、`Dailylog` は表確保）も行う
+- PG 配布（`release.md` のホワイトリスト、DB 含まず）とは別寿命で運用し、3〜6か月ごとに更新する。単一最新とし世代は残さない（残したい場合は人間が事前に退避する）。スクリプトは配布フォルダに置いたまま使い、出力はスクリプト自身の場所へ出す
 
 ## SQLiteCtrl 接続設計
 
