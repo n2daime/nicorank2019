@@ -15,23 +15,6 @@
 
 ## 未完了タスク
 
-### old-ranking整理とベースラインDB配布（#36）
-
-> Issue #36。ブランチ `feature/t036-baseline-distribution`。前提の T031（#31）・#32 は完了済みのため本件に着手する。
-
-- 依存: #31（LogOfficial Ver1・実測2.01GB・SoHistory約24万行）・#32（DbOptimizerと住み分け）・#40（週刊ApiXML運搬・SP予備補完）・#43（表示はStatusLog・記録はErrLog）・#44（自前接続のみ閉じる所有権）。週刊ApiXMLの蓄積マージは #41 に委ね、本件に含めない。
-- 対象: `LogOfficial.db` と `NicoranHistory.db` のベースライン配布（DBごとにzip分離）。`ApiXML.db`・`Dailylog.db` は配布せず不在時は自動生成する。
-- 配布場所のルール化: PG配布（GitHub Releaseのホワイトリスト、DB含まず）と連動させない。`\\ds224\web\nicorank\baseline\` に置くと `https://2daime.myds.me/nicorank/baseline/` で参照できるNAS Web公開を使い、最新ポインタは `baseline.json` とする。zip名は固定（`LogOfficial.zip`／`NicoranHistory.zip`）とし改名作業はしない。更新は3〜6か月ごと、単一最新の運用とし世代は残さない（残したい場合は人間が事前に退避する）。
-- `baseline.json` はスクリプトが自動作成する（人間は手書きしない）。日付・ファイル名・サイズ・sha256を必須とし、サイズやハッシュの桁写しによる取り違えをなくす。発火条件は本地ファイル不在時とし、通常起動だけで最新化できるようにする（手動配置のみは従来運用と変わらないため見送る）。
-- 受け入れ条件: ベースライン展開後に通常集計起動だけで最新化できること。ホット1年分のみで `UpdateOfficialRankingDB()` が成功すること。週刊差分と長期判定が壊れないこと。テスト＋ビルド成功、reviewerレビュー完了。
-
-- [ ] 36.1 配布側スクリプトの作成（DBごとzip分離＋`baseline.json`自動生成＋世代保持）
-- [ ] 36.2 取得側の実装（不在時自動取得→サイズ・sha256照合→展開→`EnsureMigrated()`再試行。案内はStatusLog/ErrLog経路）
-- [ ] 36.3 単体テスト（`baseline.json`正常・欠落・破損・ハッシュ不一致・後始末、`EnsureMigrated()`のVer0→Ver1順適用）
-- [ ] 36.4 検証（空DB→自動取得→ホット1年最新化→週刊差分・長期判定・SP予備補完・削除目印、運搬なし経路を含む）
-- [ ] 36.5 Web側コールド削除（usbshare2最新化・サンプリング確認が前提。`rireki.txt`は残し追記する）
-- [ ] 36.6 文書更新（specs新規構築手順・design保持窓と配布設計・knowledge・archive）
-
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。
@@ -53,6 +36,7 @@
 
 | タスク | 完了日 | 主な成果物 |
 |---|---|---|
+| old-ranking整理とベースラインDB配布（#36）✅ | 2026-09-28 | NAS Web配布＋baseline.json自動取得（不在時のみ・既存DB不置換）・配布スクリプトtools/make-baseline.ps1（固定名・単一最新・進捗バー抑止・DbDir省略時はカレント）・SYSTEM/URL_BASELINE任意要素・BaselineDownloader新設（サイズ・sha256照合・キャッシュ2種確保）・UnitTest13件追加（計285件）・specs/design/knowledge更新・reviewer再レビュー問題なし（中1件＋低8件対応・3件見送り）・ユーザー実機検証OK（DB不在→2種自動取得→最新化・単発削除→不足分のみ取得）・36.5コールド削除は仕様変更により省略・developマージ |
 | ライブラリ層の直接コンソール出力を表示抽象へ寄せる（#43）✅ | 2026-09-27 | SnapShotAnalyze件数表示のStatusLog化・UIConfig.GetWchのReadLine除去（フラグ温存・削除は別タスク）・InternetUtil残骸除去・NicoRankiApi約25行のStatusLog/ErrLog化（黙ってfalseの経路は両書き）・RankApi2Json系・Program系・Cli結果の統一（--helpと終了コード維持）・TextBoxWriterのTextBox参照＋BeginInvoke対応（ダイアログ生死は別スコープ）・UnitTest2件追加（計272件）・specs§7/design/knowledge更新・pitfalls項目24（ErrLog排他は別タスク）・reviewerマージ可（低5件：3件修正・1件記録・1件運用確認）・NAS実機検証OK（\\ds224\Temp\nicorankOld2025へ配置・/checklogin等の見た目維持・nicorankerr.log追記を受け入れ）・developマージ |
 | BasicOption破棄経路の整備（案B・#44。提案元#42）✅ | 2026-09-26 | BasicOptionBaseのIDisposable化（空の仮想Dispose・資源なし7件は無変更）・資源持ち3件のoverride寄せ替え＋_ownsDbCtrl所有権（注入接続は閉じない）・RankingAnalyze／ModeFactoryBaseのIDisposable化と破棄委譲（冪等・null安全・1件失敗でも継続）・SP／TagRank工場の失敗経路破棄・Tyukan内側using化・frmMainSyukeiの付け替え前＋出力後try-finally破棄・UnitTest10件追加（計270件）・design更新（Ext見送り理由含む）・reviewer再レビューでマージ可（中3件＋低3件すべて対応）・ユーザーSP実機検証OK（集計後にworkファイル消去を確認）・developマージ |
 | タグ検索v2最新値のデータ時点表示＋OFFSET節別化(#39)✅ | 2026-09-26 | lblTagSnapshotTime新設（ON時のみ表示・MM/DD 05:00固定・確認不能時は中断）・TagSnapshotTimestamp新設（JST日・定数05:00・TryFormat）・SP/TAGRANK節にOFFSET4種（項目単位フォールバック・書込は節内生成）・集計中タブ固定・Initilize既定生成・配布テンプレートTAGRANK-OFFSET全0化・UnitTest16件追加（計260件）・specs/design/knowledge更新・reviewer再レビュー2回でマージ可（低4件対応）・ユーザー実機検証OK・developマージ |

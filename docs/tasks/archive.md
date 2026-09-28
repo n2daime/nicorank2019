@@ -569,3 +569,25 @@
   - reviewerレビューで総合判定マージ可（高・中なし。低5件：重複テスト統合・インデント・タスク文修正に対応、ErrLog排他はpitfalls記録＋別タスク化、運用影響は実行確認で受入。再レビュー不要）
   - ユーザー実機検証OK（`\\ds224\Temp\nicorankOld2025` へ新モジュール11ファイルを配置。旧版は `bak20260927` に退避。config.json／cookie.txt・old-ranking・runtimesは不変。`/checklogin` 等の見た目維持を確認）
 - **残課題**: `ErrLog.Write` 全体の `lock` 硬化（pitfalls項目24。並列経路での排他不足。別タスク）。`SilentMode`／`LocalXml` 削除（別タスク）。`frmMesseageDialog` の削除・配線復活判断（別スコープ）
+
+---
+
+## 2026-09-28 old-ranking整理とベースラインDB配布（Issue #36）
+
+- **Issue**: #36（OPEN→検証結果を追記してクローズ）
+- **ブランチ**: `feature/t036-baseline-distribution` → `develop` に `--no-ff` でマージ。マージ後にfeatureブランチ削除
+- **背景**: `\\ds224\web\old-ranking` の日別JSONは2019年からの蓄積で数百GB規模になり、空DBからの追いつき再構築が古い日別JSONに依存していた。前提のT031（#31・Ver1・実測2.01GB）と#32（DbOptimizer）は完了済みのため着手した
+- **実施内容**:
+  - 配布場所のルール化：PG配布（GitHub Releaseのホワイトリスト、DB含まず）と連動させず、NASのWeb公開（`\\ds224\web\nicorank\baseline\` → `https://2daime.myds.me/nicorank/baseline/`）＋`baseline.json` を最新ポインタにした。当初のGitHub Release登録案から変更した理由は、大容量DBの同梱がMOTWや個人データ上書きの危険を戻すこと、nicoplayerの家庭内配布実績があることのため
+  - 配布スクリプト `tools/make-baseline.ps1` を新設（DBごとzip分離＋`baseline.json`自動作成）。運用指摘で作り直し：zip名は固定（`LogOfficial.zip`／`NicoranHistory.zip`）・改名作業なし・単一最新で世代なし（残したい場合は人間が事前退避）・出力はスクリプト自身の場所・DBフォルダは`-DbDir`指定（省略時はカレント）・2GB級の進捗バー抑止と開始完了表示・BOM付きUTF-8
+  - 取得側 `nicorankLib/Util/BaselineDownloader.cs` を新設。本地ファイル不在時に限り自動取得し、サイズ・sha256照合後に展開する。既存DBは置き換えない。`ApiXML`／`Dailylog` は不在時に自動生成する（best-effortで中断しない）。表示は`StatusLog`・記録は`ErrLog`（Issue #43作法）。`SYSTEM/URL_BASELINE` は任意要素とし、なければ既定URLを使う
+  - 集計開始時（`RankingHistory.Open` の前）に確保＋取得するフックを `frmMainSyukei.AnalyzeAsync` に追加（集計スレッドからコントロールに触れない）
+  - `UnitTest`13件追加（計285件。manifest正常・破損・欠落・不正ハッシュ・パス区切り拒否・不足なし・不足時取得配置・ハッシュ不一致・キャッシュ確保と冪等・空ファイルからの回復・Config既定と上書き）
+  - specs（新規構築手順）・design（保持窓と配布設計）・knowledge（db/apps/testing/structure）更新
+- **設計判断**: 発火条件は本地ファイル不在時に絞った（既存DBの勝手な置換による上書き事故を防ぐため）。取得失敗時は`EnsureMigrated`前に中断する（fail-fast維持）。週刊ApiXMLの蓄積は#41に委譲した
+- **検証**:
+  - `dotnet test` 285件PASS・`dotnet build nicorank2019.sln -c Release` 成功
+  - reviewerレビュー→再レビューで問題なし（中1件：空DB恒久残留を毎回CREATE＋新規作成失敗時削除で解消。低8件：パス区切り拒否・戻り値明示中断・空if除去・BOM化・-wal/-shm同時削除・再インデント・ファイル毎try/catchに対応。低3件見送り：WAL組込・孤児zip自動整理・既定URL一本化は36.4実績を見て判断）
+  - 配布物配置：`LogOfficial.zip`（713,240,656 bytes）・`NicoranHistory.zip`（111,792,568 bytes）・`baseline.json` をNASに配置し、HTTP 200到達を確認
+  - ユーザー実機検証OK（DBフォルダ不在→キャッシュ2種新規作成→2種自動取得→更新確認「過去ランキングデータは最新です」。単発DB削除→不足分のみ取得）
+- **残課題・見送り**: 36.5のWeb側コールド削除は仕様変更により省略（受け入れ条件から除外。ユーザー指示）。WAL組込・孤児zip自動整理・既定URL一本化は運用実績を見て判断（別タスク化検討）

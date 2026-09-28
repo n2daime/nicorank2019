@@ -12,6 +12,7 @@ nicorank2019.sln
 ├── UnitTest/             .NET Framework 4.8 MSTest テストプロジェクト（SDK-style、75件）
 ├── 依存ファイル/           nicorank.xml・DB/*.db（ソリューションフォルダ）
 ├── docs/                 ドキュメント（proposal / specs / design / tasks / knowledge）
+├── tools/                運用スクリプト（make-baseline.ps1・ベースライン配布物作成。Issue #36。配布物には含めない）
 └── packages/             NuGet パッケージ（packages.config 用）
 ※ SQLite マネージド DLL 4件（Microsoft.Data.Sqlite/SQLitePCLRaw.core/batteries_v2/provider.dynamic_cdecl）+ ネイティブ e_sqlite3.dll 3種（win-x64/x86/arm）はビルド時に `bin/{Debug,Release}/lib` へ配置（`lib` は出力物、ソリューション直下には存在しない。Costura 埋め込み除外）
 ```
