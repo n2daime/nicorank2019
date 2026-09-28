@@ -591,3 +591,14 @@
   - 配布物配置：`LogOfficial.zip`（713,240,656 bytes）・`NicoranHistory.zip`（111,792,568 bytes）・`baseline.json` をNASに配置し、HTTP 200到達を確認
   - ユーザー実機検証OK（DBフォルダ不在→キャッシュ2種新規作成→2種自動取得→更新確認「過去ランキングデータは最新です」。単発DB削除→不足分のみ取得）
 - **残課題・見送り**: 36.5のWeb側コールド削除は仕様変更により省略（受け入れ条件から除外。ユーザー指示）。WAL組込・孤児zip自動整理・既定URL一本化は運用実績を見て判断（別タスク化検討）
+
+---
+
+## 2026-09-28 リリース実績 v20260928_nicorank
+
+- **Release**: https://github.com/n2daime/nicorank2019/releases/tag/v20260928_nicorank（タグはmain HEADを指すことを確認）
+- **範囲**: v20260905_nicorank → develop（#31・#37・#38・#40・#32・#39・#44・#43・#36。間のv20260906_tagrankプレリリースは本リリースに統合のためRelease＋タグを削除）
+- **成果物**: `nicorank2019_20260928.zip`／`nicorank_SnapShot_20260928.zip`／`nicorank_oldlog_20260928.zip`（ホワイトリスト方式で作成・内容照合済み。DB・設定本体・pdb・Outputなし）
+- **検証**: `dotnet test` 285件PASS、`dotnet build nicorank2019.sln -c Release` 成功・警告0、lib 4件＋runtimes 3種（両アプリ）、`loadFromRemoteSources` 両config確認、`nicorank.xml` 一致（依存ファイルとbinの差異は手動コピーで解消）、ユーザー実機検証（#36の自動取得・#40・#43・#44は各Issue記録参照）
+- **リリースノート方針**: ユーザー影響中心＋Issue番号リンク。専門用語（ベースライン→言い換え）と硬い構造を見直し、自然な文章で記載。`nicorank.xml` の追加3要素は「なくても動く任意の要素」として説明し、「節」表記は使わない（リポジトリ内の既存表記は別タスク化見送り）
+- **同期**: main → develop へバックマージし、`git diff main develop --stat` 空を確認。本エントリ追記によりdevelopが1件先行する運用は前回リリースと同様
