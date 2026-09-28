@@ -417,11 +417,9 @@ namespace nicorankLib.Common
             {//設定がない場合
                 this.xml.SYSTEM.URL_JSON_TARGET = new URL_JSON_TARGET() { Url = @"https://2daime.myds.me/old-ranking/{0}/{1}/" };
             }
-            if (this.xml.SYSTEM.URL_BASELINE == null)
-            {//設定がない場合は既定URLを使う。要素自体は作らない（旧XML互換のため）。
-                // なぜ作らないか：GetXMLString の設定スナップショットに空要素が載るのを避け、
-                // 読み取り側のフォールバック（BaselineManifestUrl）で足りるためである。
-            }
+            // SYSTEM/URL_BASELINE がない場合は既定URLを使う。要素自体は作らない。
+            // なぜ作らないか：GetXMLString の設定スナップショットに空要素が載るのを避け、
+            // 読み取り側のフォールバック（BaselineManifestUrl）で足りるためである。
         }
     }
 }

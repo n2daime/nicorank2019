@@ -210,6 +210,13 @@ namespace nicorankLib.Util
             {
                 return false;
             }
+            // file は zip 内ではなく配置先フォルダ直下に置く単純名でなければならない。
+            // パス区切りを許すと一時フォルダ外への書き込みや URL の意図しない解決につながるため拒否する。
+            // 配布元は自前 NAS で実害は小さいが、防御が安い箇所のためここで縛る（reviewer指摘対応）。
+            if (entry.File.IndexOf('/') >= 0 || entry.File.IndexOf('\\') >= 0)
+            {
+                return false;
+            }
             if (entry.Size <= 0)
             {
                 return false;
@@ -358,50 +365,84 @@ namespace nicorankLib.Util
             // パス定数は DbOptimizer に集約されているものを使い、値の食い違いを起こさない。
             // 変更時は DbOptimizer／NicoApi／ApiXmlCacheImporter／TyukanAnalyze と同時更新すること。
             string path = Path.Combine(localBaseDir, DbOptimizer.ApiXmlDbPath);
-            if (File.Exists(path))
+            // 新規作成したファイルは失敗時に削除し、次回リトライ可能にする。
+            // なぜ削除するか：空の .db だけ残ると次回以降 File.Exists で早期 return し、
+            // 表が作られないまま固定化して中間集計・取得が静かに使えなくなるため（reviewer指摘対応）。
+            bool created = false;
+            try
             {
-                return;
-            }
-            string dir = Path.GetDirectoryName(path);
-            if (!string.IsNullOrEmpty(dir))
-            {
-                Directory.CreateDirectory(dir);
-            }
-            // SQLiteCtrl.Open は存在しないファイルを開かないため、空ファイルを作ってから開く（SnapShotDB.InitilizeDB と同一の作り方）。
-            File.Create(path).Dispose();
-            using (var dbCtrl = new SQLiteCtrl())
-            {
-                if (dbCtrl.Open(path))
+                if (!File.Exists(path))
                 {
-                    ApiXmlCacheImporter.EnsureNicovideoThumbTable(dbCtrl);
-                    dbCtrl.Close();
+                    string dir = Path.GetDirectoryName(path);
+                    if (!string.IsNullOrEmpty(dir))
+                    {
+                        Directory.CreateDirectory(dir);
+                    }
+                    // SQLiteCtrl.Open は存在しないファイルを開かないため、空ファイルを作ってから開く（SnapShotDB.InitilizeDB と同一の作り方）。
+                    File.Create(path).Dispose();
+                    created = true;
+                }
+                // 表確保は毎回実行する（冪等・軽量）。前回中断で空ファイルだけ残った場合の自己回復のためである。
+                using (var dbCtrl = new SQLiteCtrl())
+                {
+                    if (dbCtrl.Open(path))
+                    {
+                        ApiXmlCacheImporter.EnsureNicovideoThumbTable(dbCtrl);
+                        dbCtrl.Close();
+                    }
                 }
             }
-            StatusLog.WriteLine("動画情報キャッシュを新規作成しました");
+            catch
+            {
+                if (created)
+                {
+                    try { if (File.Exists(path)) { File.Delete(path); } } catch { }
+                }
+                throw;
+            }
+            if (created)
+            {
+                StatusLog.WriteLine("動画情報キャッシュを新規作成しました");
+            }
         }
 
         private void EnsureDailylogFile()
         {
             string path = Path.Combine(localBaseDir, DbOptimizer.DailylogDbPath);
-            if (File.Exists(path))
+            bool created = false;
+            try
             {
-                return;
-            }
-            string dir = Path.GetDirectoryName(path);
-            if (!string.IsNullOrEmpty(dir))
-            {
-                Directory.CreateDirectory(dir);
-            }
-            File.Create(path).Dispose();
-            using (var dbCtrl = new SQLiteCtrl())
-            {
-                if (dbCtrl.Open(path))
+                if (!File.Exists(path))
                 {
-                    EnsureDailylogTable(dbCtrl);
-                    dbCtrl.Close();
+                    string dir = Path.GetDirectoryName(path);
+                    if (!string.IsNullOrEmpty(dir))
+                    {
+                        Directory.CreateDirectory(dir);
+                    }
+                    File.Create(path).Dispose();
+                    created = true;
+                }
+                using (var dbCtrl = new SQLiteCtrl())
+                {
+                    if (dbCtrl.Open(path))
+                    {
+                        EnsureDailylogTable(dbCtrl);
+                        dbCtrl.Close();
+                    }
                 }
             }
-            StatusLog.WriteLine("中間集計のキャッシュを新規作成しました");
+            catch
+            {
+                if (created)
+                {
+                    try { if (File.Exists(path)) { File.Delete(path); } } catch { }
+                }
+                throw;
+            }
+            if (created)
+            {
+                StatusLog.WriteLine("中間集計のキャッシュを新規作成しました");
+            }
         }
 
         /// <summary>

@@ -267,6 +267,58 @@ namespace UnitTest.nicorankLib.Util
         }
 
         [TestMethod]
+        public void TryParseManifest_PathSeparator_ReturnsFalse()
+        {
+            // file にパス区切りを含む場合は取り違え・想定外配置のため拒否する（reviewer指摘対応）
+            string sha = new string('a', 64);
+            string json = BuildManifestJson("../evil.zip", 10, sha, "b.zip", 20, sha);
+
+            BaselineDownloader.BaselineManifest manifest;
+            Assert.IsFalse(BaselineDownloader.TryParseManifest(json, out manifest));
+        }
+
+        [TestMethod]
+        public void EnsureCacheFiles_RecoversFromEmptyFile()
+        {
+            // 前回中断で空ファイルだけ残った状態から再実行で回復すること（reviewer指摘対応）
+            string dir = CreateTempDir();
+            try
+            {
+                Directory.CreateDirectory(Path.Combine(dir, "DB"));
+                File.WriteAllBytes(Path.Combine(dir, "DB", "ApiXML.db"), new byte[0]);
+                File.WriteAllBytes(Path.Combine(dir, "DB", "Dailylog.db"), new byte[0]);
+
+                var downloader = new BaselineDownloader(dir, null, null, FakeManifestUrl);
+                Assert.IsTrue(downloader.EnsureCacheFiles());
+
+                using (var dbCtrl = new SQLiteCtrl())
+                {
+                    Assert.IsTrue(dbCtrl.Open(Path.Combine(dir, "DB", "ApiXML.db")));
+                    using (var cmd = dbCtrl.Connection.CreateCommand())
+                    {
+                        cmd.CommandText = "SELECT COUNT(*) FROM NicovideoThumb;";
+                        Assert.AreEqual(0L, Convert.ToInt64(cmd.ExecuteScalar()));
+                    }
+                    dbCtrl.Close();
+                }
+                using (var dbCtrl = new SQLiteCtrl())
+                {
+                    Assert.IsTrue(dbCtrl.Open(Path.Combine(dir, "DB", "Dailylog.db")));
+                    using (var cmd = dbCtrl.Connection.CreateCommand())
+                    {
+                        cmd.CommandText = "SELECT COUNT(*) FROM Dailylog;";
+                        Assert.AreEqual(0L, Convert.ToInt64(cmd.ExecuteScalar()));
+                    }
+                    dbCtrl.Close();
+                }
+            }
+            finally
+            {
+                DeleteTempDir(dir);
+            }
+        }
+
+        [TestMethod]
         public void Config_BaselineManifestUrl_WithoutElement_FallsBackToDefault()
         {
             try

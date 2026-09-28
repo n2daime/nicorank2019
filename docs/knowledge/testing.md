@@ -9,7 +9,7 @@ dotnet test UnitTest/UnitTest.csproj
 
 - 環境: **.NET Framework 4.8 ターゲットだが .NET 10 SDK でビルド・実行**（Windows）
 - テストフレームワーク: MSTest 3.5.2 / モック: Moq 4.20.72
-- 全 **283 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件・#39で16件・#44で10件・#43で2件・#36で11件を追加）
+- 全 **285 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件・#39で16件・#44で10件・#43で2件・#36で13件を追加）
 
 ## 構成
 
@@ -24,7 +24,7 @@ UnitTest/
 │   ├── TestConfigBuilder.cs  # Config の非公開フィールドをリフレクションで書き換えるテスト用ビルダー
 │   └── UnitTestTestDbHelper.cs
 └── nicorankLib/
-    ├── Util/       UnitTestSQLiteCtrl(12) / DbQuery(10) / DbWrite(9) / DbSchema(8) / DbError(4) / DbCommandReuse(6) / StatusLog(3) / TextUtil(6) / ApiUrlBuilder(7) / DbMigrationCoordinator(12) / UnitTestBaselineDownloader(11)
+    ├── Util/       UnitTestSQLiteCtrl(12) / DbQuery(10) / DbWrite(9) / DbSchema(8) / DbError(4) / DbCommandReuse(6) / StatusLog(3) / TextUtil(6) / ApiUrlBuilder(7) / DbMigrationCoordinator(12) / UnitTestBaselineDownloader(13)
     ├── Common/     UnitTestConfig(8)
     ├── output/     UnitTestOutput(8)
     ├── SnapShot/   UnitTestSnapShotRequest(12) / UnitTestTagConditionParser(7) / UnitTestTagSearchRequest(7) / UnitTestSnapShotVersionChecker(12) / UnitTestSnapShotVersionPoller(5)
@@ -73,7 +73,7 @@ UnitTest/
 | `UnitTestTagSnapshotTimestamp` | 10 | 時点ラベルのJST日＋05:00固定・Z表記・日付境界・仕様値固定・TryFormat成功／確認不能／null・NotUpdated時表示・境界両側・05:00ちょうど（Issue #39） |
 | `UnitTestApiUrlBuilder` | 7 | ApiUrlBuilder のクエリ組み立て（日本語tag・tag省略形状・null/空・null値・`?`付きベース・nullベース例外。Issue #19） |
 | `UnitTestDbMigrationCoordinator` | 12 | 司令塔の全成功・失敗時中断・null例外、RankingHistory/ResultHistoryのDBVersion確保・JSON列DROP・SP行削除・冪等・記録Verが新しい場合の無変更・最古スキーマ対応（Issue #28。RankingHistoryのVer期待値はVer1に更新） |
-| `UnitTestBaselineDownloader` | 11 | baseline.json の正常・破損・欠落・不正ハッシュ・不足なし・不足時取得配置・ハッシュ不一致・キャッシュ2種確保と冪等・Config既定と上書き（Issue #36） |
+| `UnitTestBaselineDownloader` | 13 | baseline.json の正常・破損・欠落・不正ハッシュ・パス区切り拒否・不足なし・不足時取得配置・ハッシュ不一致・キャッシュ2種確保と冪等・空ファイルからの回復・Config既定と上書き（Issue #36） |
 | `UnitTestRankingHistorySoHistory` | 15 | SoHistory作成・境界より古い行の退避・混入行清掃・基準日ガード・保持境界prune・Movie廃止・冪等・索引作成・CheckSoMovieNeedSabunのフォールバック/優先/null/表なし・日次の消去行拾い上げと条件付き置換・まとめ消し（Issue #31） |
 
 ## テストパターン

@@ -190,11 +190,17 @@ namespace nicorank2019.frm
                 // なぜここか：RankingHistory.Open はファイル不在で失敗し、その後の EnsureMigrated まで到達しないため、
                 // 開く前に不足を解消する必要がある。キャッシュDB（ApiXML／Dailylog）の確保も同時に行う。
                 // 集計スレッドからコントロールには触れない（取得はネットワークとファイルのみ）。
+                // 取得失敗時は明示的に落とす。LogOfficial 不在は後の Open でも止まるが、
+                // NicoranHistory 不在（長期判定に効く）の失敗を見逃さないためである（reviewer指摘対応）。
                 var baseline = new BaselineDownloader();
                 baseline.EnsureCacheFiles();
-                baseline.EnsureBaseline();
-
-                using (var history = new RankingHistory())
+                if (!baseline.EnsureBaseline())
+                {
+                    returnVal = false;
+                }
+                else
+                {
+                    using (var history = new RankingHistory())
 
                 {
                     if (!history.Open())
@@ -246,6 +252,7 @@ namespace nicorank2019.frm
                         }
                     }
                     history.Close();
+                }
                 }
 
                 // 集計終了後に Factory（ひいては Reader 群の接続）を破棄する。成功・失敗・出力中例外のいずれでも実行する。
