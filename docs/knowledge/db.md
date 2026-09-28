@@ -51,6 +51,13 @@
 - **DBVersion**: `集計日` / `Ver`（1.0.1.0）
 - `InitilizeDB()` が既存ファイルを**削除して再作成**
 
+## ベースライン配布（Issue #36）
+
+- 配布物: `LogOfficial.db`（Ver1・直近1年＋SoHistory）と `NicoranHistory.db`（全期間）のDBごとzip（固定名 `LogOfficial.zip`／`NicoranHistory.zip`。改名作業はしない）。`ApiXML.db`／`Dailylog.db` は対象外
+- 最新ポインタ: `https://2daime.myds.me/nicorank/baseline/baseline.json`（`nicorank.xml` の `SYSTEM/URL_BASELINE` で上書き可）。中身は日付・ファイル名・サイズ・sha256で、配布スクリプト `tools/make-baseline.ps1` が自動作成する
+- 取得本体: `nicorankLib/Util/BaselineDownloader.cs`。集計開始時（`RankingHistory.Open` の前）に本地不足だけ自動取得し、サイズ・sha256照合後に展開する。キャッシュ2種の確保（`ApiXML` は `EnsureNicovideoThumbTable`、`Dailylog` は表確保）も行う
+- PG 配布（`release.md` のホワイトリスト、DB 含まず）とは別寿命で運用し、3〜6か月ごとに更新する。単一最新とし世代は残さない（残したい場合は人間が事前に退避する）。スクリプトは配布フォルダに置いたまま使い、出力はスクリプト自身の場所へ出す
+
 ## SQLiteCtrl 接続設計
 
 `nicorankLib/Util/SQLiteCtrl.cs`（`Microsoft.Data.Sqlite 10.0.11` + `SQLitePCLRaw 2.1.12`、2026-08 更新。`lib` サブフォルダ集約）

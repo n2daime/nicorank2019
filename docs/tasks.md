@@ -15,6 +15,23 @@
 
 ## 未完了タスク
 
+### old-ranking整理とベースラインDB配布（#36）
+
+> Issue #36。ブランチ `feature/t036-baseline-distribution`。前提の T031（#31）・#32 は完了済みのため本件に着手する。
+
+- 依存: #31（LogOfficial Ver1・実測2.01GB・SoHistory約24万行）・#32（DbOptimizerと住み分け）・#40（週刊ApiXML運搬・SP予備補完）・#43（表示はStatusLog・記録はErrLog）・#44（自前接続のみ閉じる所有権）。週刊ApiXMLの蓄積マージは #41 に委ね、本件に含めない。
+- 対象: `LogOfficial.db` と `NicoranHistory.db` のベースライン配布（DBごとにzip分離）。`ApiXML.db`・`Dailylog.db` は配布せず不在時は自動生成する。
+- 配布場所のルール化: PG配布（GitHub Releaseのホワイトリスト、DB含まず）と連動させない。`\\ds224\web\nicorank\baseline\` に置くと `https://2daime.myds.me/nicorank/baseline/` で参照できるNAS Web公開を使い、最新ポインタは `baseline.json` とする。zip名は固定（`LogOfficial.zip`／`NicoranHistory.zip`）とし改名作業はしない。更新は3〜6か月ごと、単一最新の運用とし世代は残さない（残したい場合は人間が事前に退避する）。
+- `baseline.json` はスクリプトが自動作成する（人間は手書きしない）。日付・ファイル名・サイズ・sha256を必須とし、サイズやハッシュの桁写しによる取り違えをなくす。発火条件は本地ファイル不在時とし、通常起動だけで最新化できるようにする（手動配置のみは従来運用と変わらないため見送る）。
+- 受け入れ条件: ベースライン展開後に通常集計起動だけで最新化できること。ホット1年分のみで `UpdateOfficialRankingDB()` が成功すること。週刊差分と長期判定が壊れないこと。テスト＋ビルド成功、reviewerレビュー完了。
+
+- [ ] 36.1 配布側スクリプトの作成（DBごとzip分離＋`baseline.json`自動生成＋世代保持）
+- [ ] 36.2 取得側の実装（不在時自動取得→サイズ・sha256照合→展開→`EnsureMigrated()`再試行。案内はStatusLog/ErrLog経路）
+- [ ] 36.3 単体テスト（`baseline.json`正常・欠落・破損・ハッシュ不一致・後始末、`EnsureMigrated()`のVer0→Ver1順適用）
+- [ ] 36.4 検証（空DB→自動取得→ホット1年最新化→週刊差分・長期判定・SP予備補完・削除目印、運搬なし経路を含む）
+- [ ] 36.5 Web側コールド削除（usbshare2最新化・サンプリング確認が前提。`rireki.txt`は残し追記する）
+- [ ] 36.6 文書更新（specs新規構築手順・design保持窓と配布設計・knowledge・archive）
+
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。
