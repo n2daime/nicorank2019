@@ -320,6 +320,20 @@ namespace nicorankLib.Common
         /// </summary>
         public string URL_JSON_TARGET { get { return xml.SYSTEM.URL_JSON_TARGET.Url; } set { } }
 
+        /// <summary>
+        /// ベースライン配布の最新ポインタ（baseline.json）のURL（Issue #36）。
+        /// nicorank.xml の SYSTEM/URL_BASELINE がなければ既定URLを使う。
+        /// なぜ既定を持つか：既存設定ファイルに要素がなくても従来通り動かし、
+        /// 配布場所を変えたい場合だけ設定すれば済むようにするためである。
+        /// </summary>
+        public string BaselineManifestUrl { get { return xml.SYSTEM.URL_BASELINE != null ? xml.SYSTEM.URL_BASELINE.Url : DefaultBaselineManifestUrl; } set { } }
+
+        /// <summary>
+        /// ベースライン配布の既定URL。NAS の Web 公開配下の最新ポインタを指す。
+        /// 値を変えたら docs と配布スクリプト（tools/make-baseline.ps1 の OutDir 既定）も同時更新すること。
+        /// </summary>
+        public const string DefaultBaselineManifestUrl = "https://2daime.myds.me/nicorank/baseline/baseline.json";
+
         // OFFSET系の既定値（現行共通値）。Initilizeの欠落補完と*ForWriteの生成初期値で共用する。
         // なぜ定数化するか：4箇所×4種に散らすと将来の既定値変更で修正漏れが起きるためである（AGENTS.md §1のマジックナンバー抑止）。
         private const int DefaultCommentOffsetMode = 2;
@@ -402,6 +416,11 @@ namespace nicorankLib.Common
             if (this.xml.SYSTEM.URL_JSON_TARGET == null)
             {//設定がない場合
                 this.xml.SYSTEM.URL_JSON_TARGET = new URL_JSON_TARGET() { Url = @"https://2daime.myds.me/old-ranking/{0}/{1}/" };
+            }
+            if (this.xml.SYSTEM.URL_BASELINE == null)
+            {//設定がない場合は既定URLを使う。要素自体は作らない（旧XML互換のため）。
+                // なぜ作らないか：GetXMLString の設定スナップショットに空要素が載るのを避け、
+                // 読み取り側のフォールバック（BaselineManifestUrl）で足りるためである。
             }
         }
     }

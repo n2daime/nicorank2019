@@ -186,6 +186,14 @@ namespace nicorank2019.frm
             bool returnVal = true;
             await Task.Run(() =>
             {
+                // ベースラインDBの不足時は配布場所から自動取得する（Issue #36）。
+                // なぜここか：RankingHistory.Open はファイル不在で失敗し、その後の EnsureMigrated まで到達しないため、
+                // 開く前に不足を解消する必要がある。キャッシュDB（ApiXML／Dailylog）の確保も同時に行う。
+                // 集計スレッドからコントロールには触れない（取得はネットワークとファイルのみ）。
+                var baseline = new BaselineDownloader();
+                baseline.EnsureCacheFiles();
+                baseline.EnsureBaseline();
+
                 using (var history = new RankingHistory())
 
                 {

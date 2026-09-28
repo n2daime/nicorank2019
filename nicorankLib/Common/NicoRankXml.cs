@@ -204,6 +204,12 @@ namespace nicorankLib.Common
         public string Url { get; set; }
     }
 
+    public class URL_BASELINE
+    {
+        [XmlAttribute(AttributeName = "Url")]
+        public string Url { get; set; }
+    }
+
     [XmlRoot(ElementName = "SYSTEM")]
     public class SYSTEM
     {
@@ -215,6 +221,11 @@ namespace nicorankLib.Common
         public Download Download { get; set; }
         [XmlElement(ElementName = "URL_JSON_TARGET")]
         public URL_JSON_TARGET URL_JSON_TARGET { get; set; }
+        // ベースライン配布の最新ポインタ（Issue #36）。任意要素であり、なければ既定URLを使う。
+        // なぜ任意にするか：既存nicorank.xmlに要素がなくても従来通り読めるようにし、
+        // 配布場所を変えたい場合だけ書けば済むようにするためである（#39のOFFSET節別化と同一の考え方）。
+        [XmlElement(ElementName = "URL_BASELINE")]
+        public URL_BASELINE URL_BASELINE { get; set; }
     }
 
 }
