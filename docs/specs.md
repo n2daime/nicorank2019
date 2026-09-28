@@ -251,7 +251,7 @@
 
 - 配布するのは `LogOfficial.db`（Ver1・直近1年＋SoHistory）と `NicoranHistory.db`（全期間）の2種。DBごとにzip分離する（部分欠損対応の所有分離を守るため）。`ApiXML.db`・`Dailylog.db` はキャッシュ扱いのため配布しない
 - 配布場所は NAS の Web 公開配下（`\\ds224\web\nicorank\baseline\` → `https://2daime.myds.me/nicorank/baseline/`）。最新ポインタは `baseline.json`（UTF-8。日付・ファイル名・サイズ・sha256を必須とし、配布スクリプト `tools/make-baseline.ps1` が自動作成する）。zip名は固定（`LogOfficial.zip`／`NicoranHistory.zip`）とし、改名作業はしない。日付は `baseline.json` の中にだけ持つ。更新は3〜6か月ごと、単一最新の運用とし世代は残さない（世代を残したい場合は人間が事前に退避する）
-- 配布スクリプトは配布フォルダに置いたまま使う（出力はスクリプト自身の場所、DBフォルダは必須引数 `-DbDir` で指定する。実行場所に依存させないため）
+- 配布スクリプトは配布フォルダに置いたまま使う（出力はスクリプト自身の場所、DBフォルダは `-DbDir` で指定し省略時はカレント。実行場所に依存させないため。2GB級の圧縮中は進捗バーを出さず開始と完了だけ表示する）
 - 参照先は `nicorank.xml` の `SYSTEM/URL_BASELINE`（任意。なければ `https://2daime.myds.me/nicorank/baseline/baseline.json` を使う）
 - 集計開始時（`RankingHistory.Open` の前）に本地の不足を検出したら自動取得する。不在の DB だけ落とし、サイズ・sha256 照合後に展開して `DB/` へ配置し、`EnsureMigrated()` へ進む。既存環境の DB は置き換えない。取得失敗時は中断する（fail-fast 維持）
 - `ApiXML.db` がなければ空ファイル＋`NicovideoThumb` 表確保、`Dailylog.db` がなければ空ファイル＋`Dailylog` 表確保を行い、集計を続ける（キャッシュのため中断しない）

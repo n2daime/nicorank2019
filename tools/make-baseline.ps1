@@ -11,6 +11,7 @@
 # 使い方（例）：
 #   powershell -ExecutionPolicy Bypass -File \\ds224\web\nicorank\baseline\make-baseline.ps1 `
 #     -DbDir "実運用DBのあるフォルダ"
+#   -DbDir を省略するとカレントフォルダを使う（DBフォルダに移動してから実行する場合）。
 #
 # 出力はスクリプトと同じフォルダに作る（探す手間と取り違えをなくすため）。
 # zip 名は固定（LogOfficial.zip / NicoranHistory.zip）とし、改名作業はしない。
@@ -25,15 +26,18 @@
 
 [CmdletBinding()]
 param(
-    # ベースライン元になる DB があるフォルダ（LogOfficial.db / NicoranHistory.db を読む）。必須。
-    # なぜ必須か：既定値があると意図しないフォルダ（カレントの DB など）を固めてしまうため、
-    # 省略時は使い方を表示して止める。
-    [Parameter(Mandatory = $true, HelpMessage = "ベースライン元のDBフォルダ（LogOfficial.db / NicoranHistory.db がある場所）")]
-    [string]$DbDir
+    # ベースライン元になる DB があるフォルダ（LogOfficial.db / NicoranHistory.db を読む）。
+    # 省略時はカレントフォルダ。探す手間をなくすためである。
+    # なぜ表示してから実行するか：既定で意図しないフォルダを固めないよう、対象と出力を先に明示するためである。
+    [string]$DbDir = (Get-Location).Path
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+# 2GB級の圧縮では Compress-Archive の青い進捗バーが長時間出て不安になるため抑止し、
+# 代わりにスクリプト側で開始と完了を1行ずつ出す。終わったかどうかが明確になる。
+$ProgressPreference = 'SilentlyContinue'
 
 # 出力先はスクリプト自身の場所にする。実行場所（カレント）に依存させないためである。
 $OutDir = $PSScriptRoot
@@ -51,6 +55,9 @@ if (-not (Test-Path -LiteralPath $DbDir -PathType Container)) {
     throw "DB フォルダが見つかりません: $DbDir"
 }
 
+Write-Output ("対象DBフォルダ: {0}" -f $DbDir)
+Write-Output ("出力先: {0}" -f $OutDir)
+
 $entries = @{}
 foreach ($t in $targets) {
     $dbPath = Join-Path $DbDir $t.DbFile
@@ -62,6 +69,8 @@ foreach ($t in $targets) {
     # DB ごとに分離して zip 化する。一式 zip にすると部分欠損対応の中央管理者が必要になり、
     # 各 DB 所有クラスへの分離（DbMigrationCoordinator の設計）と逆方向になるためである。
     # 同名があれば上書きする（単一最新の運用。世代を残したい場合は実行前に人間が退避する）。
+    # 2GB級は数十分かかるため開始を明示する（進捗バーは抑止済み）。
+    Write-Output ("圧縮中です（数十分かかります）: {0} -> {1}" -f $t.DbFile, $t.ZipName)
     Compress-Archive -LiteralPath $dbPath -DestinationPath $zipPath -CompressionLevel Optimal -Force
 
     $item = Get-Item -LiteralPath $zipPath
