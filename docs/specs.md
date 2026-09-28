@@ -247,6 +247,15 @@
 - 数十分かかりうるため非同期で実行し、実行中は実行系ボタン（最適化・各集計）を無効化する（集計との同時実行によるDBロック競合を防ぐ。VACUUM自体は原子性があるため、最悪でも失敗に留まり破損しない）
 - 実行ログは集計タブと同様にコンソール側へ出す（タブ内にログ欄は持たない）
 
+### ベースラインDB配布と不在時自動取得（Issue #36）
+
+- 配布するのは `LogOfficial.db`（Ver1・直近1年＋SoHistory）と `NicoranHistory.db`（全期間）の2種。DBごとにzip分離する（部分欠損対応の所有分離を守るため）。`ApiXML.db`・`Dailylog.db` はキャッシュ扱いのため配布しない
+- 配布場所は NAS の Web 公開配下（`\\ds224\web\nicorank\baseline\` → `https://2daime.myds.me/nicorank/baseline/`）。最新ポインタは `baseline.json`（UTF-8。日付・ファイル名・サイズ・sha256を必須とし、配布スクリプト `tools/make-baseline.ps1` が自動作成する）。更新は3〜6か月ごと、直近2〜3世代保持とする
+- 参照先は `nicorank.xml` の `SYSTEM/URL_BASELINE`（任意。なければ `https://2daime.myds.me/nicorank/baseline/baseline.json` を使う）
+- 集計開始時（`RankingHistory.Open` の前）に本地の不足を検出したら自動取得する。不在の DB だけ落とし、サイズ・sha256 照合後に展開して `DB/` へ配置し、`EnsureMigrated()` へ進む。既存環境の DB は置き換えない。取得失敗時は中断する（fail-fast 維持）
+- `ApiXML.db` がなければ空ファイル＋`NicovideoThumb` 表確保、`Dailylog.db` がなければ空ファイル＋`Dailylog` 表確保を行い、集計を続ける（キャッシュのため中断しない）
+- 案内表示は `StatusLog`、詳細は `ErrLog` に出す（§7 の経路分離に従う）
+
 ### SQLite 接続設定（SQLiteCtrl.Open）
 
 - 接続文字列: `Pooling=False` / `JournalMode=Wal` / `DefaultTimeout=30`
