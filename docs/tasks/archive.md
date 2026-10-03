@@ -622,3 +622,13 @@
   - 実機で起動事故1件（Designerのnew生成漏れ→NullReferenceで起動不能）を検出・修正・Release起動確認済み。教訓：Designer手書き時はnew／配置／SuspendLayout／宣言の4点照合
   - ユーザー実機検証OK（メンテタブ表示・週刊集計の警告ダイアログ文面・グループ名のIssue番号除去）
 - **残課題・申送り**: #46（再集計による復旧）はIssueのみ。配布が古い場合は人間運用（回収集計者への相談）でカバーする。testing.mdの件数は--list-tests実測とソース件数で裏付けること（推定で書いて2回直した）
+---
+
+## 2026-10-03 リリース実績 (v20261003_nicorank)
+
+- **タグ**: `v20261003_nicorank`（main HEAD と一致することを `rev-parse <tag>^{commit}` で確認）
+- **Release**: https://github.com/n2daime/nicorank2019/releases/tag/v20261003_nicorank
+- **成果物**: `nicorank2019_20261003.zip` / `nicorank_SnapShot_20261003.zip` / `nicorank_oldlog_20261003.zip`（ホワイトリスト通り。DB・pdb・System直下・設定本体なしを確認）
+- **内容**: 前回 `v20260928_nicorank` 以降は #45 のみ（集計抜けチェック＋ベースライン復旧）。`nicorank.xml` に新規設定なしのため既存設定のまま上書き更新できる
+- **検証**: `dotnet test` PASS・sln Release ビルド成功（develop と main の両方で確認）。lib 4件＋runtimes 3arch・両exe.configのloadFromRemoteSources・nicorank.xml一致を確認。実機はユーザーがRelease版で起動・抜け表示・警告文面を確認済み（#45の実行確認を流用。集計ロジック自体は#45で触っていないため通し集計の再実行は省略）
+- **同期**: `main` へ--no-ffマージ→タグ→push→Release作成→`develop` へバックマージ→push。`git diff main develop --stat` は空
