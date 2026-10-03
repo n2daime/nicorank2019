@@ -1,5 +1,6 @@
 ﻿using nicorank2019.frm;
 using nicorankLib.Analyze.Input;
+using nicorankLib.Analyze.model;
 using nicorankLib.Analyze.Official;
 using nicorankLib.Common;
 using nicorankLib.Factory;
@@ -90,6 +91,27 @@ namespace nicorank2019.frm
             {
                 MessageBox.Show("ポイント計算の入力値が不正です", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
+            }
+            // 週刊モードでは集計開始前に抜けを自動確認する（Issue #45）。
+            // なぜ週刊のみか：抜けの害（長期判定の欠け）が週刊集計に限られるためである。
+            // 中止が選ばれたら集計を開始しない。確認不能時は開始する（初回利用者の詰み防止）。
+            // 対象日はUIスレッドで読む（集計スレッドからコントロールに触らない。pitfalls項目19）。
+            // チェック中も実行系ボタンを止め、連打による二重起動を防ぐ。
+            if (rbWeekly.Checked)
+            {
+                DateTime targetDay = dtPAnalyzeDay.Value.Date;
+                SetVacuumRunning(true);
+                try
+                {
+                    if (!await CheckWeeklyGapBeforeAnalyzeAsync(targetDay))
+                    {
+                        return;
+                    }
+                }
+                finally
+                {
+                    SetVacuumRunning(false);
+                }
             }
             _tagExecuteContext = null;
             await ExecuteAnalyzeAsync(btnAnalyze);
@@ -326,6 +348,185 @@ namespace nicorank2019.frm
             chkVacuumNicoranHistory.Enabled = enabled;
             chkVacuumApiXml.Enabled = enabled;
             chkVacuumDailylog.Enabled = enabled;
+            // 抜けチェック・復旧もDBを開くため、最適化・集計との同時実行を防ぐ（DBロック競合の防止）。
+            btnGapCheckExec.Enabled = enabled;
+            chkGapCheckOneYear.Enabled = enabled;
+            btnBaselineRestore.Enabled = enabled;
+        }
+
+        /// <summary>
+        /// メンテナンスタブの「抜けをチェック」ボタン(Issue #45)。
+        /// 直近3か月（既定）または直近1年の月曜期待週に対し、LastResult(Weekly) の歯抜けを検出する。
+        /// 実処理は集計スレッド側で行い、UI更新はawait復帰後のUIスレッドで行う
+        /// （集計スレッドからコントロールに触らない。pitfalls項目19）。
+        /// 実行ログは集計タブと同様にコンソール側（StatusLog）へ出すため、タブ内にログ欄は持たない。
+        /// </summary>
+        private async void btnGapCheckExec_Click(object sender, EventArgs e)
+        {
+            // チェック状態の読み取りはUIスレッドで行う（タグ検索のTagExecuteContextと同一理由）。
+            // ONなら直近1年（52週）、OFFなら直近3か月（13週・動作変わらず）とする。
+            int weeks = chkGapCheckOneYear.Checked ? WeeklyGapChecker.YearLookbackWeeks : WeeklyGapChecker.DefaultLookbackWeeks;
+            SetVacuumRunning(true);
+            lblGapCheckStatus.Text = "状態: 実行中...";
+            lblGapCheckResult.Text = "結果: 実行中...";
+            try
+            {
+                GapCheckResult result = await System.Threading.Tasks.Task.Run(() =>
+                    WeeklyGapChecker.Check(
+                        historyDbPath: DB.NiCORAN_HISTORY,
+                        officialDbPath: DB.LOG_OFFICEIAL,
+                        today: DateTime.Today,
+                        weeks: weeks));
+                ShowGapCheckResult(result);
+            }
+            catch (Exception ex)
+            {
+                lblGapCheckStatus.Text = "状態: 失敗";
+                MessageBox.Show(GetExceptionMessages(ex), "システムエラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                SetVacuumRunning(false);
+            }
+        }
+
+        /// <summary>
+        /// 抜けチェック結果の表示共通化（手動ボタンと自動警告で共用）。
+        /// 抜けがあれば日付を列挙する。なぜ列挙か：長期判定の欠けは画面上では気づきにくいため、
+        /// 日付の列挙が必須だからである。
+        /// </summary>
+        private void ShowGapCheckResult(GapCheckResult result)
+        {
+            if (result == null)
+            {
+                return;
+            }
+            if (!string.IsNullOrEmpty(result.ErrorMessage))
+            {
+                lblGapCheckStatus.Text = "状態: 確認不能";
+                lblGapCheckResult.Text = "結果: " + result.ErrorMessage;
+                StatusLog.WriteLine("集計抜けチェックができませんでした: " + result.ErrorMessage);
+                MessageBox.Show(result.ErrorMessage, "集計抜けチェック", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (result.Missing == null || result.Missing.Count == 0)
+            {
+                lblGapCheckStatus.Text = "状態: 完了（抜けなし）";
+                lblGapCheckResult.Text = "結果: 抜けなし";
+                StatusLog.WriteLine("集計抜けチェック：抜けはありませんでした");
+                MessageBox.Show("集計の抜けはありませんでした", "集計抜けチェック", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            string dates = WeeklyGapChecker.FormatMissing(result.Missing);
+            lblGapCheckStatus.Text = string.Format("状態: 完了（抜け {0}件）", result.Missing.Count);
+            lblGapCheckResult.Text = "結果: 抜け " + dates;
+            StatusLog.WriteLine("集計抜けチェック：抜けがあります: " + dates);
+            MessageBox.Show(
+                "集計の抜けがあります: " + dates + "\nベースラインDBで復旧するか、回収集計している人に相談してください",
+                "集計抜けチェック", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        /// <summary>
+        /// メンテナンスタブの「ベースラインDBで復旧」ボタン(Issue #45)。
+        /// 配布中のベースラインで本地の2DBを上書きする。既存DBは DB/backup 以下へ自動退避する。
+        /// 配布が本地より古い場合は警告して中断する（必須仕様）。
+        /// なぜ中断か：古い配布を被せると逆に抜けを増やすからである。
+        /// </summary>
+        private async void btnBaselineRestore_Click(object sender, EventArgs e)
+        {
+            var confirm = MessageBox.Show(
+                "配布中のベースラインDBで本地の NicoranHistory.db を上書きします。\n"
+                + "既存DBは DB/backup 以下へ自動退避します。LogOfficial.db には触れません。続行しますか。",
+                "ベースライン復旧", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning);
+            if (confirm != DialogResult.OK)
+            {
+                return;
+            }
+            SetVacuumRunning(true);
+            lblGapCheckStatus.Text = "状態: 復旧中...";
+            try
+            {
+                BaselineDownloader.BaselineRestoreResult result = await System.Threading.Tasks.Task.Run(() =>
+                {
+                    var downloader = new BaselineDownloader();
+                    return downloader.RestoreBaseline();
+                });
+                if (result.Success)
+                {
+                    lblGapCheckStatus.Text = "状態: 復旧完了";
+                    lblGapCheckResult.Text = "結果: " + result.Message;
+                    MessageBox.Show(result.Message, "ベースライン復旧", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else if (result.StaleBlocked)
+                {
+                    // 中断理由（配布が古い／本地を確認不能／配布内容を確認不能／配布内容が古い／配布内容にデータなし）で表示を分ける。
+                    // なぜ分けるか：原因が伝わらないと次の行動（相談かDB修復か）が選べないためである。
+                    string reason = string.IsNullOrEmpty(result.StaleReason) ? "配布が古い" : result.StaleReason;
+                    lblGapCheckStatus.Text = "状態: 復旧中断（" + reason + "）";
+                    lblGapCheckResult.Text = "結果: " + result.Message;
+                    MessageBox.Show(result.Message, "ベースライン復旧", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                else
+                {
+                    lblGapCheckStatus.Text = "状態: 復旧失敗";
+                    lblGapCheckResult.Text = "結果: " + result.Message;
+                    MessageBox.Show(result.Message + "。コンソールとnicorankerr.logを確認してください",
+                        "ベースライン復旧", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                lblGapCheckStatus.Text = "状態: 失敗";
+                MessageBox.Show(GetExceptionMessages(ex), "システムエラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                SetVacuumRunning(false);
+            }
+        }
+
+        /// <summary>
+        /// 週刊集計開始時の抜け自動警告(Issue #45)。
+        /// UIスレッドで週刊判定し、短時間の読取だけ集計スレッド側で行う。
+        /// 抜けがあれば続行／中止を選び、中止なら集計を開始しない。
+        /// なぜ週刊のみか：抜けの害（長期判定の欠け）が週刊集計に限られるためである。
+        /// 集計対象日は抜けに数えない。なぜ数えないか：対象週の結果はこの実行で初めて
+        /// LastResult に書かれるため、数えると毎回必ず警告になるからである。
+        /// </summary>
+        /// <param name="targetDay">集計対象日（UIスレッドで読んだ dtPAnalyzeDay の値）</param>
+        /// <returns>集計を開始してよければ true、中止なら false</returns>
+        private async Task<bool> CheckWeeklyGapBeforeAnalyzeAsync(DateTime targetDay)
+        {
+            GapCheckResult result = await System.Threading.Tasks.Task.Run(() =>
+                WeeklyGapChecker.Check(
+                    historyDbPath: DB.NiCORAN_HISTORY,
+                    officialDbPath: DB.LOG_OFFICEIAL,
+                    today: DateTime.Today,
+                    weeks: WeeklyGapChecker.DefaultLookbackWeeks));
+            if (result == null || !string.IsNullOrEmpty(result.ErrorMessage))
+            {
+                // 確認不能時は集計を止めない。なぜ止めないか：DB不在は #36 の自動取得で解消できる正常系であり、
+                // 確認不能を理由に集計全体を止めると初回利用者が詰むためである。
+                return true;
+            }
+            result.Missing = WeeklyGapChecker.ExcludeTargetDay(result.Missing, targetDay);
+            if (result.Missing == null || result.Missing.Count == 0)
+            {
+                return true;
+            }
+            string dates = WeeklyGapChecker.FormatMissing(result.Missing);
+            StatusLog.WriteLine("集計抜け警告：抜けがあります: " + dates);
+            // 結果ラベルにも残し、手動チェックなしで復旧に進めるようにする。
+            lblGapCheckStatus.Text = string.Format("状態: 抜けあり（{0}件）", result.Missing.Count);
+            lblGapCheckResult.Text = "結果: 抜け " + dates;
+            var answer = MessageBox.Show(
+                "過去の集計に抜けがあります: " + dates + "\n"
+                + "このまま集計すると長期動画判定に欠けが残る場合があります。\n"
+                + "メンテナンスタブの「ベースラインDBで復旧」で直せる場合があります"
+                + "（配布が古い場合は回収集計している人に相談してください）。\n"
+                + "集計を続行しますか。",
+                "集計抜け警告", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            return answer == DialogResult.Yes;
         }
 
         /// <summary>

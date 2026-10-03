@@ -15,6 +15,12 @@
 
 ## 未完了タスク
 
+### 抜け週の再集計による復旧（#46・Issueのみ・実装は別セッション）
+
+> #45のバックアップ手段。配布者の更新忘れなど万が一に備え、再集計での復旧も残す。再集計の遡及可能条件の仕様化と手順案内が中心で、自動再実行の要否は改めて壁打ちする。
+
+- [ ] 46.1 再集計可否の条件仕様化（Issueの壁打ちから着手）
+
 ### テスト拡充（集計ロジック）
 
 > 2026-06-23 のテスト活性化で基盤は整備済み（69件）。残りは集計ロジックの中核部分。
@@ -36,6 +42,7 @@
 
 | タスク | 完了日 | 主な成果物 |
 |---|---|---|
+| 過去集計の抜けチェック＋ベースライン復旧（#45）✅ | 2026-10-03 | WeeklyGapChecker新設（LastResult Weekly歯抜け・3か月13週＋1年52週・メンテ週除外・対象週除外・確認不能時は開始）・メンテタブ手動チェック＋自動警告（続行／中止・復旧誘導文面）・NicoranHistory単独のベースライン復旧（内容日検証・DB/backup退避・陳腐化中断・LogOfficial対象外）・UnitTest36件追加（計321件）・specs/design/knowledge更新・reviewer再レビュー4回で必須指摘なし（高1件＋中4件対応・低は対応と見送り記録）・ユーザー実機検証OK（Release起動・抜け表示・警告文面）・developマージ |
 | old-ranking整理とベースラインDB配布（#36）✅ | 2026-09-28 | NAS Web配布＋baseline.json自動取得（不在時のみ・既存DB不置換）・配布スクリプトtools/make-baseline.ps1（固定名・単一最新・進捗バー抑止・DbDir省略時はカレント）・SYSTEM/URL_BASELINE任意要素・BaselineDownloader新設（サイズ・sha256照合・キャッシュ2種確保）・UnitTest13件追加（計285件）・specs/design/knowledge更新・reviewer再レビュー問題なし（中1件＋低8件対応・3件見送り）・ユーザー実機検証OK（DB不在→2種自動取得→最新化・単発削除→不足分のみ取得）・36.5コールド削除は仕様変更により省略・developマージ |
 | ライブラリ層の直接コンソール出力を表示抽象へ寄せる（#43）✅ | 2026-09-27 | SnapShotAnalyze件数表示のStatusLog化・UIConfig.GetWchのReadLine除去（フラグ温存・削除は別タスク）・InternetUtil残骸除去・NicoRankiApi約25行のStatusLog/ErrLog化（黙ってfalseの経路は両書き）・RankApi2Json系・Program系・Cli結果の統一（--helpと終了コード維持）・TextBoxWriterのTextBox参照＋BeginInvoke対応（ダイアログ生死は別スコープ）・UnitTest2件追加（計272件）・specs§7/design/knowledge更新・pitfalls項目24（ErrLog排他は別タスク）・reviewerマージ可（低5件：3件修正・1件記録・1件運用確認）・NAS実機検証OK（\\ds224\Temp\nicorankOld2025へ配置・/checklogin等の見た目維持・nicorankerr.log追記を受け入れ）・developマージ |
 | BasicOption破棄経路の整備（案B・#44。提案元#42）✅ | 2026-09-26 | BasicOptionBaseのIDisposable化（空の仮想Dispose・資源なし7件は無変更）・資源持ち3件のoverride寄せ替え＋_ownsDbCtrl所有権（注入接続は閉じない）・RankingAnalyze／ModeFactoryBaseのIDisposable化と破棄委譲（冪等・null安全・1件失敗でも継続）・SP／TagRank工場の失敗経路破棄・Tyukan内側using化・frmMainSyukeiの付け替え前＋出力後try-finally破棄・UnitTest10件追加（計270件）・design更新（Ext見送り理由含む）・reviewer再レビューでマージ可（中3件＋低3件すべて対応）・ユーザーSP実機検証OK（集計後にworkファイル消去を確認）・developマージ |
