@@ -521,7 +521,10 @@ namespace nicorank2019.frm
             lblGapCheckResult.Text = "結果: 抜け " + dates;
             var answer = MessageBox.Show(
                 "過去の集計に抜けがあります: " + dates + "\n"
-                + "このまま集計すると長期動画判定に欠けが残る場合があります。続行しますか。",
+                + "このまま集計すると長期動画判定に欠けが残る場合があります。\n"
+                + "メンテナンスタブの「ベースラインDBで復旧」で直せる場合があります"
+                + "（配布が古い場合は回収集計している人に相談してください）。\n"
+                + "集計を続行しますか。",
                 "集計抜け警告", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             return answer == DialogResult.Yes;
         }
