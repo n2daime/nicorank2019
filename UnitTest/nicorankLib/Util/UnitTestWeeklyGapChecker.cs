@@ -102,17 +102,15 @@ namespace UnitTest.nicorankLib.Util
         }
 
         [TestMethod]
-        public void GetExpectedMondaysFullPeriod_FromEarliestActual()
+        public void GetExpectedMondays_YearSpan_Has52Weeks()
         {
-            // 全期間モードは実績の最小週から列挙し、運用開始前を抜け扱いにしない。
-            var actual = new List<DateTime> { new DateTime(2026, 9, 14), new DateTime(2026, 9, 28) };
+            // 1年オプションは52週分を列挙する。先頭と末尾の間隔は51週（364日の前日）になる。
+            var result = WeeklyGapChecker.GetExpectedMondays(
+                new DateTime(2026, 9, 28), WeeklyGapChecker.YearLookbackWeeks);
 
-            var result = WeeklyGapChecker.GetExpectedMondaysFullPeriod(new DateTime(2026, 9, 28), actual);
-
-            Assert.AreEqual(3, result.Count);
-            Assert.AreEqual(new DateTime(2026, 9, 14), result[0]);
-            Assert.AreEqual(new DateTime(2026, 9, 21), result[1]);
-            Assert.AreEqual(new DateTime(2026, 9, 28), result[2]);
+            Assert.AreEqual(52, result.Count);
+            Assert.AreEqual(new DateTime(2026, 9, 28), result[result.Count - 1]);
+            Assert.AreEqual(new DateTime(2026, 9, 28).AddDays(-7 * 51), result[0]);
         }
 
         [TestMethod]
@@ -166,7 +164,7 @@ namespace UnitTest.nicorankLib.Util
                 TestDbHelper.InsertRankingDateData(official, 20260921, 0);
                 TestDbHelper.InsertRankingDateData(official, 20260928, 0);
 
-                var result = WeeklyGapChecker.Check(hist, official, new DateTime(2026, 9, 28), 3, false);
+                var result = WeeklyGapChecker.Check(hist, official, new DateTime(2026, 9, 28), 3);
 
                 Assert.IsNull(result.ErrorMessage);
                 Assert.AreEqual(1, result.Missing.Count);
@@ -186,22 +184,11 @@ namespace UnitTest.nicorankLib.Util
                 TestDbHelper.InsertRankingDateData(official, 20260921, 1);
 
                 // 期待週 9/21・9/28 のうち 9/21 はメンテ除外のため抜けなしになる。
-                var result = WeeklyGapChecker.Check(hist, official, new DateTime(2026, 9, 28), 2, false);
+                var result = WeeklyGapChecker.Check(hist, official, new DateTime(2026, 9, 28), 2);
 
                 Assert.AreEqual(0, result.Missing.Count);
                 Assert.AreEqual(1, result.MaintenanceSkipped.Count);
             }
-        }
-
-        [TestMethod]
-        public void GetExpectedMondaysFullPeriod_EmptyActual_FallsBackToWeeks()
-        {
-            // 実績が空の場合は通常モードの週数分にフォールバックする（何も検出しないより正直なため）。
-            var result = WeeklyGapChecker.GetExpectedMondaysFullPeriod(
-                new DateTime(2026, 9, 28), new List<DateTime>());
-
-            Assert.AreEqual(WeeklyGapChecker.DefaultLookbackWeeks, result.Count);
-            Assert.AreEqual(new DateTime(2026, 9, 28), result[result.Count - 1]);
         }
 
         [TestMethod]
@@ -273,7 +260,7 @@ namespace UnitTest.nicorankLib.Util
                     ctrl.Close();
                 }
 
-                var result = WeeklyGapChecker.Check(histPath, logPath, new DateTime(2026, 9, 28), 3, false);
+                var result = WeeklyGapChecker.Check(histPath, logPath, new DateTime(2026, 9, 28), 3);
 
                 Assert.IsNull(result.ErrorMessage);
                 Assert.AreEqual(1, result.Missing.Count);
@@ -304,7 +291,7 @@ namespace UnitTest.nicorankLib.Util
             {
                 TestDbHelper.CreateRankingDateTable(official);
 
-                var result = WeeklyGapChecker.Check(hist, official, new DateTime(2026, 9, 28), 3, false);
+                var result = WeeklyGapChecker.Check(hist, official, new DateTime(2026, 9, 28), 3);
 
                 Assert.IsNotNull(result.ErrorMessage);
                 Assert.AreEqual(0, result.Missing.Count);

@@ -19,8 +19,6 @@ namespace nicorankLib.Util
         public List<DateTime> Missing = new List<DateTime>();
         /// <summary>メンテナンス日のため除外した期待週（昇順）。正常であり対処不要。</summary>
         public List<DateTime> MaintenanceSkipped = new List<DateTime>();
-        /// <summary>全期間モードで実行したかどうか（既定は直近3か月）。</summary>
-        public bool FullPeriod;
         /// <summary>DBファイル不在などでチェック自体ができなかった場合の理由（成功時はnull）。</summary>
         public string ErrorMessage;
     }
@@ -41,6 +39,13 @@ namespace nicorankLib.Util
         /// 古すぎる検出が対処不能になるからである。仕様値のため定数化し、変える場合は Issue で合意する。
         /// </summary>
         public const int DefaultLookbackWeeks = 13;
+
+        /// <summary>
+        /// 全期間オプション（チェックボックスON）の遡及週数。約1年分に相当する52週。
+        /// なぜ52週か：LogOfficial が直近1年保持のため、1年より古い抜けは再集計も復旧も効かず
+        /// 検出だけしても対処不能になるからである。仕様値のため定数化し、変える場合は Issue で合意する。
+        /// </summary>
+        public const int YearLookbackWeeks = 52;
 
         /// <summary>
         /// 週刊集計日の曜日。集計は月曜起点（SabunReader の基準日は月曜のみ変更可）のため固定する。
@@ -70,37 +75,6 @@ namespace nicorankLib.Util
             for (int i = weeks - 1; i >= 0; i--)
             {
                 result.Add(latest.AddDays(-DaysPerWeek * i));
-            }
-            return result;
-        }
-
-        /// <summary>
-        /// 全期間モードの期待週を求める。実績の最小週の月曜から直近の月曜まで毎週列挙する。
-        /// なぜ実績起点か：2019年起点などの固定開始日を持つと、運用開始前の週まで抜け扱いになるためである。
-        /// 実績が空の場合は通常モードの週数分にフォールバックする（空DBでも何も検出しないより正直なため）。
-        /// </summary>
-        public static List<DateTime> GetExpectedMondaysFullPeriod(DateTime today, ICollection<DateTime> actual)
-        {
-            int diff = ((int)today.DayOfWeek - (int)WeeklyDay + 7) % 7;
-            DateTime latest = today.Date.AddDays(-diff);
-            if (actual == null || actual.Count == 0)
-            {
-                return GetExpectedMondays(today, DefaultLookbackWeeks);
-            }
-            DateTime min = DateTime.MaxValue;
-            foreach (var d in actual)
-            {
-                if (d.Date < min)
-                {
-                    min = d.Date;
-                }
-            }
-            int minDiff = ((int)min.DayOfWeek - (int)WeeklyDay + 7) % 7;
-            DateTime first = min.AddDays(-minDiff);
-            var result = new List<DateTime>();
-            for (DateTime d = first; d <= latest; d = d.AddDays(DaysPerWeek))
-            {
-                result.Add(d);
             }
             return result;
         }
@@ -291,10 +265,9 @@ namespace nicorankLib.Util
             ISQLiteCtrl historyCtrl,
             ISQLiteCtrl officialCtrl,
             DateTime today,
-            int weeks,
-            bool fullPeriod)
+            int weeks)
         {
-            var result = new GapCheckResult { FullPeriod = fullPeriod };
+            var result = new GapCheckResult();
             try
             {
                 if (!TryReadWeeklyDates(historyCtrl, out HashSet<DateTime> actual))
@@ -302,9 +275,7 @@ namespace nicorankLib.Util
                     result.ErrorMessage = "集計履歴を読めませんでした。DBの破損の可能性があるため、エラーログを確認してください";
                     return result;
                 }
-                List<DateTime> expected = fullPeriod
-                    ? GetExpectedMondaysFullPeriod(today, actual)
-                    : GetExpectedMondays(today, weeks);
+                List<DateTime> expected = GetExpectedMondays(today, weeks);
                 result.Expected = expected;
                 List<DateTime> skipped;
                 result.Missing = FindMissing(expected, actual, d => IsMaintenance(officialCtrl, d), out skipped);
@@ -324,9 +295,9 @@ namespace nicorankLib.Util
         /// 履歴DB不在時はチェック不能として理由を返す（失敗にせず理由付きで返すのは、
         /// 不在自体は #36 の自動取得で解消できる正常系のためである）。
         /// </summary>
-        public static GapCheckResult Check(string historyDbPath, string officialDbPath, DateTime today, int weeks, bool fullPeriod)
+        public static GapCheckResult Check(string historyDbPath, string officialDbPath, DateTime today, int weeks)
         {
-            var result = new GapCheckResult { FullPeriod = fullPeriod };
+            var result = new GapCheckResult();
             if (!File.Exists(historyDbPath))
             {
                 result.ErrorMessage = "NicoranHistory.db がありません。ベースライン取得後に再実行してください";
@@ -348,9 +319,7 @@ namespace nicorankLib.Util
                         return result;
                     }
                 }
-                List<DateTime> expected = fullPeriod
-                    ? GetExpectedMondaysFullPeriod(today, actual)
-                    : GetExpectedMondays(today, weeks);
+                List<DateTime> expected = GetExpectedMondays(today, weeks);
                 result.Expected = expected;
                 var skipped = new List<DateTime>();
                 var missing = new List<DateTime>();

@@ -350,7 +350,7 @@ namespace nicorank2019.frm
             chkVacuumDailylog.Enabled = enabled;
             // 抜けチェック・復旧もDBを開くため、最適化・集計との同時実行を防ぐ（DBロック競合の防止）。
             btnGapCheckExec.Enabled = enabled;
-            chkGapCheckFullPeriod.Enabled = enabled;
+            chkGapCheckOneYear.Enabled = enabled;
             btnBaselineRestore.Enabled = enabled;
         }
 
@@ -364,7 +364,8 @@ namespace nicorank2019.frm
         private async void btnGapCheckExec_Click(object sender, EventArgs e)
         {
             // チェック状態の読み取りはUIスレッドで行う（タグ検索のTagExecuteContextと同一理由）。
-            bool fullPeriod = chkGapCheckFullPeriod.Checked;
+            // ONなら直近1年（52週）、OFFなら直近3か月（13週・動作変わらず）とする。
+            int weeks = chkGapCheckOneYear.Checked ? WeeklyGapChecker.YearLookbackWeeks : WeeklyGapChecker.DefaultLookbackWeeks;
             SetVacuumRunning(true);
             lblGapCheckStatus.Text = "状態: 実行中...";
             lblGapCheckResult.Text = "結果: 実行中...";
@@ -375,8 +376,7 @@ namespace nicorank2019.frm
                         historyDbPath: DB.NiCORAN_HISTORY,
                         officialDbPath: DB.LOG_OFFICEIAL,
                         today: DateTime.Today,
-                        weeks: WeeklyGapChecker.DefaultLookbackWeeks,
-                        fullPeriod: fullPeriod));
+                        weeks: weeks));
                 ShowGapCheckResult(result);
             }
             catch (Exception ex)
@@ -502,8 +502,7 @@ namespace nicorank2019.frm
                     historyDbPath: DB.NiCORAN_HISTORY,
                     officialDbPath: DB.LOG_OFFICEIAL,
                     today: DateTime.Today,
-                    weeks: WeeklyGapChecker.DefaultLookbackWeeks,
-                    fullPeriod: false));
+                    weeks: WeeklyGapChecker.DefaultLookbackWeeks));
             if (result == null || !string.IsNullOrEmpty(result.ErrorMessage))
             {
                 // 確認不能時は集計を止めない。なぜ止めないか：DB不在は #36 の自動取得で解消できる正常系であり、

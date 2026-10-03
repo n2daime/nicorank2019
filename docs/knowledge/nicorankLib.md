@@ -159,7 +159,7 @@ AnalyzeRank():
 | `IDbMigratable` | 集計開始時のDB更新確認IF（`TargetDb` / `EnsureMigrated()`。実処理は各DB担当クラスが持つ。Issue #28） |
 | `DbMigrationCoordinator` | 集計開始時の更新指示の司令塔（`EnsureAllAtAnalyzeStart()`。失敗時は中断。具象には依存しない。Issue #28） |
 | `DbOptimizer`（static） | 手動DB最適化の実行本体（Issue #32・壁打ちコメント準拠）。`GetDefaultTargets()`（4DB・UI表示順）/ `Optimize(dbPath[, today])`（不在はスキップ・DBごとにDROP→DELETE→VACUUM・削除行数＋実行前後サイズ付き結果）/ `CutoffOneYearAgo()`（実行日起点の1年前yyyyMMdd）/ `FormatFileSize()`。ApiXML／Dailylogのパス定数も持つ |
-| `WeeklyGapChecker`（static） | 週刊集計の抜けチェック本体（Issue #45）。`GetExpectedMondays()`（直近月曜から週数分）/ `GetExpectedMondaysFullPeriod()`（実績最小週から。空実績は週数分にフォールバック）/ `FindMissing()`（実績・メンテ除外で抜け判定。判定失敗は抜け側）/ `ExcludeTargetDay()`（自動警告用に対象日を除外）/ `ReadWeeklyDates()`（LastResult Weeklyの集計日一覧）/ `IsMaintenance()`（RankingDate判定）/ `Check()`（接続注入版とパス版。UIは名前付き引数で呼ぶ）/ `FormatMissing()`。通常13週（`DefaultLookbackWeeks`）・週の日数は `DaysPerWeek` に定数化 |
+| `WeeklyGapChecker`（static） | 週刊集計の抜けチェック本体（Issue #45）。`GetExpectedMondays()`（直近月曜から週数分）/ `FindMissing()`（実績・メンテ除外で抜け判定。判定失敗は抜け側）/ `ExcludeTargetDay()`（自動警告用に対象日を除外）/ `ReadWeeklyDates()`（LastResult Weeklyの集計日一覧）/ `IsMaintenance()`（RankingDate判定）/ `Check()`（接続注入版とパス版。UIは名前付き引数で呼ぶ）/ `FormatMissing()`。通常13週（`DefaultLookbackWeeks`）・1年52週（`YearLookbackWeeks`）・週の日数は `DaysPerWeek` に定数化 |
 | `StatusLog` | 静的。`IStatusLogWriter` を注入するプラグイン方式（UI 側が実装を注入。未設定なら何も出さない）。ライブラリ層の進捗・状態通知・成否報告の唯一の表示経路（Issue #43。`--help` と受け手自体を除く） |
 | `ErrLog` | シングルトン。`nicorankerr.log` に追記（UTF8）。例外の詳細の記録先（Issue #43）。`Close()` で非 SilentMode ならキー入力待ちの表示のみ行う（入力待ち自体はしない） |
 | `DateConvert` | 日付 ↔ 文字列（yyyyMMdd / yyyyMMddHHmmss）変換 |

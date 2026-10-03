@@ -139,7 +139,7 @@
             this.btnFutureApiXmlExec = new System.Windows.Forms.Button();
             this.grpGapCheck = new System.Windows.Forms.GroupBox();
             this.lblGapCheckDesc = new System.Windows.Forms.Label();
-            this.chkGapCheckFullPeriod = new System.Windows.Forms.CheckBox();
+            this.chkGapCheckOneYear = new System.Windows.Forms.CheckBox();
             this.btnGapCheckExec = new System.Windows.Forms.Button();
             this.lblGapCheckStatus = new System.Windows.Forms.Label();
             this.lblGapCheckResult = new System.Windows.Forms.Label();
@@ -1298,7 +1298,7 @@
             // grpGapCheck
             // 
             this.grpGapCheck.Controls.Add(this.lblGapCheckDesc);
-            this.grpGapCheck.Controls.Add(this.chkGapCheckFullPeriod);
+            this.grpGapCheck.Controls.Add(this.chkGapCheckOneYear);
             this.grpGapCheck.Controls.Add(this.btnGapCheckExec);
             this.grpGapCheck.Controls.Add(this.lblGapCheckStatus);
             this.grpGapCheck.Controls.Add(this.lblGapCheckResult);
@@ -1320,15 +1320,15 @@
             this.lblGapCheckDesc.TabIndex = 0;
             this.lblGapCheckDesc.Text = "週刊集計の抜け（LastResult・Weekly）を検出します。長期動画判定の欠け防止用";
             // 
-            // chkGapCheckFullPeriod
+            // chkGapCheckOneYear
             // 
-            this.chkGapCheckFullPeriod.AutoSize = true;
-            this.chkGapCheckFullPeriod.Location = new System.Drawing.Point(12, 48);
-            this.chkGapCheckFullPeriod.Name = "chkGapCheckFullPeriod";
-            this.chkGapCheckFullPeriod.Size = new System.Drawing.Size(228, 16);
-            this.chkGapCheckFullPeriod.TabIndex = 1;
-            this.chkGapCheckFullPeriod.Text = "全期間で確認する（既定は直近3か月）";
-            this.chkGapCheckFullPeriod.UseVisualStyleBackColor = true;
+            this.chkGapCheckOneYear.AutoSize = true;
+            this.chkGapCheckOneYear.Location = new System.Drawing.Point(12, 48);
+            this.chkGapCheckOneYear.Name = "chkGapCheckOneYear";
+            this.chkGapCheckOneYear.Size = new System.Drawing.Size(244, 16);
+            this.chkGapCheckOneYear.TabIndex = 1;
+            this.chkGapCheckOneYear.Text = "直近1年で確認する（既定は直近3か月）";
+            this.chkGapCheckOneYear.UseVisualStyleBackColor = true;
             // 
             // btnGapCheckExec
             // 
@@ -1525,7 +1525,7 @@
         private System.Windows.Forms.Button btnFutureApiXmlExec;
         private System.Windows.Forms.GroupBox grpGapCheck;
         private System.Windows.Forms.Label lblGapCheckDesc;
-        private System.Windows.Forms.CheckBox chkGapCheckFullPeriod;
+        private System.Windows.Forms.CheckBox chkGapCheckOneYear;
         private System.Windows.Forms.Button btnGapCheckExec;
         private System.Windows.Forms.Label lblGapCheckStatus;
         private System.Windows.Forms.Label lblGapCheckResult;
