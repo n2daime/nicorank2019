@@ -309,7 +309,7 @@ namespace nicorankLib.Util
 
         /// <summary>
         /// 上書き前に既存DBを退避する。存在しなければ何もせず null を返す。
-        /// 退避先は DB/backup/yyyyMMdd_HHmmss_元名 とし、-wal/-shm があれば一緒に運ぶ。
+        /// 退避先は DB/backup/&lt;yyyyMMdd_HHmmss&gt;/元名 とし、-wal/-shm があれば一緒に運ぶ。
         /// なぜ一緒に運ぶか：WAL モードでは本体だけ戻しても付随ファイルとの不整合で開けなくなる場合があるためである。
         /// コピー失敗時は例外を投げ、呼び出し側で配置を中止する（中途半端な上書きを作らないため）。
         /// </summary>
@@ -390,6 +390,8 @@ namespace nicorankLib.Util
                         else
                         {
                             // 開けない本地DBを比較不能として通すと、壊れたDBを配布で上書きし得るため中断する。
+                            // 例外オブジェクトはないため、理由を文字列で ErrLog に残す。
+                            ErrLog.GetInstance().Write("ベースライン復旧：本地のDBを開けなかったため中断しました: " + histPath);
                             result.Success = false;
                             result.StaleBlocked = true;
                             result.StaleReason = "本地を確認不能";
@@ -759,12 +761,14 @@ namespace nicorankLib.Util
                 }
                 tempDbPath = Path.Combine(workDir, "nicorank_baseline_" + Guid.NewGuid().ToString("N") + ".db");
                 // 展開失敗時は部分ファイルを残さない（旧処理の finally 削除と同等の後始末）。
+                // 例外の詳細は ErrLog に残す（#43 の経路分離。表示は呼び出し側の StatusLog が担う）。
                 try
                 {
                     dbEntry.ExtractToFile(tempDbPath);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    ErrLog.GetInstance().Write(ex);
                     try { if (File.Exists(tempDbPath)) { File.Delete(tempDbPath); } } catch { }
                     tempDbPath = null;
                     return false;

@@ -459,7 +459,7 @@ namespace nicorank2019.frm
                 }
                 else if (result.StaleBlocked)
                 {
-                    // 中断理由（配布が古い／本地を確認不能／配布内容を確認不能／配布内容が古い）で表示を分ける。
+                    // 中断理由（配布が古い／本地を確認不能／配布内容を確認不能／配布内容が古い／配布内容にデータなし）で表示を分ける。
                     // なぜ分けるか：原因が伝わらないと次の行動（相談かDB修復か）が選べないためである。
                     string reason = string.IsNullOrEmpty(result.StaleReason) ? "配布が古い" : result.StaleReason;
                     lblGapCheckStatus.Text = "状態: 復旧中断（" + reason + "）";
