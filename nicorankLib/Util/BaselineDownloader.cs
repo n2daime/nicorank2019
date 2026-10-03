@@ -387,6 +387,16 @@ namespace nicorankLib.Util
                                 return result;
                             }
                         }
+                        else
+                        {
+                            // 開けない本地DBを比較不能として通すと、壊れたDBを配布で上書きし得るため中断する。
+                            result.Success = false;
+                            result.StaleBlocked = true;
+                            result.StaleReason = "本地を確認不能";
+                            result.Message = "本地のDBを開けなかったため中断しました。DBの破損の可能性があるため、エラーログを確認してください";
+                            StatusLog.WriteLine(result.Message);
+                            return result;
+                        }
                     }
                 }
                 if (IsBaselineStale(manifest, localHistMax))
@@ -451,6 +461,17 @@ namespace nicorankLib.Util
                         StatusLog.WriteLine(result.Message);
                         return result;
                     }
+                    if (contentMax == null && localHistMax != null)
+                    {
+                        // 内容に Weekly の行が1つもない場合は、梱包日が新しくても上書きしない。
+                        // なぜ中断か：空DBで本地の実績を置き換えると「復旧完了」と誤表示され、誤りに気づけないためである。
+                        result.Success = false;
+                        result.StaleBlocked = true;
+                        result.StaleReason = "配布内容にデータなし";
+                        result.Message = "配布内容に集計データがないため中断しました。回収集計している人に相談してください";
+                        StatusLog.WriteLine(result.Message);
+                        return result;
+                    }
                     // 退避は上書きの直前に行い、失敗時は配置を中止する。
                     try
                     {
@@ -468,7 +489,16 @@ namespace nicorankLib.Util
                         StatusLog.WriteLine(result.Message);
                         return result;
                     }
-                    try { if (File.Exists(histPath)) { File.Delete(histPath); } } catch { result.Success = false; result.Message = "既存DBの置き換えに失敗したため中断しました。DBフォルダの権限を確認してください"; StatusLog.WriteLine(result.Message); return result; }
+                    // 既存本体の削除失敗は握りつぶさず記録する（-wal／-shm 側と同一の基準）。
+                    try { if (File.Exists(histPath)) { File.Delete(histPath); } }
+                    catch (Exception ex)
+                    {
+                        ErrLog.GetInstance().Write(ex);
+                        result.Success = false;
+                        result.Message = "既存DBの置き換えに失敗したため中断しました。DBフォルダの権限を確認してください";
+                        StatusLog.WriteLine(result.Message);
+                        return result;
+                    }
                     try { if (File.Exists(histPath + "-wal")) { File.Delete(histPath + "-wal"); } } catch (Exception ex) { ErrLog.GetInstance().Write(ex); }
                     try { if (File.Exists(histPath + "-shm")) { File.Delete(histPath + "-shm"); } } catch (Exception ex) { ErrLog.GetInstance().Write(ex); }
                     try
@@ -612,18 +642,10 @@ namespace nicorankLib.Util
 
         /// <summary>
         /// zip1件の取得→照合→展開→配置。公開情報の表示は StatusLog、例外の詳細は ErrLog に残す。
+        /// 既存ファイルがある場合は上書きしない（不在時取得の不置換方針。復旧の上書き配置は
+        /// RestoreBaseline 側の検証付き経路を使うため、ここに上書き分岐は持たせない）。
         /// </summary>
         private bool DownloadAndPlace(string baseUrl, BaselineFileEntry entry, string destPath)
-        {
-            return DownloadAndPlace(baseUrl, entry, destPath, false);
-        }
-
-        /// <summary>
-        /// zip1件の取得→照合→展開→配置（上書き指定付き）。
-        /// 復旧時は overwrite=true で既存DBを置き換える。通常の不在時取得は false のままにする。
-        /// なぜ分けるか：通常経路で上書きを許すと蓄積データの保護（Issue #36 の不置換方針）が崩れるためである。
-        /// </summary>
-        private bool DownloadAndPlace(string baseUrl, BaselineFileEntry entry, string destPath, bool overwrite)
         {
             string tempDir = Path.Combine(Path.GetTempPath(), "nicorank_baseline_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDir);
@@ -633,7 +655,7 @@ namespace nicorankLib.Util
                 {
                     return false;
                 }
-                if (!ExtractSingleDb(zipPath, destPath, overwrite))
+                if (!ExtractSingleDb(zipPath, destPath))
                 {
                     StatusLog.WriteLine(string.Format("{0} の展開に失敗しました。配布物を確認してください", entry.File));
                     return false;
@@ -683,18 +705,10 @@ namespace nicorankLib.Util
         /// <summary>
         /// zip 内の .db 1件を配置先へ出す。zip 直下・サブフォルダのいずれでも先頭の .db を使う。
         /// なぜ1件に絞るか：配布スクリプトが DB ごとに分離して zip 化するため、1つの zip に複数の DB が混ざらない前提だからである。
+        /// 既存ファイルがある場合は上書きしない（蓄積データの保護を優先する）。
+        /// 復旧の上書き配置は RestoreBaseline 側の検証付き経路を使うため、ここに上書き分岐は持たせない。
         /// </summary>
         private static bool ExtractSingleDb(string zipPath, string destPath)
-        {
-            return ExtractSingleDb(zipPath, destPath, false);
-        }
-
-        /// <summary>
-        /// zip 内の .db 1件を配置先へ出す（上書き指定付き）。
-        /// overwrite=false なら既存ファイルがある場合は置かず true を返す（蓄積データの保護を優先する）。
-        /// overwrite=true なら復旧用途として置き換える。書きかけ配置を防ぐため一時名で作ってから置き換える。
-        /// </summary>
-        private static bool ExtractSingleDb(string zipPath, string destPath, bool overwrite)
         {
             string destDir = Path.GetDirectoryName(destPath);
             if (!string.IsNullOrEmpty(destDir))
@@ -703,17 +717,8 @@ namespace nicorankLib.Util
             }
             if (File.Exists(destPath))
             {
-                if (!overwrite)
-                {
-                    // 競合で既に置かれた場合は上書きしない（蓄積データの保護を優先する）。
-                    return true;
-                }
-                // 復旧時は置き換える。WAL の付随ファイルが残ると不整合になるため一緒に消す。
-                // なぜ消すか：本体だけ新しくして -wal/-shm が古いままだと開けなくなる場合があるためである。
-                // 削除失敗は握りつぶさず記録して続行を明示する（退避側と同一の基準）。
-                try { File.Delete(destPath); } catch { return false; }
-                try { if (File.Exists(destPath + "-wal")) { File.Delete(destPath + "-wal"); } } catch (Exception ex) { ErrLog.GetInstance().Write(ex); }
-                try { if (File.Exists(destPath + "-shm")) { File.Delete(destPath + "-shm"); } } catch (Exception ex) { ErrLog.GetInstance().Write(ex); }
+                // 競合で既に置かれた場合は上書きしない（蓄積データの保護を優先する）。
+                return true;
             }
             if (!TryExtractDbTemp(zipPath, Path.GetTempPath(), out string tempDb))
             {
@@ -753,7 +758,17 @@ namespace nicorankLib.Util
                     return false;
                 }
                 tempDbPath = Path.Combine(workDir, "nicorank_baseline_" + Guid.NewGuid().ToString("N") + ".db");
-                dbEntry.ExtractToFile(tempDbPath);
+                // 展開失敗時は部分ファイルを残さない（旧処理の finally 削除と同等の後始末）。
+                try
+                {
+                    dbEntry.ExtractToFile(tempDbPath);
+                }
+                catch
+                {
+                    try { if (File.Exists(tempDbPath)) { File.Delete(tempDbPath); } } catch { }
+                    tempDbPath = null;
+                    return false;
+                }
             }
             if (!File.Exists(tempDbPath) || new FileInfo(tempDbPath).Length == 0)
             {

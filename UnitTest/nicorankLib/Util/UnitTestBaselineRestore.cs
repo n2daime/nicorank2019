@@ -472,5 +472,63 @@ namespace UnitTest.nicorankLib.Util
                 DeleteTempDir(work);
             }
         }
+
+        [TestMethod]
+        public void RestoreBaseline_ContentEmpty_Blocked()
+        {
+            // 配布内容に Weekly の行が1つもない場合は、梱包日が新しくても中断する。
+            // なぜ中断か：空DBで本地の実績を置き換えると「復旧完了」と誤表示され、誤りに気づけないためである。
+            string dir = CreateTempDir();
+            string work = CreateTempDir();
+            try
+            {
+                string dbDir = Path.Combine(dir, "DB");
+                Directory.CreateDirectory(dbDir);
+                string histPath = Path.Combine(dbDir, "NicoranHistory.db");
+                File.Create(histPath).Dispose();
+                using (var ctrl = new SQLiteCtrl())
+                {
+                    Assert.IsTrue(ctrl.Open(histPath));
+                    TestDbHelper.CreateLastResultTable(ctrl);
+                    TestDbHelper.InsertLastResultData(ctrl, "Weekly", 20260928, "sm1", 1, 100, "{}");
+                    ctrl.Close();
+                }
+                string emptyDb = Path.Combine(work, "empty.db");
+                File.Create(emptyDb).Dispose();
+                using (var ctrl = new SQLiteCtrl())
+                {
+                    Assert.IsTrue(ctrl.Open(emptyDb));
+                    TestDbHelper.CreateLastResultTable(ctrl);
+                    ctrl.Close();
+                }
+                string histZip = Path.Combine(work, "NicoranHistory.zip");
+                CreateDbZipFromFile(histZip, "NicoranHistory.db", emptyDb);
+                string manifestJson = BuildManifestJson("20260928", "LogOfficial.zip", 10, new string('a', 64),
+                    "20260928", "NicoranHistory.zip", new FileInfo(histZip).Length, Sha256OfFile(histZip));
+
+                var downloader = new BaselineDownloader(
+                    dir,
+                    (string url, out string text) => { text = manifestJson; return true; },
+                    (string url, string localPath) =>
+                    {
+                        string name = url.Substring(url.LastIndexOf('/') + 1);
+                        File.Copy(Path.Combine(work, name), localPath);
+                        return true;
+                    },
+                    FakeManifestUrl);
+
+                var result = downloader.RestoreBaseline();
+
+                Assert.IsFalse(result.Success);
+                Assert.IsTrue(result.StaleBlocked);
+                Assert.AreEqual("配布内容にデータなし", result.StaleReason);
+                Assert.AreEqual(0, result.BackedUpPaths.Count);
+            }
+            finally
+            {
+                DeleteTempDir(dir);
+                DeleteTempDir(work);
+            }
+        }
     }
 }
