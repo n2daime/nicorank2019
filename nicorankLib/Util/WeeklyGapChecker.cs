@@ -41,7 +41,7 @@ namespace nicorankLib.Util
         public const int DefaultLookbackWeeks = 13;
 
         /// <summary>
-        /// 全期間オプション（チェックボックスON）の遡及週数。約1年分に相当する52週。
+        /// 1年オプション（チェックボックスON）の遡及週数。約1年分に相当する52週。
         /// なぜ52週か：LogOfficial が直近1年保持のため、1年より古い抜けは再集計も復旧も効かず
         /// 検出だけしても対処不能になるからである。仕様値のため定数化し、変える場合は Issue で合意する。
         /// </summary>

@@ -1309,7 +1309,7 @@
             this.grpGapCheck.Size = new System.Drawing.Size(806, 210);
             this.grpGapCheck.TabIndex = 2;
             this.grpGapCheck.TabStop = false;
-            this.grpGapCheck.Text = "3. 集計抜けチェック（#45）";
+            this.grpGapCheck.Text = "3. 集計抜けチェック";
             // 
             // lblGapCheckDesc
             // 

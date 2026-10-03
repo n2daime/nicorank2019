@@ -104,7 +104,7 @@ namespace UnitTest.nicorankLib.Util
         [TestMethod]
         public void GetExpectedMondays_YearSpan_Has52Weeks()
         {
-            // 1年オプションは52週分を列挙する。先頭と末尾の間隔は51週（364日の前日）になる。
+            // 1年オプションは52週分を列挙する。先頭は末尾の51週前（357日前）になる。
             var result = WeeklyGapChecker.GetExpectedMondays(
                 new DateTime(2026, 9, 28), WeeklyGapChecker.YearLookbackWeeks);
 
