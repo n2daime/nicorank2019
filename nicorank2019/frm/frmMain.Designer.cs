@@ -1016,6 +1016,7 @@
             this.tabPageMaint.BackColor = System.Drawing.Color.Transparent;
             this.tabPageMaint.Controls.Add(this.grpVacuum);
             this.tabPageMaint.Controls.Add(this.grpFutureApiXml);
+            this.tabPageMaint.Controls.Add(this.grpGapCheck);
             this.tabPageMaint.Location = new System.Drawing.Point(4, 22);
             this.tabPageMaint.Name = "tabPageMaint";
             this.tabPageMaint.Padding = new System.Windows.Forms.Padding(3);
@@ -1285,6 +1286,88 @@
             this.btnFutureApiXmlExec.Text = "実行";
             this.btnFutureApiXmlExec.UseVisualStyleBackColor = true;
             // 
+            // grpGapCheck
+            // 
+            this.grpGapCheck.Controls.Add(this.lblGapCheckDesc);
+            this.grpGapCheck.Controls.Add(this.chkGapCheckFullPeriod);
+            this.grpGapCheck.Controls.Add(this.btnGapCheckExec);
+            this.grpGapCheck.Controls.Add(this.lblGapCheckStatus);
+            this.grpGapCheck.Controls.Add(this.lblGapCheckResult);
+            this.grpGapCheck.Controls.Add(this.btnBaselineRestore);
+            this.grpGapCheck.Controls.Add(this.lblGapCheckNote);
+            this.grpGapCheck.Location = new System.Drawing.Point(8, 474);
+            this.grpGapCheck.Name = "grpGapCheck";
+            this.grpGapCheck.Size = new System.Drawing.Size(806, 210);
+            this.grpGapCheck.TabIndex = 2;
+            this.grpGapCheck.TabStop = false;
+            this.grpGapCheck.Text = "3. 集計抜けチェック（#45）";
+            // 
+            // lblGapCheckDesc
+            // 
+            this.lblGapCheckDesc.AutoSize = true;
+            this.lblGapCheckDesc.Location = new System.Drawing.Point(12, 22);
+            this.lblGapCheckDesc.Name = "lblGapCheckDesc";
+            this.lblGapCheckDesc.Size = new System.Drawing.Size(431, 12);
+            this.lblGapCheckDesc.TabIndex = 0;
+            this.lblGapCheckDesc.Text = "週刊集計の抜け（LastResult・Weekly）を検出します。長期動画判定の欠け防止用";
+            // 
+            // chkGapCheckFullPeriod
+            // 
+            this.chkGapCheckFullPeriod.AutoSize = true;
+            this.chkGapCheckFullPeriod.Location = new System.Drawing.Point(12, 48);
+            this.chkGapCheckFullPeriod.Name = "chkGapCheckFullPeriod";
+            this.chkGapCheckFullPeriod.Size = new System.Drawing.Size(228, 16);
+            this.chkGapCheckFullPeriod.TabIndex = 1;
+            this.chkGapCheckFullPeriod.Text = "全期間で確認する（既定は直近3か月）";
+            this.chkGapCheckFullPeriod.UseVisualStyleBackColor = true;
+            // 
+            // btnGapCheckExec
+            // 
+            this.btnGapCheckExec.Location = new System.Drawing.Point(12, 74);
+            this.btnGapCheckExec.Name = "btnGapCheckExec";
+            this.btnGapCheckExec.Size = new System.Drawing.Size(180, 36);
+            this.btnGapCheckExec.TabIndex = 2;
+            this.btnGapCheckExec.Text = "抜けをチェック";
+            this.btnGapCheckExec.UseVisualStyleBackColor = true;
+            this.btnGapCheckExec.Click += new System.EventHandler(this.btnGapCheckExec_Click);
+            // 
+            // lblGapCheckStatus
+            // 
+            this.lblGapCheckStatus.AutoSize = true;
+            this.lblGapCheckStatus.Location = new System.Drawing.Point(205, 82);
+            this.lblGapCheckStatus.Name = "lblGapCheckStatus";
+            this.lblGapCheckStatus.Size = new System.Drawing.Size(71, 12);
+            this.lblGapCheckStatus.TabIndex = 3;
+            this.lblGapCheckStatus.Text = "状態: 待機中";
+            // 
+            // lblGapCheckResult
+            // 
+            this.lblGapCheckResult.AutoSize = true;
+            this.lblGapCheckResult.Location = new System.Drawing.Point(12, 120);
+            this.lblGapCheckResult.Name = "lblGapCheckResult";
+            this.lblGapCheckResult.Size = new System.Drawing.Size(47, 12);
+            this.lblGapCheckResult.TabIndex = 4;
+            this.lblGapCheckResult.Text = "結果: —";
+            // 
+            // btnBaselineRestore
+            // 
+            this.btnBaselineRestore.Location = new System.Drawing.Point(12, 146);
+            this.btnBaselineRestore.Name = "btnBaselineRestore";
+            this.btnBaselineRestore.Size = new System.Drawing.Size(220, 36);
+            this.btnBaselineRestore.TabIndex = 5;
+            this.btnBaselineRestore.Text = "ベースラインDBで復旧...";
+            this.btnBaselineRestore.UseVisualStyleBackColor = true;
+            this.btnBaselineRestore.Click += new System.EventHandler(this.btnBaselineRestore_Click);
+            // 
+            // lblGapCheckNote
+            // 
+            this.lblGapCheckNote.AutoSize = true;
+            this.lblGapCheckNote.Location = new System.Drawing.Point(250, 146);
+            this.lblGapCheckNote.Name = "lblGapCheckNote";
+            this.lblGapCheckNote.Size = new System.Drawing.Size(334, 36);
+            this.lblGapCheckNote.TabIndex = 6;
+            this.lblGapCheckNote.Text = "注意: 復旧は既存DBを自動退避（DB/backup）して上書きします。\r\n配布が本地より古い場合は中断します。\r\n実行前にDBフォルダのバックアップを推奨します。";
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -1314,6 +1397,8 @@
             this.grpVacuum.PerformLayout();
             this.grpFutureApiXml.ResumeLayout(false);
             this.grpFutureApiXml.PerformLayout();
+            this.grpGapCheck.ResumeLayout(false);
+            this.grpGapCheck.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -1429,6 +1514,14 @@
         private System.Windows.Forms.TextBox tbFutureApiXmlFolder;
         private System.Windows.Forms.Button btnFutureApiXmlFolder;
         private System.Windows.Forms.Button btnFutureApiXmlExec;
+        private System.Windows.Forms.GroupBox grpGapCheck;
+        private System.Windows.Forms.Label lblGapCheckDesc;
+        private System.Windows.Forms.CheckBox chkGapCheckFullPeriod;
+        private System.Windows.Forms.Button btnGapCheckExec;
+        private System.Windows.Forms.Label lblGapCheckStatus;
+        private System.Windows.Forms.Label lblGapCheckResult;
+        private System.Windows.Forms.Button btnBaselineRestore;
+        private System.Windows.Forms.Label lblGapCheckNote;
     }
 }
 
