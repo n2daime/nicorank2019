@@ -189,12 +189,31 @@ namespace nicorankLib.Util
         /// </summary>
         public static HashSet<DateTime> ReadWeeklyDates(ISQLiteCtrl historyCtrl)
         {
-            var result = new HashSet<DateTime>();
+            TryReadWeeklyDates(historyCtrl, out HashSet<DateTime> dates);
+            return dates;
+        }
+
+        /// <summary>
+        /// Weekly の集計日一覧を読む。戻り値が false の場合は構造的失敗（表なし・破損等）であり、
+        /// 空の実績と区別する。なぜ区別するか：区別しないと期待週すべてが抜けとして誤警告になるためである。
+        /// 行単位の読み飛ばしは現状のまま維持する（1行の崩れとDB破損の扱いを分けるため）。
+        /// </summary>
+        public static bool TryReadWeeklyDates(ISQLiteCtrl historyCtrl, out HashSet<DateTime> dates)
+        {
+            dates = new HashSet<DateTime>();
             try
             {
                 if (historyCtrl == null || !historyCtrl.IsOpen)
                 {
-                    return result;
+                    return false;
+                }
+                using (var cmd = historyCtrl.Connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE TYPE='table' AND name='LastResult';";
+                    if (Convert.ToInt64(cmd.ExecuteScalar()) == 0)
+                    {
+                        return false;
+                    }
                 }
                 using (var cmd = historyCtrl.Connection.CreateCommand())
                 {
@@ -212,7 +231,7 @@ namespace nicorankLib.Util
                                 {
                                     continue;
                                 }
-                                result.Add(DateConvert.String2Time(value.ToString(), false).Date);
+                                dates.Add(DateConvert.String2Time(value.ToString(), false).Date);
                             }
                             catch
                             {
@@ -221,12 +240,13 @@ namespace nicorankLib.Util
                         }
                     }
                 }
+                return true;
             }
             catch (Exception ex)
             {
                 ErrLog.GetInstance().Write(ex);
+                return false;
             }
-            return result;
         }
 
         /// <summary>
@@ -277,7 +297,11 @@ namespace nicorankLib.Util
             var result = new GapCheckResult { FullPeriod = fullPeriod };
             try
             {
-                var actual = ReadWeeklyDates(historyCtrl);
+                if (!TryReadWeeklyDates(historyCtrl, out HashSet<DateTime> actual))
+                {
+                    result.ErrorMessage = "集計履歴を読めませんでした。DBの破損の可能性があるため、エラーログを確認してください";
+                    return result;
+                }
                 List<DateTime> expected = fullPeriod
                     ? GetExpectedMondaysFullPeriod(today, actual)
                     : GetExpectedMondays(today, weeks);
@@ -318,7 +342,11 @@ namespace nicorankLib.Util
                         result.ErrorMessage = "NicoranHistory.db を開けませんでした";
                         return result;
                     }
-                    actual = ReadWeeklyDates(historyCtrl);
+                    if (!TryReadWeeklyDates(historyCtrl, out actual))
+                    {
+                        result.ErrorMessage = "集計履歴を読めませんでした。DBの破損の可能性があるため、エラーログを確認してください";
+                        return result;
+                    }
                 }
                 List<DateTime> expected = fullPeriod
                     ? GetExpectedMondaysFullPeriod(today, actual)

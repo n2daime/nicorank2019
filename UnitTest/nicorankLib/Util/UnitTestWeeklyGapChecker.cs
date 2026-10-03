@@ -294,5 +294,21 @@ namespace UnitTest.nicorankLib.Util
 
             Assert.AreEqual("2026-09-21、2026-10-05", text);
         }
+
+        [TestMethod]
+        public void Check_MissingTable_ReturnsErrorNotMissing()
+        {
+            // LastResult 表なし（破損・移行前）は確認不能に倒し、期待週の誤警告にしない。
+            using (var hist = TestDbHelper.CreateInMemoryDb())
+            using (var official = TestDbHelper.CreateInMemoryDb())
+            {
+                TestDbHelper.CreateRankingDateTable(official);
+
+                var result = WeeklyGapChecker.Check(hist, official, new DateTime(2026, 9, 28), 3, false);
+
+                Assert.IsNotNull(result.ErrorMessage);
+                Assert.AreEqual(0, result.Missing.Count);
+            }
+        }
     }
 }

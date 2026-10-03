@@ -9,7 +9,7 @@ dotnet test UnitTest/UnitTest.csproj
 
 - 環境: **.NET Framework 4.8 ターゲットだが .NET 10 SDK でビルド・実行**（Windows）
 - テストフレームワーク: MSTest 3.5.2 / モック: Moq 4.20.72
-- 全 **285 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件・#39で16件・#44で10件・#43で2件・#36で13件を追加）
+- 全 **321 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件・#39で16件・#44で10件・#43で2件・#36で13件・#45で36件を追加）
 
 ## 構成
 
@@ -24,7 +24,7 @@ UnitTest/
 │   ├── TestConfigBuilder.cs  # Config の非公開フィールドをリフレクションで書き換えるテスト用ビルダー
 │   └── UnitTestTestDbHelper.cs
 └── nicorankLib/
-    ├── Util/       UnitTestSQLiteCtrl(12) / DbQuery(10) / DbWrite(9) / DbSchema(8) / DbError(4) / DbCommandReuse(6) / StatusLog(3) / TextUtil(6) / ApiUrlBuilder(7) / DbMigrationCoordinator(12) / UnitTestBaselineDownloader(13)
+    ├── Util/       UnitTestSQLiteCtrl(12) / DbQuery(10) / DbWrite(9) / DbSchema(8) / DbError(4) / DbCommandReuse(6) / StatusLog(3) / TextUtil(6) / ApiUrlBuilder(7) / DbMigrationCoordinator(12) / UnitTestBaselineDownloader(13) / UnitTestWeeklyGapChecker(19) / UnitTestBaselineRestore(17)
     ├── Common/     UnitTestConfig(8)
     ├── output/     UnitTestOutput(8)
     ├── SnapShot/   UnitTestSnapShotRequest(12) / UnitTestTagConditionParser(7) / UnitTestTagSearchRequest(7) / UnitTestSnapShotVersionChecker(12) / UnitTestSnapShotVersionPoller(5)

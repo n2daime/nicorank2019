@@ -41,16 +41,32 @@ namespace UnitTest.nicorankLib.Util
             }
         }
 
-        private static void CreateDbZip(string zipPath, string entryName, string content)
+        private static void CreateDbZipFromFile(string zipPath, string entryName, string srcPath)
         {
             using (var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create))
             {
                 var entry = zip.CreateEntry(entryName);
-                using (var writer = new StreamWriter(entry.Open()))
+                using (var dst = entry.Open())
+                using (var src = File.OpenRead(srcPath))
                 {
-                    writer.Write(content);
+                    src.CopyTo(dst);
                 }
             }
+        }
+
+        private static string CreateHistContentDb(string dir, int syuukeiBi)
+        {
+            // 配布内容の実DBを作る。SQLiteCtrl.Open は存在しないファイルを開かないため空作成してから開く。
+            string path = Path.Combine(dir, "content_NicoranHistory.db");
+            File.Create(path).Dispose();
+            using (var ctrl = new SQLiteCtrl())
+            {
+                Assert.IsTrue(ctrl.Open(path));
+                TestDbHelper.CreateLastResultTable(ctrl);
+                TestDbHelper.InsertLastResultData(ctrl, "Weekly", syuukeiBi, "sm1", 1, 100, "{}");
+                ctrl.Close();
+            }
+            return path;
         }
 
         private static string BuildManifestJson(string logDate, string logFile, long logSize, string logSha,
@@ -246,6 +262,7 @@ namespace UnitTest.nicorankLib.Util
 
                 Assert.IsFalse(result.Success);
                 Assert.IsTrue(result.StaleBlocked);
+                Assert.AreEqual("配布が古い", result.StaleReason);
                 Assert.AreEqual(0, result.BackedUpPaths.Count);
             }
             finally
@@ -267,7 +284,8 @@ namespace UnitTest.nicorankLib.Util
                 string dbDir = Path.Combine(dir, "DB");
                 Directory.CreateDirectory(dbDir);
                 string histZip = Path.Combine(work, "NicoranHistory.zip");
-                CreateDbZip(histZip, "NicoranHistory.db", "new-hist");
+                string contentDb = CreateHistContentDb(work, 20260928);
+                CreateDbZipFromFile(histZip, "NicoranHistory.db", contentDb);
                 // LogOfficial の zip がなくても復旧は進む（対象外のため取得しない）。
                 string manifestJson = BuildManifestJson("20260921", "LogOfficial.zip", 10, new string('a', 64),
                     "20260928", "NicoranHistory.zip", new FileInfo(histZip).Length, Sha256OfFile(histZip));
@@ -300,7 +318,15 @@ namespace UnitTest.nicorankLib.Util
                 Assert.IsTrue(result.Success);
                 Assert.IsFalse(result.StaleBlocked);
                 Assert.AreEqual(1, result.BackedUpPaths.Count);
-                Assert.AreEqual("new-hist", File.ReadAllText(histPath));
+                // 配置されたのは配布内容（20260928 の週あり）である。
+                using (var ctrl = new SQLiteCtrl())
+                {
+                    Assert.IsTrue(ctrl.Open(histPath));
+                    long? max;
+                    Assert.IsTrue(BaselineDownloader.TryGetMaxWeeklyDate(ctrl, out max));
+                    Assert.AreEqual(20260928L, max);
+                    ctrl.Close();
+                }
                 // LogOfficial は対象外のため置き換わらない。
                 Assert.AreEqual("old-log", File.ReadAllText(logPath));
             }
@@ -334,6 +360,116 @@ namespace UnitTest.nicorankLib.Util
             finally
             {
                 DeleteTempDir(dir);
+            }
+        }
+
+        [TestMethod]
+        public void RestoreBaseline_ContentOlderThanLocal_Blocked()
+        {
+            // manifest の日付は新しくても内容が古い場合は中断する。
+            // なぜ内容で見るか：manifest の date は梱包日であり、休止後の梱包では内容だけ古くなるためである。
+            string dir = CreateTempDir();
+            string work = CreateTempDir();
+            try
+            {
+                string dbDir = Path.Combine(dir, "DB");
+                Directory.CreateDirectory(dbDir);
+                string histPath = Path.Combine(dbDir, "NicoranHistory.db");
+                File.Create(histPath).Dispose();
+                using (var ctrl = new SQLiteCtrl())
+                {
+                    Assert.IsTrue(ctrl.Open(histPath));
+                    TestDbHelper.CreateLastResultTable(ctrl);
+                    TestDbHelper.InsertLastResultData(ctrl, "Weekly", 20260928, "sm1", 1, 100, "{}");
+                    ctrl.Close();
+                }
+                string histZip = Path.Combine(work, "NicoranHistory.zip");
+                CreateDbZipFromFile(histZip, "NicoranHistory.db", CreateHistContentDb(work, 20260921));
+                // 梱包日だけ新しく、内容は本地より古い配布。
+                string manifestJson = BuildManifestJson("20260928", "LogOfficial.zip", 10, new string('a', 64),
+                    "20260928", "NicoranHistory.zip", new FileInfo(histZip).Length, Sha256OfFile(histZip));
+
+                var downloader = new BaselineDownloader(
+                    dir,
+                    (string url, out string text) => { text = manifestJson; return true; },
+                    (string url, string localPath) =>
+                    {
+                        string name = url.Substring(url.LastIndexOf('/') + 1);
+                        File.Copy(Path.Combine(work, name), localPath);
+                        return true;
+                    },
+                    FakeManifestUrl);
+
+                var result = downloader.RestoreBaseline();
+
+                Assert.IsFalse(result.Success);
+                Assert.IsTrue(result.StaleBlocked);
+                Assert.AreEqual("配布内容が古い", result.StaleReason);
+                Assert.AreEqual(0, result.BackedUpPaths.Count);
+                // 本地は置き換わらない。
+                using (var ctrl = new SQLiteCtrl())
+                {
+                    Assert.IsTrue(ctrl.Open(histPath));
+                    long? max;
+                    Assert.IsTrue(BaselineDownloader.TryGetMaxWeeklyDate(ctrl, out max));
+                    Assert.AreEqual(20260928L, max);
+                    ctrl.Close();
+                }
+            }
+            finally
+            {
+                DeleteTempDir(dir);
+                DeleteTempDir(work);
+            }
+        }
+
+        [TestMethod]
+        public void RestoreBaseline_ContentUnreadable_Blocked()
+        {
+            // 配布内容が壊れていて最新日を読めない場合も中断する（不明な物を被せないため）。
+            string dir = CreateTempDir();
+            string work = CreateTempDir();
+            try
+            {
+                string dbDir = Path.Combine(dir, "DB");
+                Directory.CreateDirectory(dbDir);
+                string histPath = Path.Combine(dbDir, "NicoranHistory.db");
+                File.Create(histPath).Dispose();
+                using (var ctrl = new SQLiteCtrl())
+                {
+                    Assert.IsTrue(ctrl.Open(histPath));
+                    TestDbHelper.CreateLastResultTable(ctrl);
+                    TestDbHelper.InsertLastResultData(ctrl, "Weekly", 20260921, "sm1", 1, 100, "{}");
+                    ctrl.Close();
+                }
+                string histZip = Path.Combine(work, "NicoranHistory.zip");
+                string broken = Path.Combine(work, "broken.db");
+                File.WriteAllText(broken, "not-a-database");
+                CreateDbZipFromFile(histZip, "NicoranHistory.db", broken);
+                string manifestJson = BuildManifestJson("20260928", "LogOfficial.zip", 10, new string('a', 64),
+                    "20260928", "NicoranHistory.zip", new FileInfo(histZip).Length, Sha256OfFile(histZip));
+
+                var downloader = new BaselineDownloader(
+                    dir,
+                    (string url, out string text) => { text = manifestJson; return true; },
+                    (string url, string localPath) =>
+                    {
+                        string name = url.Substring(url.LastIndexOf('/') + 1);
+                        File.Copy(Path.Combine(work, name), localPath);
+                        return true;
+                    },
+                    FakeManifestUrl);
+
+                var result = downloader.RestoreBaseline();
+
+                Assert.IsFalse(result.Success);
+                Assert.IsTrue(result.StaleBlocked);
+                Assert.AreEqual("配布内容を確認不能", result.StaleReason);
+            }
+            finally
+            {
+                DeleteTempDir(dir);
+                DeleteTempDir(work);
             }
         }
     }
