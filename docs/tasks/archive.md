@@ -602,3 +602,23 @@
 - **����**: `dotnet test` 285��PASS�A`dotnet build nicorank2019.sln -c Release` �����E�x��0�Alib 4���{runtimes 3��i���A�v���j�A`loadFromRemoteSources` ��config�m�F�A`nicorank.xml` ��v�i�ˑ��t�@�C����bin�̍��ق͎蓮�R�s�[�ŉ����j�A���[�U�[���@���؁i#36�̎����擾�E#40�E#43�E#44�͊eIssue�L�^�Q�Ɓj
 - **�����[�X�m�[�g���j**: ���[�U�[�e�����S�{Issue�ԍ������N�B���p��i�x�[�X���C�������������j�ƍd���\�����������A���R�ȕ��͂ŋL�ځB`nicorank.xml` �̒ǉ�3�v�f�́u�Ȃ��Ă������C�ӂ̗v�f�v�Ƃ��Đ������A�u�߁v�\�L�͎g��Ȃ��i���|�W�g�����̊����\�L�͕ʃ^�X�N��������j
 - **����**: main �� develop �փo�b�N�}�[�W���A`git diff main develop --stat` ����m�F�B�{�G���g���ǋL�ɂ��develop��1����s����^�p�͑O�񃊃��[�X�Ɠ��l
+
+---
+
+## 2026-10-03 過去集計の抜けチェック＋ベースライン復旧 (#45)
+
+- **Issue**: #45（新規作成。再集計バックアップは #46 を別Issue化し、今回はIssueのみ）
+- **ブランチ**: `feature/t045-weekly-gap-check-restore` → `develop`（--no-ff マージ、feature削除済み）
+- **背景**: 担当制で自分の担当週だけ集計する運用のため、長期の空きで長期動画判定（Historyの連続記録）が切れても気づけない問題があった。短期の空きは前回順位で気づけるが、長期の空きは集計しなおしでは直せない。壁打ちで仕様確定（チェック対象=LastResult Weekly・3か月既定＋1年オプション・メンテ除外・NicoranHistory単独復旧）
+- **実施内容**:
+  - `nicorankLib/Util/WeeklyGapChecker.cs` 新設（期待月曜列挙・FindMissing・メンテ除外・対象週除外・確認不能時は開始・TryReadパターンで構造失敗と行崩れを分離）
+  - `BaselineDownloader.RestoreBaseline` 新設（配布日＋内容日の二重検証・DB/backup退避・wal/shm同伴・陳腐化中断・LogOfficial対象外・StaleReason区分）
+  - メンテタブ `grpGapCheck`（手動チェック＋1年オプション＋ベースライン復旧）・週刊集計開始時の自動警告（続行／中止・復旧誘導文面・チェック中は実行系停止）
+  - 全期間モードは1年モードに置換（1年より古い抜けは対処不能のため持たない。52週の境界1週は対象外になり得る旨をspecsに注記）
+  - `UnitTest`36件追加（計321件）。specs／design／knowledge（apps・db・nicorankLib・testing）更新
+- **検証**:
+  - `dotnet test` 321件PASS・`dotnet build nicorank2019.csproj` Debug／Release成功
+  - reviewer再レビュー4回で必須指摘なし（高1件＋中4件対応。低は対応と見送り記録。見送り：完全アトミック化・IsMaintenance横展開・空内容のWeekly限定）
+  - 実機で起動事故1件（Designerのnew生成漏れ→NullReferenceで起動不能）を検出・修正・Release起動確認済み。教訓：Designer手書き時はnew／配置／SuspendLayout／宣言の4点照合
+  - ユーザー実機検証OK（メンテタブ表示・週刊集計の警告ダイアログ文面・グループ名のIssue番号除去）
+- **残課題・申送り**: #46（再集計による復旧）はIssueのみ。配布が古い場合は人間運用（回収集計者への相談）でカバーする。testing.mdの件数は--list-tests実測とソース件数で裏付けること（推定で書いて2回直した）
