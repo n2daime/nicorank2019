@@ -56,7 +56,7 @@
 - 配布物: `LogOfficial.db`（Ver1・直近1年＋SoHistory）と `NicoranHistory.db`（全期間）のDBごとzip（固定名 `LogOfficial.zip`／`NicoranHistory.zip`。改名作業はしない）。`ApiXML.db`／`Dailylog.db` は対象外
 - 最新ポインタ: `https://2daime.myds.me/nicorank/baseline/baseline.json`（`nicorank.xml` の `SYSTEM/URL_BASELINE` で上書き可）。中身は日付・ファイル名・サイズ・sha256で、配布スクリプト `tools/make-baseline.ps1` が自動作成する
 - 取得本体: `nicorankLib/Util/BaselineDownloader.cs`。集計開始時（`RankingHistory.Open` の前）に本地不足だけ自動取得し、サイズ・sha256照合後に展開する。キャッシュ2種の確保（`ApiXML` は `EnsureNicovideoThumbTable`、`Dailylog` は表確保）も行う
-- 復旧本体（Issue #45）: `BaselineDownloader.RestoreBaseline()`。配布日確認→`DB/backup/yyyyMMdd_HHmmss_元名` への自動退避（`-wal`／`-shm` も一緒に運ぶ）→上書き配置。通常の不在時取得（`EnsureBaseline`）の不置換方針は変えず、上書きは復旧専用の `overwrite` 引数に分ける。配布日が本地最大日（`LastResult(Weekly)`／`RankingDate` の MAX）より古い場合は警告して中断する（`IsBaselineStale`。純粋処理で単体テスト可能）
+- 復旧本体（Issue #45）: `BaselineDownloader.RestoreBaseline()`。復旧対象は `NicoranHistory.db` のみ（`LogOfficial.db` は日次更新で自己回復するため対象外）。配布日確認→`DB/backup/<yyyyMMdd_HHmmss>/元名` への自動退避（`-wal`／`-shm` も一緒に運ぶ）→上書き配置。通常の不在時取得（`EnsureBaseline`）の不置換方針は変えず、上書きは復旧専用の `overwrite` 引数に分ける。配布日が本地の `LastResult(Weekly)` 最大日より古い場合は警告して中断する（`IsBaselineStale`。純粋処理で単体テスト可能）。本地の最新日が確認できない場合も中断する（`TryGetMaxWeeklyDate` で読取失敗とデータ無しを区別）
 - PG 配布（`release.md` のホワイトリスト、DB 含まず）とは別寿命で運用し、3〜6か月ごとに更新する。単一最新とし世代は残さない（残したい場合は人間が事前に退避する）。スクリプトは配布フォルダに置いたまま使い、出力はスクリプト自身の場所へ出す
 
 ## SQLiteCtrl 接続設計

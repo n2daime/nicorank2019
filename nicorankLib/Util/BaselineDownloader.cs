@@ -205,13 +205,18 @@ namespace nicorankLib.Util
         }
 
         /// <summary>
+        /// yyyyMMdd形式の日付文字列の桁数。固定長でなければ比較不能とみなす。
+        /// </summary>
+        private const int DateLength = 8;
+
+        /// <summary>
         /// yyyyMMdd形式の日付文字列を数値化する。比較不能な値は null とする。
         /// なぜ数値化か：固定8桁のため文字列比較でも順序は一致するが、数値化すると
         /// 前後関係の判定意図が明確になり、桁崩れの混入も検出できるためである。
         /// </summary>
         public static long? TryParseDateToLong(string yyyyMMdd)
         {
-            if (string.IsNullOrWhiteSpace(yyyyMMdd) || yyyyMMdd.Trim().Length != 8)
+            if (string.IsNullOrWhiteSpace(yyyyMMdd) || yyyyMMdd.Trim().Length != DateLength)
             {
                 return null;
             }
@@ -224,28 +229,24 @@ namespace nicorankLib.Util
 
         /// <summary>
         /// ベースラインが本地より古いかどうかを判定する。純粋処理のため単体テストで直接検証する。
-        /// いずれかのDBで配布日 &lt; 本地最新なら陳腐化とみなしてブロックする。
-        /// なぜ OR か：片方だけ古い配布を被せても、もう片方との不整合で集計が壊れるためである。
+        /// 復旧対象は NicoranHistory のみであり、LogOfficial は見ない。
+        /// なぜ見ないか：LogOfficial は毎回の日次更新で自己回復するため配布復旧が不要であり、
+        /// 配布日が作成日のため内容日との比較では常に古い判定になるからである。
         /// 本地最新が不明（null）の場合は比較不能として古い扱いにしない（何もない所への配置を妨げないため）。
         /// 配布日が読めない場合は安全側に倒してブロックする（不明な物を被せないため）。
         /// </summary>
-        public static bool IsBaselineStale(BaselineManifest manifest, long? localHistMax, long? localOfficialMax)
+        public static bool IsBaselineStale(BaselineManifest manifest, long? localHistMax)
         {
-            if (manifest == null || manifest.LogOfficial == null || manifest.NicoranHistory == null)
+            if (manifest == null || manifest.NicoranHistory == null)
             {
                 return true;
             }
             long? manifestHist = TryParseDateToLong(manifest.NicoranHistory.Date);
-            long? manifestOfficial = TryParseDateToLong(manifest.LogOfficial.Date);
-            if (manifestHist == null || manifestOfficial == null)
+            if (manifestHist == null)
             {
                 return true;
             }
             if (localHistMax != null && manifestHist < localHistMax)
-            {
-                return true;
-            }
-            if (localOfficialMax != null && manifestOfficial < localOfficialMax)
             {
                 return true;
             }
@@ -258,11 +259,24 @@ namespace nicorankLib.Util
         /// </summary>
         public static long? GetMaxWeeklyDate(ISQLiteCtrl historyCtrl)
         {
+            TryGetMaxWeeklyDate(historyCtrl, out long? max);
+            return max;
+        }
+
+        /// <summary>
+        /// 本地の NicoranHistory.db の Weekly 最新集計日を求める。
+        /// 戻り値が false の場合は読取失敗（表なし・破損等）であり、null の最新日と区別する。
+        /// なぜ区別するか：読取失敗を「データ無し」と同じ扱いにすると、壊れたDBを古い配布で
+        /// 上書きし得るため、安全側（中断）に倒す必要があるからである。
+        /// </summary>
+        public static bool TryGetMaxWeeklyDate(ISQLiteCtrl historyCtrl, out long? max)
+        {
+            max = null;
             try
             {
                 if (historyCtrl == null || !historyCtrl.IsOpen)
                 {
-                    return null;
+                    return false;
                 }
                 using (var cmd = historyCtrl.Connection.CreateCommand())
                 {
@@ -272,55 +286,22 @@ namespace nicorankLib.Util
                     object value = cmd.ExecuteScalar();
                     if (value == null || value == DBNull.Value)
                     {
-                        return null;
+                        // 行なしは正常系であり、失敗ではない。
+                        return true;
                     }
                     string text = value.ToString().Trim();
                     if (long.TryParse(text, out long parsed))
                     {
-                        return parsed;
+                        max = parsed;
+                        return true;
                     }
-                    return null;
+                    return false;
                 }
             }
             catch (Exception ex)
             {
                 ErrLog.GetInstance().Write(ex);
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// 本地の LogOfficial.db の最新集計日（RankingDate の MAX）を求める。不明時は null。
-        /// RankingHistory.GetRetentionCutoff と同一文であり、日次更新のしおりと基準をずらさない。
-        /// </summary>
-        public static long? GetMaxOfficialDate(ISQLiteCtrl officialCtrl)
-        {
-            try
-            {
-                if (officialCtrl == null || !officialCtrl.IsOpen)
-                {
-                    return null;
-                }
-                using (var cmd = officialCtrl.Connection.CreateCommand())
-                {
-                    cmd.CommandText = "SELECT MAX(集計日) FROM RankingDate;";
-                    object value = cmd.ExecuteScalar();
-                    if (value == null || value == DBNull.Value)
-                    {
-                        return null;
-                    }
-                    string text = value.ToString().Trim();
-                    if (long.TryParse(text, out long parsed))
-                    {
-                        return parsed;
-                    }
-                    return null;
-                }
-            }
-            catch (Exception ex)
-            {
-                ErrLog.GetInstance().Write(ex);
-                return null;
+                return false;
             }
         }
 
@@ -348,26 +329,33 @@ namespace nicorankLib.Util
             string wal = destPath + "-wal";
             if (File.Exists(wal))
             {
-                try { File.Copy(wal, backupPath + "-wal", true); } catch { }
+                // 付随ファイルのコピー失敗は握りつぶさず記録して続行を明示する。
+                // なぜ続行か：本体の退避が成功していれば手動復旧の材料は残り、
+                // ここで止めると復旧自体が進まなくなるためである。
+                try { File.Copy(wal, backupPath + "-wal", true); }
+                catch (Exception ex) { ErrLog.GetInstance().Write(ex); }
             }
             string shm = destPath + "-shm";
             if (File.Exists(shm))
             {
-                try { File.Copy(shm, backupPath + "-shm", true); } catch { }
+                try { File.Copy(shm, backupPath + "-shm", true); }
+                catch (Exception ex) { ErrLog.GetInstance().Write(ex); }
             }
             return backupPath;
         }
 
         /// <summary>
         /// ベースラインDBによる復旧（Issue #45 の本命手段）。
-        /// 確認済みのつもりでも配布が古い場合は警告して中断する（必須仕様）。
+        /// 復旧対象は NicoranHistory.db のみである。
+        /// なぜ LogOfficial を対象外にするか：毎回の日次更新で自己回復するため配布復旧が不要であり、
+        /// 配布日が作成日のため内容日との比較では常に古い判定になるからである。
+        /// 配布が本地より古い場合は警告して中断する（必須仕様）。
         /// 既存DBは上書き前に自動退避し、コピー失敗時は配置を中止する。
         /// 表示は StatusLog、詳細は ErrLog に寄せる（Issue #43 の作法）。
         /// </summary>
         public BaselineRestoreResult RestoreBaseline()
         {
             var result = new BaselineRestoreResult();
-            string logPath = Path.Combine(localBaseDir, DB.LOG_OFFICEIAL);
             string histPath = Path.Combine(localBaseDir, DB.NiCORAN_HISTORY);
             try
             {
@@ -379,49 +367,41 @@ namespace nicorankLib.Util
                     return result;
                 }
                 // 本地最新の読み取りは開閉を短時間で済ませ、上書き時のロック競合を起こさない。
+                // 読取失敗（表なし・破損等）はデータ無しと区別し、安全側（中断）に倒す。
                 long? localHistMax = null;
-                long? localOfficialMax = null;
                 if (File.Exists(histPath))
                 {
                     using (var histCtrl = new SQLiteCtrl())
                     {
                         if (histCtrl.Open(histPath))
                         {
-                            localHistMax = GetMaxWeeklyDate(histCtrl);
+                            if (!TryGetMaxWeeklyDate(histCtrl, out localHistMax))
+                            {
+                                result.Success = false;
+                                result.StaleBlocked = true;
+                                result.Message = "本地の最新日を確認できなかったため中断しました。DBの破損の可能性があるため、エラーログを確認してください";
+                                StatusLog.WriteLine(result.Message);
+                                return result;
+                            }
                         }
                     }
                 }
-                if (File.Exists(logPath))
-                {
-                    using (var officialCtrl = new SQLiteCtrl())
-                    {
-                        if (officialCtrl.Open(logPath))
-                        {
-                            localOfficialMax = GetMaxOfficialDate(officialCtrl);
-                        }
-                    }
-                }
-                if (IsBaselineStale(manifest, localHistMax, localOfficialMax))
+                if (IsBaselineStale(manifest, localHistMax))
                 {
                     result.Success = false;
                     result.StaleBlocked = true;
                     result.Message = string.Format(
-                        "配布中のベースライン（LogOfficial:{0}／NicoranHistory:{1}）が本地より古いため中断しました。回収集計している人に相談してください",
-                        manifest.LogOfficial.Date, manifest.NicoranHistory.Date);
+                        "配布中のベースライン（NicoranHistory:{0}）が本地より古いため中断しました。回収集計している人に相談してください",
+                        manifest.NicoranHistory.Date);
                     StatusLog.WriteLine(result.Message);
                     return result;
                 }
                 StatusLog.WriteLine(string.Format(
-                    "ベースラインDBで復旧します（配布日 LogOfficial:{0}／NicoranHistory:{1}）",
-                    manifest.LogOfficial.Date, manifest.NicoranHistory.Date));
+                    "ベースラインDBで復旧します（配布日 NicoranHistory:{0}）",
+                    manifest.NicoranHistory.Date));
                 // 退避は上書きの直前に行い、失敗時は配置を中止する。
                 try
                 {
-                    string backedLog = BackupExistingFile(logPath);
-                    if (backedLog != null)
-                    {
-                        result.BackedUpPaths.Add(backedLog);
-                    }
                     string backedHist = BackupExistingFile(histPath);
                     if (backedHist != null)
                     {
@@ -436,12 +416,17 @@ namespace nicorankLib.Util
                     StatusLog.WriteLine(result.Message);
                     return result;
                 }
-                bool okLog = DownloadAndPlace(baseUrl, manifest.LogOfficial, logPath, true);
                 bool okHist = DownloadAndPlace(baseUrl, manifest.NicoranHistory, histPath, true);
-                result.Success = okLog && okHist && File.Exists(logPath) && File.Exists(histPath);
-                result.Message = result.Success
-                    ? "ベースラインDBの復旧が完了しました"
-                    : "ベースラインDBの復旧に失敗しました。エラーログを確認してください";
+                result.Success = okHist && File.Exists(histPath);
+                if (result.Success)
+                {
+                    result.Message = "ベースラインDBの復旧が完了しました";
+                }
+                else
+                {
+                    // 退避は済んでいるため、DB/backup 以下から手動で戻せる旨を添える。
+                    result.Message = "ベースラインDBの復旧に失敗しました。DB/backup 以下に退避済みのため手動で戻せます。エラーログを確認してください";
+                }
                 StatusLog.WriteLine(result.Message);
                 return result;
             }
@@ -449,7 +434,7 @@ namespace nicorankLib.Util
             {
                 ErrLog.GetInstance().Write(ex);
                 result.Success = false;
-                result.Message = "ベースラインDBの復旧に失敗しました。エラーログを確認してください";
+                result.Message = "ベースラインDBの復旧に失敗しました。DB/backup 以下の退避から手動で戻せます。エラーログを確認してください";
                 StatusLog.WriteLine(result.Message);
                 return result;
             }

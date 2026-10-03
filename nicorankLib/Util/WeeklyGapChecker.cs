@@ -48,6 +48,11 @@ namespace nicorankLib.Util
         private const DayOfWeek WeeklyDay = DayOfWeek.Monday;
 
         /// <summary>
+        /// 1週の日数。週の列挙で使う。仕様値ではないため定数化は意図の明確化が目的である。
+        /// </summary>
+        private const int DaysPerWeek = 7;
+
+        /// <summary>
         /// 期待される週刊集計日（月曜日）の一覧を求める。純粋処理のため単体テストで直接検証する。
         /// 直近の月曜日（当日が月曜なら当日）から過去へ週数分さかのぼり、昇順で返す。
         /// </summary>
@@ -64,7 +69,7 @@ namespace nicorankLib.Util
             DateTime latest = today.Date.AddDays(-diff);
             for (int i = weeks - 1; i >= 0; i--)
             {
-                result.Add(latest.AddDays(-7 * i));
+                result.Add(latest.AddDays(-DaysPerWeek * i));
             }
             return result;
         }
@@ -93,7 +98,7 @@ namespace nicorankLib.Util
             int minDiff = ((int)min.DayOfWeek - (int)WeeklyDay + 7) % 7;
             DateTime first = min.AddDays(-minDiff);
             var result = new List<DateTime>();
-            for (DateTime d = first; d <= latest; d = d.AddDays(7))
+            for (DateTime d = first; d <= latest; d = d.AddDays(DaysPerWeek))
             {
                 result.Add(d);
             }
@@ -152,6 +157,28 @@ namespace nicorankLib.Util
                 }
             }
             return missing;
+        }
+
+        /// <summary>
+        /// 抜けリストから集計対象日を除く。純粋処理のため単体テストで直接検証する。
+        /// なぜ除くか：自動警告は「これから集計する週」を必ず抜けとして報告し、毎回誤警告になる。
+        /// 警告の目的（過去の長期空きの検出）と噛み合わないため、対象日は数えない。
+        /// </summary>
+        public static List<DateTime> ExcludeTargetDay(ICollection<DateTime> missing, DateTime targetDay)
+        {
+            var result = new List<DateTime>();
+            if (missing == null)
+            {
+                return result;
+            }
+            foreach (var d in missing)
+            {
+                if (d.Date != targetDay.Date)
+                {
+                    result.Add(d.Date);
+                }
+            }
+            return result;
         }
 
         /// <summary>

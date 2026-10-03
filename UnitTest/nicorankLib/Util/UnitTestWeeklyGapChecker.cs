@@ -194,6 +194,97 @@ namespace UnitTest.nicorankLib.Util
         }
 
         [TestMethod]
+        public void GetExpectedMondaysFullPeriod_EmptyActual_FallsBackToWeeks()
+        {
+            // 実績が空の場合は通常モードの週数分にフォールバックする（何も検出しないより正直なため）。
+            var result = WeeklyGapChecker.GetExpectedMondaysFullPeriod(
+                new DateTime(2026, 9, 28), new List<DateTime>());
+
+            Assert.AreEqual(WeeklyGapChecker.DefaultLookbackWeeks, result.Count);
+            Assert.AreEqual(new DateTime(2026, 9, 28), result[result.Count - 1]);
+        }
+
+        [TestMethod]
+        public void FindMissing_MaintenanceThrows_TreatedAsMissing()
+        {
+            // メンテ判定の失敗は除外不能として抜け側に倒す（本当の抜けを見逃す方が害が大きいため）。
+            var expected = new List<DateTime> { new DateTime(2026, 9, 21) };
+            var actual = new List<DateTime>();
+
+            List<DateTime> skipped;
+            var missing = WeeklyGapChecker.FindMissing(
+                expected, actual, d => { throw new InvalidOperationException("判定失敗"); }, out skipped);
+
+            Assert.AreEqual(1, missing.Count);
+            Assert.AreEqual(0, skipped.Count);
+        }
+
+        [TestMethod]
+        public void ExcludeTargetDay_RemovesOnlyTarget()
+        {
+            // 自動警告では集計対象日を抜けに数えない（毎回必ず警告になるため）。
+            var missing = new List<DateTime> { new DateTime(2026, 9, 21), new DateTime(2026, 9, 28) };
+
+            var result = WeeklyGapChecker.ExcludeTargetDay(missing, new DateTime(2026, 9, 28));
+
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual(new DateTime(2026, 9, 21), result[0]);
+        }
+
+        [TestMethod]
+        public void ExcludeTargetDay_Null_ReturnsEmpty()
+        {
+            var result = WeeklyGapChecker.ExcludeTargetDay(null, new DateTime(2026, 9, 28));
+
+            Assert.AreEqual(0, result.Count);
+        }
+
+        [TestMethod]
+        public void Check_WithPaths_ReadsCorrectDatabases()
+        {
+            // UIが実際に使うパス版の口を実ファイルで検証する。
+            // 引数の順序を取り違えると LastResult が空になり全週が抜け扱いになるため、
+            // このテストが呼び出し側の退行を検出する。
+            string dir = System.IO.Path.Combine(
+                System.IO.Path.GetTempPath(), "nicorank_t045_" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                string dbDir = System.IO.Path.Combine(dir, "DB");
+                System.IO.Directory.CreateDirectory(dbDir);
+                string histPath = System.IO.Path.Combine(dbDir, "NicoranHistory.db");
+                System.IO.File.Create(histPath).Dispose();
+                using (var ctrl = new SQLiteCtrl())
+                {
+                    Assert.IsTrue(ctrl.Open(histPath));
+                    TestDbHelper.CreateLastResultTable(ctrl);
+                    TestDbHelper.InsertLastResultData(ctrl, "Weekly", 20260914, "sm1", 1, 100, "{}");
+                    TestDbHelper.InsertLastResultData(ctrl, "Weekly", 20260928, "sm2", 1, 100, "{}");
+                    ctrl.Close();
+                }
+                string logPath = System.IO.Path.Combine(dbDir, "LogOfficial.db");
+                System.IO.File.Create(logPath).Dispose();
+                using (var ctrl = new SQLiteCtrl())
+                {
+                    Assert.IsTrue(ctrl.Open(logPath));
+                    TestDbHelper.CreateRankingDateTable(ctrl);
+                    TestDbHelper.InsertRankingDateData(ctrl, 20260914, 0);
+                    TestDbHelper.InsertRankingDateData(ctrl, 20260921, 0);
+                    TestDbHelper.InsertRankingDateData(ctrl, 20260928, 0);
+                    ctrl.Close();
+                }
+
+                var result = WeeklyGapChecker.Check(histPath, logPath, new DateTime(2026, 9, 28), 3, false);
+
+                Assert.IsNull(result.ErrorMessage);
+                Assert.AreEqual(1, result.Missing.Count);
+                Assert.AreEqual(new DateTime(2026, 9, 21), result.Missing[0]);
+            }
+            finally
+            {
+                try { if (System.IO.Directory.Exists(dir)) { System.IO.Directory.Delete(dir, true); } } catch { }
+            }
+        }
+        [TestMethod]
         public void FormatMissing_JoinedByJapaneseComma()
         {
             var text = WeeklyGapChecker.FormatMissing(new List<DateTime>

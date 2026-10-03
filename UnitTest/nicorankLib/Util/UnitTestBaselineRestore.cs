@@ -85,8 +85,8 @@ namespace UnitTest.nicorankLib.Util
             // 配布日が本地と同じか新しい場合は復旧を許す。
             var manifest = BuildManifest("20260928", "20260928");
 
-            Assert.IsFalse(BaselineDownloader.IsBaselineStale(manifest, 20260928L, 20260928L));
-            Assert.IsFalse(BaselineDownloader.IsBaselineStale(manifest, 20260921L, 20260921L));
+            Assert.IsFalse(BaselineDownloader.IsBaselineStale(manifest, 20260928L));
+            Assert.IsFalse(BaselineDownloader.IsBaselineStale(manifest, 20260921L));
         }
 
         [TestMethod]
@@ -95,15 +95,7 @@ namespace UnitTest.nicorankLib.Util
             // NicoranHistory の配布が本地より古い場合は、被せると抜けが増えるため中断する（必須仕様）。
             var manifest = BuildManifest("20260928", "20260921");
 
-            Assert.IsTrue(BaselineDownloader.IsBaselineStale(manifest, 20260928L, 20260928L));
-        }
-
-        [TestMethod]
-        public void IsBaselineStale_OlderOfficial_BlocksRestore()
-        {
-            var manifest = BuildManifest("20260921", "20260928");
-
-            Assert.IsTrue(BaselineDownloader.IsBaselineStale(manifest, 20260921L, 20260928L));
+            Assert.IsTrue(BaselineDownloader.IsBaselineStale(manifest, 20260928L));
         }
 
         [TestMethod]
@@ -112,18 +104,35 @@ namespace UnitTest.nicorankLib.Util
             // 本地に何もなければ比較不能であり、配置を妨げない。
             var manifest = BuildManifest("20260921", "20260921");
 
-            Assert.IsFalse(BaselineDownloader.IsBaselineStale(manifest, null, null));
+            Assert.IsFalse(BaselineDownloader.IsBaselineStale(manifest, null));
         }
 
         [TestMethod]
         public void IsBaselineStale_NullManifest_BlocksRestore()
         {
             // 不明な物を被せないため、安全側に倒して中断する。
-            Assert.IsTrue(BaselineDownloader.IsBaselineStale(null, 20260921L, 20260921L));
+            Assert.IsTrue(BaselineDownloader.IsBaselineStale(null, 20260921L));
         }
 
         [TestMethod]
-        public void GetMaxWeeklyDate_OnlyWeeklyMax()
+        public void IsBaselineStale_BadDate_BlocksRestore()
+        {
+            // 配布日が読めない場合も安全側に倒して中断する。
+            var manifest = BuildManifest("20260928", "2026-09-28");
+
+            Assert.IsTrue(BaselineDownloader.IsBaselineStale(manifest, 20260921L));
+        }
+
+        [TestMethod]
+        public void IsBaselineStale_NullEntry_BlocksRestore()
+        {
+            var manifest = new BaselineDownloader.BaselineManifest { NicoranHistory = null };
+
+            Assert.IsTrue(BaselineDownloader.IsBaselineStale(manifest, 20260921L));
+        }
+
+        [TestMethod]
+        public void TryGetMaxWeeklyDate_WithRows_ReturnsMax()
         {
             using (var db = TestDbHelper.CreateInMemoryDb())
             {
@@ -133,20 +142,34 @@ namespace UnitTest.nicorankLib.Util
                 TestDbHelper.InsertLastResultData(db, "SP", 20261005, "sm9", 1, 100, "{}");
 
                 // SP の日付が混ざっても Weekly の最大だけ返す。
-                Assert.AreEqual(20260928L, BaselineDownloader.GetMaxWeeklyDate(db));
+                long? max;
+                Assert.IsTrue(BaselineDownloader.TryGetMaxWeeklyDate(db, out max));
+                Assert.AreEqual(20260928L, max);
             }
         }
 
         [TestMethod]
-        public void GetMaxOfficialDate_ReturnsMax()
+        public void TryGetMaxWeeklyDate_EmptyTable_ReturnsTrueWithNull()
         {
+            // 行なしは正常系であり、失敗ではない（null の最新日と区別する）。
             using (var db = TestDbHelper.CreateInMemoryDb())
             {
-                TestDbHelper.CreateRankingDateTable(db);
-                TestDbHelper.InsertRankingDateData(db, 20260921, 0);
-                TestDbHelper.InsertRankingDateData(db, 20260928, 1);
+                TestDbHelper.CreateLastResultTable(db);
 
-                Assert.AreEqual(20260928L, BaselineDownloader.GetMaxOfficialDate(db));
+                long? max = 0;
+                Assert.IsTrue(BaselineDownloader.TryGetMaxWeeklyDate(db, out max));
+                Assert.IsNull(max);
+            }
+        }
+
+        [TestMethod]
+        public void TryGetMaxWeeklyDate_MissingTable_ReturnsFalse()
+        {
+            // 表なし（破損・移行前）は読取失敗であり、データ無しと区別する。
+            using (var db = TestDbHelper.CreateInMemoryDb())
+            {
+                long? max;
+                Assert.IsFalse(BaselineDownloader.TryGetMaxWeeklyDate(db, out max));
             }
         }
 
@@ -209,16 +232,6 @@ namespace UnitTest.nicorankLib.Util
                     TestDbHelper.InsertLastResultData(ctrl, "Weekly", 20260928, "sm1", 1, 100, "{}");
                     ctrl.Close();
                 }
-                string logPath = Path.Combine(dbDir, "LogOfficial.db");
-                // 空ファイルを作ってから開く（SQLiteCtrl.Open は存在しないファイルを開かないため）。
-                File.Create(logPath).Dispose();
-                using (var ctrl = new SQLiteCtrl())
-                {
-                    Assert.IsTrue(ctrl.Open(logPath));
-                    TestDbHelper.CreateRankingDateTable(ctrl);
-                    TestDbHelper.InsertRankingDateData(ctrl, 20260928, 0);
-                    ctrl.Close();
-                }
                 string sha = new string('a', 64);
                 string manifestJson = BuildManifestJson("20260921", "LogOfficial.zip", 10, sha,
                     "20260921", "NicoranHistory.zip", 20, sha);
@@ -243,20 +256,20 @@ namespace UnitTest.nicorankLib.Util
         }
 
         [TestMethod]
-        public void RestoreBaseline_FreshManifest_OverwritesWithBackup()
+        public void RestoreBaseline_FreshManifest_OverwritesHistOnly()
         {
-            // 配布が本地と同じか新しい場合は、退避してから置き換える。
+            // 配布が本地と同じか新しい場合は、NicoranHistory だけ退避してから置き換える。
+            // LogOfficial には触れない（日次更新で自己回復するため対象外）。
             string dir = CreateTempDir();
             string work = CreateTempDir();
             try
             {
                 string dbDir = Path.Combine(dir, "DB");
                 Directory.CreateDirectory(dbDir);
-                string logZip = Path.Combine(work, "LogOfficial.zip");
                 string histZip = Path.Combine(work, "NicoranHistory.zip");
-                CreateDbZip(logZip, "LogOfficial.db", "new-log");
                 CreateDbZip(histZip, "NicoranHistory.db", "new-hist");
-                string manifestJson = BuildManifestJson("20260928", "LogOfficial.zip", new FileInfo(logZip).Length, Sha256OfFile(logZip),
+                // LogOfficial の zip がなくても復旧は進む（対象外のため取得しない）。
+                string manifestJson = BuildManifestJson("20260921", "LogOfficial.zip", 10, new string('a', 64),
                     "20260928", "NicoranHistory.zip", new FileInfo(histZip).Length, Sha256OfFile(histZip));
                 string histPath = Path.Combine(dbDir, "NicoranHistory.db");
                 // SQLiteCtrl.Open は存在しないファイルを開かないため、空ファイルを作ってから開く（SnapShotDB.InitilizeDB と同一の作り方）。
@@ -268,7 +281,8 @@ namespace UnitTest.nicorankLib.Util
                     TestDbHelper.InsertLastResultData(ctrl, "Weekly", 20260921, "sm1", 1, 100, "{}");
                     ctrl.Close();
                 }
-                File.WriteAllText(Path.Combine(dbDir, "LogOfficial.db"), "old-log");
+                string logPath = Path.Combine(dbDir, "LogOfficial.db");
+                File.WriteAllText(logPath, "old-log");
 
                 var downloader = new BaselineDownloader(
                     dir,
@@ -285,13 +299,41 @@ namespace UnitTest.nicorankLib.Util
 
                 Assert.IsTrue(result.Success);
                 Assert.IsFalse(result.StaleBlocked);
-                Assert.AreEqual(2, result.BackedUpPaths.Count);
+                Assert.AreEqual(1, result.BackedUpPaths.Count);
                 Assert.AreEqual("new-hist", File.ReadAllText(histPath));
+                // LogOfficial は対象外のため置き換わらない。
+                Assert.AreEqual("old-log", File.ReadAllText(logPath));
             }
             finally
             {
                 DeleteTempDir(dir);
                 DeleteTempDir(work);
+            }
+        }
+
+        [TestMethod]
+        public void BackupExistingFile_WithWal_CopiedTogether()
+        {
+            // WAL モードでは本体だけ戻しても付随ファイルとの不整合で開けなくなる場合があるため、一緒に運ぶ。
+            string dir = CreateTempDir();
+            try
+            {
+                string dbDir = Path.Combine(dir, "DB");
+                Directory.CreateDirectory(dbDir);
+                string path = Path.Combine(dbDir, "NicoranHistory.db");
+                File.WriteAllText(path, "original");
+                File.WriteAllText(path + "-wal", "wal-content");
+
+                string backed = BaselineDownloader.BackupExistingFile(path);
+
+                Assert.IsNotNull(backed);
+                Assert.AreEqual("original", File.ReadAllText(backed));
+                Assert.IsTrue(File.Exists(backed + "-wal"));
+                Assert.AreEqual("wal-content", File.ReadAllText(backed + "-wal"));
+            }
+            finally
+            {
+                DeleteTempDir(dir);
             }
         }
     }

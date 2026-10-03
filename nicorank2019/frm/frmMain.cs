@@ -95,11 +95,22 @@ namespace nicorank2019.frm
             // 週刊モードでは集計開始前に抜けを自動確認する（Issue #45）。
             // なぜ週刊のみか：抜けの害（長期判定の欠け）が週刊集計に限られるためである。
             // 中止が選ばれたら集計を開始しない。確認不能時は開始する（初回利用者の詰み防止）。
+            // 対象日はUIスレッドで読む（集計スレッドからコントロールに触らない。pitfalls項目19）。
+            // チェック中も実行系ボタンを止め、連打による二重起動を防ぐ。
             if (rbWeekly.Checked)
             {
-                if (!await CheckWeeklyGapBeforeAnalyzeAsync())
+                DateTime targetDay = dtPAnalyzeDay.Value.Date;
+                SetVacuumRunning(true);
+                try
                 {
-                    return;
+                    if (!await CheckWeeklyGapBeforeAnalyzeAsync(targetDay))
+                    {
+                        return;
+                    }
+                }
+                finally
+                {
+                    SetVacuumRunning(false);
                 }
             }
             _tagExecuteContext = null;
@@ -360,8 +371,12 @@ namespace nicorank2019.frm
             try
             {
                 GapCheckResult result = await System.Threading.Tasks.Task.Run(() =>
-                    WeeklyGapChecker.Check(DB.LOG_OFFICEIAL, DB.NiCORAN_HISTORY,
-                        DateTime.Today, WeeklyGapChecker.DefaultLookbackWeeks, fullPeriod));
+                    WeeklyGapChecker.Check(
+                        historyDbPath: DB.NiCORAN_HISTORY,
+                        officialDbPath: DB.LOG_OFFICEIAL,
+                        today: DateTime.Today,
+                        weeks: WeeklyGapChecker.DefaultLookbackWeeks,
+                        fullPeriod: fullPeriod));
                 ShowGapCheckResult(result);
             }
             catch (Exception ex)
@@ -420,8 +435,8 @@ namespace nicorank2019.frm
         private async void btnBaselineRestore_Click(object sender, EventArgs e)
         {
             var confirm = MessageBox.Show(
-                "配布中のベースラインDBで本地の2DB（LogOfficial／NicoranHistory）を上書きします。\n"
-                + "既存DBは DB/backup 以下へ自動退避します。続行しますか。",
+                "配布中のベースラインDBで本地の NicoranHistory.db を上書きします。\n"
+                + "既存DBは DB/backup 以下へ自動退避します。LogOfficial.db には触れません。続行しますか。",
                 "ベースライン復旧", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning);
             if (confirm != DialogResult.OK)
             {
@@ -472,19 +487,27 @@ namespace nicorank2019.frm
         /// UIスレッドで週刊判定し、短時間の読取だけ集計スレッド側で行う。
         /// 抜けがあれば続行／中止を選び、中止なら集計を開始しない。
         /// なぜ週刊のみか：抜けの害（長期判定の欠け）が週刊集計に限られるためである。
+        /// 集計対象日は抜けに数えない。なぜ数えないか：対象週の結果はこの実行で初めて
+        /// LastResult に書かれるため、数えると毎回必ず警告になるからである。
         /// </summary>
+        /// <param name="targetDay">集計対象日（UIスレッドで読んだ dtPAnalyzeDay の値）</param>
         /// <returns>集計を開始してよければ true、中止なら false</returns>
-        private async Task<bool> CheckWeeklyGapBeforeAnalyzeAsync()
+        private async Task<bool> CheckWeeklyGapBeforeAnalyzeAsync(DateTime targetDay)
         {
             GapCheckResult result = await System.Threading.Tasks.Task.Run(() =>
-                WeeklyGapChecker.Check(DB.LOG_OFFICEIAL, DB.NiCORAN_HISTORY,
-                    DateTime.Today, WeeklyGapChecker.DefaultLookbackWeeks, false));
+                WeeklyGapChecker.Check(
+                    historyDbPath: DB.NiCORAN_HISTORY,
+                    officialDbPath: DB.LOG_OFFICEIAL,
+                    today: DateTime.Today,
+                    weeks: WeeklyGapChecker.DefaultLookbackWeeks,
+                    fullPeriod: false));
             if (result == null || !string.IsNullOrEmpty(result.ErrorMessage))
             {
                 // 確認不能時は集計を止めない。なぜ止めないか：DB不在は #36 の自動取得で解消できる正常系であり、
                 // 確認不能を理由に集計全体を止めると初回利用者が詰むためである。
                 return true;
             }
+            result.Missing = WeeklyGapChecker.ExcludeTargetDay(result.Missing, targetDay);
             if (result.Missing == null || result.Missing.Count == 0)
             {
                 return true;
