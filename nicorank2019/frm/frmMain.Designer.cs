@@ -137,6 +137,14 @@
             this.tbFutureApiXmlFolder = new System.Windows.Forms.TextBox();
             this.btnFutureApiXmlFolder = new System.Windows.Forms.Button();
             this.btnFutureApiXmlExec = new System.Windows.Forms.Button();
+            this.grpGapCheck = new System.Windows.Forms.GroupBox();
+            this.lblGapCheckDesc = new System.Windows.Forms.Label();
+            this.chkGapCheckFullPeriod = new System.Windows.Forms.CheckBox();
+            this.btnGapCheckExec = new System.Windows.Forms.Button();
+            this.lblGapCheckStatus = new System.Windows.Forms.Label();
+            this.lblGapCheckResult = new System.Windows.Forms.Label();
+            this.btnBaselineRestore = new System.Windows.Forms.Button();
+            this.lblGapCheckNote = new System.Windows.Forms.Label();
             this.tabPageTag.SuspendLayout();
             this.grpDb.SuspendLayout();
             this.grpFilter.SuspendLayout();
@@ -149,6 +157,7 @@
             this.tabPageMaint.SuspendLayout();
             this.grpVacuum.SuspendLayout();
             this.grpFutureApiXml.SuspendLayout();
+            this.grpGapCheck.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabPageTag
