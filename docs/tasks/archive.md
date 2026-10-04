@@ -653,3 +653,18 @@
   - ユーザー実機検証OK（file://通しテスト：起動時通知→置換→再起動→backup退避→最新判定。刻印ビルドで版数遷移まで確認。システム設定タブ・現状版数表示を含む）
   - 検証中の付帯対応：更新確認の長時間リトライを短縮（確認中固着の解消）、メンテナンスタブからシステム設定タブへの移設（ユーザー実施。Click再配線と改名はこちらで検証）
 - **残課題**: 47.2（release.md更新・版数刻印手順・`version.json` 生成・NAS配置）・updater自身の置換（別Issue）・必須化（将来Issue）。`docs/tasks/archive.md` の既存部分に約1万文字の文字化け（不正UTF-8バイト。コミット済みの過去破損。本件作業とは無関係）を検出。追記は既存バイトに触れない方式で行った。修復はd92900aで実施済み（既存24部は16d217cを正本とし新規11部は符号化別に復元、不正UTF-8バイト0・置換文字0・目視正常を確認）
+
+---
+
+## 2026-10-04 リリース実績 (v20261004_nicorank)
+
+- **タグ**: `v20261004_nicorank`（main HEAD と一致することを確認）
+- **Release**: https://github.com/n2daime/nicorank2019/releases/tag/v20261004_nicorank
+- **廃盤**: 前回の `v20261003_nicorank` は先行の一部配布のみのため廃盤とする（Release削除は人間が実施、タグは残置）
+- **成果物**: `nicorank2019.zip` / `nicorank_SnapShot.zip` / `nicorank_oldlog.zip`（固定名に移行。既存の日付名 asset には触らない。ホワイトリスト通りでDB・pdb・設定本体なしを確認。updater一式を含む）
+- **含まれる変更**: #45（集計抜けチェック・ベースライン復旧。v20261003取得者以外への説明のため本Releaseノートに再掲）・#47（自動更新。47.1＋47.2）。SnapShot・oldlogは内容無変更のため再添付のみ
+- **版数刻印**: Assembly `2026.10.4.0`（`version.json` の `2026.10.04` と等価。exeプロパティで確認）
+- **`version.json`**: 添付実物から `make-version.ps1` で生成（size 15803368・sha256実測）。NAS配置は人間が実施（`https://2daime.myds.me/nicorank/update/version.json`）
+- **検証**: `dotnet test` 346件PASS・sln Releaseビルド成功・lib 4件＋runtimes 3種・loadFromRemoteSources・nicorank.xml一致を確認。実機集計は省略（#47は集計ロジック不変・#45は前回実機済み・起動E2Eと全テストで代替。ユーザー合意）
+- **同期**: main→developへバックマージ。`git diff main develop --stat` 空を確認
+- **残課題**: updater自身の置換（別Issue）・必須化（将来Issue）・NASの `version.json` 配置（人間作業。配置後に更新通知が有効になる）
