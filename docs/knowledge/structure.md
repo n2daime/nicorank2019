@@ -9,6 +9,7 @@ nicorank2019.sln
 ├── nicorank_SnapShot/    .NET Framework 4.8 WinForms アプリ（スナップショット取得ツール。Windows 用）
 ├── nicorank_SnapShot.Cli/ net8.0 コンソール（スナップショット取得の Linux 版。WinForms・サスペンドなし。Issue #37）
 ├── nicorank_oldlog/      .NET 8 コンソールアプリ（公式過去ランキング回収ツール、SDK-style）
+├── nicorankUpdater/      .NET Framework 4.8 コンソール（自動更新の置換担当。SDK-style、最小依存。Issue #47）
 ├── UnitTest/             .NET Framework 4.8 MSTest テストプロジェクト（SDK-style、75件）
 ├── 依存ファイル/           nicorank.xml・DB/*.db（ソリューションフォルダ）
 ├── docs/                 ドキュメント（proposal / specs / design / tasks / knowledge）
@@ -24,6 +25,7 @@ nicorank2019 ──→ nicorankLib
 nicorank_SnapShot ──→ nicorankLib
 nicorank_SnapShot.Cli ──→ nicorankLib（net8.0 から net48 ライブラリを参照するハイブリッド。nicorank_oldlog と同じ）
 nicorank_oldlog ──→ nicorankLib（net48 ライブラリを net8.0 から参照するハイブリッド）
+nicorankUpdater ──→ なし（単独。nicorankLib 非参照で lib/ 欠け・版ずれの影響を受けない。Issue #47）
 UnitTest ──→ nicorankLib
 ```
 

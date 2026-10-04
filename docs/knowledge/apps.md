@@ -9,9 +9,21 @@
 - `frm/frmMain.cs`: メインフォーム。Load 時に `SelectMode()`。`btnAnalyze_Click` で `Config` に補正値を設定し `AnalyzeAsync()` を実行
 - `frm/frmMainSyukei.cs`: `frmMain` の partial。モード選択（Weekly/Tyukan/SP）＋タグ検索タブ（TagRank）→ `GetModeFactory()` → 集計フロー実行。集計開始時は `BaselineDownloader` でベースライン不足の自動取得とキャッシュ確保を行ってから `RankingHistory.Open()` へ進む（Issue #36。既存環境の DB は置き換えない）。週刊モードの集計ボタン押下時は事前に `WeeklyGapChecker` で抜けを自動確認し、抜けがあれば続行／中止ダイアログを出す（Issue #45。確認不能時は集計を開始する）。ポイント計算パネルの表示・書戻し（`LoadPointCalcPanel`／`SavePointCalcPanel`）は `Config` 経由のため、OFFSET節別化（Issue #39）後もコード不変でモード別表示・保存になる
 - タグ検索タブの件数確認（`btnTagSearch_Click`／`btnAnalyzeTag_Click` 内の `CheckTagCountAsync`）では、v2最新値モード（`chkUseLiveCounter` ON）の件数取得成功後に `SnapShotVersionChecker` で version を取得し、`lblTagSnapshotTime` に `MM/DD 05:00 時点のスナップショットで集計` と出す（Issue #39）。日付は `last_modified` のJST日・時刻は05:00固定（反映完了時刻との混同防止）。OFF時・未確認時・条件変更時は非表示に戻す。確認不能時は件数確認自体を失敗扱いにして集計に進めない。取得は `await Task.Run` でUIブロックしない
-- タブ構成: 「集計」「タグ検索集計」「メンテナンス」の3タブ。ポイント計算パネル（`panel3`）は実体1つを集計・タグ検索の2タブ切替で付け替えて共有する（相対配置でAutoScaleずれ対策。Issue #30）。メンテナンスタブ（Issue #32・`tabPageMaint`）は集計モードと無関係のため `panel3` に触らず、モード切替も行わない。ログ欄も持たず、集計タブと同様にコンソール側へ出す運用
+- タブ構成: 「集計」「タグ検索集計」「メンテナンス」「システム設定」の4タブ。ポイント計算パネル（`panel3`）は実体1つを集計・タグ検索の2タブ切替で付け替えて共有する（相対配置でAutoScaleずれ対策。Issue #30）。メンテナンスタブ（Issue #32・`tabPageMaint`）とシステム設定タブ（Issue #47・`tabPageSystem`）は集計モードと無関係のため `panel3` に触らず、モード切替も行わない。ログ欄も持たず、集計タブと同様にコンソール側へ出す運用
 - メンテナンスタブの内訳: `grpVacuum`（DB最適化。対象4DBのチェック既定ON・実行前後2列サイズ欄・実行ボタン・状態＋進捗・注意文。中身実装は32.2）＋ `grpFutureApiXml`（長期キャッシュ再構築の場所予約。Issue #41着手時に埋める。操作部は無効化表示）＋ `grpGapCheck`（集計抜けチェック。Issue #45。`chkGapCheckOneYear` 1年オプション・`btnGapCheckExec` 手動チェック・`lblGapCheckStatus/Result` 状態＋結果・`btnBaselineRestore` ベースライン復旧・注意文。ログ欄なし）
 - `frm/frmMesseageDialog.cs`: `RunFunction` デリゲートを `BackgroundWorker` で実行するモーダルダイアログ。`StatusLog` の出力先を TextBox に差し替え（`TextBoxWriter` は `BeginInvoke` でUIスレッドへ寄せて追記する。以前はTextBoxを無視してConsoleに書いていた。Issue #43。現在は生成箇所なし）
+- システム設定タブ（Issue #47・`tabPageSystem`／`grpAppUpdate`）はアプリ自動更新の手動確認場所。「更新を確認」ボタン（24時間間引きを無視して必ず取得。`SetVacuumControlsEnabled` の抑止対象）＋状態ラベル（現状版数付き。`SetUpdateCheckStatus` に一本化）。起動時にも非同期で確認し、新版があれば更新ダイアログ（版数・サイズ・詳細リンク・現状版数、今すぐ更新／後で）を出す。確認不能時は黙って旧版のまま動かす。適用は `nicorankUpdater.exe` に置換させる（タスクファイル→本体終了→待機・置換・再起動。集計実行中は適用しない）
+
+## nicorankUpdater（自動更新の置換担当・Issue #47）
+
+**役割**: 本体（nicorank2019）の更新指示ファイル（`%TEMP%/nicorank2019_update_task.json`）を読み、配布 zip の取得→検証→旧版退避→置換→再起動を行う。実行中の exe は自分を置換できないための分離である。
+
+- 起動: 引数ありなら指示ファイルパス、なしなら `%TEMP%` の既定名。本体が更新を検出→updater を起動→本体終了→updater が待機（上限60秒）・置換・再起動
+- 検証は `size`・`sha256` 照合（#36 と同一）。`url` は http／https／file を許す（file はローカル検証用）
+- 置換前は `backup/<yyyyMMdd_HHmmss>/` へ旧版（exe・config・`lib/` 一式）を退避し（#45 と同型）、置換失敗時は自動復元する（復元失敗時のみ手動案内）。ZipSlip 対策として配置先外への展開は拒否する。updater 自身の置換は対象外（別Issue）
+- 終了コード: 0=成功 / 2=エラー（`nicorank_oldlog` と同じ規約）
+- **ビルド**: .NET Framework 4.8、SDK-style。**nicorankLib を参照しない**（更新対象の欠け・版ずれの影響を受けないため）。依存は Framework 同梱の `System.Web.Extensions`（JSON読取）・`System.IO.Compression`（zip展開）のみ。Costura・SQLite なし。出力は `bin/Release/net48/` のため release.md のコピー元は `net48` 配下を指定する
+- 配布は本体 zip に同梱（`nicorankUpdater.exe`＋`.config`。release.md パターンA）
 
 **ビルド**: .NET Framework 4.8。Costura.Fody 6.2.0（単一 EXE 化）。packages.config 方式。PostBuild で「依存ファイル」を xcopy。`AnyCPU Prefer32Bit=false` で `64bit` 起動。
 

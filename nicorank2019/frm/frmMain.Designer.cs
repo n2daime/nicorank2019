@@ -145,6 +145,10 @@
             this.lblGapCheckResult = new System.Windows.Forms.Label();
             this.btnBaselineRestore = new System.Windows.Forms.Button();
             this.lblGapCheckNote = new System.Windows.Forms.Label();
+            this.tabPageSystem = new System.Windows.Forms.TabPage();
+            this.grpAppUpdate = new System.Windows.Forms.GroupBox();
+            this.btnUpdateCheck = new System.Windows.Forms.Button();
+            this.lblUpdateCheckStatus = new System.Windows.Forms.Label();
             this.tabPageTag.SuspendLayout();
             this.grpDb.SuspendLayout();
             this.grpFilter.SuspendLayout();
@@ -158,6 +162,8 @@
             this.grpVacuum.SuspendLayout();
             this.grpFutureApiXml.SuspendLayout();
             this.grpGapCheck.SuspendLayout();
+            this.tabPageSystem.SuspendLayout();
+            this.grpAppUpdate.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabPageTag
@@ -472,8 +478,6 @@
             this.grpTag.Text = "1. タグ条件";
             // 
             // lblTagSnapshotTime
-            // データ時点の表示（Issue #39）。v2最新値モードの件数確認成功時にだけ文言を入れて可視化する。
-            // OFF時・未確認時・失敗時は非表示のままにし、古い時点が残って誤解されるのを防ぐ。
             // 
             this.lblTagSnapshotTime.AutoSize = true;
             this.lblTagSnapshotTime.Location = new System.Drawing.Point(8, 102);
@@ -1013,6 +1017,7 @@
             this.tabPageOut.Controls.Add(this.tabPageSyukei);
             this.tabPageOut.Controls.Add(this.tabPageTag);
             this.tabPageOut.Controls.Add(this.tabPageMaint);
+            this.tabPageOut.Controls.Add(this.tabPageSystem);
             this.tabPageOut.Location = new System.Drawing.Point(-3, 4);
             this.tabPageOut.Name = "tabPageOut";
             this.tabPageOut.SelectedIndex = 0;
@@ -1055,12 +1060,12 @@
             this.grpVacuum.Controls.Add(this.lblVacuumStatus);
             this.grpVacuum.Controls.Add(this.progressVacuum);
             this.grpVacuum.Controls.Add(this.lblVacuumNote);
-            this.grpVacuum.Location = new System.Drawing.Point(8, 8);
+            this.grpVacuum.Location = new System.Drawing.Point(6, 6);
             this.grpVacuum.Name = "grpVacuum";
-            this.grpVacuum.Size = new System.Drawing.Size(806, 330);
+            this.grpVacuum.Size = new System.Drawing.Size(806, 253);
             this.grpVacuum.TabIndex = 0;
             this.grpVacuum.TabStop = false;
-            this.grpVacuum.Text = "1. DBの最適化（VACUUM）";
+            this.grpVacuum.Text = "DBの最適化（VACUUM）";
             // 
             // lblVacuumDesc
             // 
@@ -1097,7 +1102,7 @@
             this.chkVacuumLogOfficial.Location = new System.Drawing.Point(12, 70);
             this.chkVacuumLogOfficial.Name = "chkVacuumLogOfficial";
             this.chkVacuumLogOfficial.Size = new System.Drawing.Size(196, 16);
-            this.chkVacuumLogOfficial.TabIndex = 3;
+            this.chkVacuumLogOfficial.TabIndex = 0;
             this.chkVacuumLogOfficial.Text = "LogOfficial.db（DB/LogOfficial.db）";
             this.chkVacuumLogOfficial.UseVisualStyleBackColor = true;
             // 
@@ -1127,7 +1132,7 @@
             this.chkVacuumNicoranHistory.Location = new System.Drawing.Point(12, 95);
             this.chkVacuumNicoranHistory.Name = "chkVacuumNicoranHistory";
             this.chkVacuumNicoranHistory.Size = new System.Drawing.Size(238, 16);
-            this.chkVacuumNicoranHistory.TabIndex = 6;
+            this.chkVacuumNicoranHistory.TabIndex = 1;
             this.chkVacuumNicoranHistory.Text = "NicoranHistory.db（DB/NicoranHistory.db）";
             this.chkVacuumNicoranHistory.UseVisualStyleBackColor = true;
             // 
@@ -1157,7 +1162,7 @@
             this.chkVacuumApiXml.Location = new System.Drawing.Point(12, 120);
             this.chkVacuumApiXml.Name = "chkVacuumApiXml";
             this.chkVacuumApiXml.Size = new System.Drawing.Size(164, 16);
-            this.chkVacuumApiXml.TabIndex = 9;
+            this.chkVacuumApiXml.TabIndex = 2;
             this.chkVacuumApiXml.Text = "ApiXML.db（DB/ApiXML.db）";
             this.chkVacuumApiXml.UseVisualStyleBackColor = true;
             // 
@@ -1187,7 +1192,7 @@
             this.chkVacuumDailylog.Location = new System.Drawing.Point(12, 145);
             this.chkVacuumDailylog.Name = "chkVacuumDailylog";
             this.chkVacuumDailylog.Size = new System.Drawing.Size(168, 16);
-            this.chkVacuumDailylog.TabIndex = 12;
+            this.chkVacuumDailylog.TabIndex = 3;
             this.chkVacuumDailylog.Text = "Dailylog.db（DB/Dailylog.db）";
             this.chkVacuumDailylog.UseVisualStyleBackColor = true;
             // 
@@ -1214,7 +1219,7 @@
             this.btnVacuumExec.Location = new System.Drawing.Point(12, 189);
             this.btnVacuumExec.Name = "btnVacuumExec";
             this.btnVacuumExec.Size = new System.Drawing.Size(180, 36);
-            this.btnVacuumExec.TabIndex = 15;
+            this.btnVacuumExec.TabIndex = 4;
             this.btnVacuumExec.Text = "DBの最適化を実行";
             this.btnVacuumExec.UseVisualStyleBackColor = true;
             this.btnVacuumExec.Click += new System.EventHandler(this.btnVacuumExec_Click);
@@ -1224,7 +1229,7 @@
             this.lblVacuumStatus.AutoSize = true;
             this.lblVacuumStatus.Location = new System.Drawing.Point(205, 175);
             this.lblVacuumStatus.Name = "lblVacuumStatus";
-            this.lblVacuumStatus.Size = new System.Drawing.Size(107, 12);
+            this.lblVacuumStatus.Size = new System.Drawing.Size(71, 12);
             this.lblVacuumStatus.TabIndex = 16;
             this.lblVacuumStatus.Text = "状態: 待機中";
             // 
@@ -1233,12 +1238,12 @@
             this.progressVacuum.Location = new System.Drawing.Point(207, 201);
             this.progressVacuum.Name = "progressVacuum";
             this.progressVacuum.Size = new System.Drawing.Size(580, 20);
-            this.progressVacuum.TabIndex = 17;
+            this.progressVacuum.TabIndex = 3;
             // 
             // lblVacuumNote
             // 
             this.lblVacuumNote.AutoSize = true;
-            this.lblVacuumNote.Location = new System.Drawing.Point(12, 253);
+            this.lblVacuumNote.Location = new System.Drawing.Point(570, 15);
             this.lblVacuumNote.Name = "lblVacuumNote";
             this.lblVacuumNote.Size = new System.Drawing.Size(230, 36);
             this.lblVacuumNote.TabIndex = 18;
@@ -1250,12 +1255,12 @@
             this.grpFutureApiXml.Controls.Add(this.tbFutureApiXmlFolder);
             this.grpFutureApiXml.Controls.Add(this.btnFutureApiXmlFolder);
             this.grpFutureApiXml.Controls.Add(this.btnFutureApiXmlExec);
-            this.grpFutureApiXml.Location = new System.Drawing.Point(8, 346);
+            this.grpFutureApiXml.Location = new System.Drawing.Point(3, 478);
             this.grpFutureApiXml.Name = "grpFutureApiXml";
             this.grpFutureApiXml.Size = new System.Drawing.Size(806, 120);
             this.grpFutureApiXml.TabIndex = 1;
             this.grpFutureApiXml.TabStop = false;
-            this.grpFutureApiXml.Text = "2. 長期キャッシュ再構築（将来対応・#41）";
+            this.grpFutureApiXml.Text = "長期キャッシュ再構築（将来対応）";
             // 
             // lblFutureApiXmlDesc
             // 
@@ -1273,7 +1278,7 @@
             this.tbFutureApiXmlFolder.Location = new System.Drawing.Point(12, 62);
             this.tbFutureApiXmlFolder.Name = "tbFutureApiXmlFolder";
             this.tbFutureApiXmlFolder.Size = new System.Drawing.Size(590, 19);
-            this.tbFutureApiXmlFolder.TabIndex = 1;
+            this.tbFutureApiXmlFolder.TabIndex = 0;
             // 
             // btnFutureApiXmlFolder
             // 
@@ -1281,7 +1286,7 @@
             this.btnFutureApiXmlFolder.Location = new System.Drawing.Point(608, 60);
             this.btnFutureApiXmlFolder.Name = "btnFutureApiXmlFolder";
             this.btnFutureApiXmlFolder.Size = new System.Drawing.Size(75, 23);
-            this.btnFutureApiXmlFolder.TabIndex = 2;
+            this.btnFutureApiXmlFolder.TabIndex = 1;
             this.btnFutureApiXmlFolder.Text = "参照";
             this.btnFutureApiXmlFolder.UseVisualStyleBackColor = true;
             // 
@@ -1291,7 +1296,7 @@
             this.btnFutureApiXmlExec.Location = new System.Drawing.Point(689, 60);
             this.btnFutureApiXmlExec.Name = "btnFutureApiXmlExec";
             this.btnFutureApiXmlExec.Size = new System.Drawing.Size(75, 23);
-            this.btnFutureApiXmlExec.TabIndex = 3;
+            this.btnFutureApiXmlExec.TabIndex = 2;
             this.btnFutureApiXmlExec.Text = "実行";
             this.btnFutureApiXmlExec.UseVisualStyleBackColor = true;
             // 
@@ -1304,19 +1309,19 @@
             this.grpGapCheck.Controls.Add(this.lblGapCheckResult);
             this.grpGapCheck.Controls.Add(this.btnBaselineRestore);
             this.grpGapCheck.Controls.Add(this.lblGapCheckNote);
-            this.grpGapCheck.Location = new System.Drawing.Point(8, 474);
+            this.grpGapCheck.Location = new System.Drawing.Point(6, 265);
             this.grpGapCheck.Name = "grpGapCheck";
-            this.grpGapCheck.Size = new System.Drawing.Size(806, 210);
+            this.grpGapCheck.Size = new System.Drawing.Size(806, 207);
             this.grpGapCheck.TabIndex = 2;
             this.grpGapCheck.TabStop = false;
-            this.grpGapCheck.Text = "3. 集計抜けチェック";
+            this.grpGapCheck.Text = "集計抜けチェック";
             // 
             // lblGapCheckDesc
             // 
             this.lblGapCheckDesc.AutoSize = true;
             this.lblGapCheckDesc.Location = new System.Drawing.Point(12, 22);
             this.lblGapCheckDesc.Name = "lblGapCheckDesc";
-            this.lblGapCheckDesc.Size = new System.Drawing.Size(431, 12);
+            this.lblGapCheckDesc.Size = new System.Drawing.Size(403, 12);
             this.lblGapCheckDesc.TabIndex = 0;
             this.lblGapCheckDesc.Text = "週刊集計の抜け（LastResult・Weekly）を検出します。長期動画判定の欠け防止用";
             // 
@@ -1325,8 +1330,8 @@
             this.chkGapCheckOneYear.AutoSize = true;
             this.chkGapCheckOneYear.Location = new System.Drawing.Point(12, 48);
             this.chkGapCheckOneYear.Name = "chkGapCheckOneYear";
-            this.chkGapCheckOneYear.Size = new System.Drawing.Size(244, 16);
-            this.chkGapCheckOneYear.TabIndex = 1;
+            this.chkGapCheckOneYear.Size = new System.Drawing.Size(217, 16);
+            this.chkGapCheckOneYear.TabIndex = 0;
             this.chkGapCheckOneYear.Text = "直近1年で確認する（既定は直近3か月）";
             this.chkGapCheckOneYear.UseVisualStyleBackColor = true;
             // 
@@ -1335,7 +1340,7 @@
             this.btnGapCheckExec.Location = new System.Drawing.Point(12, 74);
             this.btnGapCheckExec.Name = "btnGapCheckExec";
             this.btnGapCheckExec.Size = new System.Drawing.Size(180, 36);
-            this.btnGapCheckExec.TabIndex = 2;
+            this.btnGapCheckExec.TabIndex = 1;
             this.btnGapCheckExec.Text = "抜けをチェック";
             this.btnGapCheckExec.UseVisualStyleBackColor = true;
             this.btnGapCheckExec.Click += new System.EventHandler(this.btnGapCheckExec_Click);
@@ -1354,8 +1359,8 @@
             this.lblGapCheckResult.AutoSize = true;
             this.lblGapCheckResult.Location = new System.Drawing.Point(12, 120);
             this.lblGapCheckResult.Name = "lblGapCheckResult";
-            this.lblGapCheckResult.Size = new System.Drawing.Size(47, 12);
-            this.lblGapCheckResult.TabIndex = 4;
+            this.lblGapCheckResult.Size = new System.Drawing.Size(43, 12);
+            this.lblGapCheckResult.TabIndex = 2;
             this.lblGapCheckResult.Text = "結果: —";
             // 
             // btnBaselineRestore
@@ -1363,7 +1368,7 @@
             this.btnBaselineRestore.Location = new System.Drawing.Point(12, 146);
             this.btnBaselineRestore.Name = "btnBaselineRestore";
             this.btnBaselineRestore.Size = new System.Drawing.Size(220, 36);
-            this.btnBaselineRestore.TabIndex = 5;
+            this.btnBaselineRestore.TabIndex = 3;
             this.btnBaselineRestore.Text = "ベースラインDBで復旧...";
             this.btnBaselineRestore.UseVisualStyleBackColor = true;
             this.btnBaselineRestore.Click += new System.EventHandler(this.btnBaselineRestore_Click);
@@ -1373,9 +1378,51 @@
             this.lblGapCheckNote.AutoSize = true;
             this.lblGapCheckNote.Location = new System.Drawing.Point(250, 146);
             this.lblGapCheckNote.Name = "lblGapCheckNote";
-            this.lblGapCheckNote.Size = new System.Drawing.Size(334, 36);
+            this.lblGapCheckNote.Size = new System.Drawing.Size(323, 36);
             this.lblGapCheckNote.TabIndex = 6;
-            this.lblGapCheckNote.Text = "注意: 復旧は既存DBを自動退避（DB/backup）して上書きします。\r\n配布が本地より古い場合は中断します。\r\n実行前にDBフォルダのバックアップを推奨します。";
+            this.lblGapCheckNote.Text = "注意: 復旧は既存DBを自動退避（DB/backup）して上書きします。\r\n配布が本地より古い場合は中断します。\r\n実行前にDBフォルダのバックアップを推奨します" +
+    "。";
+            // 
+            // tabPageSystem
+            // 
+            this.tabPageSystem.Controls.Add(this.grpAppUpdate);
+            this.tabPageSystem.Location = new System.Drawing.Point(4, 22);
+            this.tabPageSystem.Name = "tabPageSystem";
+            this.tabPageSystem.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPageSystem.Size = new System.Drawing.Size(828, 754);
+            this.tabPageSystem.TabIndex = 5;
+            this.tabPageSystem.Text = "システム設定";
+            this.tabPageSystem.UseVisualStyleBackColor = true;
+            // 
+            // grpAppUpdate
+            // 
+            this.grpAppUpdate.Controls.Add(this.btnUpdateCheck);
+            this.grpAppUpdate.Controls.Add(this.lblUpdateCheckStatus);
+            this.grpAppUpdate.Location = new System.Drawing.Point(11, 6);
+            this.grpAppUpdate.Name = "grpAppUpdate";
+            this.grpAppUpdate.Size = new System.Drawing.Size(809, 74);
+            this.grpAppUpdate.TabIndex = 4;
+            this.grpAppUpdate.TabStop = false;
+            this.grpAppUpdate.Text = "集計プログラムの更新";
+            // 
+            // btnUpdateCheck
+            // 
+            this.btnUpdateCheck.Location = new System.Drawing.Point(17, 21);
+            this.btnUpdateCheck.Name = "btnUpdateCheck";
+            this.btnUpdateCheck.Size = new System.Drawing.Size(220, 36);
+            this.btnUpdateCheck.TabIndex = 7;
+            this.btnUpdateCheck.Text = "更新を確認";
+            this.btnUpdateCheck.UseVisualStyleBackColor = true;
+            this.btnUpdateCheck.Click += new System.EventHandler(this.btnUpdateCheck_Click);
+            // 
+            // lblUpdateCheckStatus
+            // 
+            this.lblUpdateCheckStatus.AutoSize = true;
+            this.lblUpdateCheckStatus.Location = new System.Drawing.Point(269, 33);
+            this.lblUpdateCheckStatus.Name = "lblUpdateCheckStatus";
+            this.lblUpdateCheckStatus.Size = new System.Drawing.Size(71, 12);
+            this.lblUpdateCheckStatus.TabIndex = 8;
+            this.lblUpdateCheckStatus.Text = "更新: 未確認";
             // 
             // frmMain
             // 
@@ -1408,6 +1455,9 @@
             this.grpFutureApiXml.PerformLayout();
             this.grpGapCheck.ResumeLayout(false);
             this.grpGapCheck.PerformLayout();
+            this.tabPageSystem.ResumeLayout(false);
+            this.grpAppUpdate.ResumeLayout(false);
+            this.grpAppUpdate.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -1531,6 +1581,10 @@
         private System.Windows.Forms.Label lblGapCheckResult;
         private System.Windows.Forms.Button btnBaselineRestore;
         private System.Windows.Forms.Label lblGapCheckNote;
+        private System.Windows.Forms.TabPage tabPageSystem;
+        private System.Windows.Forms.GroupBox grpAppUpdate;
+        private System.Windows.Forms.Button btnUpdateCheck;
+        private System.Windows.Forms.Label lblUpdateCheckStatus;
     }
 }
 
