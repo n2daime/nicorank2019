@@ -2,6 +2,8 @@
 # Set default behavior to automatically normalize line endings.
 ###############################################################################
 * text=auto
+# docsはUTF-8に統一する。理由はarchive.mdでCP932混入により約1万バイトの文字化けが起きたため。BOMなし・作業ツリーはCRLF・リポジトリはLFで運用する。
+docs/**/*.md text eol=crlf working-tree-encoding=UTF-8
 
 ###############################################################################
 # Set default behavior for command prompt diff.
