@@ -210,6 +210,12 @@ namespace nicorankLib.Common
         public string Url { get; set; }
     }
 
+    public class URL_APPUPDATE
+    {
+        [XmlAttribute(AttributeName = "Url")]
+        public string Url { get; set; }
+    }
+
     [XmlRoot(ElementName = "SYSTEM")]
     public class SYSTEM
     {
@@ -226,6 +232,10 @@ namespace nicorankLib.Common
         // 配布場所を変えたい場合だけ書けば済むようにするためである（#39のOFFSET節別化と同一の考え方）。
         [XmlElement(ElementName = "URL_BASELINE")]
         public URL_BASELINE URL_BASELINE { get; set; }
+        // アプリ自動更新の最新ポインタ（Issue #47）。任意要素であり、なければ既定URLを使う。
+        // なぜ任意にするか：URL_BASELINEと同一の理由であり、設定がなくても更新確認が動くようにするためである。
+        [XmlElement(ElementName = "URL_APPUPDATE")]
+        public URL_APPUPDATE URL_APPUPDATE { get; set; }
     }
 
 }

@@ -45,6 +45,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "nicorank_oldlog", "nicorank
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "nicorank_SnapShot.Cli", "nicorank_SnapShot.Cli\nicorank_SnapShot.Cli.csproj", "{90D95E1E-0552-4C74-BDCC-26E9E974143D}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "nicorankUpdater", "nicorankUpdater\nicorankUpdater.csproj", "{62F2F260-708B-47A9-93B5-7AF840FE7919}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -99,6 +101,14 @@ Global
 		{90D95E1E-0552-4C74-BDCC-26E9E974143D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{90D95E1E-0552-4C74-BDCC-26E9E974143D}.Release|x64.ActiveCfg = Release|Any CPU
 		{90D95E1E-0552-4C74-BDCC-26E9E974143D}.Release|x64.Build.0 = Release|Any CPU
+		{62F2F260-708B-47A9-93B5-7AF840FE7919}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{62F2F260-708B-47A9-93B5-7AF840FE7919}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{62F2F260-708B-47A9-93B5-7AF840FE7919}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{62F2F260-708B-47A9-93B5-7AF840FE7919}.Debug|x64.Build.0 = Debug|Any CPU
+		{62F2F260-708B-47A9-93B5-7AF840FE7919}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{62F2F260-708B-47A9-93B5-7AF840FE7919}.Release|Any CPU.Build.0 = Release|Any CPU
+		{62F2F260-708B-47A9-93B5-7AF840FE7919}.Release|x64.ActiveCfg = Release|Any CPU
+		{62F2F260-708B-47A9-93B5-7AF840FE7919}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
