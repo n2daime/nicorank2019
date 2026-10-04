@@ -632,3 +632,24 @@
 - **内容**: 前回 `v20260928_nicorank` 以降は #45 のみ（集計抜けチェック＋ベースライン復旧）。`nicorank.xml` に新規設定なしのため既存設定のまま上書き更新できる
 - **検証**: `dotnet test` PASS・sln Release ビルド成功（develop と main の両方で確認）。lib 4件＋runtimes 3arch・両exe.configのloadFromRemoteSources・nicorank.xml一致を確認。実機はユーザーがRelease版で起動・抜け表示・警告文面を確認済み（#45の実行確認を流用。集計ロジック自体は#45で触っていないため通し集計の再実行は省略）
 - **同期**: `main` へ--no-ffマージ→タグ→push→Release作成→`develop` へバックマージ→push。`git diff main develop --stat` は空
+---
+
+## 2026-10-04 nicorank2019の自動更新・updater実装 (#47・47.1)
+
+- **Issue**: #47（OPEN維持。47.2の release.md 更新が残るためクローズしない）
+- **ブランチ**: `feature/t47-app-autoupdate` → `develop` に `--no-ff` でマージ。ブランチ削除済み
+- **背景**: 手作業上書きによる `lib/` 欠け事故（2026/10/03 報告の `batteries_v2` 不在エラー）を受け、文面改善ではなく構造で防ぐ。第一段は通知＋ワンクリックの任意適用とする。壁打ち（別セッション）で設計合意と `version.json` フォーマットを確定し、実装セッションで仕様詳細を詰めた
+- **実施内容**:
+  - `nicorankLib/Util/AppUpdateChecker.cs` 新設（`version.json` 取得・`schema<=対応上限` 判定・自前版数正規化＋`System.Version` 比較・24時間間引き・同一版抑制。fetch／時計／TEMPパスは注入可。取得は専用の短いリトライ（3回・5秒）で `InternetUtil` の20回再試行を使わない）
+  - `NicoRankXml` に `SYSTEM/URL_APPUPDATE` 任意要素、`Config.AppUpdateManifestUrl`＋既定定数（`URL_BASELINE` と同型）
+  - `frmMain` の起動時非同期確認・システム設定タブ（`tabPageSystem` 新設。メンテナンスタブの渋滞解消のためユーザー判断で移設）・更新ダイアログ（版数・サイズ・詳細リンク・現状版数）・集計実行中の適用ガード・二重表示防止
+  - `nicorankUpdater` 新設（net48・SDK-style・nicorankLib非参照。タスクファイル→DL→size/sha256照合→本体終了待機→退避→置換→再起動。失敗時は自動復元。再起動失敗は成功と誤認しない）。`url` は http／https／file を許す（ローカル検証用）
+  - `version.json` の `url` 組み立て拒否（完全URL必須）は本体・updater 両側で検証する
+  - UnitTest25件追加（計346件）。specs.md／design.md／release.md（updater行を47.1へ前倒し）／tasks.md／knowledge更新
+- **設計判断**（詳細は `design.md`）: 必須化は将来Issueへ分離・updater自身の置換は別Issue・状態ファイルは削除耐性があるため `%TEMP%`・手動確認は間引き無視・確認不能時は旧版のまま・Assembly版数印は47.2の必須手順化（書き換え忘れは毎日誤通知の運用事故になるため）
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 全346件PASS、`dotnet build nicorank2019.sln -c Release` 成功
+  - reviewer再レビュー3回でマージ可（高1件＋中8件対応・低は対応と見送り記録。見送りは終了コード3分離・空文字url待機）
+  - ユーザー実機検証OK（file://通しテスト：起動時通知→置換→再起動→backup退避→最新判定。刻印ビルドで版数遷移まで確認。システム設定タブ・現状版数表示を含む）
+  - 検証中の付帯対応：更新確認の長時間リトライを短縮（確認中固着の解消）、メンテナンスタブからシステム設定タブへの移設（ユーザー実施。Click再配線と改名はこちらで検証）
+- **残課題**: 47.2（release.md更新・版数刻印手順・`version.json` 生成・NAS配置）・updater自身の置換（別Issue）・必須化（将来Issue）。`docs/tasks/archive.md` の既存部分に約1万文字の文字化け（不正UTF-8バイト。コミット済みの過去破損。本件作業とは無関係）を検出。追記は既存バイトに触れない方式で行った。修復は別途検討する
