@@ -229,6 +229,7 @@ git push origin develop
 - 旧環境の不要ファイルの削除指示を含める（例: 旧 SQLite ライブラリの `x64` / `x86` フォルダ、廃止した DB。**残っていても動作するものは「削除してかまわない」と表記**）
 - 既存ユーザーの設定ファイルはそのまま使い続けられる旨を明記する（設定廃止時は「残っていても無視される」を添える）
 - `exe` と `exe.config` は**セットで上書き**するよう案内する（`loadFromRemoteSources` は `exe.config` に含まれる。exe だけ差し替えて config が旧版のままだと、GitHub から DL した zip を展開した際の MOTW で `SQLiteCtrl` のタイプ初期化が失敗する — #26。旧版は DLL のプロパティ「許可する」または `Unblock-File` で回避可能）
+- 配置場所の注意を案内する（OneDrive配下の深い階層はパス長260超えで `batteries_v2` の `FileNotFound` になる実例あり。`Documents` 直下や `C:\nicorank` 等の浅い固定配置を推奨。OneDriveに置く場合は「常にデバイスに保持」。Defender除外は任意の補足とし、SmartScreen初回警告とは別物である旨を添える。詳細は `pitfalls.md 26` を参照）
 
 ### 補足
 

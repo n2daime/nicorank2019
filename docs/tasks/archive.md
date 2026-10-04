@@ -668,3 +668,12 @@
 - **検証**: `dotnet test` 346件PASS・sln Releaseビルド成功・lib 4件＋runtimes 3種・loadFromRemoteSources・nicorank.xml一致を確認。実機集計は省略（#47は集計ロジック不変・#45は前回実機済み・起動E2Eと全テストで代替。ユーザー合意）
 - **同期**: main→developへバックマージ。`git diff main develop --stat` 空を確認
 - **残課題**: updater自身の置換（別Issue）・必須化（将来Issue）・NASの `version.json` 配置（人間作業。配置後に更新通知が有効になる）
+
+---
+
+## 2026-10-04 OneDrive配下のbatteries_v2不在エラーの切り分け（docs調査・コード変更なし）
+
+- **Issue／ブランチ**: なし（原因確定済みの配置問題のためIssue化しない。docsのみで `develop` 直修正）
+- **背景**: 2026/10/03報告の `SQLitePCLRaw.batteries_v2` の `FileNotFoundException`（`EnsureApiXmlFile()`／`EnsureDailylogFile()` 経由）が、OneDrive上に一式を配置した環境でのみ発生した。手元の新規展開では再現せず、#47の更新手順側は対応済みだったため、残る環境要因を切り分けた
+- **実施内容**: パス長260超え仮説をユーザーに提示し、浅い階層（`Documents` 直下の `nicorank` フォルダ）への移動で解消したため確定とした。`pitfalls.md` に項目26（症状・MAX_PATH・浅い配置・OneDrive常時保持・Defender除外2行・SmartScreenとの区別・FileNotFound／FileLoad切り分け）を追記し、`release.md` のReleaseノート指針に配置場所の一文を足した。Defender除外は `nicorank2019.exe` に加え `nicorankUpdater.exe` の2行とし、誤爆削除の回避にはなるが初回SmartScreenの回避ではない旨を明記した
+- **検証**: docsのみのため集計ロジックの再実行は不要。次工程でテスト＋ビルド成功を確認する。`tasks.md` の未完了タスクへの追加は不要（新規タスクではなく確定済み事象の記録のため）

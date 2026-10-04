@@ -247,3 +247,15 @@
 - **対策（実施済み）**: `docs/` をUTF-8（BOMなし）に統一する。作業ツリーはCRLF・リポジトリはLFとし、`.gitattributes` に `docs/**/*.md text eol=crlf working-tree-encoding=UTF-8` を明記した。ファイル書き換えは `edit` ツールまたは `[System.IO.File]::ReadAllBytes/WriteAllBytes` によるバイト操作で行い、PowerShell 5.1 の `Set-Content`・`Out-File`・`Add-Content` 既定（ANSI読み書き）を使わない（AGENTS.md §5の注意通り）
 - **例外（`.ps1` はBOMあり）**: `tools/*.ps1` は `powershell -File`（5.1）で実行するため UTF-8 **BOMあり**で保存する。BOMなしだと5.1がANSIとして読み、日本語コメントの文字化けで構文エラーになる（`tools/make-version.ps1` で実証済み。Issue #47レビューで発覚）。`edit` ツールや `write` ツールはBOMなしで書くため、`.ps1` 新設・更新後は `[System.IO.File]` のバイト操作でBOM（`239,187,191`）を付ける。出力する `version.json`・`baseline.json` 自体はBOMなしのままにする（読む側はどちらでも読めるが差分比較のため）
 - **検証方法**: バイト列でUTF-8として不正なバイト数を数え、0になることを確認する。不正がある場合は `16d217c` を正本として既存部を戻し、新規部はUTF-8厳密→失敗時はCP932で個別に復元する。今回は基準版24部＋新規11部（CP932が8件・UTF-8が3件）の分離復元で不正0・置換文字0・目視正常を確認した
+
+### 26. OneDrive配下＋パス長260超えでbatteries_v2がFileNotFoundになる（2026-10・配置確定）
+
+- **症状**: OneDrive上に一式を配置した環境で集計開始時に `'nicorankLib.Util.SQLiteCtrl' のタイプ初期化子が例外をスローしました` が発生。内側は `FileNotFoundException: SQLitePCLRaw.batteries_v2` で、`BaselineDownloader.EnsureCacheFiles()` の `EnsureApiXmlFile()`／`EnsureDailylogFile()` 経由の `new SQLiteCtrl()` で起きる。リリースZIPを新規展開した手元では再現しない
+- **原因（確定）**: 実行パスの全長がWindowsのMAX_PATH（260文字）前後を超え、`lib\SQLitePCLRaw.batteries_v2.dll` が探せなくなっていた。本プログラムの問題ではなくWindows＋.NET Framework 4.8の仕様である。OneDrive配下は `C:\Users\...\OneDrive\...` と基点が長く、日本語の長いフォルダ名が加わると `lib\runtimes\win-x64\native\e_sqlite3.dll` までの requirement で上限を超えやすい。浅い階層（`Documents` 直下の `nicorank` フォルダ）への移動で解消したため確定した
+- **対策（配置）**: `Documents` 直下や `C:\nicorank` などの浅い固定配置を推奨する。実務上はフォルダ＋ファイル名を256文字以内に収める。OneDriveに置くこと自体は可能だが、「空き容量を増やす」等のオンデマンド機能でファイルは存在するのに実体がないという矛盾した状態になることがあるため、「常にデバイスに保持」にして実体を置く
+- **Defender除外（任意の補足・管理者権限が必要）**: Defenderの誤爆削除を避ける目的では、次を管理者PowerShellで登録する。対象exeが増えたため2行になった（`nicorankUpdater.exe` を含める）。実行時初回のSmartScreen警告（Defenderとは別物）を回避するものではないため、案内時は区別して書く
+  ```powershell
+  Add-MpPreference -ExclusionProcess "nicorank2019.exe"
+  Add-MpPreference -ExclusionProcess "nicorankUpdater.exe"
+  ```
+- **切り分けの教訓**: `FileNotFoundException` は欠落、`FileLoadException` はブロック（MOTWの#16）と例外名で切り分ける。MOTW対策の `loadFromRemoteSources` 済みでも本件は起きる。疑ったら浅い階層への移動で試し、`lib` 直下と `lib\runtimes` のファイル一覧と実行パスの全長を確認する
