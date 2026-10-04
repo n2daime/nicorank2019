@@ -334,6 +334,20 @@ namespace nicorankLib.Common
         /// </summary>
         public const string DefaultBaselineManifestUrl = "https://2daime.myds.me/nicorank/baseline/baseline.json";
 
+        /// <summary>
+        /// アプリ自動更新の最新ポインタ（version.json）のURL（Issue #47）。
+        /// nicorank.xml の SYSTEM/URL_APPUPDATE がなければ既定URLを使う。
+        /// なぜ既定を持つか：BaselineManifestUrl と同一の理由であり、
+        /// 既存設定ファイルに要素がなくても更新確認が動くようにするためである。
+        /// </summary>
+        public string AppUpdateManifestUrl { get { return xml.SYSTEM.URL_APPUPDATE != null ? xml.SYSTEM.URL_APPUPDATE.Url : DefaultAppUpdateManifestUrl; } set { } }
+
+        /// <summary>
+        /// アプリ自動更新の既定URL。NAS の Web 公開配下の最新ポインタを指す。
+        /// 値を変えたら AppUpdateChecker.DefaultManifestUrl と docs も同時更新すること。
+        /// </summary>
+        public const string DefaultAppUpdateManifestUrl = "https://2daime.myds.me/nicorank/update/version.json";
+
         // OFFSET系の既定値（現行共通値）。Initilizeの欠落補完と*ForWriteの生成初期値で共用する。
         // なぜ定数化するか：4箇所×4種に散らすと将来の既定値変更で修正漏れが起きるためである（AGENTS.md §1のマジックナンバー抑止）。
         private const int DefaultCommentOffsetMode = 2;

@@ -63,6 +63,8 @@ GitHub Release に添付する zip の内容は以下を厳守する。**ユー�
 - `nicorank2019.exe.config` — `lib/` フォルダ参照用
 - `nicorank.xml.org` — `依存ファイル/nicorank.xml` または `bin/Release/nicorank.xml` をリネームしたもの
 - `lib\*.*` — `lib/` 配下すべて（`Microsoft.Data.Sqlite.dll` 等4件 + `lib/runtimes/win-{x64,x86,arm}/native/e_sqlite3.dll`）
+- `nicorankUpdater.exe` — 分離更新担当（Issue #47。本体と同じフォルダに置く。47.1で前倒し追加）
+- `nicorankUpdater.exe.config` — `loadFromRemoteSources` 用（同上）
 
 #### パターンB: nicorank_SnapShot（.NET Framework 4.8 / 要lib）
 
@@ -97,6 +99,8 @@ GitHub Release に添付する zip の内容は以下を厳守する。**ユー�
   Copy-Item "$src\nicorank2019.exe" $tmp -Force
   Copy-Item "$src\nicorank2019.exe.config" $tmp -Force
   Copy-Item "$src\lib" "$tmp\lib" -Recurse -Force
+  Copy-Item "nicorankUpdater/bin/Release/nicorankUpdater.exe" $tmp -Force
+  Copy-Item "nicorankUpdater/bin/Release/nicorankUpdater.exe.config" $tmp -Force
   if (Test-Path "$src\nicorank.xml") { Copy-Item "$src\nicorank.xml" "$tmp\nicorank.xml.org" -Force }
   Compress-Archive -Path "$tmp\*" -DestinationPath $dst -Force
 
@@ -141,7 +145,7 @@ GitHub Release に添付する zip の内容は以下を厳守する。**ユー�
 - [ ] `develop` で `bin\Release\lib\` に `Microsoft.Data.Sqlite.dll` 等 4件 + `lib\runtimes\win-{x64,x86,arm}\native\e_sqlite3.dll` が配置されていること
 - [ ] `nicorank2019.exe.config` / `nicorank_SnapShot.exe.config` に `<loadFromRemoteSources enabled="true" />` が含まれていること（#26。旧 config が混入すると GitHub から DL した zip 展開時の MOTW で SQLiteCtrl のタイプ初期化が失敗する）
 - [ ] `bin\Release\nicorank.xml` が `依存ファイル/nicorank.xml` と一致していること（PostBuildEvent の xcopy はビルド方式・タイミングによって反映が保証されない。廃止済み設定が残った古い版が zip に入った実例あり。差異があれば手動コピーしてから zip 化する）
-- [ ] リリース成果物（zip）がホワイトリスト通りであること（パターンA: `nicorank2019.exe` / `nicorank.xml.org` / `nicorank2019.exe.config` / `lib\*.*` のみ、パターンB: `nicorank_SnapShot.exe` / `exe.config` / `lib\*.*` のみ、パターンC: `nicorank_oldlog.exe` / `dll` / `runtimeconfig.json` / `config.json.org` / `cookie.txt.org` のみ。`DB/*.db` / `*.org` でない設定本体 / `*.pdb` / `Output/` / `System.*.dll` 直下等が含まれていないこと。上記「リリース成果物のルール」参照）
+- [ ] リリース成果物（zip）がホワイトリスト通りであること（パターンA: `nicorank2019.exe` / `nicorank.xml.org` / `nicorank2019.exe.config` / `lib\*.*` / `nicorankUpdater.exe` / `nicorankUpdater.exe.config` のみ、パターンB: `nicorank_SnapShot.exe` / `exe.config` / `lib\*.*` のみ、パターンC: `nicorank_oldlog.exe` / `dll` / `runtimeconfig.json` / `config.json.org` / `cookie.txt.org` のみ。`DB/*.db` / `*.org` でない設定本体 / `*.pdb` / `Output/` / `System.*.dll` 直下等が含まれていないこと。上記「リリース成果物のルール」参照）
 - [ ] 実機で集計（週刊/中間/SP）が通ることの確認（`develop` のビルド成果物で確認）
 
 ## リリース手順（AIが実行する手順）

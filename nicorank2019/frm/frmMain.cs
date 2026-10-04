@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -64,6 +65,9 @@ namespace nicorank2019.frm
                 chkUseLiveCounter.CheckedChanged += new EventHandler(this.chkUseLiveCounter_CheckedChanged);
                 UpdateLiveCounterControls();
                 _tagMockLoaded = true;
+                // 起動直後の更新確認（Issue #47）。UI をブロックしないよう非同期で投げっぱなしにする。
+                // Load 自体は先に返る。確認不能時は黙って旧版のまま動かす。
+                StartAppUpdateCheckOnStartup();
             }
             catch (Exception ex)
             {
@@ -316,6 +320,8 @@ namespace nicorank2019.frm
         // 最適化の実行中フラグ。ResetTagCountState が実行中の条件編集で集計ボタンを復活させないために見る。
         // 完了時は退避値ではなく現在の条件から求め直すため、開始前の Enabled 退避は持たない。
         private bool _vacuumRunning = false;
+        // 更新案内ダイアログの表示中フラグ。起動時確認と手動確認が重なった場合の二重表示と二重適用を防ぐ。
+        private bool _updateDialogOpen = false;
 
         /// <summary>
         /// 実行中の二重実行・同時集計を防ぐため、実行系の有効・無効を切り替える。
@@ -352,6 +358,8 @@ namespace nicorank2019.frm
             btnGapCheckExec.Enabled = enabled;
             chkGapCheckOneYear.Enabled = enabled;
             btnBaselineRestore.Enabled = enabled;
+            // 更新確認もネットワークと配置先を使う実行系のため、同時実行を防ぐ対象に含める。
+            btnUpdateCheck.Enabled = enabled;
         }
 
         /// <summary>
@@ -981,5 +989,248 @@ namespace nicorank2019.frm
         {
             SetEnableAnalyzeDay();
         }
+
+        /// <summary>
+        /// updater の exe 名（本体 zip に同梱する分離更新担当。Issue #47）。
+        /// </summary>
+        private const string UpdaterExeName = "nicorankUpdater.exe";
+
+        /// <summary>
+        /// 起動直後の更新確認（Issue #47）。
+        /// UI スレッドをブロックしないよう取得は Task.Run で行い、復帰後の UI スレッドでダイアログを出す
+        /// （集計スレッドからコントロールに触らない。pitfalls項目19）。
+        /// SQLite を使わないため lib/ 欠け時でも動く。確認不能時は黙って旧版のまま動かす。
+        /// </summary>
+        private async void StartAppUpdateCheckOnStartup()
+        {
+            try
+            {
+                AppUpdateChecker.UpdateCheckResult result = await System.Threading.Tasks.Task.Run(() => new AppUpdateChecker().Check());
+                if (result != null && result.Status == AppUpdateChecker.UpdateCheckStatus.Available && result.Entry != null)
+                {
+                    // 取得待ちの間に集計・最適化が始まっていたら案内を見送る。実行中の集計を殺さないため。
+                    if (IsWorkRunning())
+                    {
+                        StatusLog.WriteLine("集計実行中のため更新案内を見送りました。メンテナンスタブの「更新を確認」から確認できます");
+                        return;
+                    }
+                    OfferAppUpdate(result.Entry, false);
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrLog.GetInstance().Write(ex);
+            }
+        }
+
+        /// <summary>
+        /// メンテナンスタブの「更新を確認」ボタン（Issue #47）。
+        /// 24時間間引きを無視して必ず取得する。押したのに何も起きない操作にしないためである。
+        /// 実処理は集計スレッド側で行い、UI更新はawait復帰後のUIスレッドで行う
+        /// （集計スレッドからコントロールに触らない。pitfalls項目19）。
+        /// 実行ログは集計タブと同様にコンソール側（StatusLog）へ出すため、タブ内にログ欄は持たない。
+        /// </summary>
+        private async void btnUpdateCheck_Click(object sender, EventArgs e)
+        {
+            // 更新案内ダイアログの表示中は再実行しない。二重適用を防ぐため（再レビュー指摘対応）。
+            if (_updateDialogOpen)
+            {
+                return;
+            }
+            SetVacuumRunning(true);
+            lblUpdateCheckStatus.Text = "更新: 確認中...";
+            try
+            {
+                AppUpdateChecker.UpdateCheckResult result = await System.Threading.Tasks.Task.Run(() => new AppUpdateChecker().Check(true));
+                if (result == null || result.Status == AppUpdateChecker.UpdateCheckStatus.Unknown)
+                {
+                    lblUpdateCheckStatus.Text = "更新: 確認不能";
+                    StatusLog.WriteLine("アプリの更新を確認できませんでした。ネットワークと配布場所を確認してください");
+                    MessageBox.Show("更新を確認できませんでした。ネットワークと配布場所を確認してください", "更新の確認", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                if (result.Status == AppUpdateChecker.UpdateCheckStatus.UpToDate)
+                {
+                    lblUpdateCheckStatus.Text = "更新: 最新です";
+                    StatusLog.WriteLine("アプリは最新版です");
+                    MessageBox.Show("最新版です", "更新の確認", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                if (result.Status == AppUpdateChecker.UpdateCheckStatus.Throttled)
+                {
+                    lblUpdateCheckStatus.Text = "更新: 未確認";
+                    return;
+                }
+                if (result.Entry == null)
+                {
+                    lblUpdateCheckStatus.Text = "更新: 確認不能";
+                    return;
+                }
+                lblUpdateCheckStatus.Text = "更新: 新版あり " + result.Entry.Version;
+                // 手動ボタン経路は SetVacuumRunning のロックを保持しているため、適用ガードの対象外とする。
+                OfferAppUpdate(result.Entry, true);
+            }
+            catch (Exception ex)
+            {
+                lblUpdateCheckStatus.Text = "更新: 失敗";
+                MessageBox.Show(GetExceptionMessages(ex), "システムエラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                SetVacuumRunning(false);
+            }
+        }
+
+        /// <summary>
+        /// 更新案内ダイアログを出す。新版の版数・サイズ・詳細リンクを示し、今すぐ更新か後でかを選ぶ。
+        /// 第一弾は任意適用のみであり、月曜直前の強制更新はしない（Issue 合意。必須化は将来Issueへ分離）。
+        /// ダイアログ表示後は通知済み版を記録し、同一版の再通知を抑える（1日1回まで）。
+        /// </summary>
+        /// <param name="entry">配布情報（Check の Available で得たもの）</param>
+        /// <param name="lockHeld">実行系のロック（SetVacuumRunning）を保持していれば true。手動ボタン経路のみ真になる</param>
+        private void OfferAppUpdate(AppUpdateChecker.UpdateFileEntry entry, bool lockHeld)
+        {
+            // 二重表示の防止：起動時確認と手動確認が重なった場合は先勝ちにする。
+            // 二重適用（二重 updater 起動）を防ぐためでもある。
+            if (_updateDialogOpen)
+            {
+                return;
+            }
+            _updateDialogOpen = true;
+            try
+            {
+                bool updateNow = ShowUpdateDialog(entry);
+                // 表示したこと自体を記録する。後でを選んだ同一版で毎起動うるさくしないためである。
+                new AppUpdateChecker().MarkNotified(entry.Version);
+                if (!updateNow)
+                {
+                    return;
+                }
+                ApplyAppUpdate(entry, lockHeld);
+            }
+            finally
+            {
+                _updateDialogOpen = false;
+            }
+        }
+
+        /// <summary>
+        /// 更新案内ダイアログの実体。Designer を使わずコードで組み立てる。
+        /// なぜコードか：リンク付きの小さな確認画面のためだけに Designer・resx を増やすと差分が大きくなるためである。
+        /// </summary>
+        /// <returns>今すぐ更新が選ばれれば true</returns>
+        private bool ShowUpdateDialog(AppUpdateChecker.UpdateFileEntry entry)
+        {
+            using (var dialog = new Form())
+            {
+                dialog.Text = "更新のお知らせ";
+                dialog.Size = new System.Drawing.Size(460, 230);
+                dialog.StartPosition = FormStartPosition.CenterParent;
+                dialog.FormBorderStyle = FormBorderStyle.FixedDialog;
+                dialog.MaximizeBox = false;
+                dialog.MinimizeBox = false;
+
+                var lblMsg = new Label();
+                lblMsg.AutoSize = true;
+                lblMsg.Location = new System.Drawing.Point(12, 12);
+                lblMsg.Text = "新しい版があります: " + entry.Version
+                    + "（約" + DbOptimizer.FormatFileSize(entry.Size) + "）\r\n"
+                    + "今すぐ更新しますか。集計実行中の更新はできません。";
+
+                var linkNotes = new LinkLabel();
+                linkNotes.AutoSize = true;
+                linkNotes.Location = new System.Drawing.Point(12, 90);
+                linkNotes.Text = "詳細（リリースノート）を開く";
+                linkNotes.Visible = !string.IsNullOrWhiteSpace(entry.Notes);
+                string notesUrl = entry.Notes;
+                linkNotes.LinkClicked += (s, e) =>
+                {
+                    // リンク先を開けなくても更新可否の判断はできるため、失敗時は ErrLog に残して続ける。
+                    try { Process.Start(notesUrl); }
+                    catch (Exception ex) { ErrLog.GetInstance().Write(ex); }
+                };
+
+                var btnNow = new Button();
+                btnNow.Text = "今すぐ更新";
+                btnNow.DialogResult = DialogResult.OK;
+                btnNow.Location = new System.Drawing.Point(100, 140);
+                btnNow.Size = new System.Drawing.Size(120, 32);
+
+                var btnLater = new Button();
+                btnLater.Text = "後で";
+                btnLater.DialogResult = DialogResult.Cancel;
+                btnLater.Location = new System.Drawing.Point(240, 140);
+                btnLater.Size = new System.Drawing.Size(120, 32);
+
+                dialog.Controls.Add(lblMsg);
+                dialog.Controls.Add(linkNotes);
+                dialog.Controls.Add(btnNow);
+                dialog.Controls.Add(btnLater);
+                dialog.AcceptButton = btnNow;
+                dialog.CancelButton = btnLater;
+                return dialog.ShowDialog(this) == DialogResult.OK;
+            }
+        }
+
+        /// <summary>
+        /// 分離 updater に置換させる。本体が更新を検出→updater を起動→本体終了→updater が待機・置換・再起動する。
+        /// 置換前は旧版を退避する（#45 の DB 退避と同型）。置換対象は exe・config・lib/ 一式とし、
+        /// 部分欠けを構造的に起こせなくする（Issue 合意）。
+        /// </summary>
+        /// <param name="entry">配布情報（Check の Available で得たもの）</param>
+        /// <param name="lockHeld">実行系のロック（SetVacuumRunning）を保持していれば true。手動ボタン経路のみ真になる</param>
+        private void ApplyAppUpdate(AppUpdateChecker.UpdateFileEntry entry, bool lockHeld)
+        {
+            try
+            {
+                // 集計・最適化の実行中は適用しない。Application.Exit() で実行中プロセスを殺す事故を防ぐため。
+                // 手動ボタン経路はロック保持中のため対象外とする（押下時点で何も実行されていないことが保証される）。
+                if (!lockHeld && IsWorkRunning())
+                {
+                    MessageBox.Show("集計または最適化の実行中は更新できません。完了後にメンテナンスタブの「更新を確認」から更新してください",
+                        "更新", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                string updaterPath = Path.Combine(baseDir, UpdaterExeName);
+                var checker = new AppUpdateChecker();
+                if (!checker.WriteTaskFile(entry, baseDir, Application.ExecutablePath, Process.GetCurrentProcess().Id))
+                {
+                    MessageBox.Show("更新の準備に失敗しました。コンソールとnicorankerr.logを確認してください",
+                        "更新エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                if (!File.Exists(updaterPath))
+                {
+                    // updater 自体がない旧 zip からの更新では自動置換できない。zip 全上書きの再展開で解決する。
+                    MessageBox.Show("更新担当（" + UpdaterExeName + "）が見つかりません。配布 zip の全上書きで更新してください",
+                        "更新エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                StatusLog.WriteLine("アプリを更新します。再起動します...");
+                Process.Start(updaterPath);
+                Application.Exit();
+            }
+            catch (Exception ex)
+            {
+                ErrLog.GetInstance().Write(ex);
+                MessageBox.Show(GetExceptionMessages(ex), "システムエラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// 集計・最適化のいずれかが実行中かを返す。更新適用のガードに使う。
+        /// _vacuumRunning は最適化・抜けチェック・手動更新確認の実行中に立ち、
+        /// btnAnalyze と tabPageOut の無効は集計実行中の ExecuteAnalyzeAsync が行う。
+        /// btnAnalyzeTag の無効は件数超過でも起きるため判定に使わない。
+        /// _updateDialogOpen は更新案内ダイアログの表示中を示す（再レビュー指摘対応）。
+        /// タグ集計の件数確認中（CheckTagCountAsync の取得）は対象外とする。
+        /// ダイアログを挟むため事故確率は低く、厳密化は将来課題とする。
+        /// </summary>
+        private bool IsWorkRunning()
+        {
+            return _vacuumRunning || _updateDialogOpen || !btnAnalyze.Enabled || !tabPageOut.Enabled;
+        }
+
     }
 }

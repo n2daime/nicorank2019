@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <RootNamespace>nicorankUpdater</RootNamespace>
+    <AssemblyName>nicorankUpdater</AssemblyName>
+    <!-- 依存最小の分離更新担当（Issue #47）。Costura・SQLite・nicorankLib参照なしの単一 exe とする。
+         Framework 同梱の System.Web.Extensions（JSON読取）・System.IO.Compression（zip展開）のみ使う。 -->
+    <Prefer32Bit>false</Prefer32Bit>
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+  </ItemGroup>
+
+</Project>

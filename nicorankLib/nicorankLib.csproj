@@ -321,6 +321,7 @@
     <Compile Include="Util\IDbMigratable.cs" />
     <Compile Include="Util\DbMigrationCoordinator.cs" />
     <Compile Include="Util\BaselineDownloader.cs" />
+    <Compile Include="Util\AppUpdateChecker.cs" />
     <Compile Include="Util\WeeklyGapChecker.cs" />
     <Compile Include="Util\DbOptimizer.cs" />
     <Compile Include="Util\RegLib.cs" />
