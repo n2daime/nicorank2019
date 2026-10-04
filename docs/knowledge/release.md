@@ -44,6 +44,7 @@ git branch -d feature/tXXX-kebab-case-description
 
 - タグ形式: `vYYYYMMDD_<名前>`（例: `v20260603_nicorank` / `v20260603_snapshot_preview`）
 - タグは `main` にのみ打つ。`develop` には打たない。
+- zip 名は日付なし固定名とする（`nicorank2019.zip` / `nicorank_SnapShot.zip` / `nicorank_oldlog.zip`。Issue #47）。日付入り（`nicorank2019_20261003.zip` 等）は前 GitHub 時代の名残であり、手動更新の人にも分かりにくかったため改める（同名上書きだけになる）。既存の日付名 asset には触らない。
 
 ## リリース成果物（添付ファイル）のルール
 
@@ -89,10 +90,10 @@ GitHub Release に添付する zip の内容は以下を厳守する。**ユー�
 - 例（PowerShell）:
 
   ```powershell
-  # パターンA: nicorank2019
-  $ver = "20250903"
+  # パターンA: nicorank2019（固定名。$ver は一時フォルダ名にだけ使う）
+  $ver = "20261004"
   $src = "nicorank2019/bin/Release"
-  $dst = "nicorank2019_$ver.zip"
+  $dst = "nicorank2019.zip"
   $tmp = "$env:TEMP\nicorank_release_$ver"
   Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
   New-Item $tmp -ItemType Directory | Out-Null
@@ -104,9 +105,9 @@ GitHub Release に添付する zip の内容は以下を厳守する。**ユー�
   if (Test-Path "$src\nicorank.xml") { Copy-Item "$src\nicorank.xml" "$tmp\nicorank.xml.org" -Force }
   Compress-Archive -Path "$tmp\*" -DestinationPath $dst -Force
 
-  # パターンB: nicorank_SnapShot
+  # パターンB: nicorank_SnapShot（固定名）
   $srcSnap = "nicorank_SnapShot/bin/Release"
-  $dstSnap = "nicorank_SnapShot_$ver.zip"
+  $dstSnap = "nicorank_SnapShot.zip"
   $tmpSnap = "$env:TEMP\nicorank_snap_release_$ver"
   Remove-Item $tmpSnap -Recurse -Force -ErrorAction SilentlyContinue
   New-Item $tmpSnap -ItemType Directory | Out-Null
@@ -115,9 +116,9 @@ GitHub Release に添付する zip の内容は以下を厳守する。**ユー�
   Copy-Item "$srcSnap\lib" "$tmpSnap\lib" -Recurse -Force
   Compress-Archive -Path "$tmpSnap\*" -DestinationPath $dstSnap -Force
 
-  # パターンC: nicorank_oldlog（.NET 8.0 / lib不要）
+  # パターンC: nicorank_oldlog（.NET 8.0 / lib不要。固定名）
   $srcOld = "nicorank_oldlog/bin/Release/net8.0"
-  $dstOld = "nicorank_oldlog_$ver.zip"
+  $dstOld = "nicorank_oldlog.zip"
   $tmpOld = "$env:TEMP\nicorank_oldlog_release_$ver"
   Remove-Item $tmpOld -Recurse -Force -ErrorAction SilentlyContinue
   New-Item $tmpOld -ItemType Directory | Out-Null
@@ -131,6 +132,32 @@ GitHub Release に添付する zip の内容は以下を厳守する。**ユー�
 
 - `.gitignore` で `bin/` / `DB/` は除外されているが、リリース成果物の除外は手動（上記手順）で行う。
 - `nicorank_oldlog` の `config.json.org` / `cookie.txt.org` は `nicorank_oldlog/` 直下に git 管理する（`依存ファイル/` には置かない。`nicorank2019` の `PostBuildEvent: xcopy 依存ファイル\*.*` による混入を防ぐため）。実行時イベント（自動コピー）は設けない。
+
+### 版数刻印（Issue #47）
+
+- 自動更新の比較は `version.json` の `version` と exe の Assembly 版数で行う。両者の物差しを合わせるため、リリースビルド前に `nicorank2019/Properties/AssemblyInfo.cs` の `AssemblyVersion`／`AssemblyFileVersion` をタグ由来の日付版数へ書き換えてからビルドする（例: タグ `v20261004_nicorank` → `version.json` の `2026.10.04` → Assembly `2026.10.4.0`）。
+- **書き換え忘れは運用事故になる**。配布版数が自版数以下のままでは、更新後に「新版あり」と毎日誤通知し続ける（または大きすぎる値を刻むと永久に通知されない）。チェックリストの刻印確認は必須とする。
+- 書き換えはリリース用 feature ブランチ上でコミットする（版数印を配布手順側に寄せる既存方針。次回リリース時に更新する）。
+- 可能なら将来のビルド時自動生成を検討する（現状は手動書換え＋チェックリスト確認）。
+
+### version.json の生成と NAS 配置（Issue #47）
+
+- `version.json` は `tools/make-version.ps1` で配布 zip の実物から生成する（`size`・`sha256` 実測、`version` の数値形式検証つき）。SHA256 のコピペなど人間の typo を介在させないためである。
+- 例（PowerShell。`-Url` は GitHub Release に添付した asset の完全 URL。組み立てずそのまま書く）:
+
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File tools\make-version.ps1 `
+    -ZipPath "nicorank2019.zip" `
+    -Tag "v20261004_nicorank" `
+    -Version "2026.10.04" `
+    -Url "https://github.com/n2daime/nicorank2019/releases/download/v20261004_nicorank/nicorank2019.zip" `
+    -OutDir "$env:TEMP\nicorank_version"
+  ```
+
+- `-Url` は GitHub Release に添付した asset を指すため、実行順序は「zip 作成→Release 添付→実物から `version.json` 生成→NAS配置→チェックリスト照合」とする。タグ付け前のチェックリスト確認では `version.json` 照合だけ後に回す。
+
+- NAS への配置は人間が行う（エージェントは NAS に触れない）。`version.json` を `https://2daime.myds.me/nicorank/update/version.json`（`nicorank.xml` の `SYSTEM/URL_APPUPDATE` 既定値）に置き、ブラウザで見えることを確認する。
+- `version.json` は GitHub Release の zip には含めない（NAS 専用）。配布 zip とは別寿命で運用し、公開の一時停止や段階展開は `version.json` の更新有無で制御する。
 
 ## リリース前チェックリスト
 
@@ -146,6 +173,9 @@ GitHub Release に添付する zip の内容は以下を厳守する。**ユー�
 - [ ] `nicorank2019.exe.config` / `nicorank_SnapShot.exe.config` に `<loadFromRemoteSources enabled="true" />` が含まれていること（#26。旧 config が混入すると GitHub から DL した zip 展開時の MOTW で SQLiteCtrl のタイプ初期化が失敗する）
 - [ ] `bin\Release\nicorank.xml` が `依存ファイル/nicorank.xml` と一致していること（PostBuildEvent の xcopy はビルド方式・タイミングによって反映が保証されない。廃止済み設定が残った古い版が zip に入った実例あり。差異があれば手動コピーしてから zip 化する）
 - [ ] リリース成果物（zip）がホワイトリスト通りであること（パターンA: `nicorank2019.exe` / `nicorank.xml.org` / `nicorank2019.exe.config` / `lib\*.*` / `nicorankUpdater.exe` / `nicorankUpdater.exe.config` のみ、パターンB: `nicorank_SnapShot.exe` / `exe.config` / `lib\*.*` のみ、パターンC: `nicorank_oldlog.exe` / `dll` / `runtimeconfig.json` / `config.json.org` / `cookie.txt.org` のみ。`DB/*.db` / `*.org` でない設定本体 / `*.pdb` / `Output/` / `System.*.dll` 直下等が含まれていないこと。上記「リリース成果物のルール」参照）
+- [ ] `nicorank2019.exe` と `nicorankUpdater.exe` はセットで配布すること（updater がない旧 zip からの更新では自動置換できない。#26 と同型の新旧混入防止）
+- [ ] `nicorank2019.exe` の版数がタグ由来の日付版数であること（ファイルのプロパティで確認。例: タグ `v20261004_nicorank` → `2026.10.4.0`。Issue #47。書き換え忘れは毎日誤通知の運用事故になる）
+- [ ] `version.json` が配布 zip の実測値と一致すること（`url` が添付 asset を指す・`size`・`sha256` が一致・`version` が数値形式。`tools/make-version.ps1` で生成したものを使う）
 - [ ] 実機で集計（週刊/中間/SP）が通ることの確認（`develop` のビルド成果物で確認）
 
 ## リリース手順（AIが実行する手順）
