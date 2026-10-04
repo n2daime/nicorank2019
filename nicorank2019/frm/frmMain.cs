@@ -68,6 +68,8 @@ namespace nicorank2019.frm
                 // 起動直後の更新確認（Issue #47）。UI をブロックしないよう非同期で投げっぱなしにする。
                 // Load 自体は先に返る。確認不能時は黙って旧版のまま動かす。
                 StartAppUpdateCheckOnStartup();
+                // 更新確認ラベルの初期表示。版数は実行時にしか分からないため Load で設定する。
+                SetUpdateCheckStatus("更新: 未確認");
             }
             catch (Exception ex)
             {
@@ -1038,46 +1040,73 @@ namespace nicorank2019.frm
                 return;
             }
             SetVacuumRunning(true);
-            lblUpdateCheckStatus.Text = "更新: 確認中...";
+            SetUpdateCheckStatus("更新: 確認中...");
             try
             {
                 AppUpdateChecker.UpdateCheckResult result = await System.Threading.Tasks.Task.Run(() => new AppUpdateChecker().Check(true));
                 if (result == null || result.Status == AppUpdateChecker.UpdateCheckStatus.Unknown)
                 {
-                    lblUpdateCheckStatus.Text = "更新: 確認不能";
+                    SetUpdateCheckStatus("更新: 確認不能");
                     StatusLog.WriteLine("アプリの更新を確認できませんでした。ネットワークと配布場所を確認してください");
                     MessageBox.Show("更新を確認できませんでした。ネットワークと配布場所を確認してください", "更新の確認", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 if (result.Status == AppUpdateChecker.UpdateCheckStatus.UpToDate)
                 {
-                    lblUpdateCheckStatus.Text = "更新: 最新です";
+                    SetUpdateCheckStatus("更新: 最新です");
                     StatusLog.WriteLine("アプリは最新版です");
                     MessageBox.Show("最新版です", "更新の確認", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
                 if (result.Status == AppUpdateChecker.UpdateCheckStatus.Throttled)
                 {
-                    lblUpdateCheckStatus.Text = "更新: 未確認";
+                    SetUpdateCheckStatus("更新: 未確認");
                     return;
                 }
                 if (result.Entry == null)
                 {
-                    lblUpdateCheckStatus.Text = "更新: 確認不能";
+                    SetUpdateCheckStatus("更新: 確認不能");
                     return;
                 }
-                lblUpdateCheckStatus.Text = "更新: 新版あり " + result.Entry.Version;
+                SetUpdateCheckStatus("更新: 新版あり " + result.Entry.Version);
                 // 手動ボタン経路は SetVacuumRunning のロックを保持しているため、適用ガードの対象外とする。
                 OfferAppUpdate(result.Entry, true);
             }
             catch (Exception ex)
             {
-                lblUpdateCheckStatus.Text = "更新: 失敗";
+                SetUpdateCheckStatus("更新: 失敗");
                 MessageBox.Show(GetExceptionMessages(ex), "システムエラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
                 SetVacuumRunning(false);
+            }
+        }
+
+        /// <summary>
+        /// 更新確認の状態ラベルを設定する。末尾に現状版数を付ける。
+        /// なぜ付けるか：トラブル時のバージョン特定のため（Issue #47 検証での指摘）。
+        /// 個別に付けると付け忘れが出るため、このヘルパーに一本化する。
+        /// 版数はエントリアセンブリから読む。取得不能時は「不明」と出す。
+        /// </summary>
+        private void SetUpdateCheckStatus(string message)
+        {
+            lblUpdateCheckStatus.Text = message + " 現状バージョン " + CurrentVersionText();
+        }
+
+        /// <summary>
+        /// 現状版数の表示文言。版数はエントリアセンブリから読む。取得不能時は「不明」とする。
+        /// </summary>
+        private static string CurrentVersionText()
+        {
+            try
+            {
+                Version current = new AppUpdateChecker().CurrentVersion;
+                return current != null ? current.ToString() : "不明";
+            }
+            catch
+            {
+                return "不明";
             }
         }
 
@@ -1135,6 +1164,7 @@ namespace nicorank2019.frm
                 lblMsg.Location = new System.Drawing.Point(12, 12);
                 lblMsg.Text = "新しい版があります: " + entry.Version
                     + "（約" + DbOptimizer.FormatFileSize(entry.Size) + "）\r\n"
+                    + "現状バージョン: " + CurrentVersionText() + "\r\n"
                     + "今すぐ更新しますか。集計実行中の更新はできません。";
 
                 var linkNotes = new LinkLabel();

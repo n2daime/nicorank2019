@@ -99,8 +99,8 @@ GitHub Release に添付する zip の内容は以下を厳守する。**ユー�
   Copy-Item "$src\nicorank2019.exe" $tmp -Force
   Copy-Item "$src\nicorank2019.exe.config" $tmp -Force
   Copy-Item "$src\lib" "$tmp\lib" -Recurse -Force
-  Copy-Item "nicorankUpdater/bin/Release/nicorankUpdater.exe" $tmp -Force
-  Copy-Item "nicorankUpdater/bin/Release/nicorankUpdater.exe.config" $tmp -Force
+  Copy-Item "nicorankUpdater/bin/Release/net48/nicorankUpdater.exe" $tmp -Force
+  Copy-Item "nicorankUpdater/bin/Release/net48/nicorankUpdater.exe.config" $tmp -Force
   if (Test-Path "$src\nicorank.xml") { Copy-Item "$src\nicorank.xml" "$tmp\nicorank.xml.org" -Force }
   Compress-Archive -Path "$tmp\*" -DestinationPath $dst -Force
 

@@ -1102,7 +1102,7 @@
             this.chkVacuumLogOfficial.Location = new System.Drawing.Point(12, 70);
             this.chkVacuumLogOfficial.Name = "chkVacuumLogOfficial";
             this.chkVacuumLogOfficial.Size = new System.Drawing.Size(196, 16);
-            this.chkVacuumLogOfficial.TabIndex = 3;
+            this.chkVacuumLogOfficial.TabIndex = 0;
             this.chkVacuumLogOfficial.Text = "LogOfficial.db（DB/LogOfficial.db）";
             this.chkVacuumLogOfficial.UseVisualStyleBackColor = true;
             // 
@@ -1132,7 +1132,7 @@
             this.chkVacuumNicoranHistory.Location = new System.Drawing.Point(12, 95);
             this.chkVacuumNicoranHistory.Name = "chkVacuumNicoranHistory";
             this.chkVacuumNicoranHistory.Size = new System.Drawing.Size(238, 16);
-            this.chkVacuumNicoranHistory.TabIndex = 6;
+            this.chkVacuumNicoranHistory.TabIndex = 1;
             this.chkVacuumNicoranHistory.Text = "NicoranHistory.db（DB/NicoranHistory.db）";
             this.chkVacuumNicoranHistory.UseVisualStyleBackColor = true;
             // 
@@ -1162,7 +1162,7 @@
             this.chkVacuumApiXml.Location = new System.Drawing.Point(12, 120);
             this.chkVacuumApiXml.Name = "chkVacuumApiXml";
             this.chkVacuumApiXml.Size = new System.Drawing.Size(164, 16);
-            this.chkVacuumApiXml.TabIndex = 9;
+            this.chkVacuumApiXml.TabIndex = 2;
             this.chkVacuumApiXml.Text = "ApiXML.db（DB/ApiXML.db）";
             this.chkVacuumApiXml.UseVisualStyleBackColor = true;
             // 
@@ -1192,7 +1192,7 @@
             this.chkVacuumDailylog.Location = new System.Drawing.Point(12, 145);
             this.chkVacuumDailylog.Name = "chkVacuumDailylog";
             this.chkVacuumDailylog.Size = new System.Drawing.Size(168, 16);
-            this.chkVacuumDailylog.TabIndex = 12;
+            this.chkVacuumDailylog.TabIndex = 3;
             this.chkVacuumDailylog.Text = "Dailylog.db（DB/Dailylog.db）";
             this.chkVacuumDailylog.UseVisualStyleBackColor = true;
             // 
@@ -1219,7 +1219,7 @@
             this.btnVacuumExec.Location = new System.Drawing.Point(12, 189);
             this.btnVacuumExec.Name = "btnVacuumExec";
             this.btnVacuumExec.Size = new System.Drawing.Size(180, 36);
-            this.btnVacuumExec.TabIndex = 15;
+            this.btnVacuumExec.TabIndex = 4;
             this.btnVacuumExec.Text = "DBの最適化を実行";
             this.btnVacuumExec.UseVisualStyleBackColor = true;
             this.btnVacuumExec.Click += new System.EventHandler(this.btnVacuumExec_Click);
@@ -1238,7 +1238,7 @@
             this.progressVacuum.Location = new System.Drawing.Point(207, 201);
             this.progressVacuum.Name = "progressVacuum";
             this.progressVacuum.Size = new System.Drawing.Size(580, 20);
-            this.progressVacuum.TabIndex = 17;
+            this.progressVacuum.TabIndex = 3;
             // 
             // lblVacuumNote
             // 
@@ -1260,7 +1260,7 @@
             this.grpFutureApiXml.Size = new System.Drawing.Size(806, 120);
             this.grpFutureApiXml.TabIndex = 1;
             this.grpFutureApiXml.TabStop = false;
-            this.grpFutureApiXml.Text = "2. 長期キャッシュ再構築（将来対応・#41）";
+            this.grpFutureApiXml.Text = "長期キャッシュ再構築（将来対応）";
             // 
             // lblFutureApiXmlDesc
             // 
@@ -1278,7 +1278,7 @@
             this.tbFutureApiXmlFolder.Location = new System.Drawing.Point(12, 62);
             this.tbFutureApiXmlFolder.Name = "tbFutureApiXmlFolder";
             this.tbFutureApiXmlFolder.Size = new System.Drawing.Size(590, 19);
-            this.tbFutureApiXmlFolder.TabIndex = 1;
+            this.tbFutureApiXmlFolder.TabIndex = 0;
             // 
             // btnFutureApiXmlFolder
             // 
@@ -1286,7 +1286,7 @@
             this.btnFutureApiXmlFolder.Location = new System.Drawing.Point(608, 60);
             this.btnFutureApiXmlFolder.Name = "btnFutureApiXmlFolder";
             this.btnFutureApiXmlFolder.Size = new System.Drawing.Size(75, 23);
-            this.btnFutureApiXmlFolder.TabIndex = 2;
+            this.btnFutureApiXmlFolder.TabIndex = 1;
             this.btnFutureApiXmlFolder.Text = "参照";
             this.btnFutureApiXmlFolder.UseVisualStyleBackColor = true;
             // 
@@ -1296,7 +1296,7 @@
             this.btnFutureApiXmlExec.Location = new System.Drawing.Point(689, 60);
             this.btnFutureApiXmlExec.Name = "btnFutureApiXmlExec";
             this.btnFutureApiXmlExec.Size = new System.Drawing.Size(75, 23);
-            this.btnFutureApiXmlExec.TabIndex = 3;
+            this.btnFutureApiXmlExec.TabIndex = 2;
             this.btnFutureApiXmlExec.Text = "実行";
             this.btnFutureApiXmlExec.UseVisualStyleBackColor = true;
             // 
@@ -1314,7 +1314,7 @@
             this.grpGapCheck.Size = new System.Drawing.Size(806, 207);
             this.grpGapCheck.TabIndex = 2;
             this.grpGapCheck.TabStop = false;
-            this.grpGapCheck.Text = "3. 集計抜けチェック";
+            this.grpGapCheck.Text = "集計抜けチェック";
             // 
             // lblGapCheckDesc
             // 
@@ -1331,7 +1331,7 @@
             this.chkGapCheckOneYear.Location = new System.Drawing.Point(12, 48);
             this.chkGapCheckOneYear.Name = "chkGapCheckOneYear";
             this.chkGapCheckOneYear.Size = new System.Drawing.Size(217, 16);
-            this.chkGapCheckOneYear.TabIndex = 1;
+            this.chkGapCheckOneYear.TabIndex = 0;
             this.chkGapCheckOneYear.Text = "直近1年で確認する（既定は直近3か月）";
             this.chkGapCheckOneYear.UseVisualStyleBackColor = true;
             // 
@@ -1340,7 +1340,7 @@
             this.btnGapCheckExec.Location = new System.Drawing.Point(12, 74);
             this.btnGapCheckExec.Name = "btnGapCheckExec";
             this.btnGapCheckExec.Size = new System.Drawing.Size(180, 36);
-            this.btnGapCheckExec.TabIndex = 2;
+            this.btnGapCheckExec.TabIndex = 1;
             this.btnGapCheckExec.Text = "抜けをチェック";
             this.btnGapCheckExec.UseVisualStyleBackColor = true;
             this.btnGapCheckExec.Click += new System.EventHandler(this.btnGapCheckExec_Click);
@@ -1360,7 +1360,7 @@
             this.lblGapCheckResult.Location = new System.Drawing.Point(12, 120);
             this.lblGapCheckResult.Name = "lblGapCheckResult";
             this.lblGapCheckResult.Size = new System.Drawing.Size(43, 12);
-            this.lblGapCheckResult.TabIndex = 4;
+            this.lblGapCheckResult.TabIndex = 2;
             this.lblGapCheckResult.Text = "結果: —";
             // 
             // btnBaselineRestore
@@ -1368,7 +1368,7 @@
             this.btnBaselineRestore.Location = new System.Drawing.Point(12, 146);
             this.btnBaselineRestore.Name = "btnBaselineRestore";
             this.btnBaselineRestore.Size = new System.Drawing.Size(220, 36);
-            this.btnBaselineRestore.TabIndex = 5;
+            this.btnBaselineRestore.TabIndex = 3;
             this.btnBaselineRestore.Text = "ベースラインDBで復旧...";
             this.btnBaselineRestore.UseVisualStyleBackColor = true;
             this.btnBaselineRestore.Click += new System.EventHandler(this.btnBaselineRestore_Click);
