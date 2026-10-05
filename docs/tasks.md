@@ -19,10 +19,12 @@
 
 > `nicorank2019.exe` にアイコンが未設定（csproj に `ApplicationIcon` なし）のため、エクスプローラーやタスクバーでの識別性が低い。ユーザーが用意したキャラクター画像を exe アイコンにし、フォーム左上・タスクバーも同じ画像にする。exe とフォームで画像を分けない理由は、ユーザーが同じ画像を希望したためである。
 
-- [ ] 49.1 exe アイコンと Form.Icon の設定（Issue #49）
+- [x] 49.1 exe アイコンと Form.Icon の設定（Issue #49）✅ 2026-10-05 developマージ済み
   - 依存：なし（集計ロジックに影響しない）
-  - 対象：ユーザー提供 PNG をマスターとしたマルチサイズ `.ico`（16/32/48/256）の作成・`nicorank2019/nicorank2019.csproj` の `ApplicationIcon` 設定・`frmMain` 等の `Form.Icon` 設定
+  - 対象：ユーザー提供 PNG（`nicorank2019/icon-master.png` 1024x1024）をマスターとしたマルチサイズ `.ico`（16/32/48/256）の作成・`nicorank2019/nicorank2019.csproj` の `ApplicationIcon` 設定・`frmMain` の `Form.Icon` 設定（同一ファイルを `EmbeddedResource`＋`LogicalName` で埋め込み、マニフェストストリームから読む。resx 経由にしないのは旧形式プロジェクトの `dotnet build` で MSB3822/MSB3823 になるため。Designer でなくコード側に書くのは再生成 churn 回避のため）
   - 受け入れ条件：エクスプローラーで exe にアイコンが表示されること・起動後のフォーム左上とタスクバーに同じアイコンが表示されること・`dotnet test` とビルド成功・ユーザーが実行確認すること
+  - 検証結果：`dotnet test` 全件PASS・csproj 直接と sln の Release ビルド成功（いずれも EXIT_CODE=0）・exe の Win32 アイコンとマネージドリソース `nicorank2019.icon.ico` の埋め込みを実測確認・reviewer レビューで高・中指摘なし（低6件は4件修正・2件見送り。再レビュー不要）・ユーザー実機検証OK（エクスプローラー・フォーム左上・タスクバーの表示を確認）・developマージ
+  - 見送り：`frmMesseageDialog` は生成箇所なしのため対象外・`nicorank_SnapShot`／updater は要望範囲外のため対象外・`ExtractAssociatedIcon` 代替案と 16x16 精細化は reviewer 推奨の現状維持
 
 ### nicorank2019の自動更新（#47・壁打ち済み）
 

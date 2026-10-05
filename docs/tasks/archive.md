@@ -688,3 +688,14 @@
 - **見送り**: `InternetUtil` 内部の毎回ログ化は見送り、既知の残課題として tasks.md に記録（影響範囲が広いため別タスクで検討）。`SetRequestResult` の無限再試行は触らない（今回の落ち場所は件数取得の入口であり影響が大きいため）。新規 UnitTest なし（静的 `InternetUtil` 依存で継ぎ目がなく、ログ追加のみで戻り値不変のため）。specs／design 変更なし（#43 の両書き方針に沿う追認のため）
 - **検証**: `dotnet test` 全件PASS・sln Release ビルド成功（いずれも EXIT_CODE=0。指摘対応前後で2回実施）・`dotnet publish` 成功。reviewerレビューで高・中指摘なし（低4件：3件修正・1件記録。総合判定マージ可。再レビュー不要）。修正版を NAS の `\\ds224\Temp\nicorank_SnapShot` に配置（事前に `\\ds224\Temp\nicorank_SnapShot_bak_20261005` へ全量退避。同名ファイルのみ上書きし .lnk／snapshot.lock／runtimes には触らず）。ユーザー実機で再実行し正常完了（成功時ログの見た目不変を確認。新しい失敗時ログは発火条件が失敗時のみのため未発火だが、ログ追加での完了でユーザー合意）
 - **残課題**: ダウンロード失敗時は `TxtDownLoad` が例外詳細を握りつぶすため失敗の事実のみ残る。切り分けに足りなければ最終失敗時の1回記録を別タスクで検討する
+
+---
+
+## 2026-10-05 exe アイコンと Form.Icon の設定 (#49) ✅ developマージ済み
+
+- **Issue・ブランチ**: #49（OPEN→本件でクローズ）／`feature/t049-app-icon` を develop 起点に作成。`--no-ff` でマージし削除済み
+- **背景**: `nicorank2019.exe` にアイコンが未設定（csproj に `ApplicationIcon` なし）で、エクスプローラーやタスクバーでの識別性が低かった。ユーザーが用意したキャラクター画像（1024x1024 PNG）を exe アイコンにし、フォーム左上・タスクバーも同じ画像にする要望があった
+- **実施内容**: マスター PNG から Pillow で 16/32/48/256 のマルチサイズ `nicorank2019/icon.ico`（約122KB）を生成し、csproj の `ApplicationIcon` に指定（Win32 リソース用）。`Form.Icon` 用には同じファイルを `EmbeddedResource`＋`LogicalName` で埋め込み、`frmMain` 構築時にマニフェストストリームから読む。`resx` 経由にしなかったのは旧形式プロジェクトの `dotnet build` で MSB3822/MSB3823 になることを実証したため（`GenerateResourceUsePreserializedResources` 化は実行時依存を増やすため不採用）。`Designer` でなくコード側に書いたのは全体再生成の差分 churn を避けるため（#35 で前例あり）。読込失敗時は既定アイコンで起動を続ける（アイコンは起動の必須要素ではないため）
+- **見送り**: `frmMesseageDialog` は生成箇所なしのため対象外。`nicorank_SnapShot`・updater は要望範囲外のため対象外。`ExtractAssociatedIcon` 代替案と 16x16 精細化は reviewer 推奨の現状維持。二重埋め込み（Win32＋マネージド計約244KB）は exe 全体約19.8MB に対し約0.1%で実害なし
+- **検証**: `dotnet test` 全件PASS・csproj 直接と sln の Release ビルド成功（いずれも EXIT_CODE=0）。exe の Win32 アイコンとマネージドリソース `nicorank2019.icon.ico` の埋め込みを実測確認。reviewer レビューで高・中指摘なし（低6件は4件修正・2件見送り。再レビュー不要）。ユーザー実機検証OK（エクスプローラー・フォーム左上・タスクバーの表示を確認）
+- **残課題**: なし。マスターの再生成手順は csproj コメントに記載。specs・design・knowledge の変更なし（見た目のみで仕様・設計・構造不変のため）
