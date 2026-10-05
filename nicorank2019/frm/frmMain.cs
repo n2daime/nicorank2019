@@ -47,6 +47,15 @@ namespace nicorank2019.frm
         public frmMain()
         {
             InitializeComponent();
+            // exe と同じアイコンをフォーム左上・タスクバーに表示する (#49)。
+            // Designer 再生成の差分 churn を避けるためコード側で設定する。埋め込み名は RootNamespace 由来の nicorank2019.icon.ico になる。
+            using (var stream = typeof(frmMain).Assembly.GetManifestResourceStream("nicorank2019.icon.ico"))
+            {
+                if (stream != null)
+                {
+                    this.Icon = new System.Drawing.Icon(stream);
+                }
+            }
         }
 
         private void frmMain_Load(object sender, EventArgs e)
