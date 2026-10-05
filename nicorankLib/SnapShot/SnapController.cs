@@ -51,6 +51,10 @@ namespace nicorankLib.SnapShot
                         
                         if (!testObj.AnalyzeRank(dateTime,ref addDate, ref dataList, flgLimit1000))
                         {
+                            // 件数取得の失敗詳細は AnalyzeRank 側で ErrLog に残しているが、ここでも対象期間を残す。
+                            // 理由は、Analyze 側の記録だけでは「全体のどの周回で止まったか」が追いにくく、片方だけ欠けても切り分けできるようにするため。
+                            // StatusLog の文面は従来のまま変えない（運用の見た目維持）。
+                            ErrLog.GetInstance().Write($"{dateTime.ToShortDateString()}投稿動画のデータ取得に失敗しました（期間開始={dateTime:yyyy/MM/dd} 期間幅={addDate.Days}日 1000再生制限あり={flgLimit1000}）。詳細は直前の件数取得エラーを参照してください。");
                             StatusLog.WriteLine($"{dateTime.ToShortDateString()}投稿動画のデータを取得中にエラー発生しました");
                             result = false;
                             break;
