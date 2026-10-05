@@ -61,11 +61,22 @@ namespace nicorankLib.SnapShot
                     if (!InternetUtil.TxtDownLoad(fileURL, out string fileListJsonText))
                     {
                         //失敗
+                        // 件数取得のダウンロード失敗はここで即 false になる（InternetUtil 側で20回再試行済みのため、この層では繰り返さない）。
+                        // 何も残さず返すと SnapController 側も StatusLog だけで終わり、nicorankerr.log が出ず原因不明になる（Issue #48）。
+                        // そのため期間・制限フラグ・失敗種別を ErrLog に残してから返す。取得の挙動自体は変えない。
+                        ErrLog.GetInstance().Write($"スナップショット件数取得のダウンロードに失敗しました（期間={startDate:yyyy/MM/dd}～{endDate:yyyy/MM/dd} 1000再生制限あり={flgLimit1000}）。");
                         return false;
                     }
 
                     //
                     snapShotInfo = SnapShotJson.FromJson(fileListJsonText);
+                    if (snapShotInfo?.Meta == null)
+                    {
+                        // 応答に meta がない（null・meta 欠落）場合は同じ URL の再試行で直る性質ではないため、20回の繰り返しに入れず即失敗とする。
+                        // 元の実装ではここで例外終了していた経路であり、即時終了の意味は保ちつつ原因を残す（Issue #48）。
+                        ErrLog.GetInstance().Write($"スナップショット件数取得の応答に meta がありませんでした（期間={startDate:yyyy/MM/dd}～{endDate:yyyy/MM/dd} 1000再生制限あり={flgLimit1000}）。");
+                        return false;
+                    }
                     if (snapShotInfo.Meta.Status != 200)
                     {
                         continue;
@@ -74,6 +85,11 @@ namespace nicorankLib.SnapShot
                 }
                 if (snapShotInfo?.Meta.Status != 200)
                 {
+                    // 20回繰り返しても Status=200 が返らない場合の失敗。ダウンロード自体は通っているため、最後に見た Status を残す。
+                    // Status 未取得の場合（初回から Status が返らない等）は不明として残す。理由は次回の切り分けで「通信失敗か API 異常か」を分けるため。
+                    string lastStatus = snapShotInfo?.Meta?.Status.ToString() ?? "不明";
+                    string lastTotal = snapShotInfo?.Meta?.TotalCount.ToString() ?? "不明";
+                    ErrLog.GetInstance().Write($"スナップショット件数取得で Status=200 が返りませんでした（期間={startDate:yyyy/MM/dd}～{endDate:yyyy/MM/dd} 1000再生制限あり={flgLimit1000} 最終Status={lastStatus} TotalCount={lastTotal}）。");
                     return false;
                 }
                 if (snapShotInfo?.Meta.TotalCount >= 50000 && DATERANGE_MIN < addDate)
