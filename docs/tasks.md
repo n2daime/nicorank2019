@@ -15,6 +15,15 @@
 
 ## 未完了タスク
 
+### exe アイコンの設定（#49）
+
+> `nicorank2019.exe` にアイコンが未設定（csproj に `ApplicationIcon` なし）のため、エクスプローラーやタスクバーでの識別性が低い。ユーザーが用意したキャラクター画像を exe アイコンにし、フォーム左上・タスクバーも同じ画像にする。exe とフォームで画像を分けない理由は、ユーザーが同じ画像を希望したためである。
+
+- [ ] 49.1 exe アイコンと Form.Icon の設定（Issue #49）
+  - 依存：なし（集計ロジックに影響しない）
+  - 対象：ユーザー提供 PNG をマスターとしたマルチサイズ `.ico`（16/32/48/256）の作成・`nicorank2019/nicorank2019.csproj` の `ApplicationIcon` 設定・`frmMain` 等の `Form.Icon` 設定
+  - 受け入れ条件：エクスプローラーで exe にアイコンが表示されること・起動後のフォーム左上とタスクバーに同じアイコンが表示されること・`dotnet test` とビルド成功・ユーザーが実行確認すること
+
 ### nicorank2019の自動更新（#47・壁打ち済み）
 
 > 手作業上書きによる `lib/` 欠け事故（2026/10/03 報告の `batteries_v2` 不在エラー）を受け、文面改善ではなく構造で防ぐ。第一段は通知＋ワンクリック更新（月曜直前の強制更新は事故になるため）。バイナリ正本は GitHub Release（固定名 asset）・検出は NAS の `version.json`（エージェント生成・人間は配置のみ）・分離 updater が一式置換。詳細な設計合意と `version.json` フォーマットは Issue 参照。壁打ち（別セッション）で以下を確定済み：updaterは専用exe（zip同梱・SQLite/Costuraなし）・版数刻印はAssembly書換え（`version.json` の `2026.10.03` に対し Assembly `2026.10.3.0`。`System.Version` 比較）・確認は起動時＋24時間間引き＋同一版1日1回まで・状態ファイルは `%TEMP%/nicorank2019_update_check.json`（削除耐性があるためTEMPで十分。汎用名衝突回避の接頭辞付き）・タスクファイルは `%TEMP%/nicorank2019_update_task.json`・手動確認はメンテナンスタブ・必須化は将来Issueへ分離（47.1は任意のみ）・updater自身の置換は別Issue。
