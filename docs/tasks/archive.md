@@ -677,3 +677,14 @@
 - **背景**: 2026/10/03報告の `SQLitePCLRaw.batteries_v2` の `FileNotFoundException`（`EnsureApiXmlFile()`／`EnsureDailylogFile()` 経由）が、OneDrive上に一式を配置した環境でのみ発生した。手元の新規展開では再現せず、#47の更新手順側は対応済みだったため、残る環境要因を切り分けた
 - **実施内容**: パス長260超え仮説をユーザーに提示し、浅い階層（`Documents` 直下の `nicorank` フォルダ）への移動で解消したため確定とした。`pitfalls.md` に項目26（症状・MAX_PATH・浅い配置・OneDrive常時保持・Defender除外2行・SmartScreenとの区別・FileNotFound／FileLoad切り分け）を追記し、`release.md` のReleaseノート指針に配置場所の一文を足した。Defender除外は `nicorank2019.exe` に加え `nicorankUpdater.exe` の2行とし、誤爆削除の回避にはなるが初回SmartScreenの回避ではない旨を明記した
 - **検証**: docsのみのため集計ロジックの再実行は不要。次工程でテスト＋ビルド成功を確認する。`tasks.md` の未完了タスクへの追加は不要（新規タスクではなく確定済み事象の記録のため）
+
+---
+
+## 2026-10-05 スナップショット件数取得失敗の無言エラー改善（#48）✅ developマージ済み
+
+- **Issue／ブランチ**: #48（OPEN→本件でクローズ）／`feature/t48-snapshot-silent-error-log`（develop起点。`--no-ff` でマージし削除済み）
+- **背景**: nicorank_SnapShot.Cli の定期取得で 09/04/2018 期間の件数取得に失敗した際、画面に `nicorankerr.log` 確認と出るのにログがなく原因不明になった。実行場所（`\\ds224\Temp\nicorank_SnapShot`）のカレントにも無いことをユーザー確認済み。理由は `SnapController` と `SnapShotAnalyze.AnalyzeRank` の `false` 経路が `ErrLog` に何も残さず `StatusLog` だけで終わる構造だったため
+- **実施内容**: 取得の挙動は変えずログ記録に絞った。`SnapShotAnalyze.AnalyzeRank` の3経路（TxtDownLoad 失敗・meta なし・Status!=200 継続）で期間・flgLimit1000・最終 Status を `ErrLog` へ。meta なしは元の例外終了の意味を保ち即失敗＋記録（単純な `?.` 統一だと無駄な20回再取得に変わるため）。`SnapController` の取得エラー時に対象期間を記録。`SnapShotDB` の InitilizeDB／RegistDB の接続開始失敗も同種の無言経路として記録（reviewer 横展開指摘の対応）。成功時の `StatusLog` 文面は不変
+- **見送り**: `InternetUtil` 内部の毎回ログ化は見送り、既知の残課題として tasks.md に記録（影響範囲が広いため別タスクで検討）。`SetRequestResult` の無限再試行は触らない（今回の落ち場所は件数取得の入口であり影響が大きいため）。新規 UnitTest なし（静的 `InternetUtil` 依存で継ぎ目がなく、ログ追加のみで戻り値不変のため）。specs／design 変更なし（#43 の両書き方針に沿う追認のため）
+- **検証**: `dotnet test` 全件PASS・sln Release ビルド成功（いずれも EXIT_CODE=0。指摘対応前後で2回実施）・`dotnet publish` 成功。reviewerレビューで高・中指摘なし（低4件：3件修正・1件記録。総合判定マージ可。再レビュー不要）。修正版を NAS の `\\ds224\Temp\nicorank_SnapShot` に配置（事前に `\\ds224\Temp\nicorank_SnapShot_bak_20261005` へ全量退避。同名ファイルのみ上書きし .lnk／snapshot.lock／runtimes には触らず）。ユーザー実機で再実行し正常完了（成功時ログの見た目不変を確認。新しい失敗時ログは発火条件が失敗時のみのため未発火だが、ログ追加での完了でユーザー合意）
+- **残課題**: ダウンロード失敗時は `TxtDownLoad` が例外詳細を握りつぶすため失敗の事実のみ残る。切り分けに足りなければ最終失敗時の1回記録を別タスクで検討する

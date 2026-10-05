@@ -36,10 +36,11 @@
 
 > nicorank_SnapShot.Cli で 09/04/2018 期間の件数取得に失敗した際、`nicorankerr.log` が出力されず原因が分からなかった。`SnapController` と `SnapShotAnalyze.AnalyzeRank` の `false` 経路が `ErrLog` に何も残さない構造が原因である（実行場所のカレントにもログなしを確認済み）。取得の挙動は変えず、ログ記録に絞って直す。なぜ絞るか: 取得自体は動いており、欠けているのは原因特定の材料だけだからである。
 
-- [ ] 48.1 件数取得失敗時の ErrLog 記録（Issue #48）
+- [x] 48.1 件数取得失敗時の ErrLog 記録（Issue #48）✅ 2026-10-05 developマージ済み
   - 依存：#38（VersionChecker の3値判定の考え方）・#43（表示は StatusLog・詳細は ErrLog・黙って false の経路は両書きの方針）
   - 対象：`nicorankLib/SnapShot/SnapShotAnalyze.cs`（AnalyzeRank の `return false` 直前で期間・flgLimit1000・失敗種別・最終 Status を ErrLog へ。meta なし応答は即失敗＋記録）・`nicorankLib/SnapShot/SnapController.cs`（取得エラー時に対象日を ErrLog へ。Analyze 側の記録と対にして残す）・`nicorankLib/SnapShot/SnapShotDB.cs`（InitilizeDB／RegistDB の接続開始失敗時にデータソース付きで ErrLog へ。reviewer 横展開指摘の対応）
   - 受け入れ条件：件数取得失敗時に nicorankerr.log に期間・失敗種別・最終 Status が残ること・成功時ログの見た目不変・`dotnet test` とビルド成功・ユーザーが修正版で再実行確認すること
+  - 検証結果：`dotnet test` 全件PASS・sln Release ビルド成功（指摘対応前後で2回。いずれも EXIT_CODE=0）・reviewer再レビュー不要（高・中指摘なし。低4件は3件修正・1件記録）・ユーザー実機検証OK（NAS 配置後に再実行し正常完了。成功時ログ不変を確認。新失敗ログは未発火だがログ追加での完了で合意）・developマージ
   - 既知の残課題：ダウンロード失敗時は `InternetUtil.TxtDownLoad` が例外詳細を握りつぶすため失敗の事実のみ残り、HTTP コード等の根本原因までは残らない。切り分けに足りなければ、最終失敗時の1回記録を別タスクで検討する（reviewer 指摘より。今回は `InternetUtil` の影響範囲が広いため見送り）
 
 ### テスト拡充（集計ロジック）
