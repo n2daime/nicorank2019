@@ -12,7 +12,7 @@
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
-    <!-- exe アイコン (#49)。Form.Icon 用の実体も兼ねる -->
+    <!-- exe アイコン (#49)。Win32 リソース用。同じ icon.ico を下の EmbeddedResource でマネージドリソース (Form.Icon 用) としても埋め込む -->
     <ApplicationIcon>icon.ico</ApplicationIcon>
     <TargetFrameworkProfile />
     <NuGetPackageImportStamp>
@@ -270,8 +270,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <!-- マネージドリソースとしても埋め込む (Form.Icon 用)。resx 経由にしないのは、旧形式プロジェクトの dotnet build で MSB3822/MSB3823 になるため -->
-    <EmbeddedResource Include="icon.ico" />
+    <!-- Form.Icon 用にマネージドリソースとしても埋め込む。resx 経由にしないのは旧形式プロジェクトの dotnet build で MSB3822/MSB3823 になるため -->
+    <!-- 再生成手順: 同階層の icon-master.png (1024x1024) から python -c "from PIL import Image; Image.open('icon-master.png').save('icon.ico', sizes=[(16,16),(32,32),(48,48),(256,256)])" で作る -->
+    <EmbeddedResource Include="icon.ico">
+      <LogicalName>nicorank2019.icon.ico</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\nicorankLib\nicorankLib.csproj">
