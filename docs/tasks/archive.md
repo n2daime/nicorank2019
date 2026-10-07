@@ -10,6 +10,42 @@
 
 ---
 
+## 2026-10-05 tasks.md 完了履歴テーブルの統合（docsのみ・コード変更なし）
+
+- **Issue／ブランチ**: なし（docs のみの整理。AGENTS.md MUST 12 により `develop` 直修正）
+- **背景**: `docs/tasks.md` の「完了済みタスク（履歴）」テーブルが約1.6万文字あり、タスク開始時に毎回読むファイルの負担になっていた。行内容を archive.md と突き合わせると25行のうち22行は本ファイルの詳細版と重複していたため、§4 の責務境界（tasks.md は現行・未完了のみ／archive.md は経緯・検証履歴）に沿って統合した
+- **実施内容**: 重複する22行は削除し、本ファイルの既存セクションを正本とする。本ファイルにセクションの無かった 2026-06 の3件（下記の3セクション）をここに書き下ろした。tasks.md には archive.md への参照文のみを残す
+- **検証**: 削除した各行が本ファイルの対応セクションで追えることを突き合わせて確認した。対応セクションは #19・#22・#23・#24・#25・#26・#27・#28・#29・#30・#31・#32・#34・#35・#36・#37・#38・#39・#40・#43・#44・#45 の各タスクセクションと、リリース実績の各セクション。加えて tasks.md 側に残っていた完了済みセクション（#48・#49）も本ファイルの 2026-10-05 セクションが正本となる
+
+---
+
+## 2026-06-03 btreeInitPage() returns error code 11 対策
+
+- **Issue／ブランチ**: なし（Issue 運用開始前の対応のため番号なし）
+- **背景**: スナップショット API から数十万件を登録する際、`btreeInitPage() returns error code 11`（SQLITE_CORRUPT）が断続発生し、DB が破損して以後の読み書きが不可能になる状態が起きていた。原因は巨大トランザクションである
+- **実施内容**: `SQLiteCtrl` の接続を強化（WAL・PRAGMA・グレースフルフォールバック）。`SnapShotDB` の大量登録を 5000件単位のバッチコミット＋`INSERT OR IGNORE`＋パラメータ再利用へ変更した
+- **検証**: 設定値やクラッシュ時の挙動（未コミット分は失われるが `LogSnapshot*.db` は日次作成のため再実行で復元可能）は `../knowledge/pitfalls.md` 項目1 に集約済み。新規実装前のゲートとしても AGENTS.md §1 に置いている
+
+---
+
+## 2026-06-23 SQLite 操作の単体テスト設計
+
+- **Issue／ブランチ**: なし
+- **背景**: DB 操作の実行時問題（上記の破損やコマンド使い回し系）を、実 DB を触らずに検出できる形にしたかったため
+- **実施内容**: `ISQLiteCtrl` インターフェースを抽出し、実装 `SQLiteCtrl` とテスト用実装を差し替え可能にした。テスト側は `OpenInMemory()` でインメモリ DB を作る `TestDbHelper` を用意し、SELECT / INSERT / DDL / エラー系のテストを書いた
+- **検証**: 構成・実行方法・新規テスト追加の作法は `../knowledge/testing.md` に反映済み。後の #22（コマンド再利用の問題検出）はこの土台の上に載っている
+
+---
+
+## 2026-06-23 単体テストの活性化（基盤）
+
+- **Issue／ブランチ**: なし
+- **背景**: 長期にわたり知識がコードにしか残っておらず（`../proposal.md` 参照）、変更時の回帰を確認する手段が無かった。当時の `UnitTest.csproj` は old-style（packages.config + Reference）で、.NET 10 SDK 上の MSTest.TestAdapter 3.5.2 と組み合わせると testhost 起動時に StackOverflow が発生して実行できない状態だった
+- **実施内容**: csproj を SDK-style へ変換して StackOverflow を解消。Moq を導入し、`Fixtures/` に `nicorank.xml` と `test_ranking.csv` を配置した（`Config.GetInstance().Initilize()` がカレントの `nicorank.xml` を読むため、出力直下にもコピーする）。Ranking / Config / TextUtil / StatusLog / Output のテストを書き、計69件とした
+- **検証**: 69件全件 PASS。csproj 形式の制約と出力先パス（`bin\Debug\net48\`）の注意は `../knowledge/testing.md` の「重要: csproj は SDK-style を使用すること」に残している。集計ロジック側の拡充は未完了のまま `../tasks.md` の「テスト拡充（集計ロジック）」に残っている
+
+---
+
 ## 2026-08-30 SQLite ライブラリ移行 (#20)
 
 - **Issue**: #20 `System.Data.SQLite 1.0.118 → Microsoft.Data.Sqlite 10.0.11 / SQLitePCLRaw 2.1.12`
