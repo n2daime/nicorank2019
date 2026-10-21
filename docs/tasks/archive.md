@@ -740,3 +740,33 @@
   - [低] 対応セクションの列挙 — 削除したテーブルにリリース行は無いため、「リリース実績の各セクション」の記述を落とした
 - **派生した Issue 化**: #47 の残課題のうち **updater 自身の置換**は #50 として Issue 化し、tasks.md の未完了タスクに載せた。一方 **更新の必須化**は 2026-10-07 時点で予定なし（#47 当時にエージェントが提案し、ユーザーが不要と判断した）。再提案を防ぐためここに記録する
 - **検証**: 削除した各行が本ファイルの対応セクションで追えることを突き合わせて確認した（#19・#22・#23・#24・#25・#26・#27・#28・#29・#30・#31・#32・#34・#35・#36・#37・#38・#39・#40・#43・#44・#45 の各セクション）。統合後の tasks.md は 1,757 文字。docs のみの変更だが MUST 5 に従い `dotnet test` と Release ビルドの成功（EXIT_CODE=0）を再確認済み
+
+## 2026-10-22 oldlogのAPI障害時リトライと全滅時の異常終了 (#51) ✅ developマージ済み
+
+- **Issue・ブランチ**: #51（新規作成）／`feature/t051-oldlog-retry-on-503` を develop 起点に作成。`--no-ff` でマージし削除済み（57a2eaf まで。レビュー指摘対応の追加コミットを含む）
+- **背景**: ニコ動 API（nvapi）が 503 を返すと、oldlog は何も取得できないまま「集計終了」＋終了コード 0 で終わっていた。NAS は終了コードでメール通知する運用のため、欠損に気づけず再実行の機会も失われていた。ユーザー要望は「1 時間くらいはリトライしてほしい（nicorank_SnapShot 参考）」「だめなら戻り値を異常値に」
+- **原因（コード確認済み）**:
+  - `Program.cs` が `AsyncExecuteAnalyzeRank` の戻り値と `GetGenreInfoList` の結果を捨てており、`SaveOldRankingData` の false（データ0件）が最終結果に届かなかった
+  - リトライは `RankApi2Json.analyze` の 4 回即時試行のみで待機がなかった
+  - 同種の取りこぼし: `meta.status != 200` を成功扱い（5 メソッド）、ジャンル取得ループの `break` 欠落（成功しても 4 回取得）、`SaveOldRankingData` の書き込み失敗の握りつぶし、`RankApi2JsonDaily.Initilize` のトレンドタグ取得失敗の握りつぶし、対象 0 件でも exit 0
+- **ユーザー決定**: ①異常終了は全滅時だけ（部分失敗は exit 0。1 カテゴリの一時失敗で NAS メールを出し続けないため）②リトライは失敗 term だけ（週刊の `ApiXML.db` 約 26000 件の再取得を避ける）③同種修正と HttpClient タイムアウト 30 秒もまとめて実施
+- **実施内容**:
+  - `nicorankLib/Util/RetryPoller` を新設（5 分間隔・最大 1 時間。`sleep`/`clock` 注入可）。予算は「その実行で最初に失敗した時点」から数え、ジャンル一覧と term 群で共有する。ジャンル一覧とランキングがそれぞれ 1 時間待つと最悪 2 時間になり定期タスク 1 枠に収まらないため。週刊の更新待ち（正常系の待機）は予算を消費しない
+  - `Program.cs`: ジャンル一覧をリトライし、1 時間復旧しなければ exit 2。対象 0 件も exit 2。term 実行後は「全 term 失敗→2／部分失敗→警告して 0」を判定
+  - `RankApi2JsonContoller`: term 単位リトライ＋`RankingRunResult`（成功/失敗フォルダ）。attempt ごとに `RankApi2Json` を新規生成（Daily のトレンドタグ展開が `GenreResultList` へ追記するため、使い回すと重複する）
+  - `RankApi2Json`: API エラーのみ最大 4 回即時試行し成功時は break。API エラー件数を `Interlocked` で数えて term 終了時に StatusLog＋ErrLog へ要約。ヒット 0 件は API 正常なので数えない。保存は書き込み失敗が 1 件でもあれば false
+  - `NicoRankiApi`: `meta.status` 非 200 を 5 メソッドすべてで失敗として返す（HTTP 200＋本文 503 を取りこぼさない）。`HttpClient.Timeout` 30 秒
+  - docs: specs.md（リトライ・終了コード仕様）、design.md（設計判断）、knowledge（apps・nicorankLib・pitfalls 27・testing）、README、tasks.md
+- **pm 相談**: 設計レビューで「条件付き OK」。指摘を受けて次を反映した。①`SaveOldRankingData` の書き込み失敗を成功判定に反映 ②`meta.status` の横展開を 2 メソッドから 5 メソッドへ ③API エラーとヒット 0 件の分離＋スレッドセーフ集計 ④ジャンル一覧＋term の最悪 2 時間を避ける予算共有 ⑤例外契約の明文化（例外は即 exit 2）。週刊/月次の更新待ち `while(true)` の無期限ハングは #52 として Issue 化した
+- **reviewer 指摘への対応**:
+  - [中] 書き込み失敗時に `CheckString`（lastweekly_all / lastmonthly_all）まで更新されると、次の再試行が「更新なし」と誤判定して #52 の無上限待ちに入り、1 時間の打ち切り保証が崩れる → `!writeFailed` のときだけ更新するよう修正（再レビュー済み）
+  - [中] CheckString の書式不正など「リトライしても直らない失敗」も 1 時間後に exit 2 → 失敗種別を確実に見分ける手段がないため仕様のまま。挙動と理由を specs.md に追記
+  - [低] 書き込み失敗時も「結果を保存しました」と出る → 「一部のファイルを保存できませんでした」に分岐
+  - [低] 「{retry}n回目」の文言（「0n回目」になる）は Issue #43 の文面固定方針の既存文言で実害がないため見送り。コミットメッセージに理由を記載
+- **検証**:
+  - `dotnet build`（ソリューション・oldlog Release）EXIT 0、警告なし。`dotnet test` 352 件 PASS（`UnitTestRetryPoller` 6 件を追加）
+  - 実環境が 503 を返していたため本番定数のまま実行し、「ジャンル一覧: 5分後に再試行します（失敗1回・残り約60分）」で待機に入り exit 0 にならないことを確認
+  - 検証時だけ定数を 5 秒／20 秒に短縮し、13 回ではなく短縮分の試行後に打ち切って exit 2 になることを確認。定数は 5 分／1 時間へ戻し、仕様値は単体テストで固定
+  - 正常系（exit 0）は検証時点で API が 503 のため未確認。API 復旧後に再確認する
+- **配布**: `\\ds224\Temp\nicorankOld2025` へ exe / dll / runtimeconfig を配布（`nicorankLib.dll` も必須。新規型 `RetryPoller` のため。pitfalls 4h と同種の新旧混在を避ける）。設定・cookie・old-ranking データには触れない
+- **残課題**: #52（更新待ちの上限）、共有 HttpClient 化、SnapShotVersionPoller との待機値共通化、リトライ表示文言の整形
