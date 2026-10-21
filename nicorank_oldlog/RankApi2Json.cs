@@ -44,6 +44,25 @@ namespace nicorank_oldlog
         public bool isRetry { get { return CheckString.Length > 0; } }
 
         /// <summary>
+        /// 1カテゴリあたりの即時試行回数（Issue #51）。
+        /// 通信の瞬断を拾うための短いリトライであり、待機を伴う本命の再試行は RetryPoller が担う。
+        /// 値を変えるときは「503は5分以上空ける」公式ガイドと二重に待たないよう注意する。
+        /// </summary>
+        private const uint CategoryAttemptCount = 4;
+
+        /// <summary>
+        /// APIエラー（通信失敗・meta.status非200）で取得できなかったカテゴリ数（Issue #51）。
+        /// ヒット0件は API としては正常なので数えない（空のトレンドタグで誤検知しないため）。
+        /// Parallel.ForEach から更新するため Interlocked を使う。
+        /// </summary>
+        private int _apiErrorCategoryCount;
+
+        /// <summary>
+        /// APIエラーで取得できなかったカテゴリ数。部分取得の警告に使う。
+        /// </summary>
+        public int ApiErrorCategoryCount => Volatile.Read(ref _apiErrorCategoryCount);
+
+        /// <summary>
         /// ジャンルごとにランキング結果を保持するクラス
         /// </summary>
         public class GenreRankResult
@@ -141,14 +160,20 @@ namespace nicorank_oldlog
                     {
                         StatusLog.WriteLine($@"{this.RankInfo.folder}:{genreResult.genreInfo.genre}のジャンルランキングを取得中...");
 
-                        for (uint retry = 0; retry <= 3; retry++)
+                        bool fetched = false;
+                        for (uint retry = 0; retry < CategoryAttemptCount; retry++)
                         {
                             bool result = nicoApi.GetGenreRanking(this.RankInfo.term, genreResult.genreInfo.genrekey, out var genreRankingItemsList);
-                            if (!result || genreRankingItemsList.Count == 0)
+                            if (!result)
                             {
+                                // APIエラー（通信失敗・meta.status非200）だけを再試行する。
+                                // ヒット0件は API 正常なので再試行しない（空カテゴリの無駄打ちを避ける）
                                 StatusLog.WriteLine($@"{this.RankInfo.folder}:{genreResult.genreInfo.genre}のジャンルランキング取得エラー。リトライします...{retry}n回目");
+                                continue;
                             }
-                            else
+                            // 取得成功。従来は成功後も break せず同じカテゴリを4回取得していた（Issue #51）
+                            fetched = true;
+                            if (genreRankingItemsList.Count > 0)
                             {
                                 var ConvertRankObj = (RankAPI.ResGenreRanking.Item item) =>
                                 {
@@ -199,6 +224,11 @@ namespace nicorank_oldlog
                                     workAllResultMap.Add(item.Id, item);
                                 }
                             }
+                            break;
+                        }
+                        if (!fetched)
+                        {
+                            RecordApiError($"{genreResult.genreInfo.genre}のジャンルランキング");
                         }
                     }
                     // 定番ランキングを取得する
@@ -213,14 +243,18 @@ namespace nicorank_oldlog
                         {
                             StatusLog.WriteLine($@"{this.RankInfo.folder}:{genreResult.genreInfo.genre}:{tagName}の定番ランキングを取得中...");
                         }
-                        for (uint retry = 0; retry <= 3; retry++)
+                        bool fetchedTeiban = false;
+                        for (uint retry = 0; retry < CategoryAttemptCount; retry++)
                         {
                             bool result = nicoApi.GetTeibanRanking(this.RankInfo.term, genreResult.genreInfo.featuredKey, tagName, out var teibanRankingItemsList);
-                            if (!result || teibanRankingItemsList.Count == 0)
+                            if (!result)
                             {
+                                // APIエラーだけを再試行する（ヒット0件は正常扱い。Issue #51）
                                 StatusLog.WriteLine($@"{this.RankInfo.folder}:{genreResult.genreInfo.genre}:{tagName}の定番ランキング取得エラー。リトライします...{retry}n回目");
+                                continue;
                             }
-                            else
+                            fetchedTeiban = true;
+                            if (teibanRankingItemsList.Count > 0)
                             {
                                 var ConvertRankObj = (RankAPI.ResTeibanRanking.Item item) =>
                                 {
@@ -262,7 +296,6 @@ namespace nicorank_oldlog
                                 }
 
                                 // マージ
-                                var checkMap = genreResult.rankLogJsonList.ToDictionary(x => x.Id);
                                 foreach (var item in teibanLogJsonList)
                                 {
                                     if (workAllResultMap.ContainsKey(item.Id))
@@ -272,8 +305,12 @@ namespace nicorank_oldlog
                                     }
                                     workAllResultMap.Add(item.Id, item);
                                 }
-                                break;
                             }
+                            break;
+                        }
+                        if (!fetchedTeiban)
+                        {
+                            RecordApiError($"{genreResult.genreInfo.genre}:{tagName}の定番ランキング");
                         }
                     }
                 }
@@ -443,13 +480,35 @@ namespace nicorank_oldlog
             {
                 analyze(genreResult);
             });
-            return SaveOldRankingData();
+
+            bool saved = SaveOldRankingData();
+            if (ApiErrorCategoryCount > 0)
+            {
+                // 部分失敗はユーザー判断で異常終了にしない（全滅時だけ exit 2）。
+                // ただし黙って欠けたデータを残さないよう、必ず要約をログとファイルに出す（Issue #51）
+                string summary = $"{this.RankInfo.folder}:{ApiErrorCategoryCount}件のカテゴリでAPIエラーのため取得できませんでした（{(saved ? "部分取得" : "データなし")}）";
+                StatusLog.WriteLine($"---- {summary} ----");
+                ErrLog.GetInstance().Write(summary);
+            }
+            return saved;
+        }
+
+        /// <summary>
+        /// APIエラーで取得を断念したカテゴリを記録する（Issue #51）。
+        /// ここでは数えてコンソールに残すだけにし、ErrLog へは term 終了時の要約で1行だけ書く。
+        /// カテゴリごとに ErrLog へ書くと、1時間の再試行中に同じ行が大量に積まれて
+        /// 本当に見たい失敗理由が埋もれるためである。
+        /// </summary>
+        private void RecordApiError(string category)
+        {
+            Interlocked.Increment(ref _apiErrorCategoryCount);
+            StatusLog.WriteLine($"---- {this.RankInfo.folder}:{category} の取得に失敗しました（APIエラー） ----");
         }
 
         /// <summary>
         /// ランキングデータを保存する
         /// </summary>
-        /// <returns>保存成功かどうか</returns>
+        /// <returns>取得データがあり、かつ全てのファイルを書き込めたか</returns>
         public bool SaveOldRankingData()
         {
             // まずデータが存在するかチェックする
@@ -459,6 +518,10 @@ namespace nicorank_oldlog
                 // データ取得なし
                 return false;
             }
+
+            // 書き込み失敗を握りつぶすと「取得はできたが保存できていない」状態を成功扱いにしてしまう。
+            // 呼び出し元（term の成否判定）が保存完了を意味するよう、1件でも失敗したら false を返す（Issue #51）
+            bool writeFailed = false;
 
             // ランキング日付フォルダ名の確定
             if (this.GenreResultList.Sum(genre => genre.rankLogJsonList.Count) > 0)
@@ -494,6 +557,7 @@ namespace nicorank_oldlog
                         }
                         else
                         {
+                            writeFailed = true;
                             var errLog = ErrLog.GetInstance();
                             errLog.Write($"{this.Path_file_name_list}の書き込みでエラー発生。(RankApi2Json::SaveOldRankingData)");
                         }
@@ -520,6 +584,7 @@ namespace nicorank_oldlog
                                 }
                                 else
                                 {
+                                    writeFailed = true;
                                     var errLog = ErrLog.GetInstance();
                                     errLog.Write($"{genreInfo.TargetSavePath}の書き込みでエラー発生。(RankApi2Json::SaveOldRankingData)");
                                 }
@@ -527,7 +592,11 @@ namespace nicorank_oldlog
 
                         }
                     }
-                    if (this.CheckString.Length > 0)
+                    // 書き込み失敗があるときは CheckString を更新しない（Issue #51 レビュー指摘）。
+                    // CheckString は週刊/月次の更新チェックの比較元であり、JSON本体が欠けたまま
+                    // こちらだけ新しくなると、次の再試行が「更新なし」と誤判定して #52 の更新待ちループに入り、
+                    // 1時間で打ち切る保証が崩れる。失敗時は前回値のまま残し、更新を検出し直せるようにする
+                    if (this.CheckString.Length > 0 && !writeFailed)
                     {
                         string str_genre_jon = JsonConvert.SerializeObject(this.lastRankResult, Newtonsoft.Json.Formatting.None);
 
@@ -539,12 +608,21 @@ namespace nicorank_oldlog
                             }
                             else
                             {
+                                writeFailed = true;
                                 var errLog = ErrLog.GetInstance();
                                 errLog.Write($"{this.CheckString}の書き込みでエラー発生。(RankApi2Json::SaveOldRankingData)");
                             }
                         }
                     }
-                    StatusLog.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} の結果を保存しました　----");
+                    if (writeFailed)
+                    {
+                        // 取得はできても保存できていない状態を「保存しました」と出すと、cronメールで成功と誤読される
+                        StatusLog.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} 一部のファイルを保存できませんでした　----");
+                    }
+                    else
+                    {
+                        StatusLog.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} の結果を保存しました　----");
+                    }
 
                     //週刊の場合のみ、全ジャンルのID一覧で動画情報キャッシュを作る（Issue #40）
                     //2019側の週刊集計が取り込むことで取得時点を固定し、欠落を減らす
@@ -554,7 +632,7 @@ namespace nicorank_oldlog
                     }
                 }
             }
-            return true;
+            return !writeFailed;
         }
 
         /// <summary>

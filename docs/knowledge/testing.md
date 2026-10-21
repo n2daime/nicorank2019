@@ -9,7 +9,7 @@ dotnet test UnitTest/UnitTest.csproj
 
 - 環境: **.NET Framework 4.8 ターゲットだが .NET 10 SDK でビルド・実行**（Windows）
 - テストフレームワーク: MSTest 3.5.2 / モック: Moq 4.20.72
-- 全 **346 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件・#39で16件・#44で10件・#43で2件・#36で13件・#45で35件・#47で25件を追加）
+- 全 **352 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件・#39で16件・#44で10件・#43で2件・#36で13件・#45で35件・#47で25件・#51で6件を追加）
 
 ## 構成
 
@@ -24,7 +24,7 @@ UnitTest/
 │   ├── TestConfigBuilder.cs  # Config の非公開フィールドをリフレクションで書き換えるテスト用ビルダー
 │   └── UnitTestTestDbHelper.cs
 └── nicorankLib/
-    ├── Util/       UnitTestSQLiteCtrl(12) / DbQuery(10) / DbWrite(9) / DbSchema(8) / DbError(4) / DbCommandReuse(6) / StatusLog(3) / TextUtil(6) / ApiUrlBuilder(7) / DbMigrationCoordinator(12) / UnitTestBaselineDownloader(13) / UnitTestWeeklyGapChecker(18) / UnitTestBaselineRestore(17) / UnitTestAppUpdateChecker(25)
+    ├── Util/       UnitTestSQLiteCtrl(12) / DbQuery(10) / DbWrite(9) / DbSchema(8) / DbError(4) / DbCommandReuse(6) / StatusLog(3) / TextUtil(6) / ApiUrlBuilder(7) / DbMigrationCoordinator(12) / UnitTestBaselineDownloader(13) / UnitTestWeeklyGapChecker(18) / UnitTestBaselineRestore(17) / UnitTestAppUpdateChecker(25) / UnitTestRetryPoller(6)
     ├── Common/     UnitTestConfig(8)
     ├── output/     UnitTestOutput(8)
     ├── SnapShot/   UnitTestSnapShotRequest(12) / UnitTestTagConditionParser(7) / UnitTestTagSearchRequest(7) / UnitTestSnapShotVersionChecker(12) / UnitTestSnapShotVersionPoller(5)
@@ -75,6 +75,7 @@ UnitTest/
 | `UnitTestDbMigrationCoordinator` | 12 | 司令塔の全成功・失敗時中断・null例外、RankingHistory/ResultHistoryのDBVersion確保・JSON列DROP・SP行削除・冪等・記録Verが新しい場合の無変更・最古スキーマ対応（Issue #28。RankingHistoryのVer期待値はVer1に更新） |
 | `UnitTestBaselineDownloader` | 13 | baseline.json の正常・破損・欠落・不正ハッシュ・パス区切り拒否・不足なし・不足時取得配置・ハッシュ不一致・キャッシュ2種確保と冪等・空ファイルからの回復・Config既定と上書き（Issue #36） |
 | `UnitTestAppUpdateChecker` | 25 | version.json の正常・破損・欠落・不正ハッシュ・相対URL拒否・file許可・版数正規化と比較・間引き・抑制・状態ファイル・タスクファイル・Config既定と上書き・file取得（Issue #47） |
+| `UnitTestRetryPoller` | 6 | 待機仕様値の固定（5分・1時間）・初回成功・途中成功・1時間打ち切り（13回試行/12回待機）・呼び出し間の予算共有・attemptの例外伝播（フェイク時計。Issue #51） |
 | `UnitTestRankingHistorySoHistory` | 15 | SoHistory作成・境界より古い行の退避・混入行清掃・基準日ガード・保持境界prune・Movie廃止・冪等・索引作成・CheckSoMovieNeedSabunのフォールバック/優先/null/表なし・日次の消去行拾い上げと条件付き置換・まとめ消し（Issue #31） |
 
 ## テストパターン
@@ -117,6 +118,7 @@ SDK-style csproj に変換済み。ポイント:
 3. **TextUtil.ReadCsv の戻り値** — ファイル不在時、戻り値は `false` で out 引数は**空の List**（null ではない）。テストは `Assert.IsNotNull` + `Count == 0`
 4. **nicorankLib の Costura.Fody は削除しない** — StackOverflow とは無関係
 5. **絶対パスの使用禁止** — `T:\...` 等のハードコードは NG。Fixtures は相対パスで参照
+6. **nicorank_oldlog（net8）は単体テスト対象外** — UnitTest は net48 で nicorankLib のみ参照するため、oldlog 本体の終了コード判定（全 term 失敗→2 / 部分失敗→0）は手動実行で確認する。再試行の制御は nicorankLib の `RetryPoller` に切り出してテストしている（Issue #51）
 
 ## 新規テスト追加の作法
 

@@ -259,3 +259,12 @@
   Add-MpPreference -ExclusionProcess "nicorankUpdater.exe"
   ```
 - **切り分けの教訓**: `FileNotFoundException` は欠落、`FileLoadException` はブロック（MOTWの#16）と例外名で切り分ける。MOTW対策の `loadFromRemoteSources` 済みでも本件は起きる。疑ったら浅い階層への移動で試し、`lib` 直下と `lib\runtimes` のファイル一覧と実行パスの全長を確認する
+
+### 27. ニコ動APIの503は「HTTP例外」と「本文 meta.status」の両方で起き、失敗が成功扱いになりやすい（Issue #51・2026-10）
+
+- **症状**: `nicorank_oldlog` が、ニコ動 API が落ちている間も何も取得できずに「集計終了」＋ exit 0 で終わっていた。NAS は終了コードでメール通知するため欠損に気づけなかった
+- **原因1（経路の断絶）**: `AsyncExecuteAnalyzeRank` の戻り値（term の成否）と `GetGenreInfoList` の戻り値が Program で捨てられており、`SaveOldRankingData` の `false`（データ0件）が最終結果に反映されなかった
+- **原因2（503の形が2通り）**: `requestAPI` は `EnsureSuccessStatusCode()` の例外を握って `null` を返す（HTTP 503）。一方 nvapi は **HTTP 200＋本文 `meta.status=503`** でも返すことがあり、`GetTeibanRanking` はそれを `break` して `true` を返していた。`GetGenreRanking` も `getResult` を false にしていなかった。判定は必ず両方（HTTP と `meta.status`）で行う
+- **原因3（無駄打ちと握りつぶし）**: ジャンル取得のリトライループに成功時の `break` がなく、成功しても4回取得していた。`SaveOldRankingData` は書き込み失敗を ErrLog に書くだけで true を返し、`RankApi2JsonDaily.Initilize` はトレンドタグ取得失敗を無視して true を返していた
+- **対策**: `RetryPoller`（5分×最大1時間）で term 単位に再試行し、全 term 失敗時のみ exit 2。`meta.status` 非200は5メソッドすべてで false、成功時は即 break、書き込み失敗は false、トレンドタグ失敗は警告。詳細は specs.md「nicorank_oldlog の障害時リトライと終了コード」と design.md
+- **教訓**: 取得系の `bool` を返すメソッドを足すときは「呼び出し元がその bool を見ているか」まで確認する。見ていなければ、失敗は静かに成功へ化ける
