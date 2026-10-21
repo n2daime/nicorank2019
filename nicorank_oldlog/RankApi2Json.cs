@@ -592,7 +592,11 @@ namespace nicorank_oldlog
 
                         }
                     }
-                    if (this.CheckString.Length > 0)
+                    // 書き込み失敗があるときは CheckString を更新しない（Issue #51 レビュー指摘）。
+                    // CheckString は週刊/月次の更新チェックの比較元であり、JSON本体が欠けたまま
+                    // こちらだけ新しくなると、次の再試行が「更新なし」と誤判定して #52 の更新待ちループに入り、
+                    // 1時間で打ち切る保証が崩れる。失敗時は前回値のまま残し、更新を検出し直せるようにする
+                    if (this.CheckString.Length > 0 && !writeFailed)
                     {
                         string str_genre_jon = JsonConvert.SerializeObject(this.lastRankResult, Newtonsoft.Json.Formatting.None);
 
@@ -610,7 +614,15 @@ namespace nicorank_oldlog
                             }
                         }
                     }
-                    StatusLog.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} の結果を保存しました　----");
+                    if (writeFailed)
+                    {
+                        // 取得はできても保存できていない状態を「保存しました」と出すと、cronメールで成功と誤読される
+                        StatusLog.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} 一部のファイルを保存できませんでした　----");
+                    }
+                    else
+                    {
+                        StatusLog.WriteLine($"---- {this.RankInfo.folder}:{DateTime.Now.ToString()} の結果を保存しました　----");
+                    }
 
                     //週刊の場合のみ、全ジャンルのID一覧で動画情報キャッシュを作る（Issue #40）
                     //2019側の週刊集計が取り込むことで取得時点を固定し、欠落を減らす
