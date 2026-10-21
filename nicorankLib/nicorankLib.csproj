@@ -323,6 +323,7 @@
     <Compile Include="Util\BaselineDownloader.cs" />
     <Compile Include="Util\AppUpdateChecker.cs" />
     <Compile Include="Util\WeeklyGapChecker.cs" />
+    <Compile Include="Util\RetryPoller.cs" />
     <Compile Include="Util\DbOptimizer.cs" />
     <Compile Include="Util\RegLib.cs" />
     <Compile Include="Util\SQLiteCtrl.cs" />

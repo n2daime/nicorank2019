@@ -62,12 +62,13 @@
   - 引数なし — daily + total を毎回、月曜なら weekly、1日なら monthly を自動追加
   - `/term:daily|weekly|monthly|total` — 特定ランキングのみ取得
   - `/folderappend:<文字列>` — 保存フォルダ名にサフィックス追加
-  - 終了コード: 0=成功 / 1=config.json か cookie.txt 不在 / 2=エラー
+  - 終了コード: 0=成功（部分取得の警告を含む） / 1=config.json か cookie.txt 不在 / 2=エラー。2 になるのは「ジャンル一覧が約1時間復旧しない」「全 term が約1時間リトライしてもデータを保存できない」「取得対象の term が 0 件（引数不正）」（Issue #51）
 - フロー: `ConvertConfig.GetInstance()`（config.json）→ `NicoRankiApi.GetInstance()`（cookie.txt の user_session）→ `RankApi2JsonContoller` → term 別に `RankApi2Json` / `RankApi2JsonDaily` を並列実行 → 保存
-- `RankAPI/NicoRankiApi.cs`: シングルトン。nvapi に user_session クッキー + UA を付与して GET。GenreList / TeibanGenreList / TrendTagList / GenreRanking（hasNext まで最大20ページ）/ TeibanRanking。表示は進捗・状態を `StatusLog`、例外詳細を `ErrLog` に寄せ、直接Consoleには書かない（Issue #43）
-- `RankApi2Json.cs`: ジャンル/定番取得（失敗時3回リトライ）、ID 重複排除マージ、`lastweekly_all.json` / `lastmonthly_all.json` との更新チェック（更新なしなら5分ポーリング）。進捗・成否報告は `StatusLog` 経由（Issue #43）
+- **障害時リトライ（Issue #51）**: ニコ動 API の 503 等で失敗したら 5 分間隔・最大 1 時間で再試行する。予算は「その実行で最初に失敗した時点」から数え、ジャンル一覧取得と term 群で共有する（`nicorankLib/Util/RetryPoller.cs`）。リトライは term 単位で、成功済み term は再取得しない（週刊の `ApiXML.db` 再取得を避ける）。全 term が失敗したときだけ exit 2、部分失敗は exit 0 で `StatusLog`／`nicorankerr.log` に要約を残す（ユーザー判断）
+- `RankAPI/NicoRankiApi.cs`: シングルトン。nvapi に user_session クッキー + UA を付与して GET。GenreList / TeibanGenreList / TrendTagList / GenreRanking（hasNext まで最大20ページ）/ TeibanRanking。`meta.status` 非 200 は失敗として返す（HTTP 200＋本文 503 を取りこぼさないため）。1 リクエストのタイムアウトは 30 秒（`RequestTimeout`）。表示は進捗・状態を `StatusLog`、例外詳細を `ErrLog` に寄せ、直接Consoleには書かない（Issue #43）
+- `RankApi2Json.cs`: ジャンル/定番取得（API エラー時のみ最大4回の即時試行。成功したら打ち切る）、ID 重複排除マージ、`lastweekly_all.json` / `lastmonthly_all.json` との更新チェック（更新なしなら5分ポーリング）。API エラーで取得できなかったカテゴリ数を数え、term 終了時に警告を出す。保存は書き込み失敗が 1 件でもあれば false（Issue #51）。進捗・成否報告は `StatusLog` 経由（Issue #43）
 - 週刊保存時は全ジャンルのID一覧（約26000件）で動画情報を一括取得し、日付フォルダへ `ApiXML.db` も置く（2019側の週刊集計が取り込む。取得時点固定で欠落を減らす。Issue #40。一時名で作ってから置き換え）
-- `RankApi2JsonDaily.cs`: 派生クラス。トレンドタグ展開 + タグ別定番ランキング追加取得
+- `RankApi2JsonDaily.cs`: 派生クラス。トレンドタグ展開 + タグ別定番ランキング追加取得。トレンドタグ取得の失敗は警告に留めて続行する（ジャンル本体は取得できるため。Issue #51）
 - **ビルド**: net8.0、SDK-style。Newtonsoft.Json / Costura.Fody。**nicorankLib（net48）を参照するハイブリッド構成**
 
 ## 設定ファイル（アプリ起動に必要）
