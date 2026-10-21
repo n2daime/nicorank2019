@@ -768,5 +768,5 @@
   - 実環境が 503 を返していたため本番定数のまま実行し、「ジャンル一覧: 5分後に再試行します（失敗1回・残り約60分）」で待機に入り exit 0 にならないことを確認
   - 検証時だけ定数を 5 秒／20 秒に短縮し、13 回ではなく短縮分の試行後に打ち切って exit 2 になることを確認。定数は 5 分／1 時間へ戻し、仕様値は単体テストで固定
   - 正常系（exit 0）は検証時点で API が 503 のため未確認。API 復旧後に再確認する
-- **配布**: `\\ds224\Temp\nicorankOld2025` へ exe / dll / runtimeconfig を配布（`nicorankLib.dll` も必須。新規型 `RetryPoller` のため。pitfalls 4h と同種の新旧混在を避ける）。設定・cookie・old-ranking データには触れない
+- **配布**: `\\ds224\Temp\nicorankOld2025` へ配布済み（2026-10-22）。差分は `nicorank_oldlog.exe` / `nicorank_oldlog.dll` / `nicorankLib.dll` の 3 点で、`nicorankLib.dll` は新規型 `RetryPoller` を含むため必須（pitfalls 4h の新旧混在を避ける）。`runtimeconfig.json` / `deps.json` / 各パッケージ DLL はハッシュ一致で無変更、config.json・cookie.txt・old-ranking・last*.json には触れていない。上書き前に `\\ds224\Temp\nicorankOld2025_bak_20261022` へ旧3ファイルを退避。配置後に SHA256 一致を確認し、NAS 上の exe を `/checklogin` で実行して型ロードを含め起動できることを確認（結果は API 503 のため exit 2。データは書かない引数で実施）。次回の定期実行から新版が使われる
 - **残課題**: #52（更新待ちの上限）、共有 HttpClient 化、SnapShotVersionPoller との待機値共通化、リトライ表示文言の整形
