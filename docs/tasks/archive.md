@@ -795,3 +795,22 @@
   - 実URL確認: `daily/2026-10-22` と `total/2026-10-22` は 404（text/html）、`daily/2026-10-21` は 200。ユーザーが 10/22 の daily/total に `[]` を配置済み
   - ユーザー実行確認（`bin/Debug` の新 exe）: 10/20・10/21 は通常登録、10/22 は「データなし（空の file_name_list.json）のためメンテナンス日として登録します」→ DB登録 → そのまま中間ランキング集計まで進み「集計成功」。約12分待ち・確認ダイアログなし
 - **残課題**: 過去日404の確認ダイアログを `Task.Run` からUIスレッドへ寄せる件（必要なら別Issue）。oldlog の部分失敗（exit 0）時のマーカー配置は今回の対象外（取得済みデータを日全体のメンテナンス扱いで捨てないため）
+
+## 2026-10-22 リリース v20261022_nicorank
+
+- **タグ**: `v20261022_nicorank`（main HEAD `c2a3122` を指す。annotated tag の commit を `git rev-parse "v20261022_nicorank^{commit}"` で確認済み）
+- **GitHub Release**: https://github.com/n2daime/nicorank2019/releases/tag/v20261022_nicorank
+- **含まれる変更**: #48（スナップショット取得失敗時のログ）・#49（exe アイコン）・#51（oldlog の障害時リトライ）・#53（取得不可日の空JSONマーカー）
+- **成果物**:
+  - `nicorank2019.zip`（16,057,229 bytes）
+  - `nicorank_oldlog.zip`（6,035,343 bytes）
+  - `nicorank_SnapShot.zip`（16,408,712 bytes。今回の変更はないが配布物の統一のため同梱）
+- **版数**: `nicorank2019.exe` = 2026.10.22.0（`version.json` の `2026.10.22` と一致）
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 367件 PASS
+  - `dotnet build nicorank2019.sln -c Release` EXIT 0
+  - `bin\Release\lib` の4 DLL + 3 native、`nicorank2019.exe.config` / `nicorank_SnapShot.exe.config` の `loadFromRemoteSources`、`bin\Release\nicorank.xml` と `依存ファイル\nicorank.xml` のハッシュ一致を確認
+  - zip はホワイトリスト方式で作成し、DB・設定本体・pdb 等が含まれないことを確認
+  - 実機確認（2026-10-22）: 10/22 の空JSONマーカーでメンテ日登録 → 集計続行 → 集計成功。12分待ち・確認ダイアログなし
+- **version.json**: `tools/make-version.ps1` で生成（sha256 `ecd2e299f198602b1f371cc75154b713cf95e80a2af5b8ca200c2bc6f7af71f9`）。NAS の `https://2daime.myds.me/nicorank/update/version.json` への配置は人間が行う（release.md の運用）。配置後に自動更新の通知が有効になる
+- **残課題**: 過去日404の確認ダイアログを `Task.Run` からUIスレッドへ寄せる件（別Issue候補）。oldlog の部分失敗（exit 0）時のマーカー配置は対象外
