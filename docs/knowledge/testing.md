@@ -9,7 +9,7 @@ dotnet test UnitTest/UnitTest.csproj
 
 - 環境: **.NET Framework 4.8 ターゲットだが .NET 10 SDK でビルド・実行**（Windows）
 - テストフレームワーク: MSTest 3.5.2 / モック: Moq 4.20.72
-- 全 **352 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件・#39で16件・#44で10件・#43で2件・#36で13件・#45で35件・#47で25件・#51で6件を追加）
+- 全 **367 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件・#39で16件・#44で10件・#43で2件・#36で13件・#45で35件・#47で25件・#51で6件・#53で15件を追加）
 
 ## 構成
 
@@ -24,14 +24,14 @@ UnitTest/
 │   ├── TestConfigBuilder.cs  # Config の非公開フィールドをリフレクションで書き換えるテスト用ビルダー
 │   └── UnitTestTestDbHelper.cs
 └── nicorankLib/
-    ├── Util/       UnitTestSQLiteCtrl(12) / DbQuery(10) / DbWrite(9) / DbSchema(8) / DbError(4) / DbCommandReuse(6) / StatusLog(3) / TextUtil(6) / ApiUrlBuilder(7) / DbMigrationCoordinator(12) / UnitTestBaselineDownloader(13) / UnitTestWeeklyGapChecker(18) / UnitTestBaselineRestore(17) / UnitTestAppUpdateChecker(25) / UnitTestRetryPoller(6)
+    ├── Util/       UnitTestSQLiteCtrl(12) / DbQuery(10) / DbWrite(9) / DbSchema(8) / DbError(4) / DbCommandReuse(6) / StatusLog(3) / TextUtil(6) / ApiUrlBuilder(7) / DbMigrationCoordinator(12) / UnitTestBaselineDownloader(13) / UnitTestWeeklyGapChecker(18) / UnitTestBaselineRestore(17) / UnitTestAppUpdateChecker(25) / UnitTestRetryPoller(6) / UnitTestOldRankingMarker(3) / UnitTestInternetUtilNotFound(2)
     ├── Common/     UnitTestConfig(8)
     ├── output/     UnitTestOutput(8)
     ├── SnapShot/   UnitTestSnapShotRequest(12) / UnitTestTagConditionParser(7) / UnitTestTagSearchRequest(7) / UnitTestSnapShotVersionChecker(12) / UnitTestSnapShotVersionPoller(5)
     ├── Analyze/     UnitTestRankingAnalyze(9) / UnitTestBasicOptionDispose(10)
     ├── Analyze/model/ UnitTestRanking(6) / UnitTestRankingDisplayTags(5) / UnitTestRankingDeletedMarker(2)
-    ├── Analyze/Input/ UnitTestTagRankAnalyze(8)
-    ├── Analyze/Official/ UnitTestRankingHistorySoHistory(15)
+    ├── Analyze/Input/ UnitTestTagRankAnalyze(8) / UnitTestJsonReaderMissingDate(5)
+    ├── Analyze/Official/ UnitTestRankingHistorySoHistory(15) / UnitTestRankingHistoryMissingDate(5)
     ├── Analyze/Option/Basic/ UnitTestTagRankTotalReader(4) / UnitTestTagRankLiveReader(7) / UnitTestSpMovieInfoFallback(4)
     ├── Analyze/Option/Ext/ UnitTestFavoriteTagReader(9)
     └── api/        UnitTestNicoApiLockedTags(6) / UnitTestNicoApiNoDelete(9) / UnitTestApiXmlCacheImporter(5)
@@ -77,6 +77,10 @@ UnitTest/
 | `UnitTestAppUpdateChecker` | 25 | version.json の正常・破損・欠落・不正ハッシュ・相対URL拒否・file許可・版数正規化と比較・間引き・抑制・状態ファイル・タスクファイル・Config既定と上書き・file取得（Issue #47） |
 | `UnitTestRetryPoller` | 6 | 待機仕様値の固定（5分・1時間）・初回成功・途中成功・1時間打ち切り（13回試行/12回待機）・呼び出し間の予算共有・attemptの例外伝播（フェイク時計。Issue #51） |
 | `UnitTestRankingHistorySoHistory` | 15 | SoHistory作成・境界より古い行の退避・混入行清掃・基準日ガード・保持境界prune・Movie廃止・冪等・索引作成・CheckSoMovieNeedSabunのフォールバック/優先/null/表なし・日次の消去行拾い上げと条件付き置換・まとめ消し（Issue #31） |
+| `UnitTestOldRankingMarker` | 3 | 空の `file_name_list.json`（`[]`）の作成・BOMなし・既存データの非上書き・再実行時の非上書き（Issue #53） |
+| `UnitTestInternetUtilNotFound` | 2 | 404 の即断念（`retryOnNotFound: false` で接続1回）・既定のリトライ維持（`maxAttempts: 2` で接続2回）。ローカルTCPリスナーで接続回数を検証（Issue #53） |
+| `UnitTestJsonReaderMissingDate` | 5 | `file_name_list.json` の404/`[]`/空文字/ジャンル404/正常データを `LastFileListStatus` と `LastFileListWasEmpty` で区別する（Issue #53） |
+| `UnitTestRankingHistoryMissingDate` | 5 | 404 の当日以降はスキップ・過去日はダイアログ対象になる日付判定、daily が NoData/NotFound/Failed/0件のときは登録しない判定（Issue #53） |
 
 ## テストパターン
 

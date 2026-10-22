@@ -194,6 +194,59 @@ namespace nicorank_oldlog
         }
 
         /// <summary>
+        /// 取得できなかった日を示す空の file_name_list.json を置く（Issue #53）。
+        /// </summary>
+        /// <remarks>
+        /// なぜ空配列を置くのか:
+        /// nicorank2019 は 404 を「未提供」「Webサーバの設定ミス」「データ削除」のどれとも区別できない。
+        /// 404 から自動でメンテナンス日を判定すると、本来取得できる日を永久に欠落させる危険がある。
+        /// そこで、oldlog が1時間リトライしても全滅したときだけ「この日はデータなし」という
+        /// 明示的なマーカー（[]）を残し、nicorank2019 はそれだけをメンテナンス日として扱う。
+        /// 既にデータがあるフォルダは上書きしない（過去の正常データを壊さないため）。
+        /// </remarks>
+        /// <param name="rankInfos">マーカーを置く対象term。呼び出し元が確定済みのリストを渡す。</param>
+        public void WriteNoDataMarkers(IEnumerable<Ranking_Info> rankInfos)
+        {
+            // 検証用の /folderappend 実行では、本番の日付フォルダにマーカーを置くと
+            // 実データの無い日として誤登録される。append 付きのときは置かない。
+            if (!string.IsNullOrEmpty(this.optionFolderAppend))
+            {
+                StatusLog.WriteLine("データなしマーカー: /folderappend 指定の検証実行のため配置しません");
+                return;
+            }
+
+            // 対象termが0件（引数不正）の場合は何も置かない。
+            // その場合は nicorank2019 の404が続くが、引数不正自体が exit 2 で通知される。
+            foreach (var rankInfo in rankInfos)
+            {
+                bool created = OldRankingMarker.TryWrite(
+                    "old-ranking",
+                    rankInfo.folder,
+                    this.today,
+                    out string path,
+                    out OldRankingMarkerWriteResult result,
+                    out string error);
+
+                if (created)
+                {
+                    string message = $"データなしマーカーを配置しました: {path}";
+                    StatusLog.WriteLine(message);
+                    ErrLog.GetInstance().Write(message);
+                }
+                else if (result == OldRankingMarkerWriteResult.SkippedExistingData)
+                {
+                    // 正常データがある日は何もしない。ログも出さない（毎回の失敗で埋もれるため）
+                }
+                else
+                {
+                    string message = $"データなしマーカーの配置に失敗しました: {path} ({error})。メンテナンスの場合は手動で [] を置いてください。";
+                    StatusLog.WriteLine(message);
+                    ErrLog.GetInstance().Write(message);
+                }
+            }
+        }
+
+        /// <summary>
         /// ランキングの分析を非同期で実行する（Issue #51）。
         /// term ごとに失敗した分だけを RetryPoller で再試行する。成功済みの term をやり直さないのは、
         /// 週刊の ApiXML.db（約26000件の動画情報）再取得のような無駄なアクセスを避けるためである。

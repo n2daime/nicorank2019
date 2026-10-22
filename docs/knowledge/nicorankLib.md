@@ -52,7 +52,7 @@ AnalyzeRank():
 | クラス | 責務 |
 |---|---|
 | `InputBase` | 抽象基底。`AnalyzeDay` / `AnalyzeRank(out List<Ranking>)` を規定 |
-| `JsonReaderBase` | 公式過去ランキング JSON 取得の基底。`file_name_list.json` → ジャンル別 JSON を `Config.ThreadMax` 並列でダウンロード → `Ranking` に変換 → `MergeRankingList` で重複 ID マージ。`CheckAnalyzeTime`（当日 1:00 前は集計不可判定） |
+| `JsonReaderBase` | 公式過去ランキング JSON 取得の基底。`file_name_list.json` → ジャンル別 JSON を `Config.ThreadMax` 並列でダウンロード → `Ranking` に変換 → `MergeRankingList` で重複 ID マージ。`CheckAnalyzeTime`（当日 1:00 前は集計不可判定）。404 と通信エラーを `LastFileListStatus`（`TxtDownloadStatus`）で区別し、200 かつ `[]` を `LastFileListWasEmpty` で「データなしマーカー」として保持する（Issue #53）。`TryDownloadText` はテスト差し替え用の virtual |
 | `JsonReaderWeekly` | 週刊用。JSON取得後に oldlog 配布の `ApiXML.db` を `ApiXmlCacheImporter` で取り込む（失敗時は本地継続。Issue #40） |
 | `JsonReaderDaily` / `Weekly` / `Monthly` / `Total` | 種別ごと。Weekly は直近の月曜まで遡る、Monthly は直近の1日まで |
 | `SPAnalyze` | SP 用。動画 ID リスト（改行区切り）を読み込み Ranking リスト化 |
@@ -65,7 +65,7 @@ AnalyzeRank():
 
 - `Open()` / `Close()`: LogOfficial を開閉（注入済みの開接続は再利用）
 - `EnsureMigrated()`（`IDbMigratable`）: RankingDate確保＋DBVersion確保＋Ver1でSoHistory・prune用索引・古いRanking削除・Movie廃止。集計開始時に司令塔から呼ばれる
-- `UpdateOfficialRankingDB()`: RankingDate の `Max(集計日)+1`（初期値 20190610）から今日までを日別に取得・登録。0 件の日はメンテナンス日として登録（UI で確認）
+- `UpdateOfficialRankingDB()`: RankingDate の `Max(集計日)+1`（初期値 20190610）から今日までを日別に取得・登録。結果は `DailyRankingFetchResult` で4区分する（Issue #53）。daily を基準にし、daily が取れていない日は total 等にデータがあっても登録しない。`NoData`（daily の `file_name_list.json` が `[]`）はダイアログなしでメンテ日登録、`NotFound`（404）は当日ならスキップして続行・過去日なら確認ダイアログ、`Failed`（通信エラー・200だが0件）はメンテ日と誤認せず中断する。404 は `TxtDownLoad(retryOnNotFound: false)` で即断念する
 - `CheckMaintananceDay(DateTime)`: RankingDate でメンテ日判定
 - `CheckSoMovieNeedSabun(id, baseTime)`: 公式チャンネル動画（so）の差分取得判定。過去ランキング既出なら差分データ、なければ `ranking = null`（差分なし）。`Ranking` に見つからない場合は `SoHistory`（消えた行のうち最新の差分元）を基準日以前の行に限って参照し、それもなければ新着扱いとする。`SoHistory` 表自体がない旧DBでも新着扱いで正常終了する。DB 非オープン・例外時は false
 - `GetRankingSabunDataLogOfficial(id, baseTime, baseTime2)`: 過去ログから差分候補を取得（7日間に無ければ baseTime 以降の最古データを採用）
