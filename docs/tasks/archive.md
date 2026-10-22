@@ -770,3 +770,28 @@
   - 正常系（exit 0）は検証時点で API が 503 のため未確認。API 復旧後に再確認する
 - **配布**: `\\ds224\Temp\nicorankOld2025` へ配布済み（2026-10-22）。差分は `nicorank_oldlog.exe` / `nicorank_oldlog.dll` / `nicorankLib.dll` の 3 点で、`nicorankLib.dll` は新規型 `RetryPoller` を含むため必須（pitfalls 4h の新旧混在を避ける）。`runtimeconfig.json` / `deps.json` / 各パッケージ DLL はハッシュ一致で無変更、config.json・cookie.txt・old-ranking・last*.json には触れていない。上書き前に `\\ds224\Temp\nicorankOld2025_bak_20261022` へ旧3ファイルを退避。配置後に SHA256 一致を確認し、NAS 上の exe を `/checklogin` で実行して型ロードを含め起動できることを確認（結果は API 503 のため exit 2。データは書かない引数で実施）。次回の定期実行から新版が使われる
 - **残課題**: #52（更新待ちの上限）、共有 HttpClient 化、SnapShotVersionPoller との待機値共通化、リトライ表示文言の整形
+
+## 2026-10-22 取得不可日での停止と空JSONマーカー (#53) ✅ developマージ済み
+
+- **Issue・ブランチ**: #53（新規作成）／`feature/t053-oldranking-missing-date` を develop 起点に作成。`--no-ff` でマージし削除済み（64a3fda まで。レビュー指摘対応とテスト追加を含む）
+- **背景**: 2026-10-22 のニコ動緊急メンテナンスで oldlog の定期取得が失敗し、`old-ranking/daily/2026-10-22/` が作られなかった。nicorank2019 は `RankingDate` の最大集計日+1 から今日までを取りに行くため、存在しない日の `file_name_list.json`（404）を20回リトライして約12分待ち、その後 `Task.Run` から出る確認ダイアログで止まった。日付が登録されないので次回も同じことを繰り返す。
+- **原因（実測）**: `curl` で `daily/2026-10-22` と `total/2026-10-22` が 404（text/html）であることを確認。`TxtDownLoad` は 404 を「403 XML」以外のリトライ対象として扱い、`2^n×100ms`（上限30秒）で1 URL 約5.9分。daily+total で約12分。`NicoranWebClient`（5秒タイムアウト）は定義だけで未使用だった。
+- **ユーザー決定**: 404 からの自動メンテ判定は「未提供」「サーバ設定ミス」「削除」の区別がつかず危険なので行わない。oldlog が1時間リトライしても全滅したときだけ、対象termの日付フォルダへ空の `file_name_list.json`（`[]`）を置き、nicorank2019 はそれだけをメンテナンス日の明示マーカーとして扱う。当日のマーカーも尊重する。マーカーなしの過去日404は確認ダイアログを出す。
+- **実施内容**:
+  - `InternetUtil.TxtDownLoad`: 結果区分 `TxtDownloadStatus`（Success/NotFound/Failed）、`retryOnNotFound`、`maxAttempts`、`timeoutMs` を追加。404 は呼び出し側が指定したときだけ即断念。応答ヘッダー待ちのタイムアウトは既定100秒（従来どおり）で、過去ランキングJSONだけ5秒。`success` フラグで「読み込み途中の例外が成功扱いになる」既存の穴も塞いだ
+  - `OldRankingMarker`（新規）: `old-ranking/{term}/{yyyy-MM-dd}/file_name_list.json` に BOM なし UTF-8 の `[]` を置く。既存 JSON があるフォルダは上書きしない
+  - `JsonReaderBase`: `LastFileListStatus` / `LastFileListWasEmpty` を追加。`TryDownloadText` を virtual にしてテスト差し替え可能に。空文字・壊れた JSON は Failed、200 かつ `[]` だけをマーカーとして扱う
+  - `RankingHistory`: `DailyRankingFetchResult`（Success/NoData/NotFound/Failed）を導入。daily を基準にし、daily が取れていない日は total 等があっても登録しない。NoData はダイアログなしでメンテ登録、当日404はスキップして続行、過去日404は確認ダイアログ、Failed は中断。`ShouldDeferMissingDate` と `DecideDailyRankingFetchResult` を純粋関数化。DB登録失敗時に true を返していた既存の握りつぶしを false（中断）に揃えた
+  - `nicorank_oldlog`: `Program.cs` で対象termをジャンル一覧取得より前に確定し、#51 の異常終了（ジャンル一覧失敗・全term失敗）で `WriteNoDataMarkers` を呼ぶ。`/folderappend` 付きの検証実行では本番パスへの誤登録を避けるため置かない。部分失敗（exit 0）では置かない
+  - docs: specs.md（4区分・マーカー契約）、design.md（判断理由）、knowledge（apps・db・nicorankLib・pitfalls 5/28・testing）、README、tasks.md
+- **reviewer 指摘への対応**:
+  - [中] daily が通信エラーで total だけ成功した場合に部分登録され、`RankingDate` が進んで daily を再取得できなくなる → daily 基準に変更し、daily が Success 以外なら登録しないよう修正（再レビュー済み）
+  - [低] `/folderappend` 時のマーカーが本番パスに置かれる → append 指定時は no-op に
+  - [低] マーカー配置失敗時の案内・`DB登録開始` のペア・対象0件のコメント → 対応
+  - [低] 過去日404ダイアログが `Task.Run` から出る件 → マーカー運用で頻度が下がるため見送り（別Issue候補）。`TxtDownLoad` の catch sleep 共通化も変更範囲を広げないため見送り。理由はコミットメッセージに記載
+  - 再レビュー推奨: daily 基準の判定を純粋関数化してテスト3件追加、weekly/monthly の欠落は自動回収されない旨を specs.md に追記
+- **検証**:
+  - `dotnet build nicorank2019.sln` EXIT 0、`dotnet test UnitTest/UnitTest.csproj` 367件 PASS（#53で15件追加: マーカー3・404即断念2・JSON判定5・日付/区分判定5）
+  - 実URL確認: `daily/2026-10-22` と `total/2026-10-22` は 404（text/html）、`daily/2026-10-21` は 200。ユーザーが 10/22 の daily/total に `[]` を配置済み
+  - ユーザー実行確認（`bin/Debug` の新 exe）: 10/20・10/21 は通常登録、10/22 は「データなし（空の file_name_list.json）のためメンテナンス日として登録します」→ DB登録 → そのまま中間ランキング集計まで進み「集計成功」。約12分待ち・確認ダイアログなし
+- **残課題**: 過去日404の確認ダイアログを `Task.Run` からUIスレッドへ寄せる件（必要なら別Issue）。oldlog の部分失敗（exit 0）時のマーカー配置は今回の対象外（取得済みデータを日全体のメンテナンス扱いで捨てないため）
