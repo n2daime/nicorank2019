@@ -1,8 +1,26 @@
 ﻿using nicorank_oldlog.RankAPI;
+using nicorankLib.Util;
 
 
 namespace nicorank_oldlog
 {
+    /// <summary>
+    /// term（daily/weekly/monthly/total）ごとの実行結果（Issue #51）。
+    /// 「全滅時だけ異常終了」の判断に使う。部分失敗は exit 0 のままログで警告する
+    /// （ユーザー判断。全 term が失敗したときだけ NAS のエラーメールを出す）。
+    /// </summary>
+    public class RankingRunResult
+    {
+        /// <summary>実行対象になった term 数</summary>
+        public int TotalCount => Succeeded.Count + Failed.Count;
+
+        /// <summary>データを保存できた term のフォルダ名（ログ用）</summary>
+        public List<string> Succeeded { get; } = new List<string>();
+
+        /// <summary>データを保存できなかった term のフォルダ名（ログ用）</summary>
+        public List<string> Failed { get; } = new List<string>();
+    }
+
     public class RankApi2JsonContoller
     {
         DateTime today;
@@ -176,59 +194,138 @@ namespace nicorank_oldlog
         }
 
         /// <summary>
-        /// ランキングの分析を非同期で実行する
+        /// 取得できなかった日を示す空の file_name_list.json を置く（Issue #53）。
+        /// </summary>
+        /// <remarks>
+        /// なぜ空配列を置くのか:
+        /// nicorank2019 は 404 を「未提供」「Webサーバの設定ミス」「データ削除」のどれとも区別できない。
+        /// 404 から自動でメンテナンス日を判定すると、本来取得できる日を永久に欠落させる危険がある。
+        /// そこで、oldlog が1時間リトライしても全滅したときだけ「この日はデータなし」という
+        /// 明示的なマーカー（[]）を残し、nicorank2019 はそれだけをメンテナンス日として扱う。
+        /// 既にデータがあるフォルダは上書きしない（過去の正常データを壊さないため）。
+        /// </remarks>
+        /// <param name="rankInfos">マーカーを置く対象term。呼び出し元が確定済みのリストを渡す。</param>
+        public void WriteNoDataMarkers(IEnumerable<Ranking_Info> rankInfos)
+        {
+            // 検証用の /folderappend 実行では、本番の日付フォルダにマーカーを置くと
+            // 実データの無い日として誤登録される。append 付きのときは置かない。
+            if (!string.IsNullOrEmpty(this.optionFolderAppend))
+            {
+                StatusLog.WriteLine("データなしマーカー: /folderappend 指定の検証実行のため配置しません");
+                return;
+            }
+
+            // 対象termが0件（引数不正）の場合は何も置かない。
+            // その場合は nicorank2019 の404が続くが、引数不正自体が exit 2 で通知される。
+            foreach (var rankInfo in rankInfos)
+            {
+                bool created = OldRankingMarker.TryWrite(
+                    "old-ranking",
+                    rankInfo.folder,
+                    this.today,
+                    out string path,
+                    out OldRankingMarkerWriteResult result,
+                    out string error);
+
+                if (created)
+                {
+                    string message = $"データなしマーカーを配置しました: {path}";
+                    StatusLog.WriteLine(message);
+                    ErrLog.GetInstance().Write(message);
+                }
+                else if (result == OldRankingMarkerWriteResult.SkippedExistingData)
+                {
+                    // 正常データがある日は何もしない。ログも出さない（毎回の失敗で埋もれるため）
+                }
+                else
+                {
+                    string message = $"データなしマーカーの配置に失敗しました: {path} ({error})。メンテナンスの場合は手動で [] を置いてください。";
+                    StatusLog.WriteLine(message);
+                    ErrLog.GetInstance().Write(message);
+                }
+            }
+        }
+
+        /// <summary>
+        /// ランキングの分析を非同期で実行する（Issue #51）。
+        /// term ごとに失敗した分だけを RetryPoller で再試行する。成功済みの term をやり直さないのは、
+        /// 週刊の ApiXML.db（約26000件の動画情報）再取得のような無駄なアクセスを避けるためである。
+        /// 再試行のたびに RankApi2Json を作り直すのは、RankApi2JsonDaily の Initilize が
+        /// トレンドタグのジャンルを GenreResultList へ追記するため、使い回すと重複するからである。
         /// </summary>
         /// <param name="apigetRankingList">取得するランキング情報のリスト</param>
         /// <param name="genreList">ジャンル情報のリスト</param>
-        /// <returns>分析結果のリスト</returns>
-        public async Task<List<RankApi2Json>> AsyncExecuteAnalyzeRank(List<Ranking_Info> apigetRankingList, List<GenreInfo> genreList)
+        /// <param name="retryPoller">再試行の予算を共有するポーラー</param>
+        /// <returns>term ごとの成否</returns>
+        public async Task<RankingRunResult> AsyncExecuteAnalyzeRank(
+            List<Ranking_Info> apigetRankingList, List<GenreInfo> genreList, RetryPoller retryPoller)
         {
-            var api2jsonList = new List<RankApi2Json>(apigetRankingList.Count);
+            var runResult = new RankingRunResult();
 
-            var taskList = new List<Task<bool>>();
+            var taskList = new List<Task>();
 
             foreach (var rankingInfo in apigetRankingList)
             {
-                RankApi2Json rss2jsonWork;
-                if (rankingInfo.term == "24h")
+                var workRankingInfo = rankingInfo;
+                taskList.Add(Task.Run(() =>
                 {
-                    rss2jsonWork = new RankApi2JsonDaily(rankingInfo, "");
-                }
-                else if (rankingInfo.term == "week")
-                {
-                    rss2jsonWork = new RankApi2Json(rankingInfo, "lastweekly_all.json");
-                }
-                else if (rankingInfo.term == "month")
-                {
-                    rss2jsonWork = new RankApi2Json(rankingInfo, "lastmonthly_all.json");
-                }
-                else
-                {
-                    rss2jsonWork = new RankApi2Json(rankingInfo);
-                }
+                    bool ok = retryPoller.RunUntilSuccess(
+                        () => ExecuteRankOnce(workRankingInfo, genreList),
+                        message => StatusLog.WriteLine($"{workRankingInfo.folder}: {message}"));
 
-                rss2jsonWork.Initilize(genreList, today, optionFolderAppend);
-
-                taskList.Add(Task.Run(() => rss2jsonWork.AnalyzeRank()));
-                /*
-                if (rss2jsonWork.isRetry)
-                {
-                    // Retryが必要な集計は、Task化してあとから待つ
-                    taskList.Add( Task.Run(() => rss2jsonWork.AnalyzeRank()));
-                }
-                else
-                {
-                    //Retryが不要な集計は、実行完了までまつ
-                    rss2jsonWork.AnalyzeRank();
-                }
-                */
-                api2jsonList.Add(rss2jsonWork);
+                    // term は並行に走るため、結果リストへの追加は lock で保護する
+                    lock (runResult)
+                    {
+                        if (ok)
+                        {
+                            runResult.Succeeded.Add(workRankingInfo.folder);
+                        }
+                        else
+                        {
+                            runResult.Failed.Add(workRankingInfo.folder);
+                        }
+                    }
+                }));
             }
 
             // 各タスクが終わるまで待つ
             await Task.WhenAll(taskList);
 
-            return api2jsonList;
+            return runResult;
+        }
+
+        /// <summary>
+        /// 1回分の取得を実行する。成功判定は「取得できて、保存まで完了したか」。
+        /// 部分的なカテゴリ失敗は RankApi2Json 側が警告として記録する（Issue #51）。
+        /// </summary>
+        private bool ExecuteRankOnce(Ranking_Info rankingInfo, List<GenreInfo> genreList)
+        {
+            RankApi2Json rss2jsonWork;
+            if (rankingInfo.term == "24h")
+            {
+                rss2jsonWork = new RankApi2JsonDaily(rankingInfo, "");
+            }
+            else if (rankingInfo.term == "week")
+            {
+                rss2jsonWork = new RankApi2Json(rankingInfo, "lastweekly_all.json");
+            }
+            else if (rankingInfo.term == "month")
+            {
+                rss2jsonWork = new RankApi2Json(rankingInfo, "lastmonthly_all.json");
+            }
+            else
+            {
+                rss2jsonWork = new RankApi2Json(rankingInfo);
+            }
+
+            if (!rss2jsonWork.Initilize(genreList, today, optionFolderAppend))
+            {
+                // 現状の Initilize は false を返さないが、契約として成否を見る（Issue #51）
+                StatusLog.WriteLine($"{rankingInfo.folder}: 初期化に失敗しました");
+                return false;
+            }
+
+            return rss2jsonWork.AnalyzeRank();
         }
     }
 }

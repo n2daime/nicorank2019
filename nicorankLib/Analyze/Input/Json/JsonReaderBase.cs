@@ -31,6 +31,19 @@ namespace nicorankLib.Analyze.Json
         }
 
         /// <summary>
+        /// 直近の file_name_list.json 取得結果（Issue #53）。
+        /// 404（データ未提供）と通信エラーを呼び出し側で区別するために保持する。
+        /// </summary>
+        public TxtDownloadStatus LastFileListStatus { get; private set; } = TxtDownloadStatus.Failed;
+
+        /// <summary>
+        /// file_name_list.json が 200 かつ [] だったか（Issue #53）。
+        /// 空配列は「その日のデータなし（メンテナンス）」という運用者の明示マーカーであり、
+        /// 404 からの推測とは区別する。
+        /// </summary>
+        public bool LastFileListWasEmpty { get; private set; }
+
+        /// <summary>
         /// 集計日を設定したコンストラクタ
         /// </summary>
         /// <param name="analyzeDay"></param>
@@ -69,6 +82,24 @@ namespace nicorankLib.Analyze.Json
         protected abstract string calcJsonTarget();
 
         /// <summary>
+        /// テキストを取得する（Issue #53）。
+        /// テストではこのメソッドを差し替えて、実際の HTTP なしで 404・空配列・ジャンル取得失敗を再現する。
+        /// retryOnNotFound: false により、404 は20回リトライせず即座に返す。
+        /// 過去ランキングJSONは静的ファイルなので、応答ヘッダー待ちを5秒に短縮する。
+        /// </summary>
+        protected virtual bool TryDownloadText(string url, out string text, out TxtDownloadStatus status)
+        {
+            return InternetUtil.TxtDownLoad(
+                url, out text, out status, retryOnNotFound: false, timeoutMs: DownloadTimeoutMs);
+        }
+
+        /// <summary>
+        /// 過去ランキングJSON取得の応答ヘッダー待ち上限（ミリ秒）。
+        /// 静的ファイルなので短くてよい。無応答時に1回100秒待つのを避ける（Issue #53）。
+        /// </summary>
+        private const int DownloadTimeoutMs = 5 * 1000;
+
+        /// <summary>
         /// マルチスレッド対応解析関数
         /// </summary>
         /// <returns></returns>
@@ -80,7 +111,7 @@ namespace nicorankLib.Analyze.Json
                 foreach (RankGenreJson rankGenre in rankGenreJsons)
                 {
                     string genreURL = jsonTargetURL + rankGenre.File;
-                    if (!InternetUtil.TxtDownLoad(genreURL, out string logListJsonText))
+                    if (!TryDownloadText(genreURL, out string logListJsonText, out TxtDownloadStatus ignoredGenreStatus))
                     {
                         //失敗
                         continue;
@@ -148,25 +179,36 @@ namespace nicorankLib.Analyze.Json
         /// <returns></returns>
         public override bool AnalyzeRank(out List<Ranking> rankings)
         {
+            rankings = new List<Ranking>();
+            LastFileListStatus = TxtDownloadStatus.Failed;
+            LastFileListWasEmpty = false;
             try
             {
                 var config = Config.GetInstance();
 
                 // 基準となるURLを計算する
                 string jsonTargetURL = this.calcJsonTarget();
-                rankings = new List<Ranking>();
 
                 // ジャンルリストのURLを計算する
                 string fileURL = jsonTargetURL + URL_FILENAME;
 
-                if (!InternetUtil.TxtDownLoad(fileURL, out string fileListJsonText))
+                if (!TryDownloadText(fileURL, out string fileListJsonText, out TxtDownloadStatus fileListStatus))
                 {
-                    //失敗
+                    //失敗。404 と通信エラーを呼び出し側が区別できるよう、理由を保持する（Issue #53）
+                    LastFileListStatus = fileListStatus;
                     return false;
                 }
 
                 //file_name_list.jsonの結果
                 RankGenreJson[] rankGenres = RankGenreJson.FromJson(fileListJsonText);
+                if (rankGenres == null)
+                {
+                    // [] ではなく空文字・壊れた JSON。データなしマーカーと誤認しないよう失敗扱いにする
+                    LastFileListStatus = TxtDownloadStatus.Failed;
+                    return false;
+                }
+                LastFileListStatus = TxtDownloadStatus.Success;
+                LastFileListWasEmpty = rankGenres.Length == 0;
 
                 // マルチスレッドで取得する
                 int threadMax = config.ThreadMax;
@@ -212,6 +254,7 @@ namespace nicorankLib.Analyze.Json
             catch(Exception ex)
             {
                 rankings = null;
+                LastFileListStatus = TxtDownloadStatus.Failed;
                 ErrLog.GetInstance().Write(ex);
                 return false;
             }

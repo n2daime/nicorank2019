@@ -10,6 +10,33 @@
 
 ---
 
+## 2026-06-03 btreeInitPage() returns error code 11 対策
+
+- **Issue／ブランチ**: なし（Issue 運用開始前の対応のため番号なし）
+- **背景**: スナップショット API から数十万件を登録する際、`btreeInitPage() returns error code 11`（SQLITE_CORRUPT）が断続発生し、DB が破損して以後の読み書きが不可能になる状態が起きていた。原因は巨大トランザクションである
+- **実施内容**: `SQLiteCtrl` の接続を強化（WAL・PRAGMA・グレースフルフォールバック）。`SnapShotDB` の大量登録を 5000件単位のバッチコミット＋`INSERT OR IGNORE`＋パラメータ再利用へ変更した
+- **検証**: 設定値やクラッシュ時の挙動（未コミット分は失われるが `LogSnapshot*.db` は日次作成のため再実行で復元可能）は `../knowledge/pitfalls.md` 項目1 に集約済み。新規実装前のゲートとしても AGENTS.md §1 に置いている
+
+---
+
+## 2026-06-23 SQLite 操作の単体テスト設計
+
+- **Issue／ブランチ**: なし
+- **背景**: DB 操作の実行時問題（上記の破損やコマンド使い回し系）を、実 DB を触らずに検出できる形にしたかったため
+- **実施内容**: `ISQLiteCtrl` インターフェースを抽出し、実装 `SQLiteCtrl` とテスト用実装を差し替え可能にした。テスト側は `OpenInMemory()` でインメモリ DB を作る `TestDbHelper` を用意し、SELECT / INSERT / DDL / エラー系のテストを書いた
+- **検証**: 構成・実行方法・新規テスト追加の作法は `../knowledge/testing.md` に反映済み。後の #22（コマンド再利用の問題検出）はこの土台の上に載っている
+
+---
+
+## 2026-06-23 単体テストの活性化（基盤）
+
+- **Issue／ブランチ**: なし
+- **背景**: 長期にわたり知識がコードにしか残っておらず（`../proposal.md` 参照）、変更時の回帰を確認する手段が無かった。当時の `UnitTest.csproj` は old-style（packages.config + Reference）で、.NET 10 SDK 上の MSTest.TestAdapter 3.5.2 と組み合わせると testhost 起動時に StackOverflow が発生して実行できない状態だった
+- **実施内容**: csproj を SDK-style へ変換して StackOverflow を解消。Moq を導入し、`Fixtures/` に `nicorank.xml` と `test_ranking.csv` を配置した（`Config.GetInstance().Initilize()` がカレントの `nicorank.xml` を読むため、出力直下にもコピーする）。Ranking / Config / TextUtil / StatusLog / Output のテストを書き、計69件とした
+- **検証**: 69件全件 PASS。csproj 形式の制約と出力先パス（`bin\Debug\net48\`）の注意は `../knowledge/testing.md` の「重要: csproj は SDK-style を使用すること」に残している。集計ロジック側の拡充は未完了のまま `../tasks.md` の「テスト拡充（集計ロジック）」に残っている
+
+---
+
 ## 2026-08-30 SQLite ライブラリ移行 (#20)
 
 - **Issue**: #20 `System.Data.SQLite 1.0.118 → Microsoft.Data.Sqlite 10.0.11 / SQLitePCLRaw 2.1.12`
@@ -653,3 +680,118 @@
   - ユーザー実機検証OK（file://通しテスト：起動時通知→置換→再起動→backup退避→最新判定。刻印ビルドで版数遷移まで確認。システム設定タブ・現状版数表示を含む）
   - 検証中の付帯対応：更新確認の長時間リトライを短縮（確認中固着の解消）、メンテナンスタブからシステム設定タブへの移設（ユーザー実施。Click再配線と改名はこちらで検証）
 - **残課題**: 47.2（release.md更新・版数刻印手順・`version.json` 生成・NAS配置）・updater自身の置換（別Issue）・必須化（将来Issue）。`docs/tasks/archive.md` の既存部分に約1万文字の文字化け（不正UTF-8バイト。コミット済みの過去破損。本件作業とは無関係）を検出。追記は既存バイトに触れない方式で行った。修復はd92900aで実施済み（既存24部は16d217cを正本とし新規11部は符号化別に復元、不正UTF-8バイト0・置換文字0・目視正常を確認）
+
+---
+
+## 2026-10-04 リリース実績 (v20261004_nicorank)
+
+- **タグ**: `v20261004_nicorank`（main HEAD と一致することを確認）
+- **Release**: https://github.com/n2daime/nicorank2019/releases/tag/v20261004_nicorank
+- **廃盤**: 前回の `v20261003_nicorank` は先行の一部配布のみのため廃盤とする（Release削除は人間が実施、タグは残置）
+- **成果物**: `nicorank2019.zip` / `nicorank_SnapShot.zip` / `nicorank_oldlog.zip`（固定名に移行。既存の日付名 asset には触らない。ホワイトリスト通りでDB・pdb・設定本体なしを確認。updater一式を含む）
+- **含まれる変更**: #45（集計抜けチェック・ベースライン復旧。v20261003取得者以外への説明のため本Releaseノートに再掲）・#47（自動更新。47.1＋47.2）。SnapShot・oldlogは内容無変更のため再添付のみ
+- **版数刻印**: Assembly `2026.10.4.0`（`version.json` の `2026.10.04` と等価。exeプロパティで確認）
+- **`version.json`**: 添付実物から `make-version.ps1` で生成（size 15803368・sha256実測）。NAS配置は人間が実施（`https://2daime.myds.me/nicorank/update/version.json`）
+- **検証**: `dotnet test` 346件PASS・sln Releaseビルド成功・lib 4件＋runtimes 3種・loadFromRemoteSources・nicorank.xml一致を確認。実機集計は省略（#47は集計ロジック不変・#45は前回実機済み・起動E2Eと全テストで代替。ユーザー合意）
+- **同期**: main→developへバックマージ。`git diff main develop --stat` 空を確認
+- **残課題**: updater自身の置換（別Issue）・必須化（将来Issue）・NASの `version.json` 配置（人間作業。配置後に更新通知が有効になる）
+
+---
+
+## 2026-10-04 OneDrive配下のbatteries_v2不在エラーの切り分け（docs調査・コード変更なし）
+
+- **Issue／ブランチ**: なし（原因確定済みの配置問題のためIssue化しない。docsのみで `develop` 直修正）
+- **背景**: 2026/10/03報告の `SQLitePCLRaw.batteries_v2` の `FileNotFoundException`（`EnsureApiXmlFile()`／`EnsureDailylogFile()` 経由）が、OneDrive上に一式を配置した環境でのみ発生した。手元の新規展開では再現せず、#47の更新手順側は対応済みだったため、残る環境要因を切り分けた
+- **実施内容**: パス長260超え仮説をユーザーに提示し、浅い階層（`Documents` 直下の `nicorank` フォルダ）への移動で解消したため確定とした。`pitfalls.md` に項目26（症状・MAX_PATH・浅い配置・OneDrive常時保持・Defender除外2行・SmartScreenとの区別・FileNotFound／FileLoad切り分け）を追記し、`release.md` のReleaseノート指針に配置場所の一文を足した。Defender除外は `nicorank2019.exe` に加え `nicorankUpdater.exe` の2行とし、誤爆削除の回避にはなるが初回SmartScreenの回避ではない旨を明記した
+- **検証**: docsのみのため集計ロジックの再実行は不要。次工程でテスト＋ビルド成功を確認する。`tasks.md` の未完了タスクへの追加は不要（新規タスクではなく確定済み事象の記録のため）
+
+---
+
+## 2026-10-05 スナップショット件数取得失敗の無言エラー改善（#48）✅ developマージ済み
+
+- **Issue／ブランチ**: #48（OPEN→本件でクローズ）／`feature/t48-snapshot-silent-error-log`（develop起点。`--no-ff` でマージし削除済み）
+- **背景**: nicorank_SnapShot.Cli の定期取得で 09/04/2018 期間の件数取得に失敗した際、画面に `nicorankerr.log` 確認と出るのにログがなく原因不明になった。実行場所（`\\ds224\Temp\nicorank_SnapShot`）のカレントにも無いことをユーザー確認済み。理由は `SnapController` と `SnapShotAnalyze.AnalyzeRank` の `false` 経路が `ErrLog` に何も残さず `StatusLog` だけで終わる構造だったため
+- **実施内容**: 取得の挙動は変えずログ記録に絞った。`SnapShotAnalyze.AnalyzeRank` の3経路（TxtDownLoad 失敗・meta なし・Status!=200 継続）で期間・flgLimit1000・最終 Status を `ErrLog` へ。meta なしは元の例外終了の意味を保ち即失敗＋記録（単純な `?.` 統一だと無駄な20回再取得に変わるため）。`SnapController` の取得エラー時に対象期間を記録。`SnapShotDB` の InitilizeDB／RegistDB の接続開始失敗も同種の無言経路として記録（reviewer 横展開指摘の対応）。成功時の `StatusLog` 文面は不変
+- **見送り**: `InternetUtil` 内部の毎回ログ化は見送り、既知の残課題として tasks.md に記録（影響範囲が広いため別タスクで検討）。`SetRequestResult` の無限再試行は触らない（今回の落ち場所は件数取得の入口であり影響が大きいため）。新規 UnitTest なし（静的 `InternetUtil` 依存で継ぎ目がなく、ログ追加のみで戻り値不変のため）。specs／design 変更なし（#43 の両書き方針に沿う追認のため）
+- **検証**: `dotnet test` 全件PASS・sln Release ビルド成功（いずれも EXIT_CODE=0。指摘対応前後で2回実施）・`dotnet publish` 成功。reviewerレビューで高・中指摘なし（低4件：3件修正・1件記録。総合判定マージ可。再レビュー不要）。修正版を NAS の `\\ds224\Temp\nicorank_SnapShot` に配置（事前に `\\ds224\Temp\nicorank_SnapShot_bak_20261005` へ全量退避。同名ファイルのみ上書きし .lnk／snapshot.lock／runtimes には触らず）。ユーザー実機で再実行し正常完了（成功時ログの見た目不変を確認。新しい失敗時ログは発火条件が失敗時のみのため未発火だが、ログ追加での完了でユーザー合意）
+- **残課題**: ダウンロード失敗時は `TxtDownLoad` が例外詳細を握りつぶすため失敗の事実のみ残る。切り分けに足りなければ最終失敗時の1回記録を別タスクで検討する
+
+---
+
+## 2026-10-05 exe アイコンと Form.Icon の設定 (#49) ✅ developマージ済み
+
+- **Issue・ブランチ**: #49（OPEN→本件でクローズ）／`feature/t049-app-icon` を develop 起点に作成。`--no-ff` でマージし削除済み
+- **背景**: `nicorank2019.exe` にアイコンが未設定（csproj に `ApplicationIcon` なし）で、エクスプローラーやタスクバーでの識別性が低かった。ユーザーが用意したキャラクター画像（1024x1024 PNG）を exe アイコンにし、フォーム左上・タスクバーも同じ画像にする要望があった
+- **実施内容**: マスター PNG から Pillow で 16/32/48/256 のマルチサイズ `nicorank2019/icon.ico`（約122KB）を生成し、csproj の `ApplicationIcon` に指定（Win32 リソース用）。`Form.Icon` 用には同じファイルを `EmbeddedResource`＋`LogicalName` で埋め込み、`frmMain` 構築時にマニフェストストリームから読む。`resx` 経由にしなかったのは旧形式プロジェクトの `dotnet build` で MSB3822/MSB3823 になることを実証したため（`GenerateResourceUsePreserializedResources` 化は実行時依存を増やすため不採用）。`Designer` でなくコード側に書いたのは全体再生成の差分 churn を避けるため（#35 で前例あり）。読込失敗時は既定アイコンで起動を続ける（アイコンは起動の必須要素ではないため）
+- **見送り**: `frmMesseageDialog` は生成箇所なしのため対象外。`nicorank_SnapShot`・updater は要望範囲外のため対象外。`ExtractAssociatedIcon` 代替案と 16x16 精細化は reviewer 推奨の現状維持。二重埋め込み（Win32＋マネージド計約244KB）は exe 全体約19.8MB に対し約0.1%で実害なし
+- **検証**: `dotnet test` 全件PASS・csproj 直接と sln の Release ビルド成功（いずれも EXIT_CODE=0）。exe の Win32 アイコンとマネージドリソース `nicorank2019.icon.ico` の埋め込みを実測確認。reviewer レビューで高・中指摘なし（低6件は4件修正・2件見送り。再レビュー不要）。ユーザー実機検証OK（エクスプローラー・フォーム左上・タスクバーの表示を確認）
+- **残課題**: なし。マスターの再生成手順は csproj コメントに記載。specs・design・knowledge の変更なし（見た目のみで仕様・設計・構造不変のため）
+
+## 2026-10-07 tasks.md 完了履歴テーブルの統合とレビュー指摘対応（docsのみ・コード変更なし）
+
+- **Issue／ブランチ**: なし（docs のみの整理。AGENTS.md MUST 12 により `develop` 直修正）
+- **背景**: `docs/tasks.md` はタスク開始時に毎回読むファイルなのに、完了済みタスクの履歴テーブルが載って負担になっていた。実測で統合前の tasks.md は 12,050 文字（推定 7,034 token）、うち削除した履歴テーブル部は 6,367 文字。行内容を本ファイルと突き合わせると25行のうち22行は本ファイル側の詳細版と重複する二重記録だったため、§4 の責務境界（tasks.md は現行・未完了のみ／archive.md は経緯・検証履歴）に沿って統合した
+- **実施内容**: 重複する22行は削除し、本ファイルの既存セクションを正本とした。本ファイルにセクションの無かった 2026-06 の3件（上記の「btreeInitPage() returns error code 11 対策」「SQLite 操作の単体テスト設計」「単体テストの活性化（基盤）」）をここに書き下ろした。tasks.md には archive.md への参照文のみを残し、完了済みなのに「未完了タスク」に残っていた #48・#49・#47 の詳細ブロックも削除した
+- **レビュー指摘への対応**（別エージェントのレビューで [中]1件・[低]4件。すべて対応）:
+  - [中] #47 の削除漏れ — 47.1/47.2 は完了済みで Issue #47 も 2026-10-04 のリリース時にクローズ済み（`gh issue view` で CLOSED を実測済み）。同じ削除基準を #47 にも適用し、tasks.md から削除した。将来事項は本ファイルの 2026-10-04 セクションに残課題として記載済みで、情報損失はない
+  - [低] 本セクションの日付 — 初回は 2026-10-05 と書いたが、これは #48/#49 のマージ日であり本作業の実施日ではない。コミット 161c2ec の実日付である 2026-10-07 に修正した
+  - [低] 本セクションの配置 — 本ファイルは 2026-08-30 から日付昇順で下に伸びているため、2026-10-07 の記録は末尾が正しい。先頭からここへ移した（2026-06 の3セクションは昇順どおり先頭のまま）
+  - [低] 効果量の記述 — 「約1.6万文字」と書いたのは、PowerShell 5.1 が BOM なし UTF-8 を ANSI(Shift-JIS) として読む測定で水増しした値で誤りだった。実測値に置き換えた
+  - [低] 対応セクションの列挙 — 削除したテーブルにリリース行は無いため、「リリース実績の各セクション」の記述を落とした
+- **派生した Issue 化**: #47 の残課題のうち **updater 自身の置換**は #50 として Issue 化し、tasks.md の未完了タスクに載せた。一方 **更新の必須化**は 2026-10-07 時点で予定なし（#47 当時にエージェントが提案し、ユーザーが不要と判断した）。再提案を防ぐためここに記録する
+- **検証**: 削除した各行が本ファイルの対応セクションで追えることを突き合わせて確認した（#19・#22・#23・#24・#25・#26・#27・#28・#29・#30・#31・#32・#34・#35・#36・#37・#38・#39・#40・#43・#44・#45 の各セクション）。統合後の tasks.md は 1,757 文字。docs のみの変更だが MUST 5 に従い `dotnet test` と Release ビルドの成功（EXIT_CODE=0）を再確認済み
+
+## 2026-10-22 oldlogのAPI障害時リトライと全滅時の異常終了 (#51) ✅ developマージ済み
+
+- **Issue・ブランチ**: #51（新規作成）／`feature/t051-oldlog-retry-on-503` を develop 起点に作成。`--no-ff` でマージし削除済み（57a2eaf まで。レビュー指摘対応の追加コミットを含む）
+- **背景**: ニコ動 API（nvapi）が 503 を返すと、oldlog は何も取得できないまま「集計終了」＋終了コード 0 で終わっていた。NAS は終了コードでメール通知する運用のため、欠損に気づけず再実行の機会も失われていた。ユーザー要望は「1 時間くらいはリトライしてほしい（nicorank_SnapShot 参考）」「だめなら戻り値を異常値に」
+- **原因（コード確認済み）**:
+  - `Program.cs` が `AsyncExecuteAnalyzeRank` の戻り値と `GetGenreInfoList` の結果を捨てており、`SaveOldRankingData` の false（データ0件）が最終結果に届かなかった
+  - リトライは `RankApi2Json.analyze` の 4 回即時試行のみで待機がなかった
+  - 同種の取りこぼし: `meta.status != 200` を成功扱い（5 メソッド）、ジャンル取得ループの `break` 欠落（成功しても 4 回取得）、`SaveOldRankingData` の書き込み失敗の握りつぶし、`RankApi2JsonDaily.Initilize` のトレンドタグ取得失敗の握りつぶし、対象 0 件でも exit 0
+- **ユーザー決定**: ①異常終了は全滅時だけ（部分失敗は exit 0。1 カテゴリの一時失敗で NAS メールを出し続けないため）②リトライは失敗 term だけ（週刊の `ApiXML.db` 約 26000 件の再取得を避ける）③同種修正と HttpClient タイムアウト 30 秒もまとめて実施
+- **実施内容**:
+  - `nicorankLib/Util/RetryPoller` を新設（5 分間隔・最大 1 時間。`sleep`/`clock` 注入可）。予算は「その実行で最初に失敗した時点」から数え、ジャンル一覧と term 群で共有する。ジャンル一覧とランキングがそれぞれ 1 時間待つと最悪 2 時間になり定期タスク 1 枠に収まらないため。週刊の更新待ち（正常系の待機）は予算を消費しない
+  - `Program.cs`: ジャンル一覧をリトライし、1 時間復旧しなければ exit 2。対象 0 件も exit 2。term 実行後は「全 term 失敗→2／部分失敗→警告して 0」を判定
+  - `RankApi2JsonContoller`: term 単位リトライ＋`RankingRunResult`（成功/失敗フォルダ）。attempt ごとに `RankApi2Json` を新規生成（Daily のトレンドタグ展開が `GenreResultList` へ追記するため、使い回すと重複する）
+  - `RankApi2Json`: API エラーのみ最大 4 回即時試行し成功時は break。API エラー件数を `Interlocked` で数えて term 終了時に StatusLog＋ErrLog へ要約。ヒット 0 件は API 正常なので数えない。保存は書き込み失敗が 1 件でもあれば false
+  - `NicoRankiApi`: `meta.status` 非 200 を 5 メソッドすべてで失敗として返す（HTTP 200＋本文 503 を取りこぼさない）。`HttpClient.Timeout` 30 秒
+  - docs: specs.md（リトライ・終了コード仕様）、design.md（設計判断）、knowledge（apps・nicorankLib・pitfalls 27・testing）、README、tasks.md
+- **pm 相談**: 設計レビューで「条件付き OK」。指摘を受けて次を反映した。①`SaveOldRankingData` の書き込み失敗を成功判定に反映 ②`meta.status` の横展開を 2 メソッドから 5 メソッドへ ③API エラーとヒット 0 件の分離＋スレッドセーフ集計 ④ジャンル一覧＋term の最悪 2 時間を避ける予算共有 ⑤例外契約の明文化（例外は即 exit 2）。週刊/月次の更新待ち `while(true)` の無期限ハングは #52 として Issue 化した
+- **reviewer 指摘への対応**:
+  - [中] 書き込み失敗時に `CheckString`（lastweekly_all / lastmonthly_all）まで更新されると、次の再試行が「更新なし」と誤判定して #52 の無上限待ちに入り、1 時間の打ち切り保証が崩れる → `!writeFailed` のときだけ更新するよう修正（再レビュー済み）
+  - [中] CheckString の書式不正など「リトライしても直らない失敗」も 1 時間後に exit 2 → 失敗種別を確実に見分ける手段がないため仕様のまま。挙動と理由を specs.md に追記
+  - [低] 書き込み失敗時も「結果を保存しました」と出る → 「一部のファイルを保存できませんでした」に分岐
+  - [低] 「{retry}n回目」の文言（「0n回目」になる）は Issue #43 の文面固定方針の既存文言で実害がないため見送り。コミットメッセージに理由を記載
+- **検証**:
+  - `dotnet build`（ソリューション・oldlog Release）EXIT 0、警告なし。`dotnet test` 352 件 PASS（`UnitTestRetryPoller` 6 件を追加）
+  - 実環境が 503 を返していたため本番定数のまま実行し、「ジャンル一覧: 5分後に再試行します（失敗1回・残り約60分）」で待機に入り exit 0 にならないことを確認
+  - 検証時だけ定数を 5 秒／20 秒に短縮し、13 回ではなく短縮分の試行後に打ち切って exit 2 になることを確認。定数は 5 分／1 時間へ戻し、仕様値は単体テストで固定
+  - 正常系（exit 0）は検証時点で API が 503 のため未確認。API 復旧後に再確認する
+- **配布**: `\\ds224\Temp\nicorankOld2025` へ配布済み（2026-10-22）。差分は `nicorank_oldlog.exe` / `nicorank_oldlog.dll` / `nicorankLib.dll` の 3 点で、`nicorankLib.dll` は新規型 `RetryPoller` を含むため必須（pitfalls 4h の新旧混在を避ける）。`runtimeconfig.json` / `deps.json` / 各パッケージ DLL はハッシュ一致で無変更、config.json・cookie.txt・old-ranking・last*.json には触れていない。上書き前に `\\ds224\Temp\nicorankOld2025_bak_20261022` へ旧3ファイルを退避。配置後に SHA256 一致を確認し、NAS 上の exe を `/checklogin` で実行して型ロードを含め起動できることを確認（結果は API 503 のため exit 2。データは書かない引数で実施）。次回の定期実行から新版が使われる
+- **残課題**: #52（更新待ちの上限）、共有 HttpClient 化、SnapShotVersionPoller との待機値共通化、リトライ表示文言の整形
+
+## 2026-10-22 取得不可日での停止と空JSONマーカー (#53) ✅ developマージ済み
+
+- **Issue・ブランチ**: #53（新規作成）／`feature/t053-oldranking-missing-date` を develop 起点に作成。`--no-ff` でマージし削除済み（64a3fda まで。レビュー指摘対応とテスト追加を含む）
+- **背景**: 2026-10-22 のニコ動緊急メンテナンスで oldlog の定期取得が失敗し、`old-ranking/daily/2026-10-22/` が作られなかった。nicorank2019 は `RankingDate` の最大集計日+1 から今日までを取りに行くため、存在しない日の `file_name_list.json`（404）を20回リトライして約12分待ち、その後 `Task.Run` から出る確認ダイアログで止まった。日付が登録されないので次回も同じことを繰り返す。
+- **原因（実測）**: `curl` で `daily/2026-10-22` と `total/2026-10-22` が 404（text/html）であることを確認。`TxtDownLoad` は 404 を「403 XML」以外のリトライ対象として扱い、`2^n×100ms`（上限30秒）で1 URL 約5.9分。daily+total で約12分。`NicoranWebClient`（5秒タイムアウト）は定義だけで未使用だった。
+- **ユーザー決定**: 404 からの自動メンテ判定は「未提供」「サーバ設定ミス」「削除」の区別がつかず危険なので行わない。oldlog が1時間リトライしても全滅したときだけ、対象termの日付フォルダへ空の `file_name_list.json`（`[]`）を置き、nicorank2019 はそれだけをメンテナンス日の明示マーカーとして扱う。当日のマーカーも尊重する。マーカーなしの過去日404は確認ダイアログを出す。
+- **実施内容**:
+  - `InternetUtil.TxtDownLoad`: 結果区分 `TxtDownloadStatus`（Success/NotFound/Failed）、`retryOnNotFound`、`maxAttempts`、`timeoutMs` を追加。404 は呼び出し側が指定したときだけ即断念。応答ヘッダー待ちのタイムアウトは既定100秒（従来どおり）で、過去ランキングJSONだけ5秒。`success` フラグで「読み込み途中の例外が成功扱いになる」既存の穴も塞いだ
+  - `OldRankingMarker`（新規）: `old-ranking/{term}/{yyyy-MM-dd}/file_name_list.json` に BOM なし UTF-8 の `[]` を置く。既存 JSON があるフォルダは上書きしない
+  - `JsonReaderBase`: `LastFileListStatus` / `LastFileListWasEmpty` を追加。`TryDownloadText` を virtual にしてテスト差し替え可能に。空文字・壊れた JSON は Failed、200 かつ `[]` だけをマーカーとして扱う
+  - `RankingHistory`: `DailyRankingFetchResult`（Success/NoData/NotFound/Failed）を導入。daily を基準にし、daily が取れていない日は total 等があっても登録しない。NoData はダイアログなしでメンテ登録、当日404はスキップして続行、過去日404は確認ダイアログ、Failed は中断。`ShouldDeferMissingDate` と `DecideDailyRankingFetchResult` を純粋関数化。DB登録失敗時に true を返していた既存の握りつぶしを false（中断）に揃えた
+  - `nicorank_oldlog`: `Program.cs` で対象termをジャンル一覧取得より前に確定し、#51 の異常終了（ジャンル一覧失敗・全term失敗）で `WriteNoDataMarkers` を呼ぶ。`/folderappend` 付きの検証実行では本番パスへの誤登録を避けるため置かない。部分失敗（exit 0）では置かない
+  - docs: specs.md（4区分・マーカー契約）、design.md（判断理由）、knowledge（apps・db・nicorankLib・pitfalls 5/28・testing）、README、tasks.md
+- **reviewer 指摘への対応**:
+  - [中] daily が通信エラーで total だけ成功した場合に部分登録され、`RankingDate` が進んで daily を再取得できなくなる → daily 基準に変更し、daily が Success 以外なら登録しないよう修正（再レビュー済み）
+  - [低] `/folderappend` 時のマーカーが本番パスに置かれる → append 指定時は no-op に
+  - [低] マーカー配置失敗時の案内・`DB登録開始` のペア・対象0件のコメント → 対応
+  - [低] 過去日404ダイアログが `Task.Run` から出る件 → マーカー運用で頻度が下がるため見送り（別Issue候補）。`TxtDownLoad` の catch sleep 共通化も変更範囲を広げないため見送り。理由はコミットメッセージに記載
+  - 再レビュー推奨: daily 基準の判定を純粋関数化してテスト3件追加、weekly/monthly の欠落は自動回収されない旨を specs.md に追記
+- **検証**:
+  - `dotnet build nicorank2019.sln` EXIT 0、`dotnet test UnitTest/UnitTest.csproj` 367件 PASS（#53で15件追加: マーカー3・404即断念2・JSON判定5・日付/区分判定5）
+  - 実URL確認: `daily/2026-10-22` と `total/2026-10-22` は 404（text/html）、`daily/2026-10-21` は 200。ユーザーが 10/22 の daily/total に `[]` を配置済み
+  - ユーザー実行確認（`bin/Debug` の新 exe）: 10/20・10/21 は通常登録、10/22 は「データなし（空の file_name_list.json）のためメンテナンス日として登録します」→ DB登録 → そのまま中間ランキング集計まで進み「集計成功」。約12分待ち・確認ダイアログなし
+- **残課題**: 過去日404の確認ダイアログを `Task.Run` からUIスレッドへ寄せる件（必要なら別Issue）。oldlog の部分失敗（exit 0）時のマーカー配置は今回の対象外（取得済みデータを日全体のメンテナンス扱いで捨てないため）

@@ -96,7 +96,7 @@
 - **症状**: 大量の動画情報取得（getthumbinfo 等）で連続アクセスすると 403（AccessDenied）になり、XML を取得できない
 - **対策（実装済み・NicoApi）**: 取得失敗時に `ManualResetEventSlim` で**全スレッドを一時停止**し、指数バックオフ（`1.5^retry × 1000ms`、最大100回）で再試行 → 成功したら再開
   - 各スレッド冒頭に `Sleep(rnd.Next(50,200))` のジッターを付与して同時アクセスを分散
-- **TxtDownLoad（InternetUtil）**: 最大20回リトライ。`ContentType == "application/xml"` の ProtocolError（403 相当）は**即断念**（再試行しない）。それ以外は `2^retry×100ms`（上限30秒）の指数バックオフ + ランダム遅延
+- **TxtDownLoad（InternetUtil）**: 最大20回リトライ。`ContentType == "application/xml"` の ProtocolError（403 相当）は**即断念**（再試行しない）。404 は呼び出し側が `retryOnNotFound: false` を指定した場合だけ即断念する（過去ランキングJSON用。既定は従来どおりリトライ）。それ以外は `2^retry×100ms`（上限30秒）の指数バックオフ + ランダム遅延。応答ヘッダー待ちのタイムアウトは既定100秒（従来どおり）で、過去ランキングJSONだけ `timeoutMs` で5秒を指定する（以前は `NicoranWebClient` が定義だけで未使用だった。Issue #53）
 
 ### 6. ニコ動の仕様変更への追従
 
@@ -247,3 +247,32 @@
 - **対策（実施済み）**: `docs/` をUTF-8（BOMなし）に統一する。作業ツリーはCRLF・リポジトリはLFとし、`.gitattributes` に `docs/**/*.md text eol=crlf working-tree-encoding=UTF-8` を明記した。ファイル書き換えは `edit` ツールまたは `[System.IO.File]::ReadAllBytes/WriteAllBytes` によるバイト操作で行い、PowerShell 5.1 の `Set-Content`・`Out-File`・`Add-Content` 既定（ANSI読み書き）を使わない（AGENTS.md §5の注意通り）
 - **例外（`.ps1` はBOMあり）**: `tools/*.ps1` は `powershell -File`（5.1）で実行するため UTF-8 **BOMあり**で保存する。BOMなしだと5.1がANSIとして読み、日本語コメントの文字化けで構文エラーになる（`tools/make-version.ps1` で実証済み。Issue #47レビューで発覚）。`edit` ツールや `write` ツールはBOMなしで書くため、`.ps1` 新設・更新後は `[System.IO.File]` のバイト操作でBOM（`239,187,191`）を付ける。出力する `version.json`・`baseline.json` 自体はBOMなしのままにする（読む側はどちらでも読めるが差分比較のため）
 - **検証方法**: バイト列でUTF-8として不正なバイト数を数え、0になることを確認する。不正がある場合は `16d217c` を正本として既存部を戻し、新規部はUTF-8厳密→失敗時はCP932で個別に復元する。今回は基準版24部＋新規11部（CP932が8件・UTF-8が3件）の分離復元で不正0・置換文字0・目視正常を確認した
+
+### 26. OneDrive配下＋パス長260超えでbatteries_v2がFileNotFoundになる（2026-10・配置確定）
+
+- **症状**: OneDrive上に一式を配置した環境で集計開始時に `'nicorankLib.Util.SQLiteCtrl' のタイプ初期化子が例外をスローしました` が発生。内側は `FileNotFoundException: SQLitePCLRaw.batteries_v2` で、`BaselineDownloader.EnsureCacheFiles()` の `EnsureApiXmlFile()`／`EnsureDailylogFile()` 経由の `new SQLiteCtrl()` で起きる。リリースZIPを新規展開した手元では再現しない
+- **原因（確定）**: 実行パスの全長がWindowsのMAX_PATH（260文字）前後を超え、`lib\SQLitePCLRaw.batteries_v2.dll` が探せなくなっていた。本プログラムの問題ではなくWindows＋.NET Framework 4.8の仕様である。OneDrive配下は `C:\Users\...\OneDrive\...` と基点が長く、日本語の長いフォルダ名が加わると `lib\runtimes\win-x64\native\e_sqlite3.dll` までの requirement で上限を超えやすい。浅い階層（`Documents` 直下の `nicorank` フォルダ）への移動で解消したため確定した
+- **対策（配置）**: `Documents` 直下や `C:\nicorank` などの浅い固定配置を推奨する。実務上はフォルダ＋ファイル名を256文字以内に収める。OneDriveに置くこと自体は可能だが、「空き容量を増やす」等のオンデマンド機能でファイルは存在するのに実体がないという矛盾した状態になることがあるため、「常にデバイスに保持」にして実体を置く
+- **Defender除外（任意の補足・管理者権限が必要）**: Defenderの誤爆削除を避ける目的では、次を管理者PowerShellで登録する。対象exeが増えたため2行になった（`nicorankUpdater.exe` を含める）。実行時初回のSmartScreen警告（Defenderとは別物）を回避するものではないため、案内時は区別して書く
+  ```powershell
+  Add-MpPreference -ExclusionProcess "nicorank2019.exe"
+  Add-MpPreference -ExclusionProcess "nicorankUpdater.exe"
+  ```
+- **切り分けの教訓**: `FileNotFoundException` は欠落、`FileLoadException` はブロック（MOTWの#16）と例外名で切り分ける。MOTW対策の `loadFromRemoteSources` 済みでも本件は起きる。疑ったら浅い階層への移動で試し、`lib` 直下と `lib\runtimes` のファイル一覧と実行パスの全長を確認する
+
+### 27. ニコ動APIの503は「HTTP例外」と「本文 meta.status」の両方で起き、失敗が成功扱いになりやすい（Issue #51・2026-10）
+
+- **症状**: `nicorank_oldlog` が、ニコ動 API が落ちている間も何も取得できずに「集計終了」＋ exit 0 で終わっていた。NAS は終了コードでメール通知するため欠損に気づけなかった
+- **原因1（経路の断絶）**: `AsyncExecuteAnalyzeRank` の戻り値（term の成否）と `GetGenreInfoList` の戻り値が Program で捨てられており、`SaveOldRankingData` の `false`（データ0件）が最終結果に反映されなかった
+- **原因2（503の形が2通り）**: `requestAPI` は `EnsureSuccessStatusCode()` の例外を握って `null` を返す（HTTP 503）。一方 nvapi は **HTTP 200＋本文 `meta.status=503`** でも返すことがあり、`GetTeibanRanking` はそれを `break` して `true` を返していた。`GetGenreRanking` も `getResult` を false にしていなかった。判定は必ず両方（HTTP と `meta.status`）で行う
+- **原因3（無駄打ちと握りつぶし）**: ジャンル取得のリトライループに成功時の `break` がなく、成功しても4回取得していた。`SaveOldRankingData` は書き込み失敗を ErrLog に書くだけで true を返し、`RankApi2JsonDaily.Initilize` はトレンドタグ取得失敗を無視して true を返していた
+- **対策**: `RetryPoller`（5分×最大1時間）で term 単位に再試行し、全 term 失敗時のみ exit 2。`meta.status` 非200は5メソッドすべてで false、成功時は即 break、書き込み失敗は false、トレンドタグ失敗は警告。詳細は specs.md「nicorank_oldlog の障害時リトライと終了コード」と design.md
+- **教訓**: 取得系の `bool` を返すメソッドを足すときは「呼び出し元がその bool を見ているか」まで確認する。見ていなければ、失敗は静かに成功へ化ける
+
+### 28. 過去ランキングの「データなし」は404ではなく空JSONで示す（Issue #53・2026-10）
+
+- **症状**: oldlog がメンテナンスでデータを作れない日があると、nicorank2019 が存在しない `file_name_list.json` を20回リトライして約12分待ち、確認ダイアログで止まる。日付が登録されないので次回も同じことを繰り返す
+- **原因**: 404 を「未提供」「Webサーバ設定ミス」「削除」と区別できないため、404 から自動でメンテ日を判定すると誤ってデータを永久に欠落させる危険がある。かといって毎回ダイアログを出すとバッチが止まる
+- **対策（実装済み）**: oldlog が約1時間リトライしても全term失敗（exit 2）したときだけ、`old-ranking/{term}/{yyyy-MM-dd}/file_name_list.json` へ `[]` を置く（`OldRankingMarker`）。nicorank2019 は daily の `[]` だけをメンテ日として自動登録する。404 は `retryOnNotFound: false` で即断念し、当日ならスキップ・過去日ならダイアログにする
+- **注意**: マーカーは `[]`（0バイト・空文字は不可）。既存データがあるフォルダは上書きしない。後からデータが公開された場合はマーカーを消し、`RankingDate` のメンテ行も手動で消す必要がある（自動再取得はしない）
+- **教訓**: 「データが無い」を外部のHTTPステータスから推測せず、運用側の明示的なマーカーとして表現する。404 は原因が複数あり、自動判定の根拠にしない

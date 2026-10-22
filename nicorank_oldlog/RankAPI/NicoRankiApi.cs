@@ -27,6 +27,13 @@ namespace nicorank_oldlog.RankAPI
         public const string UserAgent = "WeeklyNicoranProgram/2025.04";
 
         /// <summary>
+        /// 1リクエストのタイムアウト（Issue #51）。
+        /// 既定の100秒のままだと、応答が返らない相手に対して1カテゴリで最大100秒×再試行分待ち、
+        /// 「約1時間で打ち切る」保証が崩れる。503は即座に返るため、30秒あれば正常応答には十分である。
+        /// </summary>
+        public static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(30);
+
+        /// <summary>
         /// NicoRankiApiのインスタンスを取得します。
         /// </summary>
         /// <returns>NicoRankiApiのインスタンス</returns>
@@ -99,6 +106,8 @@ namespace nicorank_oldlog.RankAPI
         {
             using (HttpClient client = new HttpClient())
             {
+                // 応答が返らない相手で「1時間で打ち切る」保証が崩れないよう、既定100秒を短縮する（Issue #51）
+                client.Timeout = RequestTimeout;
                 string workApi = BuildUrl(apiurl, query);
                 try
                 {
@@ -163,6 +172,9 @@ namespace nicorank_oldlog.RankAPI
                             StatusLog.WriteLine($"{apiUrl} :エラーが返されました: {resObj.meta.status}");
                             break;
                     }
+                    // meta.status は HTTP ステータスと別に本文で返る。ここで false を返さないと
+                    // 後続の data 参照で例外になるまで失敗に気づけず、成功扱いの経路が残る（Issue #51）
+                    return false;
                 }
                 else if (resObj.data == null || resObj.data.genres == null)
                 {
@@ -218,6 +230,8 @@ namespace nicorank_oldlog.RankAPI
                             StatusLog.WriteLine($"{apiUrl} :エラーが返されました: {resObj.meta.status}");
                             break;
                     }
+                    // meta.status 非200は取得失敗。本文の data を見に行かずに false を返す（Issue #51）
+                    return false;
                 }
                 else if (resObj.data == null || resObj.data.items == null)
                 {
@@ -275,6 +289,9 @@ namespace nicorank_oldlog.RankAPI
                             StatusLog.WriteLine($"{apiUrl} :エラーが返されました: {resObj.meta.status}");
                             break;
                     }
+                    // meta.status 非200は取得失敗。トレンドタグが空のまま進むとタグ別ランキングが
+                    // 欠けたことに気づけないため false を返す（Issue #51）
+                    return false;
                 }
                 else if (resObj.data == null || resObj.data.trendTags == null)
                 {
@@ -353,6 +370,10 @@ namespace nicorank_oldlog.RankAPI
                                 StatusLog.WriteLine($"{apiUrl} :エラーが返されました: {resObj.meta.status}");
                                 break;
                         }
+                        // meta.status 非200は取得失敗として打ち切る。従来は成功扱いのまま
+                        // 次ページへ進み、結果的に true を返していた（Issue #51）
+                        getResult = false;
+                        break;
                     }
                     else if (resObj.data == null)
                     {
@@ -403,6 +424,7 @@ namespace nicorank_oldlog.RankAPI
             // APIのURL
             string apiUrl = $"https://nvapi.nicovideo.jp/v1/ranking/teiban/{Uri.EscapeDataString(featuredKey)}";
 
+            bool getResult = true;
             try
             {
                 var queryBase = new Dictionary<string, string>
@@ -439,6 +461,7 @@ namespace nicorank_oldlog.RankAPI
 
                     if (resObj == null)
                     {
+                        getResult = false;
                         StatusLog.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます null");
                         break;
                     }
@@ -454,9 +477,14 @@ namespace nicorank_oldlog.RankAPI
                                 StatusLog.WriteLine($"{apiUrl} :エラーが返されました: {resObj.meta.status}");
                                 break;
                         }
+                        // meta.status 非200は取得失敗。従来は break して true を返していたため
+                        // 503でも成功扱いになっていた（Issue #51）
+                        getResult = false;
+                        break;
                     }
                     else if (resObj.data == null)
                     {
+                        getResult = false;
                         StatusLog.WriteLine($"{apiUrl} : 知らないデータが戻ってきてます 構造エラー");
                         break;
                     }
@@ -473,7 +501,7 @@ namespace nicorank_oldlog.RankAPI
                     }
 
                 }
-                return true;
+                return getResult;
             }
             catch (Exception ex)
             {

@@ -88,7 +88,14 @@ dotnet run nicorank_oldlog.dll <options>
 | 形式 | 意味 | 例 |
 |------|------|----|
 | `/checklogin` | ログイン状態チェック | `... /checklogin` |
-| `daily`, `weekly`, `monthly`, `total` | 取得するランキング種別 | `... daily` |
+| `/term:daily`, `/term:weekly`, `/term:monthly`, `/term:total` | 取得するランキング種別を指定 | `... /term:daily` |
+| `/folderappend:<文字列>` | 保存フォルダ名にサフィックスを追加 | `... /folderappend:_test` |
+
+引数なしの場合は daily と total を取得し、月曜は weekly、1日は monthly も取得します。
+
+取得に失敗した場合は 5 分間隔で最大 1 時間再試行します。それでも復旧しない場合（または全ランキングが取得できない場合）は終了コード 2 で終了します。一部のカテゴリだけ取得できなかった場合は終了コード 0 のまま、実行ログと `nicorankerr.log` に警告を残します。
+
+全ランキングが取得できない場合（終了コード 2）は、その日のデータが無いことを示す空の `file_name_list.json`（`[]`）を `old-ranking/<種別>/<yyyy-MM-dd>/` に置きます。`nicorank2019` はこれをメンテナンス日の明示マーカーとして扱うため、翌日以降に取得不可日で止まりません。一部のカテゴリだけ取得できなかった場合（終了コード 0）はマーカーを置きません。既にデータがあるフォルダは上書きしません。
 
 ---
 

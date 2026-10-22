@@ -84,6 +84,10 @@ namespace nicorankLib.SnapShot
                 System.IO.File.Create(DataSource).Dispose();
                 if (!dbCtrl.Open(DataSource))
                 {
+                    // DB 接続の開始失敗は例外にならないため戻り値でしか伝わらない。
+                    // 何も残さず返すと SnapController 側も StatusLog だけで終わり、nicorankerr.log が出ず原因不明になる（Issue #48 と同種）。
+                    // そのためデータソース付きで ErrLog に残してから返す。取得の挙動自体は変えない。
+                    ErrLog.GetInstance().Write($"スナップショットDBの接続開始に失敗しました（データソース={DataSource}）。");
                     return false;
                 }
                 try
@@ -144,6 +148,8 @@ namespace nicorankLib.SnapShot
                 {
                     if (!dbCtrl.Open(DataSource))
                     {
+                        // InitilizeDB と同じく、接続開始の失敗は例外にならないため ErrLog に残してから返す（Issue #48 と同種の無言経路）。
+                        ErrLog.GetInstance().Write($"スナップショットDBの接続開始に失敗しました（データソース={DataSource}）。登録処理を中止します。");
                         return false;
                     }
 

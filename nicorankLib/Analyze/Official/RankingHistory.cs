@@ -15,6 +15,20 @@ using System.Windows.Forms;
 
 namespace nicorankLib.Analyze.Official
 {
+    /// <summary>
+    /// 1日分の過去ランキング取得結果（Issue #53）。
+    /// NoData は空の file_name_list.json（[]）による明示的な「データなし」、
+    /// NotFound は 404 による「データが無い（未提供・削除等）」で、扱いを分ける。
+    /// 404 を自動でメンテナンス日にするのは危険なため、NoData と NotFound を混ぜない。
+    /// </summary>
+    public enum DailyRankingFetchResult
+    {
+        Success,
+        NoData,
+        NotFound,
+        Failed,
+    }
+
     public class RankingHistory : IDisposable, IDbMigratable
     {
         protected const string DBFILE_NAME = DB.LOG_OFFICEIAL;
@@ -656,6 +670,16 @@ namespace nicorankLib.Analyze.Official
 
 
         /// <summary>
+        /// 404 の日を「次回再取得」としてスキップするか判定する（Issue #53）。
+        /// 当日以降はまだ公開されていない可能性があるため、メンテナンス日として登録しない。
+        /// 登録してしまうと、後から公開されたデータを永久に取り込めなくなるためである。
+        /// </summary>
+        public static bool ShouldDeferMissingDate(DateTime targetDate, DateTime today)
+        {
+            return targetDate.Date >= today.Date;
+        }
+
+        /// <summary>
         /// LogOfficial.dbの過去ログを更新する
         /// </summary>
         /// <returns></returns>
@@ -684,27 +708,59 @@ namespace nicorankLib.Analyze.Official
                     //更新の必要性はない
                     return true;
                 }
+
+                // 日付跨ぎで「今日」が変わらないよう、処理開始時の日付を1回だけ取得する（Issue #53）
+                DateTime today = DateTime.Now.Date;
                 bool isMaintenanceOK = false;
                 foreach (var targetDate in needDailyList)
                 {
-
                     StatusLog.WriteLine($"{targetDate.ToShortDateString()}の過去ランキングデータを取得しています...");
-                    if (!analyzeDailyRanking(targetDate, out var rankings))
+
+                    var fetchResult = analyzeDailyRanking(targetDate, out var rankings);
+
+                    if (fetchResult == DailyRankingFetchResult.Failed)
                     {
-                        StatusLog.WriteLine($"\n{ targetDate.ToShortDateString() } のランキングデータ取得でエラー発生");
-                        break;
+                        // 通信エラー等。メンテナンス日と誤認しないよう登録せず中断する
+                        StatusLog.WriteLine($"\n{targetDate.ToShortDateString()} のランキングデータ取得でエラー発生");
+                        return false;
                     }
-                    if (rankings.Count < 1)
+
+                    if (fetchResult == DailyRankingFetchResult.NoData)
                     {
+                        // 空の file_name_list.json（[]）は運用者の明示マーカー。
+                        // 404 の推測ではないので、ダイアログなしでメンテナンス日として登録する
+                        StatusLog.WriteLine($"\n{targetDate.ToShortDateString()} はデータなし（空の file_name_list.json）のためメンテナンス日として登録します");
+                        StatusLog.Write($"DB登録開始..");
+                        if (!updateOfficialRankingDB_Daily(targetDate, rankings, true))
+                        {
+                            StatusLog.WriteLine($"\n{targetDate.ToShortDateString()} のランキングデータ登録でエラー発生");
+                            return false;
+                        }
+                        StatusLog.WriteLine($"DB登録終了。");
+                        continue;
+                    }
+
+                    if (fetchResult == DailyRankingFetchResult.NotFound)
+                    {
+                        if (ShouldDeferMissingDate(targetDate, today))
+                        {
+                            // 当日分はまだ公開されていない可能性がある。
+                            // ここでメンテナンス日として登録すると、後から公開されたデータを永久に取り込めなくなる
+                            StatusLog.WriteLine($"\n{targetDate.ToShortDateString()} のランキングデータはまだ提供されていません（404）。次回の実行で再取得します");
+                            break;
+                        }
+
                         if (!isMaintenanceOK)
                         {
                             //1件も取得できなかった場合、対象の日にニコ動がメンテナンスしていた可能性がある
                             var askResult = MessageBox.Show(
-    $@"{targetDate.ToShortDateString()}のランキングデータが取得できませんでした。
+    $@"{targetDate.ToShortDateString()}のランキングデータが取得できませんでした（404）。
 メンテナンス日として登録しますか？
 
 OK: この後の取得不可日は全てメンテナンス日として登録します
-キャンセル : 現在の処理を中断します"
+キャンセル : 現在の処理を中断します
+
+※ メンテナンスの場合は daily/{targetDate:yyyy-MM-dd}/file_name_list.json に [] を置くと、次回から自動でメンテナンス日として扱われます"
                                 , "確認", MessageBoxButtons.OKCancel, MessageBoxIcon.Asterisk);
 
                             if (askResult == DialogResult.OK)
@@ -713,33 +769,32 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
                             }
                         }
 
-                        if (isMaintenanceOK)
-                        {
-                            //このまま登録処理を続ける
-                            if (!updateOfficialRankingDB_Daily(targetDate, rankings, true))
-                            {
-                                StatusLog.WriteLine($"\n{targetDate.ToShortDateString()} のランキングデータ登録でエラー発生");
-                                break;
-                            }
-                        }
-                        else
+                        if (!isMaintenanceOK)
                         {
                             StatusLog.WriteLine($"\n{targetDate.ToShortDateString()} のランキングデータ取得でエラー発生。集計を中断します");
                             return false;
                         }
 
-                    }
-                    else
-                    {
+                        //このまま登録処理を続ける
                         StatusLog.Write($"DB登録開始..");
-                        if (!updateOfficialRankingDB_Daily(targetDate, rankings))
+                        if (!updateOfficialRankingDB_Daily(targetDate, rankings, true))
                         {
                             StatusLog.WriteLine($"\n{targetDate.ToShortDateString()} のランキングデータ登録でエラー発生");
-                            break;
+                            return false;
                         }
+                        StatusLog.WriteLine($"DB登録終了。");
+                        continue;
+                    }
+
+                    // 取得成功
+                    StatusLog.Write($"DB登録開始..");
+                    if (!updateOfficialRankingDB_Daily(targetDate, rankings))
+                    {
+                        StatusLog.WriteLine($"\n{targetDate.ToShortDateString()} のランキングデータ登録でエラー発生");
+                        // 登録に失敗したまま集計を続けると、その日が欠けた状態で結果を作ってしまう
+                        return false;
                     }
                     StatusLog.WriteLine($"DB登録終了。");
-
                 }
             }
             catch (Exception ex)
@@ -753,17 +808,51 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
         }
 
         /// <summary>
-        /// 指定日付のランキング情報を取得する
+        /// 指定日付のランキング情報を取得する（Issue #53）。
+        /// daily を「その日のデータがあるか」の基準にし、空の file_name_list.json（[]）は
+        /// 運用者の明示マーカーとして NoData を返す。404 と通信エラーは区別して返す。
         /// </summary>
         /// <param name="targetDate"></param>
-        /// <returns></returns>
-        protected bool analyzeDailyRanking(DateTime targetDate, out List<Ranking> rankings)
+        /// <param name="rankings"></param>
+        /// <returns>取得結果の区分</returns>
+        /// <summary>
+        /// daily の取得結果から、その日を登録するか（Success）・メンテか（NoData）・
+        /// 未提供か（NotFound）・失敗か（Failed）を決める（Issue #53）。
+        /// daily が取れていない日は total 等があっても登録しない方針のため、判定は daily だけで完結する。
+        /// テストできるよう純粋関数にしている。
+        /// </summary>
+        public static DailyRankingFetchResult DecideDailyRankingFetchResult(
+            DailyRankingFetchResult dailyResult, int dailyRankingCount)
+        {
+            if (dailyResult != DailyRankingFetchResult.Success)
+            {
+                return dailyResult;
+            }
+
+            // 200 だが0件（ジャンル取得全滅・公開途中）はメンテ日と誤認しない
+            return dailyRankingCount > 0
+                ? DailyRankingFetchResult.Success
+                : DailyRankingFetchResult.Failed;
+        }
+
+        protected DailyRankingFetchResult analyzeDailyRanking(DateTime targetDate, out List<Ranking> rankings)
         {
             rankings = new List<Ranking>();
+
+            // daily を「その日のデータがあるか」の基準にする（Issue #53）。
+            // daily が取れていない日に total だけ登録すると、累積値と日別値が混ざって
+            // 差分計算が狂ううえ、RankingDate が進んで daily を二度と取得できなくなる。
+            var dailyResult = analyzeReader(new JsonReaderDaily(targetDate), out var dailyRankings);
+            var decided = DecideDailyRankingFetchResult(dailyResult, dailyRankings?.Count ?? 0);
+            if (decided != DailyRankingFetchResult.Success)
+            {
+                return decided;
+            }
+
+            var rankListList = new List<List<Ranking>>() { dailyRankings };
             var readerList = new List<JsonReaderBase>()
-            { 
-                //デイリーと総合ランキングは集計する
-                new JsonReaderDaily(targetDate),
+            {
+                //総合ランキングは集計する
                 new JsonReaderTotal(targetDate)
             };
             if (targetDate.DayOfWeek == DayOfWeek.Monday)
@@ -775,23 +864,38 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
                 readerList.Add(new JsonReaderMonthly(targetDate));
             }
 
-            var rankListList = new List<List<Ranking>>();
+            // daily が取れているので、他のtermは取れた分だけマージする（部分データを許容）
             foreach (var reader in readerList)
             {
-                if (reader.AnalyzeRank(out List<Ranking> workList))
+                var workResult = analyzeReader(reader, out var workList);
+                if (workResult == DailyRankingFetchResult.Success)
                 {
                     rankListList.Add(workList);
                 }
             }
-            if (rankListList.Count == 1)
+
+            rankings = rankListList.Count == 1
+                ? rankListList[0]
+                : Ranking.MergeRankingList(rankListList);
+            return DailyRankingFetchResult.Success;
+        }
+
+        /// <summary>
+        /// 1つのリーダーの取得結果を、日次判定用の区分に変換する（Issue #53）。
+        /// </summary>
+        private static DailyRankingFetchResult analyzeReader(JsonReaderBase reader, out List<Ranking> rankings)
+        {
+            if (!reader.AnalyzeRank(out rankings))
             {
-                rankings = rankListList[0];
+                return reader.LastFileListStatus == TxtDownloadStatus.NotFound
+                    ? DailyRankingFetchResult.NotFound
+                    : DailyRankingFetchResult.Failed;
             }
-            else
+            if (reader.LastFileListWasEmpty)
             {
-                rankings = Ranking.MergeRankingList(rankListList);
+                return DailyRankingFetchResult.NoData;
             }
-            return true;
+            return DailyRankingFetchResult.Success;
         }
 
         /// <summary>

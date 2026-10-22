@@ -44,9 +44,28 @@ namespace nicorank2019.frm
         // 直近の件数確認で上限超過だったか（超過時はランキング計算ボタンを押せなくする）
         private bool _tagCountOverLimit = false;
 
+        // アプリ埋め込みアイコンのマニフェスト名。csproj の EmbeddedResource の LogicalName と一致させること。
+        private const string AppIconResourceName = "nicorank2019.icon.ico";
+
         public frmMain()
         {
             InitializeComponent();
+            // exe と同じアイコンをフォーム左上・タスクバーに表示する (#49)。
+            // Designer 再生成の差分 churn を避けるためコード側で設定する。アイコンは起動の必須要素ではないため、読めなくても既定アイコンで起動を続ける。
+            try
+            {
+                using (var stream = typeof(frmMain).Assembly.GetManifestResourceStream(AppIconResourceName))
+                {
+                    if (stream != null)
+                    {
+                        this.Icon = new System.Drawing.Icon(stream);
+                    }
+                }
+            }
+            catch (ArgumentException)
+            {
+                // 埋め込みアイコンが破損している場合は既定アイコンのまま起動する
+            }
         }
 
         private void frmMain_Load(object sender, EventArgs e)

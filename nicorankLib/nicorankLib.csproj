@@ -316,6 +316,7 @@
     <Compile Include="Util\ApiUrlBuilder.cs" />
     <Compile Include="Util\ErrLog.cs" />
     <Compile Include="Util\InternetUtil.cs" />
+    <Compile Include="Util\OldRankingMarker.cs" />
     <Compile Include="Util\IStatusLogWriter.cs" />
     <Compile Include="Util\ISQLiteCtrl.cs" />
     <Compile Include="Util\IDbMigratable.cs" />
@@ -323,6 +324,7 @@
     <Compile Include="Util\BaselineDownloader.cs" />
     <Compile Include="Util\AppUpdateChecker.cs" />
     <Compile Include="Util\WeeklyGapChecker.cs" />
+    <Compile Include="Util\RetryPoller.cs" />
     <Compile Include="Util\DbOptimizer.cs" />
     <Compile Include="Util\RegLib.cs" />
     <Compile Include="Util\SQLiteCtrl.cs" />

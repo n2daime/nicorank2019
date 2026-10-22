@@ -15,16 +15,17 @@
 
 ## 未完了タスク
 
-### nicorank2019の自動更新（#47・壁打ち済み）
+### 週刊/月次の更新待ち while(true) の上限（#52・Issueのみ・実装は別セッション）
 
-> 手作業上書きによる `lib/` 欠け事故（2026/10/03 報告の `batteries_v2` 不在エラー）を受け、文面改善ではなく構造で防ぐ。第一段は通知＋ワンクリック更新（月曜直前の強制更新は事故になるため）。バイナリ正本は GitHub Release（固定名 asset）・検出は NAS の `version.json`（エージェント生成・人間は配置のみ）・分離 updater が一式置換。詳細な設計合意と `version.json` フォーマットは Issue 参照。壁打ち（別セッション）で以下を確定済み：updaterは専用exe（zip同梱・SQLite/Costuraなし）・版数刻印はAssembly書換え（`version.json` の `2026.10.03` に対し Assembly `2026.10.3.0`。`System.Version` 比較）・確認は起動時＋24時間間引き＋同一版1日1回まで・状態ファイルは `%TEMP%/nicorank2019_update_check.json`（削除耐性があるためTEMPで十分。汎用名衝突回避の接頭辞付き）・タスクファイルは `%TEMP%/nicorank2019_update_task.json`・手動確認はメンテナンスタブ・必須化は将来Issueへ分離（47.1は任意のみ）・updater自身の置換は別Issue。
+> #51 の調査で、更新待ち（`RankApi2Json.cs` の 5 分ポーリング）に上限がなく、ニコ動側の更新が止まると無期限にハングすることが分かった。今回のリトライ実装とは独立して直せるが、放置すると #51 の「1 時間で打ち切る」保証が週刊/月次で崩れるため Issue 化した。
 
-- [x] 47.1 updater の実装（Issueの壁打ち合意に基づく）✅ 2026-10-04 developマージ済み
-  - 依存：#36（BaselineDownloaderの取得・照合パターン）・#38（JST日付比較・3値判定）・#45（メンテタブ手動＋自動の2段UI・退避付き復旧）
-  - 対象：`nicorankLib/Util/AppUpdateChecker.cs` 新設（`version.json` 取得・`schema<=対応上限` 判定・`System.Version` 比較・24時間間引き・同一版抑制。fetch／時計／TEMPパスは注入可）・`NicoRankXml` に `SYSTEM/URL_APPUPDATE` 任意要素（既定 `https://2daime.myds.me/nicorank/update/version.json`。`URL_BASELINE` と同型）・`Config.AppUpdateManifestUrl`＋既定定数・`frmMain_Load` での起動時非同期確認（集計実行中は適用しない）・メンテタブの手動「更新を確認」ボタン＋状態／結果ラベル（`SetVacuumControlsEnabled` 対象に追加）・更新ダイアログ（今すぐ更新／後で＋`notes` 詳細リンク＋`size` 表示）・updater exe雛形（`nicorankUpdater`。net48コンソール最小依存。タスクファイル→DL→sha256照合→本体終了待機→退避→exe・config・`lib/` 一式置換→再起動。updater自身の置換は対象外）・UnitTest（manifest正常・破損・schema未知・版数比較・間引き・抑制・状態ファイル）・specs.md／design.md反映
-  - 検証結果：`dotnet test` 全件PASS（346件）・sln Releaseビルド成功・reviewer再レビュー3回でマージ可（高1件＋中8件対応・低は対応と見送り記録）・ユーザー実機検証OK（file://通しテスト：通知→置換→再起動→backup退避→刻印ビルドで版数遷移まで確認）。#47は47.2が残るためオープン維持。手動確認UIはメンテナンスタブからシステム設定タブへ移設（ユーザー判断。メンテナンスタブの渋滞解消）
-- [ ] 47.2 `release.md` の更新（zip 名の固定化・版数刻印・`version.json` 生成手順・NAS 配置手順）
-  - reviewer指摘 `[高]1` の対応として次を必須手順に含める：リリース時に `nicorank2019/Properties/AssemblyInfo.cs` の `AssemblyVersion`／`AssemblyFileVersion` をタグ由来の日付版数（`version.json` の `2026.10.03` に対し `2026.10.3.0`）へ書き換えてからビルドする。書き換え忘れは毎日誤通知（または永久に通知なし）の運用事故になる。可能ならビルド時自動生成を検討する。`nicorankUpdater.exe` と `nicorankUpdater.exe.config` はセットで配布する旨をチェックリストへ足す（#26 と同型の旧 config 混入防止）
+- [ ] 52.1 上限時間・打ち切り時の終了コード・ログ記録の仕様化と実装（Issue の壁打ちから）
+
+### updater 自身の置換経路（#50・Issueのみ・実装は方針確定後）
+
+> #47 で「updater 自身は置換しない」と決めた残課題を 2026-10-07 に Issue 化した。updater は本体 zip 同梱のため、updater 側のロジックを直しても既存の配布環境に更新が届かない。方策（本体側が置換／updater の二段階自己更新／zip 同梱をやめて `version.json` 取得）は Issue で壁打ちしてから決めるため、実装は方針確定後。なお #47 で将来 Issue 分離とした「更新の必須化」は 2026-10-07 時点で予定なし（当時の提案をユーザーが見送り）。
+
+- [ ] 50.1 方策の壁打ちと受け入れ条件の確定（Issue 本文へ追記してから実装に着手する）
 
 ### 抜け週の再集計による復旧（#46・Issueのみ・実装は別セッション）
 
@@ -49,34 +50,6 @@
 
 ---
 
-## 完了済みタスク（履歴）
+## 完了済みタスク
 
-| タスク | 完了日 | 主な成果物 |
-|---|---|---|
-| 過去集計の抜けチェック＋ベースライン復旧（#45）✅ | 2026-10-03 | WeeklyGapChecker新設（LastResult Weekly歯抜け・3か月13週＋1年52週・メンテ週除外・対象週除外・確認不能時は開始）・メンテタブ手動チェック＋自動警告（続行／中止・復旧誘導文面）・NicoranHistory単独のベースライン復旧（内容日検証・DB/backup退避・陳腐化中断・LogOfficial対象外）・UnitTest36件追加（計321件）・specs/design/knowledge更新・reviewer再レビュー4回で必須指摘なし（高1件＋中4件対応・低は対応と見送り記録）・ユーザー実機検証OK（Release起動・抜け表示・警告文面）・developマージ |
-| old-ranking整理とベースラインDB配布（#36）✅ | 2026-09-28 | NAS Web配布＋baseline.json自動取得（不在時のみ・既存DB不置換）・配布スクリプトtools/make-baseline.ps1（固定名・単一最新・進捗バー抑止・DbDir省略時はカレント）・SYSTEM/URL_BASELINE任意要素・BaselineDownloader新設（サイズ・sha256照合・キャッシュ2種確保）・UnitTest13件追加（計285件）・specs/design/knowledge更新・reviewer再レビュー問題なし（中1件＋低8件対応・3件見送り）・ユーザー実機検証OK（DB不在→2種自動取得→最新化・単発削除→不足分のみ取得）・36.5コールド削除は仕様変更により省略・developマージ |
-| ライブラリ層の直接コンソール出力を表示抽象へ寄せる（#43）✅ | 2026-09-27 | SnapShotAnalyze件数表示のStatusLog化・UIConfig.GetWchのReadLine除去（フラグ温存・削除は別タスク）・InternetUtil残骸除去・NicoRankiApi約25行のStatusLog/ErrLog化（黙ってfalseの経路は両書き）・RankApi2Json系・Program系・Cli結果の統一（--helpと終了コード維持）・TextBoxWriterのTextBox参照＋BeginInvoke対応（ダイアログ生死は別スコープ）・UnitTest2件追加（計272件）・specs§7/design/knowledge更新・pitfalls項目24（ErrLog排他は別タスク）・reviewerマージ可（低5件：3件修正・1件記録・1件運用確認）・NAS実機検証OK（\\ds224\Temp\nicorankOld2025へ配置・/checklogin等の見た目維持・nicorankerr.log追記を受け入れ）・developマージ |
-| BasicOption破棄経路の整備（案B・#44。提案元#42）✅ | 2026-09-26 | BasicOptionBaseのIDisposable化（空の仮想Dispose・資源なし7件は無変更）・資源持ち3件のoverride寄せ替え＋_ownsDbCtrl所有権（注入接続は閉じない）・RankingAnalyze／ModeFactoryBaseのIDisposable化と破棄委譲（冪等・null安全・1件失敗でも継続）・SP／TagRank工場の失敗経路破棄・Tyukan内側using化・frmMainSyukeiの付け替え前＋出力後try-finally破棄・UnitTest10件追加（計270件）・design更新（Ext見送り理由含む）・reviewer再レビューでマージ可（中3件＋低3件すべて対応）・ユーザーSP実機検証OK（集計後にworkファイル消去を確認）・developマージ |
-| タグ検索v2最新値のデータ時点表示＋OFFSET節別化(#39)✅ | 2026-09-26 | lblTagSnapshotTime新設（ON時のみ表示・MM/DD 05:00固定・確認不能時は中断）・TagSnapshotTimestamp新設（JST日・定数05:00・TryFormat）・SP/TAGRANK節にOFFSET4種（項目単位フォールバック・書込は節内生成）・集計中タブ固定・Initilize既定生成・配布テンプレートTAGRANK-OFFSET全0化・UnitTest16件追加（計260件）・specs/design/knowledge更新・reviewer再レビュー2回でマージ可（低4件対応）・ユーザー実機検証OK・developマージ |
-| メンテナンスタブにDBの最適化(#32)✅ | 2026-09-26 | tabPageMaint新設（4DBチェック既定ON・実行前後2列・#41予告枠・ログ欄なし）・DbOptimizer新設（DBごとにDROP→DELETE→VACUUM・削除行数＋前後サイズ・実行日起点1年前・種別パラメータ化・境界固定）・convertMovieID除去・非同期実行＋同時実行ガード（両方向・実行中フラグ）・UnitTest10件追加（計244件）・specs/design/knowledge更新・AGENTSにIssueコメント全件読み追加・reviewer再レビュー4回でマージ可（低見送り3件）・ユーザー実機検証OK・developマージ |
-| ApiXML削除判定の順位影響排除(#40)✅ | 2026-09-26 | NicoApiのisDelete除去・最新行読み・Reader中断廃止・SP予備補完SpMovieInfoFallback（案B。LastResultタイトル＋LogOfficial初見日）・週刊事前取得（oldlogが全ID約26000件をApiXML.dbへ・2019が取込）・削除目印【集計後削除】・並列数のconfig.json管理（ThreadMaxOverride）・UnitTest20件追加（計234件）・specs/design/knowledge更新・reviewer再レビュー問題なし（低2件見送り）・週刊実機検証（26770件取込・取得2372件に削減・有無両経路）・SP実機検証（エラーなし・マーカー0件正常）・developマージ |
-| Snapshot API v2更新チェック(#38)✅ | 2026-09-23 | SnapShotVersionChecker/Poller新設（version取得・JST日付比較・更新済み/未更新/確認不能の3値判定・5分×最大1時間待機）・取得開始時にlast_modifiedをStatusLog出力・WinForm未更新時に日時入りOK/キャンセル確認ダイアログ・CLIタイムアウト時は取得せず終了コード2＋リトライタイムアウト記録・UnitTest17件追加（計214件）・specs/design/knowledge更新（切替時刻実測・競合注意）・reviewer再レビュー問題なし・NAS実機検証（9/21に8回未更新→更新検知→全期間取得・終了コード0）・調査スクリプトはマージ前除外・developマージ |
-|---|---|---|
-| LogOfficial.db肥大化対策(#31)✅ | 2026-09-21 | SoHistory新設＋Ver1移行（初期退避・混入行清掃・prune・Movie廃止・初回VACUUM）・日次prune駆動＋SoHistoryフォールバック（Ranking優先2クエリ逐次・基準日ガード）・GenreAnalyze削除・UnitTest15件追加（計197件）・specs/design/knowledge更新・reviewer総合判定マージ可（低8件：4件対応・4件見送り）・実DB破損救出再建＋通し再実行（2.01GB・integrity ok）・対策前後比較で旧exe混入と確定し検証終了・developマージ |
-| SnapShot Linux対応CLI(#37)✅ | 2026-09-14 | nicorank_SnapShot.Cli新設（net8・ハイブリッド・終了コード0/2・CodePages登録）・SnapController失敗検知3件修正（InitilizeDB/RegistDB/例外）・sln登録・UnitTest182件維持・NAS実機で取得＋DB正常性確認（899万行・低再生99万行・integrity ok）・develop＋t031両マージ（t031で197件PASS）・knowledge更新 |
-| 順位計算の同点時タイブレーク(#34)✅ | 2026-09-13 | RankingIdComparer新設（種別→数字・群分離・ASCII限定）・calcRanking6種にThenBy＋並列前ポイント確定（既存競合解消）・UnitTest9件追加（計182件）・specs/design/knowledge更新・develop→t031取込（t031で197件PASS）・実集計rank1000比較で値列差分0・順位のみ同点安定化を確認 |
-| タグ検索v2最新値オプション(#35)✅ | 2026-09-12 | 集計日にv2最新値モード追加（chkUseLiveCounter・既定ON・DBなし実行可）・TagRankAnalyze.LiveCounters保持・TagRankLiveTotalReader/LiveSabunReader新設・ModeFactoryTagRank4分岐（集計日=実行日）・UnitTest8件追加（計173件）・specs/design/knowledge更新・develop→t031取込 |
-| タグ検索ランキング(#30)✅ | 2026-09-06 | タグ検索集計タブ（共有係数パネル・件数確認・Enter確定・上限超過時実行不可）・TagConditionParser（A&B\|C*→jsonFilter）・CreateTagSearch・TagRankAnalyze（5万判定・100件×4並列）・TagRankTotalReader（基準なし時）・ModeFactoryTagRank（SP相当・前回CSV任意・基準DB任意）・TAGRANK節（節単位フォールバック）・UnitTest29件追加（計165件）・specs/design/knowledge更新 |
-|---|---|---|
-| ランキングJSON肥大化対策(#28)✅ | 2026-09-05 | LastResult.JSON列DROP（INSERT除外＋Ver0移行でDROP）・旧SP種別行削除（両テーブル約11万行）・DBVersion導入（2DB・Ver0・逐次適用）・DbMigrationCoordinator新設（集計開始時指示・失敗時中断）・UnitTest12件追加（計136件）・specs/design/knowledge更新 |
-| result(UTF8).csv不要列削除(#29)✅ | 2026-09-05 | TextUtil動的検出化（新旧両対応・ColLmt廃止・いいね対応・タグOption・マイリストポイント含む8列は再計算のため読取対象外）・ResultCsvRankDB削除（Factory枠まで）・ResultCsv30列新順化（人気タグ4列目・運営2列削除）・UnitTest5件追加（計124件）・fixture余分列修正・specs/design/knowledge更新 |
-| 人気タグのタグロック補完(#27)✅ | 2026-09-04 | GetLockedTags新設・全件補完・FavoriteTags List化・GetDisplayTags・TSV系上限3・UTF8/JSON全件・SJIS/DB登録用CSV停止・isLocalOnly・所有権全10箇所対応、UnitTest25件追加（計119件）、specs/design/knowledge更新 |
-| ニコ動APIのリクエスト組み立てを型付きリクエストへ変更(#19) | 2026-09-04 | SnapShotRequest・ApiUrlBuilder新設、nvapi辞書化、UnitTest19件追加（計94件）、specs/design更新 |
-| 単体テストでDB操作のビジネスロジック問題を検出できるようにする(#22) | 2026-09-03 | NicoApi残存Clear漏れ2件修正、UnitTestDbCommandReuse新設6件（計75件）、pitfalls項目17・testing/structure更新 |
-| ビルド警告の対処と未使用 AngleSharp の削除 | 2026-09-03 | CS0168×3・CS0414・MSB3276(System.Memory 4.0.5.0整合)・CS0162・Fody警告を解消しソリューション警告0、nicorank_oldlog の AngleSharp 削除 |
-| 配布 zip 展開時の MOTW で SQLiteCtrl のタイプ初期化が失敗する対処 | 2026-09-01 | App.config に `loadFromRemoteSources` 追加(両アプリ)、起動時エラー表示の例外チェーン化、pitfalls.md 項目16・release.md 更新 |
-| デッドロジック削除（NocoChartReader / NicoChartModel / AngleSharp） | 2026-08-31 | 呼び出し元ゼロの NocoChartReader・専用モデル削除、AngleSharp 依存の除去 |
-| Nicochartの仕様変更対応（別ロジックで代替） | 2026-08-31 | RankingHistory/SabunReader 改修（so40000000 未満を新着偽造として除外）、LogNicoChart.db 依存・SYSTEM.NicoChart 設定の完全削除 |
-| btreeInitPage() returns error code 11 対策 | 2026-06-03 | SQLiteCtrl 接続強化（WAL・PRAGMA・グレースフルフォールバック）、SnapShotDB 5000件バッチコミット・INSERT OR IGNORE・パラメータ再利用 |
-| SQLite 操作の単体テスト設計 | 2026-06-23 | ISQLiteCtrl 抽出、OpenInMemory、TestDbHelper、DB操作テスト（SELECT/INSERT/DDL/エラー） |
-| 単体テストの活性化（基盤） | 2026-06-23 | SDK-style csproj 化、Moq 導入、Fixtures 配置、Ranking/Config/TextUtil/StatusLog/Output のテスト（計69件） |
+完了したタスクの経緯・検証履歴・実装ノウハウは `docs/tasks/archive.md` に記録する（AGENTS.md §2 のマージ後ゲートで追記）。本ファイルに現行・未完了のタスクだけを置くのは §4 の責務境界による。過去の変更を追う場合は archive.md の見出し（日付＋Issue 番号）から辿る。

@@ -43,6 +43,14 @@ namespace nicorank_oldlog
                 StatusLog.WriteLine($@"{this.RankInfo.folder}:{genreinfo.genre} のトレンドタグを取得しています...");
                 //トレンドタグの取得
                 bool getResult = nicoApi.GetTrendTagList(genreinfo.featuredKey, out var trendTagList);
+                if (!getResult)
+                {
+                    // 握りつぶすとタグ別ランキングだけが欠けたことに気づけない。
+                    // ただしジャンル本体の取得は続けられるため、term 全体は失敗にせず警告に留める（Issue #51）
+                    string message = $"{this.RankInfo.folder}:{genreinfo.genre} のトレンドタグを取得できませんでした（タグ別ランキングは取得しません）";
+                    StatusLog.WriteLine($"---- {message} ----");
+                    ErrLog.GetInstance().Write(message);
+                }
 
                 uint tagCount = 1;
                 foreach (var tagName in trendTagList)

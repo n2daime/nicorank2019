@@ -52,7 +52,7 @@ AnalyzeRank():
 | クラス | 責務 |
 |---|---|
 | `InputBase` | 抽象基底。`AnalyzeDay` / `AnalyzeRank(out List<Ranking>)` を規定 |
-| `JsonReaderBase` | 公式過去ランキング JSON 取得の基底。`file_name_list.json` → ジャンル別 JSON を `Config.ThreadMax` 並列でダウンロード → `Ranking` に変換 → `MergeRankingList` で重複 ID マージ。`CheckAnalyzeTime`（当日 1:00 前は集計不可判定） |
+| `JsonReaderBase` | 公式過去ランキング JSON 取得の基底。`file_name_list.json` → ジャンル別 JSON を `Config.ThreadMax` 並列でダウンロード → `Ranking` に変換 → `MergeRankingList` で重複 ID マージ。`CheckAnalyzeTime`（当日 1:00 前は集計不可判定）。404 と通信エラーを `LastFileListStatus`（`TxtDownloadStatus`）で区別し、200 かつ `[]` を `LastFileListWasEmpty` で「データなしマーカー」として保持する（Issue #53）。`TryDownloadText` はテスト差し替え用の virtual |
 | `JsonReaderWeekly` | 週刊用。JSON取得後に oldlog 配布の `ApiXML.db` を `ApiXmlCacheImporter` で取り込む（失敗時は本地継続。Issue #40） |
 | `JsonReaderDaily` / `Weekly` / `Monthly` / `Total` | 種別ごと。Weekly は直近の月曜まで遡る、Monthly は直近の1日まで |
 | `SPAnalyze` | SP 用。動画 ID リスト（改行区切り）を読み込み Ranking リスト化 |
@@ -65,7 +65,7 @@ AnalyzeRank():
 
 - `Open()` / `Close()`: LogOfficial を開閉（注入済みの開接続は再利用）
 - `EnsureMigrated()`（`IDbMigratable`）: RankingDate確保＋DBVersion確保＋Ver1でSoHistory・prune用索引・古いRanking削除・Movie廃止。集計開始時に司令塔から呼ばれる
-- `UpdateOfficialRankingDB()`: RankingDate の `Max(集計日)+1`（初期値 20190610）から今日までを日別に取得・登録。0 件の日はメンテナンス日として登録（UI で確認）
+- `UpdateOfficialRankingDB()`: RankingDate の `Max(集計日)+1`（初期値 20190610）から今日までを日別に取得・登録。結果は `DailyRankingFetchResult` で4区分する（Issue #53）。daily を基準にし、daily が取れていない日は total 等にデータがあっても登録しない。`NoData`（daily の `file_name_list.json` が `[]`）はダイアログなしでメンテ日登録、`NotFound`（404）は当日ならスキップして続行・過去日なら確認ダイアログ、`Failed`（通信エラー・200だが0件）はメンテ日と誤認せず中断する。404 は `TxtDownLoad(retryOnNotFound: false)` で即断念する
 - `CheckMaintananceDay(DateTime)`: RankingDate でメンテ日判定
 - `CheckSoMovieNeedSabun(id, baseTime)`: 公式チャンネル動画（so）の差分取得判定。過去ランキング既出なら差分データ、なければ `ranking = null`（差分なし）。`Ranking` に見つからない場合は `SoHistory`（消えた行のうち最新の差分元）を基準日以前の行に限って参照し、それもなければ新着扱いとする。`SoHistory` 表自体がない旧DBでも新着扱いで正常終了する。DB 非オープン・例外時は false
 - `GetRankingSabunDataLogOfficial(id, baseTime, baseTime2)`: 過去ログから差分候補を取得（7日間に無ければ baseTime 以降の最古データを採用）
@@ -160,6 +160,7 @@ AnalyzeRank():
 | `DbMigrationCoordinator` | 集計開始時の更新指示の司令塔（`EnsureAllAtAnalyzeStart()`。失敗時は中断。具象には依存しない。Issue #28） |
 | `DbOptimizer`（static） | 手動DB最適化の実行本体（Issue #32・壁打ちコメント準拠）。`GetDefaultTargets()`（4DB・UI表示順）/ `Optimize(dbPath[, today])`（不在はスキップ・DBごとにDROP→DELETE→VACUUM・削除行数＋実行前後サイズ付き結果）/ `CutoffOneYearAgo()`（実行日起点の1年前yyyyMMdd）/ `FormatFileSize()`。ApiXML／Dailylogのパス定数も持つ |
 | `WeeklyGapChecker`（static） | 週刊集計の抜けチェック本体（Issue #45）。`GetExpectedMondays()`（直近月曜から週数分）/ `FindMissing()`（実績・メンテ除外で抜け判定。判定失敗は抜け側）/ `ExcludeTargetDay()`（自動警告用に対象日を除外）/ `ReadWeeklyDates()`（LastResult Weeklyの集計日一覧）/ `IsMaintenance()`（RankingDate判定）/ `Check()`（接続注入版とパス版。UIは名前付き引数で呼ぶ）/ `FormatMissing()`。通常13週（`DefaultLookbackWeeks`）・1年52週（`YearLookbackWeeks`）・週の日数は `DaysPerWeek` に定数化 |
+| `RetryPoller` | 「失敗したら一定間隔で再試行し、一定時間で打ち切る」制御（Issue #51）。`RetryInterval`=5分 / `Timeout`=1時間（定数）。`RunUntilSuccess(Func<bool>, Action<string>)` は初回即実行→失敗ごとに5分待機。予算は**このインスタンスで最初に失敗した時点**からで、呼び出し（ジャンル一覧／term）をまたいで共有する（oldlogの最悪2時間を避けるため）。`sleep`/`clock` はテスト用に差し替え可能。attempt の例外は捕捉せず呼び出し元へ伝播させる（取得失敗は false 契約。1時間リトライでバグを隠さないため）。`SnapShotVersionPoller` とは用途が違うため別クラス（待機値は同じ） |
 | `StatusLog` | 静的。`IStatusLogWriter` を注入するプラグイン方式（UI 側が実装を注入。未設定なら何も出さない）。ライブラリ層の進捗・状態通知・成否報告の唯一の表示経路（Issue #43。`--help` と受け手自体を除く） |
 | `ErrLog` | シングルトン。`nicorankerr.log` に追記（UTF8）。例外の詳細の記録先（Issue #43）。`Close()` で非 SilentMode ならキー入力待ちの表示のみ行う（入力待ち自体はしない） |
 | `DateConvert` | 日付 ↔ 文字列（yyyyMMdd / yyyyMMddHHmmss）変換 |
