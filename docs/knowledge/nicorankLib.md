@@ -65,7 +65,7 @@ AnalyzeRank():
 
 - `Open()` / `Close()`: LogOfficial を開閉（注入済みの開接続は再利用）
 - `EnsureMigrated()`（`IDbMigratable`）: RankingDate確保＋DBVersion確保＋Ver1でSoHistory・prune用索引・古いRanking削除・Movie廃止。集計開始時に司令塔から呼ばれる
-- `UpdateOfficialRankingDB()`: RankingDate の `Max(集計日)+1`（初期値 20190610）から今日までを日別に取得・登録。結果は `DailyRankingFetchResult` で4区分する（Issue #53）。`NoData`（daily の `file_name_list.json` が `[]`）はダイアログなしでメンテ日登録、`NotFound`（404）は当日ならスキップして続行・過去日なら確認ダイアログ、`Failed`（通信エラー・200だが0件）はメンテ日と誤認せず中断する。404 は `TxtDownLoad(retryOnNotFound: false)` で即断念する
+- `UpdateOfficialRankingDB()`: RankingDate の `Max(集計日)+1`（初期値 20190610）から今日までを日別に取得・登録。結果は `DailyRankingFetchResult` で4区分する（Issue #53）。daily を基準にし、daily が取れていない日は total 等にデータがあっても登録しない。`NoData`（daily の `file_name_list.json` が `[]`）はダイアログなしでメンテ日登録、`NotFound`（404）は当日ならスキップして続行・過去日なら確認ダイアログ、`Failed`（通信エラー・200だが0件）はメンテ日と誤認せず中断する。404 は `TxtDownLoad(retryOnNotFound: false)` で即断念する
 - `CheckMaintananceDay(DateTime)`: RankingDate でメンテ日判定
 - `CheckSoMovieNeedSabun(id, baseTime)`: 公式チャンネル動画（so）の差分取得判定。過去ランキング既出なら差分データ、なければ `ranking = null`（差分なし）。`Ranking` に見つからない場合は `SoHistory`（消えた行のうち最新の差分元）を基準日以前の行に限って参照し、それもなければ新着扱いとする。`SoHistory` 表自体がない旧DBでも新着扱いで正常終了する。DB 非オープン・例外時は false
 - `GetRankingSabunDataLogOfficial(id, baseTime, baseTime2)`: 過去ログから差分候補を取得（7日間に無ければ baseTime 以降の最古データを採用）

@@ -207,6 +207,16 @@ namespace nicorank_oldlog
         /// <param name="rankInfos">マーカーを置く対象term。呼び出し元が確定済みのリストを渡す。</param>
         public void WriteNoDataMarkers(IEnumerable<Ranking_Info> rankInfos)
         {
+            // 検証用の /folderappend 実行では、本番の日付フォルダにマーカーを置くと
+            // 実データの無い日として誤登録される。append 付きのときは置かない。
+            if (!string.IsNullOrEmpty(this.optionFolderAppend))
+            {
+                StatusLog.WriteLine("データなしマーカー: /folderappend 指定の検証実行のため配置しません");
+                return;
+            }
+
+            // 対象termが0件（引数不正）の場合は何も置かない。
+            // その場合は nicorank2019 の404が続くが、引数不正自体が exit 2 で通知される。
             foreach (var rankInfo in rankInfos)
             {
                 bool created = OldRankingMarker.TryWrite(
@@ -229,7 +239,7 @@ namespace nicorank_oldlog
                 }
                 else
                 {
-                    string message = $"データなしマーカーの配置に失敗しました: {path} ({error})";
+                    string message = $"データなしマーカーの配置に失敗しました: {path} ({error})。メンテナンスの場合は手動で [] を置いてください。";
                     StatusLog.WriteLine(message);
                     ErrLog.GetInstance().Write(message);
                 }
