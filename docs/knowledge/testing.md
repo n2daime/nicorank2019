@@ -9,7 +9,7 @@ dotnet test UnitTest/UnitTest.csproj
 
 - 環境: **.NET Framework 4.8 ターゲットだが .NET 10 SDK でビルド・実行**（Windows）
 - テストフレームワーク: MSTest 3.5.2 / モック: Moq 4.20.72
-- 全 **364 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件・#39で16件・#44で10件・#43で2件・#36で13件・#45で35件・#47で25件・#51で6件・#53で12件を追加）
+- 全 **367 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件・#39で16件・#44で10件・#43で2件・#36で13件・#45で35件・#47で25件・#51で6件・#53で15件を追加）
 
 ## 構成
 
@@ -31,7 +31,7 @@ UnitTest/
     ├── Analyze/     UnitTestRankingAnalyze(9) / UnitTestBasicOptionDispose(10)
     ├── Analyze/model/ UnitTestRanking(6) / UnitTestRankingDisplayTags(5) / UnitTestRankingDeletedMarker(2)
     ├── Analyze/Input/ UnitTestTagRankAnalyze(8) / UnitTestJsonReaderMissingDate(5)
-    ├── Analyze/Official/ UnitTestRankingHistorySoHistory(15) / UnitTestRankingHistoryMissingDate(2)
+    ├── Analyze/Official/ UnitTestRankingHistorySoHistory(15) / UnitTestRankingHistoryMissingDate(5)
     ├── Analyze/Option/Basic/ UnitTestTagRankTotalReader(4) / UnitTestTagRankLiveReader(7) / UnitTestSpMovieInfoFallback(4)
     ├── Analyze/Option/Ext/ UnitTestFavoriteTagReader(9)
     └── api/        UnitTestNicoApiLockedTags(6) / UnitTestNicoApiNoDelete(9) / UnitTestApiXmlCacheImporter(5)
@@ -80,7 +80,7 @@ UnitTest/
 | `UnitTestOldRankingMarker` | 3 | 空の `file_name_list.json`（`[]`）の作成・BOMなし・既存データの非上書き・再実行時の非上書き（Issue #53） |
 | `UnitTestInternetUtilNotFound` | 2 | 404 の即断念（`retryOnNotFound: false` で接続1回）・既定のリトライ維持（`maxAttempts: 2` で接続2回）。ローカルTCPリスナーで接続回数を検証（Issue #53） |
 | `UnitTestJsonReaderMissingDate` | 5 | `file_name_list.json` の404/`[]`/空文字/ジャンル404/正常データを `LastFileListStatus` と `LastFileListWasEmpty` で区別する（Issue #53） |
-| `UnitTestRankingHistoryMissingDate` | 2 | 404 の当日以降はスキップ・過去日はダイアログ対象になる日付判定（Issue #53） |
+| `UnitTestRankingHistoryMissingDate` | 5 | 404 の当日以降はスキップ・過去日はダイアログ対象になる日付判定、daily が NoData/NotFound/Failed/0件のときは登録しない判定（Issue #53） |
 
 ## テストパターン
 

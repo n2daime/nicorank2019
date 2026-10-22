@@ -815,6 +815,26 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
         /// <param name="targetDate"></param>
         /// <param name="rankings"></param>
         /// <returns>取得結果の区分</returns>
+        /// <summary>
+        /// daily の取得結果から、その日を登録するか（Success）・メンテか（NoData）・
+        /// 未提供か（NotFound）・失敗か（Failed）を決める（Issue #53）。
+        /// daily が取れていない日は total 等があっても登録しない方針のため、判定は daily だけで完結する。
+        /// テストできるよう純粋関数にしている。
+        /// </summary>
+        public static DailyRankingFetchResult DecideDailyRankingFetchResult(
+            DailyRankingFetchResult dailyResult, int dailyRankingCount)
+        {
+            if (dailyResult != DailyRankingFetchResult.Success)
+            {
+                return dailyResult;
+            }
+
+            // 200 だが0件（ジャンル取得全滅・公開途中）はメンテ日と誤認しない
+            return dailyRankingCount > 0
+                ? DailyRankingFetchResult.Success
+                : DailyRankingFetchResult.Failed;
+        }
+
         protected DailyRankingFetchResult analyzeDailyRanking(DateTime targetDate, out List<Ranking> rankings)
         {
             rankings = new List<Ranking>();
@@ -823,23 +843,10 @@ OK: この後の取得不可日は全てメンテナンス日として登録し�
             // daily が取れていない日に total だけ登録すると、累積値と日別値が混ざって
             // 差分計算が狂ううえ、RankingDate が進んで daily を二度と取得できなくなる。
             var dailyResult = analyzeReader(new JsonReaderDaily(targetDate), out var dailyRankings);
-            if (dailyResult == DailyRankingFetchResult.NoData)
+            var decided = DecideDailyRankingFetchResult(dailyResult, dailyRankings?.Count ?? 0);
+            if (decided != DailyRankingFetchResult.Success)
             {
-                return DailyRankingFetchResult.NoData;
-            }
-            if (dailyResult == DailyRankingFetchResult.Failed)
-            {
-                return DailyRankingFetchResult.Failed;
-            }
-            if (dailyResult == DailyRankingFetchResult.NotFound)
-            {
-                return DailyRankingFetchResult.NotFound;
-            }
-
-            // daily は取得成功。0件（ジャンル取得全滅・公開途中）はメンテ日と誤認しない
-            if (dailyRankings.Count == 0)
-            {
-                return DailyRankingFetchResult.Failed;
+                return decided;
             }
 
             var rankListList = new List<List<Ranking>>() { dailyRankings };

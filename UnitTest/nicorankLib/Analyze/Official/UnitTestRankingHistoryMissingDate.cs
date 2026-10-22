@@ -30,5 +30,38 @@ namespace UnitTest.nicorankLib.Analyze.Official
 
             Assert.IsFalse(RankingHistory.ShouldDeferMissingDate(today.AddDays(-1), today));
         }
+
+        [TestMethod]
+        public void DecideDailyRankingFetchResult_DailyNotSuccess_ReturnsDailyResult()
+        {
+            // daily が取れていない日は total 等があっても登録しない。
+            // 判定は daily の区分をそのまま返す（NoData/NotFound/Failed）
+            Assert.AreEqual(
+                DailyRankingFetchResult.NoData,
+                RankingHistory.DecideDailyRankingFetchResult(DailyRankingFetchResult.NoData, 0));
+            Assert.AreEqual(
+                DailyRankingFetchResult.NotFound,
+                RankingHistory.DecideDailyRankingFetchResult(DailyRankingFetchResult.NotFound, 0));
+            Assert.AreEqual(
+                DailyRankingFetchResult.Failed,
+                RankingHistory.DecideDailyRankingFetchResult(DailyRankingFetchResult.Failed, 0));
+        }
+
+        [TestMethod]
+        public void DecideDailyRankingFetchResult_DailySuccessWithData_ReturnsSuccess()
+        {
+            Assert.AreEqual(
+                DailyRankingFetchResult.Success,
+                RankingHistory.DecideDailyRankingFetchResult(DailyRankingFetchResult.Success, 1));
+        }
+
+        [TestMethod]
+        public void DecideDailyRankingFetchResult_DailySuccessWithoutData_ReturnsFailed()
+        {
+            // 200 だが0件（ジャンル取得全滅・公開途中）はメンテ日と誤認しない
+            Assert.AreEqual(
+                DailyRankingFetchResult.Failed,
+                RankingHistory.DecideDailyRankingFetchResult(DailyRankingFetchResult.Success, 0));
+        }
     }
 }
