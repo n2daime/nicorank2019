@@ -61,6 +61,11 @@ try
     //①取得するジャンル一覧を決定する
     var api2JsonContoller = new RankApi2JsonContoller();
 
+    // 取得対象termはジャンル一覧に依存しないため先に確定する（Issue #53）。
+    // ジャンル一覧の取得に失敗したとき、対象termの日付フォルダへ「データなし」マーカーを
+    // 置けるようにするためである（失敗が確定してからではtermを組み立てられない）。
+    var apigetRankingList = api2JsonContoller.GetRankingInfo( args );
+
     List<GenreInfo> genreList = new List<GenreInfo>();
     var isOK_1 = retryPoller.RunUntilSuccess(
         () =>
@@ -80,6 +85,10 @@ try
         const string genreError = "ジャンル一覧を取得できませんでした（約1時間リトライ後）。nicorankerr.log を確認してください。";
         StatusLog.WriteLine(genreError);
         ErrLog.GetInstance().Write(genreError);
+
+        // 1時間リトライしても復旧しなかった＝その日のデータは取得できない。
+        // nicorank2019 が404で止まらないよう、明示的な「データなし」マーカーを残す（Issue #53）
+        api2JsonContoller.WriteNoDataMarkers(apigetRankingList);
         return 2;
     }
 
@@ -98,8 +107,6 @@ try
     //  weekly      毎週月曜日更新
     //  monthly     毎月１日更新
     //  total       毎日更新
-
-    var apigetRankingList = api2JsonContoller.GetRankingInfo( args );
 
     if (apigetRankingList.Count == 0)
     {
@@ -126,6 +133,12 @@ try
         string allFailed = $"集計がエラーになりました。{runResult.TotalCount}件すべてのランキングを取得できませんでした（約1時間リトライ後）。nicorankerr.log を確認してください。";
         StatusLog.WriteLine(allFailed);
         ErrLog.GetInstance().Write(allFailed);
+
+        // 全term失敗＝その日のデータは取得できない。nicorank2019 が404で止まらないよう、
+        // 明示的な「データなし」マーカーを残す（Issue #53）。
+        // 部分失敗（exit 0）では置かない: 一部termのデータは残っており、日全体を
+        // メンテナンス扱いにすると取得済みデータまで捨ててしまうためである。
+        api2JsonContoller.WriteNoDataMarkers(apigetRankingList);
         return 2;
     }
     if (runResult.Failed.Count > 0)
