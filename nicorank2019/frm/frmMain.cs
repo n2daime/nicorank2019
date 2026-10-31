@@ -44,6 +44,21 @@ namespace nicorank2019.frm
         // 直近の件数確認で上限超過だったか（超過時はランキング計算ボタンを押せなくする）
         private bool _tagCountOverLimit = false;
 
+        /// <summary>
+        /// SP集計の実行条件（UIスレッドで退避。集計スレッドからはコントロールに触れないため）
+        /// なぜ既存SPの直接読みをやめるか: 集計は Task.Run の別スレッドで動くため、
+        /// コントロールの Text／Checked をその中から読むとスレッド違反になる（frmMainSyukei の既存注記）。
+        /// </summary>
+        private class SPExecuteContext
+        {
+            public string AnalyzeDB;
+            public string BaseDB;
+            public string MovieList;
+            public string LastResult;
+            public bool UseKariSyukei;
+        }
+        private SPExecuteContext _spExecuteContext = null;
+
         // アプリ埋め込みアイコンのマニフェスト名。csproj の EmbeddedResource の LogicalName と一致させること。
         private const string AppIconResourceName = "nicorank2019.icon.ico";
 
@@ -83,6 +98,9 @@ namespace nicorank2019.frm
                 // v2最新値チェックの切替配線はコード側で行う（Designerの再生成差分を増やさないため）。初期状態（既定ON）もここで反映する
                 chkUseLiveCounter.CheckedChanged += new EventHandler(this.chkUseLiveCounter_CheckedChanged);
                 UpdateLiveCounterControls();
+                // 仮集計チェックの切替配線もコード側で行う（Designerの再生成差分を増やさないため）。初期状態もここで反映する
+                chkSPKariSyukei.CheckedChanged += new EventHandler(this.chkSPKariSyukei_CheckedChanged);
+                UpdateSPKariControls();
                 _tagMockLoaded = true;
                 // 起動直後の更新確認（Issue #47）。UI をブロックしないよう非同期で投げっぱなしにする。
                 // Load 自体は先に返る。確認不能時は黙って旧版のまま動かす。
@@ -139,6 +157,27 @@ namespace nicorank2019.frm
                 }
             }
             _tagExecuteContext = null;
+            // SP集計の条件はUIスレッドで退避する（集計スレッドからコントロールに触れないため）
+            _spExecuteContext = null;
+            if (rbSP.Checked)
+            {
+                bool useKariSyukei = chkSPKariSyukei.Checked;
+                // 仮集計は基準日DBの集計日を抽出の基準にするため、基準日DBが必須になる。
+                // 汎用の「集計の準備に失敗しました」だけだと原因が分かりにくいので、ここで明示する。
+                if (useKariSyukei && string.IsNullOrWhiteSpace(tbBaseDB.Text))
+                {
+                    MessageBox.Show("仮集計には基準のDBが必要です", "入力エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                _spExecuteContext = new SPExecuteContext()
+                {
+                    AnalyzeDB = tbAnalyzeDB.Text.Trim(),
+                    BaseDB = tbBaseDB.Text.Trim(),
+                    MovieList = tbMovieSPList.Text.Trim(),
+                    LastResult = tbLastResult.Text.Trim(),
+                    UseKariSyukei = useKariSyukei
+                };
+            }
             await ExecuteAnalyzeAsync(btnAnalyze);
         }
 
@@ -803,6 +842,8 @@ namespace nicorank2019.frm
                 BaseDB = tbBaseDB_Tag.Text.Trim(),
                 LastResult = tbLastResult_Tag.Text.Trim()
             };
+            // タグ検索ではSPの退避条件を使わない（モードの取り違え防止）
+            _spExecuteContext = null;
             await ExecuteAnalyzeAsync(btnAnalyzeTag);
         }
 
@@ -841,6 +882,27 @@ namespace nicorank2019.frm
                 lblTagSnapshotTime.Visible = false;
                 lblTagSnapshotTime.Text = "";
             }
+        }
+
+        /// <summary>
+        /// 仮集計チェックの切替で動画IDリスト欄の有効・無効を切り替える（Issue #54）。
+        /// なぜ無効化するか: 仮集計では動画IDリストを使わないため、古いパスが残っていても
+        /// 使われないことを見た目で分かるようにするためである。
+        /// </summary>
+        private void chkSPKariSyukei_CheckedChanged(object sender, EventArgs e)
+        {
+            UpdateSPKariControls();
+        }
+
+        /// <summary>
+        /// 仮集計ONなら動画IDリスト欄（テキストと参照ボタン）を無効化する。
+        /// モード切替のたびにも呼び、SPに戻ったときにチェック状態と見た目を揃える。
+        /// </summary>
+        private void UpdateSPKariControls()
+        {
+            bool useMovieList = !chkSPKariSyukei.Checked;
+            tbMovieSPList.Enabled = useMovieList;
+            btnMovieSPList.Enabled = useMovieList;
         }
 
         // ポイント計算パネルを集計タブとタグタブで付け替える（タグ選択時はTAGRANK値に切り替える）
