@@ -814,3 +814,31 @@
   - 実機確認（2026-10-22）: 10/22 の空JSONマーカーでメンテ日登録 → 集計続行 → 集計成功。12分待ち・確認ダイアログなし
 - **version.json**: `tools/make-version.ps1` で生成（sha256 `ecd2e299f198602b1f371cc75154b713cf95e80a2af5b8ca200c2bc6f7af71f9`）。NAS の `https://2daime.myds.me/nicorank/update/version.json` への配置は人間が行う（release.md の運用）。配置後に自動更新の通知が有効になる
 - **残課題**: 過去日404の確認ダイアログを `Task.Run` からUIスレッドへ寄せる件（別Issue候補）。oldlog の部分失敗（exit 0）時のマーカー配置は対象外
+
+---
+
+## 2026-10-31 SP集計の仮集計（動画IDリスト省略・#54）
+
+- **Issue／ブランチ**: #54 / `feature/t054-sp-kari-syukei`（`develop` へ `--no-ff` でマージ）
+- **背景**: SP集計の動画IDリストは外部のニコランWebから手動でダウンロードしており、半期・年間に1回の実行のたびに外部サイトへ行く手順が残っていた。ニコランWebのSP対象は「週刊ニコラン・月刊ニコランのTOP300までにランクインした全ての動画」であり、週刊分は本システムの `NicoranHistory.db` の `LastResult` から機械的に再現できる。月刊分のDBは本システムに無いため、週刊で代用する近似とした
+- **実施内容**:
+  - `SPKariMovieListProvider`（新規）: `LastResult` から「種別=Weekly・総合ランク300位以内・集計日>=基準日」を `DISTINCT`・ID順で抽出する。基準日は基準日DBの `DBVersion.集計日`（`SnapShotSabunReader.BaseTime`、SPの期間開始日）。`集計日` はINTEGERアフィニティのため yyyyMMdd の `long` で比較する。参照した週刊結果の最新集計日も返す
+  - `SPAnalyze`: `IEnumerable<string>` を受け取る ctor を追加し、ファイル経路と同じ正規化（前後空白除去・空ID除外）を通す。`null` はファイル経路、空リストはID列経路として区別する
+  - `ModeFactroySP`: `UseKariSyukei` を追加。ON時は差分 Reader で基準日を取得した後に抽出し、0件・DB異常・例外は Reader を破棄して中断する。前回結果CSVはON時のみ任意（空欄なら前回順位なしをログに出す）。通常SPの挙動は変えない
+  - UI: `chkSPKariSyukei`（仮集計モードをON）と注記ラベルを追加（配置はユーザー担当）。ON時は動画IDリスト欄を無効化する。あわせて既存SPが `GetModeFactory` からコントロールを直読していた点を、`SPExecuteContext` にUIスレッドで退避する方式へ寄せた（タグ検索の `_tagExecuteContext` と同型）
+  - `StatusLog`: 抽出件数・基準日・参照した週刊結果の最新集計日・近似である旨を出す
+- **設計判断（詳細は `../design.md`）**: 境界は `>=`（入りすぎは無害、漏れが有害。順位はスナップショット差分で決まる）。上限300はニコランWebの定義に合わせ、`DefaultRankLimit` で変更可能。0件中断は空の結果ファイルの誤公開を防ぐため
+- **reviewer 指摘への対応**:
+  - [中] knowledge の「GetModeFactory はコントロールを直接読まない」が実態とずれていた（退避したのはSPのパスと仮集計フラグのみ。モード判定ラジオと週刊・中間の日付は直読）→ 記述を実態に合わせた
+  - [低] コメントの主張を正確化（挙動不変）
+  - [低] テスト追加: 表なしDBで抽出失敗・注入接続を破棄しない・空ID除外
+  - [低] `GetLatestWeeklyDay` を private 化し、未オープン接続を触る継承経路を消した
+  - 再レビューで「指摘なし・マージ可」
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 379件 PASS（今回12件追加: 抽出条件・最新集計日・上限変更・0件・DB不在・表なし・注入接続・空ID、`SPAnalyze` のID列4件）
+  - `dotnet build nicorank2019/nicorank2019.csproj` EXIT 0
+  - ユーザー実行確認: SPで仮集計ON→IDリスト欄が無効→集計でき、ログに抽出件数・最新集計日・近似の注意が出る。OFFは従来どおり。基準DB未指定時はエラーメッセージ
+- **残課題**:
+  - 月刊分の厳密再現（月間集計DBの新設。必要になったら別Issue）
+  - 最新週の週刊集計が未了だとその週の新着は候補に入らない（仮集計の性質として許容し、ログで最新集計日を見せる）
+  - 通常SPの前回CSV未指定時の挙動（空パスで `LastRankCsvReader` を追加する旧挙動）を仮集計と同じ「任意＋ログ」に統一するかは別Issue候補
