@@ -54,6 +54,8 @@ namespace nicorank2019.frm
             LoadPointCalcPanel();
 
             panelSP.Enabled = config.IsSP;
+            // 仮集計チェックの状態を欄の有効・無効へ反映する（SP⇔他モードの切替でも見た目を揃える）
+            UpdateSPKariControls();
 
             SetEnableAnalyzeDay();
 
@@ -163,12 +165,21 @@ namespace nicorank2019.frm
             }
             else if (rbSP.Checked)
             {
+                // 条件値（パスと仮集計フラグ）はUIスレッドで退避済みのものだけを使う。
+                // モード判定のラジオ自体は従来どおり直読だが、集計中のタブ無効化で切替は封じられている。
+                // 退避がない場合は呼び出し経路の不備であり、誤った条件で集計するより中断する。
+                var context = _spExecuteContext;
+                if (context == null)
+                {
+                    return null;
+                }
                 var factory = new ModeFactroySP();
                 factory.SetInputFile(
-                    tbAnalyzeDB.Text
-                    ,tbBaseDB.Text
-                    ,tbMovieSPList.Text
-                    ,tbLastResult.Text);
+                    context.AnalyzeDB
+                    ,context.BaseDB
+                    ,context.MovieList
+                    ,context.LastResult
+                    ,context.UseKariSyukei);
                 return factory;
             }
             else

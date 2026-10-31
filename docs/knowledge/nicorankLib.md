@@ -29,7 +29,7 @@ nicorankLib/
 | `ModeFactoryBase` | 抽象基底。`AnalyzeRank()` は `RankingAnalyze.AnalyzeRank` を呼び結果を `RankingList` に格納。出力系は抽象メソッド（`CreateAnalyzer` / `CreateHistory` / `CreateOutputCSV` / `CreateNRMRank` 等）。`IDisposable`（保持する `RankingAnalyze` の破棄に委譲。`RankingList` は破棄しない。Issue #44） |
 | `ModeFactoryWeekly` | 週間集計。メンテ日は `RankingHistory.CheckMaintananceDay` で中間集計に代替。BasicOption: HiddenMovieDelete → SabunReader → LastRankReader → GenreInfoReader。ExtOption: FavoriteTagReader → UserInfoReader → TyokiHantei |
 | `ModeFactoryTyukan` | 中間集計。TyokiHantei = null、履歴DB登録なし。`CreateNRMRank1000` は固定 1000 位 |
-| `ModeFactroySP` | **ファイル名タイポは元コードのまま**。`ModeFactoryWeekly` 継承。4種の入力ファイルを `SetInputFile` で設定（analyzeDB / baseDB / movieList / 前回結果CSV） |
+| `ModeFactroySP` | **ファイル名タイポは元コードのまま**。`ModeFactoryWeekly` 継承。4種の入力ファイルを `SetInputFile` で設定（analyzeDB / baseDB / movieList / 前回結果CSV）。`useKariSyukei`（省略時false）が真なら動画IDリストを使わず、`SPKariMovieListProvider` で基準日以降の週刊300位以内から候補IDを作る（0件・抽出失敗は中断。前回CSVは任意。Issue #54） |
 | `ModeFactoryTagRank` | タグ検索集計。`ModeFactoryWeekly` 継承・SP相当（履歴null・7種出力）。SnapshotDB時は `TagRankAnalyze`＋Base有無で `SnapShotSabunReader` / `TagRankTotalReader` を切替。v2最新値時（`Query.UseLiveCounter`）はDB不要で `TagRankLiveSabunReader` / `TagRankLiveTotalReader` を切替（集計日=実行日）。前回CSV・基準DBは任意 |
 
 ## Analyze / RankingAnalyze
@@ -55,7 +55,7 @@ AnalyzeRank():
 | `JsonReaderBase` | 公式過去ランキング JSON 取得の基底。`file_name_list.json` → ジャンル別 JSON を `Config.ThreadMax` 並列でダウンロード → `Ranking` に変換 → `MergeRankingList` で重複 ID マージ。`CheckAnalyzeTime`（当日 1:00 前は集計不可判定）。404 と通信エラーを `LastFileListStatus`（`TxtDownloadStatus`）で区別し、200 かつ `[]` を `LastFileListWasEmpty` で「データなしマーカー」として保持する（Issue #53）。`TryDownloadText` はテスト差し替え用の virtual |
 | `JsonReaderWeekly` | 週刊用。JSON取得後に oldlog 配布の `ApiXML.db` を `ApiXmlCacheImporter` で取り込む（失敗時は本地継続。Issue #40） |
 | `JsonReaderDaily` / `Weekly` / `Monthly` / `Total` | 種別ごと。Weekly は直近の月曜まで遡る、Monthly は直近の1日まで |
-| `SPAnalyze` | SP 用。動画 ID リスト（改行区切り）を読み込み Ranking リスト化 |
+| `SPAnalyze` | SP 用。動画 ID リスト（改行区切り）を読み込み Ranking リスト化。仮集計では `IEnumerable<string>` を受け取る ctor でID列を直接 Ranking 化する（Issue #54） |
 | `TagRankAnalyze` | タグ検索用。snapshot v2 ライブ検索でID列を生成（件数→5万判定→100件×4並列→重複除去・ID順）。`LiveCounters`（ID→4数値）も保持しv2最新値モードの材料にする。差分は後段の SabunReader / TotalReader が行う |
 | `TyukanAnalyze` | 中間集計。`Dailylog.db` を使用。対象日リスト（メンテ日除外）を日別に `JsonReaderDaily` + `SabunReader` で集計し Dailylog に INSERT → 期間合計で中間ランキング生成 |
 
@@ -87,6 +87,7 @@ AnalyzeRank():
 | `MovieInfoReader` | NicoApi で動画情報（タイトル・投稿日）を取得。失敗しても中断せず空欄のまま残す（Issue #40） |
 | `SnapShotSabunReader` | SP 集計の中核。スナップショット DB 2本（AnalyzeDB/BaseDB）の累積値差分を計算。動画情報の後に `SpMovieInfoFallback` で予備補完し、残欠落には削除目印を付ける（Issue #40）。`Dispose` を `override` して自前接続のみ閉じる（Issue #44） |
 | `SpMovieInfoFallback` | SPの予備補完（Issue #40・案B）。タイトル空欄分だけ LastResult 最新タイトル（種別=Weekly優先の2段引き）＋LogOfficial 期間内初見日で埋める。新規取得なし・失敗でも中断しない |
+| `SPKariMovieListProvider` | 仮集計の候補ID抽出（Issue #54）。`LastResult` から「種別=Weekly・総合ランク300位以内・集計日>=基準日」を `DISTINCT`・ID順で抽出する。既定上限は `DefaultRankLimit`（300）。`ISQLiteCtrl` 注入可・注入接続は閉じない。参照した週刊の最新集計日も返し、ログの鮮度表示に使う |
 | `TagRankTotalReader` | タグ検索の基準DBなし専用。AnalyzeDBの累積値をそのまま集計値にする（差分なし）。`Dispose` を `override` して自前接続のみ閉じる（Issue #44） |
 | `TagRankLiveTotalReader` | v2最新値の基準DBなし専用。`TagRankAnalyze.LiveCounters` をそのまま集計値にする（DB不要。`ApplyLiveTotals` は純粋処理で共用） |
 | `TagRankLiveSabunReader` | v2最新値の基準DBあり専用。Target=ライブ値・Base=基準日DBで差分計算（新着救済はSabunReaderと同一）。動画情報の後に `SpMovieInfoFallback` で予備補完する（Issue #40）。`Dispose` を `override` して自前接続のみ閉じる（Issue #44） |
@@ -180,6 +181,7 @@ AnalyzeRank():
 | `SabunReader` | RankingHistory | ModeFactoryWeekly, TyukanAnalyze |
 | `TyokiHantei` | SQLiteCtrl | ModeFactoryWeekly |
 | `SnapShotSabunReader` | SQLiteCtrl×2, MovieInfoReader, SpMovieInfoFallback | ModeFactroySP |
+| `SPKariMovieListProvider` | SQLiteCtrl（NicoranHistory） | ModeFactroySP（仮集計時） |
 | `SpMovieInfoFallback` | SQLiteCtrl×2（NicoranHistory・LogOfficial。失敗時は開かず続行） | SnapShotSabunReader / TagRankLiveSabunReader |
 | `TagRankLiveSabunReader` | SQLiteCtrl, MovieInfoReader, SpMovieInfoFallback | ModeFactoryTagRank |
 | `NicoApi` | — | GenreInfoReader / MovieInfoReader / UserInfoReader |

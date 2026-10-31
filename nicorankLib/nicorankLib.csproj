@@ -259,6 +259,7 @@
     <Compile Include="Analyze\Option\Basic\SabunReader.cs" />
     <Compile Include="Analyze\Option\Basic\SnapShotSabunReader.cs" />
     <Compile Include="Analyze\Option\Basic\SpMovieInfoFallback.cs" />
+    <Compile Include="Analyze\Option\Basic\SPKariMovieListProvider.cs" />
     <Compile Include="Analyze\Option\Basic\TagRankTotalReader.cs" />
     <Compile Include="Analyze\Option\Basic\TagRankLiveTotalReader.cs" />
     <Compile Include="Analyze\Option\Basic\TagRankLiveSabunReader.cs" />
