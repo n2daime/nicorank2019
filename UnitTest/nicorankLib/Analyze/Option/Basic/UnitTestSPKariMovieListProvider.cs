@@ -35,6 +35,8 @@ namespace UnitTest.nicorankLib.Analyze.Option.Basic
                 TestDbHelper.InsertLastResultData(dbCtrl, "Weekly", 20260707, "sm1", 5, 60, "{}");
                 // 基準日以降の別の週
                 TestDbHelper.InsertLastResultData(dbCtrl, "Weekly", 20260713, "sm5", 1, 50, "{}");
+                // IDが空の行は候補にしない（空IDのRankingを作らない）
+                TestDbHelper.InsertLastResultData(dbCtrl, "Weekly", 20260706, "", 1, 40, "{}");
 
                 using (var provider = new SPKariMovieListProvider("in-memory", dbCtrl))
                 {
@@ -114,6 +116,44 @@ namespace UnitTest.nicorankLib.Analyze.Option.Basic
                 Assert.IsFalse(provider.Open());
                 Assert.IsFalse(provider.TryGetMovieIds(BaseDay, 300, out var result));
                 Assert.IsNull(result);
+            }
+        }
+
+        [TestMethod]
+        public void LastResultテーブルがなければ失敗する()
+        {
+            // specs の「表がないときは中断する」を直接担保する。
+            // 空DBでも開けてしまうため、Open 成功と抽出失敗を分けて確認する
+            using (var dbCtrl = TestDbHelper.CreateInMemoryDb())
+            using (var provider = new SPKariMovieListProvider("in-memory", dbCtrl))
+            {
+                Assert.IsTrue(provider.Open());
+                Assert.IsFalse(provider.TryGetMovieIds(BaseDay, 300, out var result));
+                Assert.IsNull(result);
+            }
+        }
+
+        [TestMethod]
+        public void 注入した接続は破棄しない()
+        {
+            // 注入接続は呼び出し側の所有物。provider の using 終了後も開いたままであること
+            var dbCtrl = TestDbHelper.CreateInMemoryDb();
+            try
+            {
+                TestDbHelper.CreateLastResultTable(dbCtrl);
+                TestDbHelper.InsertLastResultData(dbCtrl, "Weekly", 20260706, "sm1", 1, 100, "{}");
+
+                using (var provider = new SPKariMovieListProvider("in-memory", dbCtrl))
+                {
+                    Assert.IsTrue(provider.Open());
+                    Assert.IsTrue(provider.TryGetMovieIds(BaseDay, 300, out _));
+                }
+
+                Assert.IsTrue(dbCtrl.IsOpen, "注入した接続を provider が閉じてはいけない");
+            }
+            finally
+            {
+                dbCtrl.Dispose();
             }
         }
 

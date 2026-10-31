@@ -124,8 +124,9 @@ namespace nicorankLib.Analyze.Option.Basic
         /// 参照した週刊結果の最新集計日を返す。仮集計が「どの週までの結果か」をログで示すために使う。
         /// 抽出条件（ランク・基準日）では絞らない。仮集計の鮮度は、条件に合うかではなく
         /// 週刊集計そのものがどこまで進んでいるかで決まるためである。行がなければnull。
+        /// private にしているのは、継承側から早期に呼ばれて未オープン接続を触る経路を作らないためである。
         /// </summary>
-        protected DateTime? GetLatestWeeklyDay(string syubetsu)
+        private DateTime? GetLatestWeeklyDay(string syubetsu)
         {
             using (var aCmd = _dbCtrl.Connection.CreateCommand())
             {
