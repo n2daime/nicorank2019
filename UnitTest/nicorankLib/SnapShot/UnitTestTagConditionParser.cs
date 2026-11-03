@@ -176,8 +176,15 @@ namespace UnitTest.nicorankLib.SnapShot
         [TestMethod]
         public void StarOnly_Fails()
         {
-            Assert.IsFalse(TagConditionParser.TryParse("*", out _, out string error));
-            Assert.IsFalse(string.IsNullOrEmpty(error));
+            Assert.IsFalse(TagConditionParser.TryParse("*", out _, out string error1));
+            StringAssert.Contains(error1, "*");
+
+            // 空白がAND区切りになったため、旧仕様の「A *」はAと単独*の2語になりエラーになる（正しくは A*）
+            Assert.IsFalse(TagConditionParser.TryParse("A *", out _, out string error2));
+            StringAssert.Contains(error2, "*");
+
+            Assert.IsFalse(TagConditionParser.TryParse("* A", out _, out string error3));
+            StringAssert.Contains(error3, "*");
         }
     }
 }

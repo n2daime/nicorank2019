@@ -69,7 +69,8 @@ namespace nicorankLib.SnapShot
                 {
                     var term = rawTerm.Trim();
                     string field = FieldTagsExact;
-                    if (term[term.Length - 1] == PartialMatchSuffix)
+                    bool partialMatch = term[term.Length - 1] == PartialMatchSuffix;
+                    if (partialMatch)
                     {
                         // 末尾の * だけを部分一致マーカーとして外す。途中の * はタグの文字として残す（DECO*27 など）
                         field = FieldTags;
@@ -77,7 +78,8 @@ namespace nicorankLib.SnapShot
                     }
                     if (term.Length == 0)
                     {
-                        error = "空のタグがあります";
+                        // * だけの入力は「空のタグ」ではなく、記号の使い方の誤りとして案内する
+                        error = partialMatch ? "「*」の前後にタグがありません" : "空のタグがあります";
                         return false;
                     }
                     andFilters.Add(new JObject(
