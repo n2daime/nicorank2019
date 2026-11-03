@@ -877,3 +877,25 @@
   - いずれも2026-11-03の9,077件サンプルでは0件。実在が判明した場合は別Issueでエスケープ手段を検討する
 - **リリースノート原稿**（リリース時に転記）:
   - タグ検索の条件式を変更しました。ANDは**空白**、ORは `|`、部分一致は語尾の `*` です。`&` はタグの文字として扱うため、`Akira,Jeans&Chinpo` のようなタグ名をそのまま入力できます。従来の `A&B`（AND）は「A&B という1つのタグ」の意味になるため、ANDは `A B` と入力してください
+
+---
+
+## 2026-11-03 リリース v20261103_nicorank
+
+- **タグ**: `v20261103_nicorank`（main HEAD `6ed6a1b` を指す。`git rev-parse "v20261103_nicorank^{commit}"` で確認済み）
+- **GitHub Release**: https://github.com/n2daime/nicorank2019/releases/tag/v20261103_nicorank
+- **含まれる変更**: #54（SP集計の仮集計・動画IDリスト省略）・#55（タグ条件式の空白AND化）
+- **成果物**:
+  - `nicorank2019.zip`（16,060,862 bytes / sha256 `d90a17d1110f5e25942393036d1ace4233c8c4bd21dc5a7ea47b00f4386db05c`）
+  - `nicorank_SnapShot.zip`（16,411,745 bytes / sha256 `448d1abc3213a5ab52b3c53dd2b37008e9f43d3ebe1fb37c3c70b9b99e0fe28c`。今回の変更なしだが配布物統一のため同梱）
+  - `nicorank_oldlog.zip`（6,037,124 bytes / sha256 `05245324226a7db6efa79295532ae9f247e3fc6411b2a5277fe9842a22744ca3`。同上）
+- **版数**: `nicorank2019.exe` = 2026.11.3.0（`version.json` の `2026.11.03` と一致）
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 386件 PASS（EXIT 0）
+  - `dotnet build nicorank2019.sln -c Release` 成功（EXIT 0）
+  - `bin/Release/lib` に4 DLL + win-{x64,x86,arm} の native 3件、`nicorank2019.exe.config` / `nicorank_SnapShot.exe.config` に `loadFromRemoteSources`、`bin/Release/nicorank.xml` と `依存ファイル/nicorank.xml` の SHA256 一致（`14A5D06F95706BCEDEF4CA6E50E9E3FB5EE65C20BF39BC1B92192BCBA57F3E95`）
+  - zip はホワイトリスト方式で作成し、DB・設定本体・pdb・Output等が含まれないことをエントリ一覧で確認
+  - 実機確認: #54 はマージ時にユーザーがSP仮集計ON→IDリスト無効→集計できることを確認済み。#55 はユーザーが `Akira,Jeans&Chinpo`=272件、`DECO*27`=17,256件、ラベル表示を確認済み。今回のリリース差分は版数刻印のみで挙動変更なし
+- **version.json**: `tools/make-version.ps1` で生成（sha256 `d90a17d1110f5e25942393036d1ace4233c8c4bd21dc5a7ea47b00f4386db05c`、size 16,060,862、url は添付asset）。生成物は `%TEMP%\nicorank_version_v20261103\version.json`。NAS の `https://2daime.myds.me/nicorank/update/version.json` への配置は人間が行う（release.md の運用）。配置後に自動更新の通知が有効になる
+- **同期**: `main` → `develop` を `--no-ff` でバックマージして push 済み。バックマージ直後は `git diff main develop --stat` が空。本エントリ追記により develop が1件先行（前回リリースと同様）
+- **残課題**: #55 の既知の制限（`|`を含むタグ・末尾`*`のタグ・全角スペースを含むタグ）。実在が判明したら別Issue
