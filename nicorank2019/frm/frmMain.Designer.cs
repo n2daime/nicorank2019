@@ -149,6 +149,8 @@
             this.grpAppUpdate = new System.Windows.Forms.GroupBox();
             this.btnUpdateCheck = new System.Windows.Forms.Button();
             this.lblUpdateCheckStatus = new System.Windows.Forms.Label();
+            this.chkSPKariSyukei = new System.Windows.Forms.CheckBox();
+            this.label23 = new System.Windows.Forms.Label();
             this.tabPageTag.SuspendLayout();
             this.grpDb.SuspendLayout();
             this.grpFilter.SuspendLayout();
@@ -522,7 +524,7 @@
             this.lblTagExample.Name = "lblTagExample";
             this.lblTagExample.Size = new System.Drawing.Size(285, 12);
             this.lblTagExample.TabIndex = 1;
-            this.lblTagExample.Text = "例: タグ1&&タグ2|タグ3*  (*なし=完全一致 *あり=部分一致)";
+            this.lblTagExample.Text = "例: タグ1 タグ2|タグ3*  (空白=AND | =OR 末尾* =部分一致 &はタグの文字)";
             // 
             // tbTagCondition
             // 
@@ -549,7 +551,7 @@
             // 
             // btnAnalyze
             // 
-            this.btnAnalyze.Location = new System.Drawing.Point(329, 467);
+            this.btnAnalyze.Location = new System.Drawing.Point(331, 522);
             this.btnAnalyze.Name = "btnAnalyze";
             this.btnAnalyze.Size = new System.Drawing.Size(139, 39);
             this.btnAnalyze.TabIndex = 4;
@@ -581,7 +583,7 @@
             this.panel3.Controls.Add(this.label12);
             this.panel3.Controls.Add(this.label13);
             this.panel3.Controls.Add(this.label14);
-            this.panel3.Location = new System.Drawing.Point(11, 224);
+            this.panel3.Location = new System.Drawing.Point(11, 273);
             this.panel3.Name = "panel3";
             this.panel3.Size = new System.Drawing.Size(794, 228);
             this.panel3.TabIndex = 3;
@@ -787,6 +789,8 @@
             // panelSP
             // 
             this.panelSP.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.panelSP.Controls.Add(this.label23);
+            this.panelSP.Controls.Add(this.chkSPKariSyukei);
             this.panelSP.Controls.Add(this.btnLastResult);
             this.panelSP.Controls.Add(this.btnMovieSPList);
             this.panelSP.Controls.Add(this.tbLastResult);
@@ -803,47 +807,47 @@
             this.panelSP.Controls.Add(this.label1);
             this.panelSP.Location = new System.Drawing.Point(8, 79);
             this.panelSP.Name = "panelSP";
-            this.panelSP.Size = new System.Drawing.Size(799, 133);
+            this.panelSP.Size = new System.Drawing.Size(799, 167);
             this.panelSP.TabIndex = 1;
             // 
             // btnLastResult
             // 
-            this.btnLastResult.Location = new System.Drawing.Point(694, 101);
+            this.btnLastResult.Location = new System.Drawing.Point(694, 128);
             this.btnLastResult.Name = "btnLastResult";
             this.btnLastResult.Size = new System.Drawing.Size(75, 23);
-            this.btnLastResult.TabIndex = 27;
+            this.btnLastResult.TabIndex = 8;
             this.btnLastResult.Text = "参照";
             this.btnLastResult.UseVisualStyleBackColor = true;
             this.btnLastResult.Click += new System.EventHandler(this.btnLastResult_Click);
             // 
             // btnMovieSPList
             // 
-            this.btnMovieSPList.Location = new System.Drawing.Point(694, 74);
+            this.btnMovieSPList.Location = new System.Drawing.Point(694, 101);
             this.btnMovieSPList.Name = "btnMovieSPList";
             this.btnMovieSPList.Size = new System.Drawing.Size(75, 23);
-            this.btnMovieSPList.TabIndex = 26;
+            this.btnMovieSPList.TabIndex = 6;
             this.btnMovieSPList.Text = "参照";
             this.btnMovieSPList.UseVisualStyleBackColor = true;
             this.btnMovieSPList.Click += new System.EventHandler(this.btnMovieSPList_Click);
             // 
             // tbLastResult
             // 
-            this.tbLastResult.Location = new System.Drawing.Point(72, 102);
+            this.tbLastResult.Location = new System.Drawing.Point(72, 129);
             this.tbLastResult.Name = "tbLastResult";
             this.tbLastResult.Size = new System.Drawing.Size(616, 19);
-            this.tbLastResult.TabIndex = 25;
+            this.tbLastResult.TabIndex = 7;
             // 
             // tbMovieSPList
             // 
-            this.tbMovieSPList.Location = new System.Drawing.Point(72, 77);
+            this.tbMovieSPList.Location = new System.Drawing.Point(72, 104);
             this.tbMovieSPList.Name = "tbMovieSPList";
             this.tbMovieSPList.Size = new System.Drawing.Size(616, 19);
-            this.tbMovieSPList.TabIndex = 25;
+            this.tbMovieSPList.TabIndex = 5;
             // 
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(5, 100);
+            this.label5.Location = new System.Drawing.Point(5, 127);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(66, 24);
             this.label5.TabIndex = 24;
@@ -852,7 +856,7 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(5, 80);
+            this.label4.Location = new System.Drawing.Point(5, 107);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(64, 12);
             this.label4.TabIndex = 24;
@@ -1424,6 +1428,25 @@
             this.lblUpdateCheckStatus.TabIndex = 8;
             this.lblUpdateCheckStatus.Text = "更新: 未確認";
             // 
+            // chkSPKariSyukei
+            // 
+            this.chkSPKariSyukei.AutoSize = true;
+            this.chkSPKariSyukei.Location = new System.Drawing.Point(72, 85);
+            this.chkSPKariSyukei.Name = "chkSPKariSyukei";
+            this.chkSPKariSyukei.Size = new System.Drawing.Size(113, 16);
+            this.chkSPKariSyukei.TabIndex = 4;
+            this.chkSPKariSyukei.Text = "仮集計モードをON";
+            this.chkSPKariSyukei.UseVisualStyleBackColor = true;
+            // 
+            // label23
+            // 
+            this.label23.AutoSize = true;
+            this.label23.Location = new System.Drawing.Point(195, 86);
+            this.label23.Name = "label23";
+            this.label23.Size = new System.Drawing.Size(437, 12);
+            this.label23.TabIndex = 29;
+            this.label23.Text = "※ 仮集計時は動画IDリストを週刊結果300位から抽出。前回結果の指定が任意になります";
+            // 
             // frmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -1585,6 +1608,8 @@
         private System.Windows.Forms.GroupBox grpAppUpdate;
         private System.Windows.Forms.Button btnUpdateCheck;
         private System.Windows.Forms.Label lblUpdateCheckStatus;
+        private System.Windows.Forms.CheckBox chkSPKariSyukei;
+        private System.Windows.Forms.Label label23;
     }
 }
 
