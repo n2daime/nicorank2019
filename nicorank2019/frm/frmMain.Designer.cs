@@ -524,7 +524,7 @@
             this.lblTagExample.Name = "lblTagExample";
             this.lblTagExample.Size = new System.Drawing.Size(285, 12);
             this.lblTagExample.TabIndex = 1;
-            this.lblTagExample.Text = "例: タグ1&&タグ2|タグ3*  (*なし=完全一致 *あり=部分一致)";
+            this.lblTagExample.Text = "例: タグ1 タグ2|タグ3*  (空白=AND | =OR 末尾* =部分一致 &はタグの文字)";
             // 
             // tbTagCondition
             // 

@@ -139,7 +139,7 @@ AnalyzeRank():
 - `SnapShotVersionPoller` — 更新待ち制御（Issue #38）。5分ごと再チェック・最大1時間（定数化）。時計・待機は注入可（単体テストで実時間待ちなし）
 - `SnapShotAnalyze` — snapshot API リクエスト構築・並列ページング（4 並列）。総件数 5 万超なら期間を狭めて再試行。`":null"` → `":0"` 置換。進捗の件数表示は `StatusLog` 経由（WinForm・コンソール・Linux CLIの3経路で受け手を統一するため。Issue #43）
 - `SnapShotRequest` — スナップショット検索API v2 の型付きリクエスト（Issue #19）。`q/targets/fields/filters/jsonFilter/_sort/_limit/_offset/_context` を保持し値のみ `EscapeDataString` で URL 生成。`_context` 既定 `WeeklyNicoranProgram`、`_limit/_offset` クランプ。`CreateTagSearch` はタグ検索用（jsonFilter＋数値・日付・種別を `filters[]` で指定。Issue #30）
-- `TagConditionParser` — タグ条件式（`A&B|C*`）を jsonFilter に変換（Issue #30）。`*` は末尾1文字のみ許可
+- `TagConditionParser` — タグ条件式（`A B|C*`）を jsonFilter に変換（Issue #30、条件式は #55 で空白ANDへ変更）。空白=AND（全角スペース・タブも区切り、全角は半角へ正規化）・`|`=OR・語尾の `*` だけ `tags` 部分一致・それ以外の位置の `*` はタグの文字。`&` はタグの文字。空条件・空ORグループはエラー
 - `TagSearchQuery` — タグ検索条件の受け渡し用 DTO（Issue #30）。`UseLiveCounter`（既定false。真ならv2最新値モード。Issue #35）
 - `TagSnapshotTimestamp` — データ時点ラベルの純粋整形（Issue #39）。`Format`（JST日＋05:00固定）・`TryFormat`（確認不能時はfalse）・`DataHour`／`DataMinute` 定数を持つ。UIから分離して単体テストで縛る
 - `SnapShotDB` — `LogSnapshot{yyyyMMdd}.db` の作成・登録（5000件バッチコミット・INSERT OR IGNORE・パラメータ再利用）。`ISQLiteCtrl` 注入可。旧 JSON ファイル読込（`GetJsonData`）も保持

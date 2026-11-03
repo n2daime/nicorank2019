@@ -190,7 +190,7 @@
 ### Decisions
 
 - **入力のみ差し替え・差分以降はSP流用**: `TagRankAnalyze : InputBase` がライブ検索でID列を生成し、`SnapShotSabunReader`・`LastRankCsvReader`（任意）・`FavoriteTagReader`・`RankingAnalyze` パイプライン・7種出力はSP流用とする。新規 `ModeFactoryTagRank : ModeFactoryWeekly` は `CreateAnalyzer` / `CreateHistory(null)` / `CreateOutputJson_rankDB` のみoverrideする（SPの継承構成に倣う）
-- **タグ式は `&`/`|`/`*` の単一フィールド**: `&`=AND優先・`|`=OR・括弧なし。`*`なし=`tagsExact`・あり=`tags` とし `*` 自体は除去する。`TagConditionParser` が `equal`/`and`/`or` の jsonFilter に変換する（string経路。Issue #19 の拡張口を使用）
+- **タグ式は空白AND・`|`OR・語尾`*`部分一致（#55で変更）**: `&` はタグの文字として扱う。`*`は語尾のみ`tags`部分一致・それ以外の位置は`tagsExact`。`TagConditionParser` が `equal`/`and`/`or` の jsonFilter に変換する（string経路。Issue #19 の拡張口を使用）。変更理由と制限は「タグ条件式の空白AND化（Issue #55）」を参照
 - **数値・日付・種別は `filters[]` の実証済み記法**: jsonFilterの `range`（from/to必須可否が未検証）を避け、`filters[カウンタ][gte]`・`filters[startTime][gte/lt]`・`filters[contentType][0]` を使う。日付フィルタOFF時は中立期間（2000-01-01〜2100-01-01）で検索する。`q` は空・`targets` は不使用
 - **5万件の自主規制は件数取得で判定**: `_limit=0` で `totalCount` を取得し、超過時は集計せず通知する（スナップショット取得側の5万で期間短縮する方式ではなく中断方式）。ページングは100件×4並列でIDを重複除去・ID順にする
 - **TAGRANK節は節単位切替**: `Config.UseTagRank`（`IsTagRank && TAGRANK節あり`）で分岐し、節がなければ週間設定にフォールバックする。項目単位の補完はしない。OFFSET系は共通のためTAGRANK節に含めない
@@ -198,6 +198,26 @@
 - **v2最新値モードはReader分離・Input共有参照（Issue #35）**: `TagRankAnalyze.LiveCounters`（ID→4数値。従来は捨てていた `DefaultFields` のカウンタを保持）にし、新規 `TagRankLiveTotalReader`（基準なし）・`TagRankLiveSabunReader`（基準あり。Target=ライブ・Base=基準日DB）が参照する。なぜInput参照か: `RankingAnalyze` はInput→Optionの順に実行されるためOption実行時点では取得結果が確定しており、工場作成時点の未取得を共有参照で橋渡しできる。Input内完結案は入力と集計値の二役で肥大化するため不採用。純粋処理 `ApplyLiveTotals` は `TagRankLiveTotalReader` のstaticに置き両Readerで共用・単体テストで直接検証する（MovieInfoはネットワークのためReader成功系の結合テストは行わない前例を踏襲）。`TagSearchQuery.UseLiveCounter`（既定false）を唯一の切替とし、`SetInputFile` の引数は変えない（既存テスト・SP経路への影響を避けるため）。ポイント係数の見直しはコードと切り離し `TAGRANK` 節の運用調整に委ねる（累積値は桁が大きくSP同値のままでは順位の意味が変わるため）
 - **共有パネルは実行時付け替え＋相対配置**: `panel3` の実体は1つのままタブ切替で親を付け替える（複製方式は同期ずれの温床のため不採用）。固定座標はAutoScaleの対象外でずれるため、`grpDb.Bottom` 基準の相対配置にする。タブ切替時はパネル値の保存（旧モード）→モード切替→読込（新モード）を行い、不正値があれば切替を中断して元のタブに戻す
 - **いいね倍率の保存漏れを修正**: 従来の書戻しは `CALC_LIKE` を保存していなかった（表示のみ）。TAGRANK対応で全モード共通の `SavePointCalcPanel` に一本化する際に保存対象に加える。振る舞い変更として記録する
+
+---
+
+## タグ条件式の空白AND化（Issue #55）
+
+### Context
+
+- タグ名に `&` を含む実在タグ（`Akira,Jeans&Chinpo`）を検索できなかった。`TagConditionParser` が `&` をAND区切りとして無条件に分割していたため
+- 同じ原因で `|` を含むタグと末尾が `*` のタグも検索できず、途中に `*` を含む実在タグ `DECO*27` は「`*` は末尾のみ」ルールでエラーになっていた
+- ニコニコのタグ名はスペースを含められず（公式ヘルプ・大百科）、公式の検索仕様も「検索ワード間の半角スペースでAND」のため、AND記法を空白に寄せる
+
+### Decisions
+
+- **ANDは空白・`&`はタグの文字**: 公式のタグ検索に合わせる。引用符やエスケープを導入する案も検討したが、`&` をそのまま入力でき、パーサーも単純になるため空白ANDを採用した。タグ名にスペースが存在しないことが前提（公式ヘルプ・大百科で確認）
+- **区切りは半角・全角スペース・タブなどの空白文字**: 全角スペースはIMEで混入しやすいため半角へ正規化する。全角スペースを含むタグは9,077件のサンプルで確認できていない
+- **`*` は語尾のみ部分一致**: 途中の `*` をタグの文字として残すことで `DECO*27` を完全一致検索できる。APIは `tagsExact` の `*` をワイルドカード扱いしないことを実測確認（`DECO*27`=17,256件、`初音ミク*`=0件）
+- **空ORグループは明示エラー**: `RemoveEmptyEntries` で空白分割すると `A||B` が空配列になり、空のANDフィルタを生成して素通りする。`terms.Length == 0` を明示チェックして入力エラーにする
+- **入力時の構文検証**: `TryBuildTagSearchQuery` で `TryParse` し、構文エラーを「入力エラー」ダイアログと `StatusLog` の両方に出す。従来はコンソールログのみで、UIはネットワーク失敗風のメッセージになっていた
+- **既知の制限**: `|` を含むタグ、末尾が `*` のタグ、全角スペースを含むタグは検索できない。2026-11-03 の9,077件サンプルではいずれも0件。実在が判明した場合は別Issueでエスケープ手段を検討する
+- **`&` の意味変更の周知**: 条件式は保存されない（毎回UIから組み立てる）ため移行処理は不要。UI例ラベルとリリースノートで「ANDは空白、`&` はタグの文字」を明記する
 
 ---
 
