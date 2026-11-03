@@ -8,7 +8,7 @@ namespace nicorankLib.SnapShot
     /// </summary>
     public class TagSearchQuery
     {
-        /// <summary>タグ条件式（例: タグ1&amp;タグ2|タグ3*）</summary>
+        /// <summary>タグ条件式（例: タグ1 タグ2|タグ3*。空白=AND・| =OR・語尾* =部分一致）</summary>
         public string TagCondition { get; set; } = "";
         /// <summary>再生数下限</summary>
         public long ViewMin { get; set; } = 0;

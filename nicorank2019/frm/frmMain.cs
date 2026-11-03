@@ -608,6 +608,15 @@ namespace nicorank2019.frm
                 error = "タグ条件を入力してください";
                 return false;
             }
+            string tagCondition = tbTagCondition.Text.Trim();
+            // 条件式の誤りを「ネットワーク失敗」と混同させないため、送信前に構文を検証して理由を返す。
+            // 実際の検索でも TagRankAnalyze 側で再検証するが、ここは文字列処理のみなので二重実行のコストは無視できる。
+            if (!TagConditionParser.TryParse(tagCondition, out _, out string conditionError))
+            {
+                StatusLog.WriteLine(conditionError);
+                error = conditionError;
+                return false;
+            }
             if (!TryParseMin(tbViewMin, "再生", out long viewMin, out error)) { return false; }
             if (!TryParseMin(tbMylistMin, "マイリス", out long mylistMin, out error)) { return false; }
             if (!TryParseMin(tbLikeMin, "いいね", out long likeMin, out error)) { return false; }
@@ -622,7 +631,7 @@ namespace nicorank2019.frm
             else if (cmbContentType.SelectedIndex == 2) { contentType = "short"; }
             query = new TagSearchQuery()
             {
-                TagCondition = tbTagCondition.Text.Trim(),
+                TagCondition = tagCondition,
                 ViewMin = viewMin,
                 MylistMin = mylistMin,
                 LikeMin = likeMin,

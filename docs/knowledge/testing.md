@@ -9,7 +9,7 @@ dotnet test UnitTest/UnitTest.csproj
 
 - 環境: **.NET Framework 4.8 ターゲットだが .NET 10 SDK でビルド・実行**（Windows）
 - テストフレームワーク: MSTest 3.5.2 / モック: Moq 4.20.72
-- 全 **367 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件・#39で16件・#44で10件・#43で2件・#36で13件・#45で35件・#47で25件・#51で6件・#53で15件を追加）
+- 全 **386 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件・#39で16件・#44で10件・#43で2件・#36で13件・#45で35件・#47で25件・#51で6件・#53で15件・#55で7件を追加）
 
 ## 構成
 
@@ -27,7 +27,7 @@ UnitTest/
     ├── Util/       UnitTestSQLiteCtrl(12) / DbQuery(10) / DbWrite(9) / DbSchema(8) / DbError(4) / DbCommandReuse(6) / StatusLog(3) / TextUtil(6) / ApiUrlBuilder(7) / DbMigrationCoordinator(12) / UnitTestBaselineDownloader(13) / UnitTestWeeklyGapChecker(18) / UnitTestBaselineRestore(17) / UnitTestAppUpdateChecker(25) / UnitTestRetryPoller(6) / UnitTestOldRankingMarker(3) / UnitTestInternetUtilNotFound(2)
     ├── Common/     UnitTestConfig(8)
     ├── output/     UnitTestOutput(8)
-    ├── SnapShot/   UnitTestSnapShotRequest(12) / UnitTestTagConditionParser(7) / UnitTestTagSearchRequest(7) / UnitTestSnapShotVersionChecker(12) / UnitTestSnapShotVersionPoller(5)
+    ├── SnapShot/   UnitTestSnapShotRequest(12) / UnitTestTagConditionParser(14) / UnitTestTagSearchRequest(7) / UnitTestSnapShotVersionChecker(12) / UnitTestSnapShotVersionPoller(5)
     ├── Analyze/     UnitTestRankingAnalyze(9) / UnitTestBasicOptionDispose(10)
     ├── Analyze/model/ UnitTestRanking(6) / UnitTestRankingDisplayTags(5) / UnitTestRankingDeletedMarker(2)
     ├── Analyze/Input/ UnitTestTagRankAnalyze(8) / UnitTestJsonReaderMissingDate(5)
@@ -62,7 +62,7 @@ UnitTest/
 | `UnitTestRanking` | 6 | PointTotal/HoseiAllPoint の補正計算（VOCACOLE2023実測、補正なし、sqrt、削除動画、ゼロ、境界値 0.25〜1.0） |
 | `UnitTestRankingAnalyze` | 9 | 同点時タイブレーク（Issue #34。ID数値認識のsm20/sm199・桁境界・sm/so種別・非数値フォールバックと群分離順序・null/同一・空文字・前ゼロ・総合数値順・入力順反転の決定性・副順位数値順） |
 | `UnitTestBasicOptionDispose` | 10 | 破棄経路の再発防止（Issue #44。空Dispose7件・全Option破棄と冪等・1件失敗でも継続・注入接続の非破棄・自前接続の解放2件・工場委譲と未生成時） |
-| `UnitTestTagConditionParser` | 7 | タグ条件式→jsonFilter（完全一致・部分一致・AND/OR優先・Trim・空条件・空トークン・末尾外`*`却下。Issue #30） |
+| `UnitTestTagConditionParser` | 14 | タグ条件式→jsonFilter（完全一致・部分一致・空白AND/OR優先・全角スペース・連続空白・`&`は文字・途中`*`は文字・空条件・空ORグループ。Issue #30、#55で空白ANDへ） |
 | `UnitTestTagSearchRequest` | 7 | CreateTagSearch の URL 生成（空q・targets省略・下限0省略・下限あり・種別long/short・不正種別・jsonFilter・中立期間・日付指定。Issue #30） |
 | `UnitTestTagRankAnalyze` | 8 | 件数取得・ページ重複除去・ID順・上限超過・件数失敗・不正条件・ページ失敗・null条件（Issue #30）・LiveCounters保持（Issue #35） |
 | `UnitTestTagRankTotalReader` | 4 | TotalReader の Open成否・AnalyzeTime・工場分岐（基準なし・あり）の失敗経路（Issue #30） |

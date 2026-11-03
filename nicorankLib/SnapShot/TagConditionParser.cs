@@ -5,8 +5,10 @@ using System;
 namespace nicorankLib.SnapShot
 {
     /// <summary>
-    /// タグ検索条件式（例: タグ1&amp;タグ2|タグ3*）をスナップショット検索API v2 の jsonFilter に変換する。
-    /// &amp; は AND（優先）・| は OR・* 付きは tags部分一致・* なしは tagsExact完全一致。括弧は使えない。
+    /// タグ検索条件式（例: タグ1 タグ2|タグ3*）をスナップショット検索API v2 の jsonFilter に変換する。
+    /// 空白は AND（優先）・| は OR・語尾の * は tags 部分一致・それ以外は tagsExact 完全一致。括弧は使えない。
+    /// &amp; はタグの文字として扱う。ニコニコのタグ名には &amp; を含むもの（例: Akira,Jeans&amp;Chinpo）があり、
+    /// これを AND 演算子にすると検索できないため、AND は公式のタグ検索と同じ空白で表す。
     /// </summary>
     public static class TagConditionParser
     {
@@ -14,6 +16,10 @@ namespace nicorankLib.SnapShot
         public const string FieldTags = "tags";
         /// <summary>完全一致の対象フィールド</summary>
         public const string FieldTagsExact = "tagsExact";
+        /// <summary>部分一致を表す記号。語尾に1つだけ置ける</summary>
+        public const char PartialMatchSuffix = '*';
+        /// <summary>全角スペース。AND区切りとして半角スペースへ正規化する</summary>
+        public const char IdeographicSpace = '\u3000';
 
         /// <summary>
         /// 条件式を jsonFilter の JSON 文字列に変換する
@@ -44,27 +50,28 @@ namespace nicorankLib.SnapShot
                 error = "タグ条件を入力してください";
                 return false;
             }
+            // 全角スペースはIMEで混入しやすい。半角へ寄せてから区切る（ニコ動タグに全角スペースを含むものは確認できていない）
+            string normalized = condition.Replace(IdeographicSpace, ' ');
             var orFilters = new JArray();
-            foreach (var group in condition.Split('|'))
+            foreach (var group in normalized.Split('|'))
             {
+                // 空白区切り。RemoveEmptyEntries で連続空白を1区切りにし、語の前後の空白も落とす。
+                // ただし空配列をそのまま通すと「空のANDフィルタ」を生成してしまうため、件数を明示的に確認する。
+                var terms = group.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+                if (terms.Length == 0)
+                {
+                    error = "「|」の前後にタグがありません";
+                    return false;
+                }
+
                 var andFilters = new JArray();
-                foreach (var rawTerm in group.Split('&'))
+                foreach (var rawTerm in terms)
                 {
                     var term = rawTerm.Trim();
-                    if (term.Length == 0)
-                    {
-                        error = "空のタグがあります";
-                        return false;
-                    }
                     string field = FieldTagsExact;
-                    if (term.Contains("*"))
+                    if (term[term.Length - 1] == PartialMatchSuffix)
                     {
-                        // * は末尾1文字のみ許可する（部分一致指定）。中間・複数は誤指定として却下する
-                        if (!term.EndsWith("*") || term.IndexOf('*') != term.Length - 1)
-                        {
-                            error = "「*」はタグの末尾に1つだけ指定できます";
-                            return false;
-                        }
+                        // 末尾の * だけを部分一致マーカーとして外す。途中の * はタグの文字として残す（DECO*27 など）
                         field = FieldTags;
                         term = term.Substring(0, term.Length - 1).Trim();
                     }
