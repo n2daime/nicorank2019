@@ -73,7 +73,10 @@ namespace nicorankLib.Factory
         protected int GetRank()
         {
             Config config = Config.GetInstance();
-            if (TyokiHantei != null)
+            // tyokiRankList は長期判定（ExtOption）完了後に埋まる。今回 GetMovieThumbnailEndRank を
+            // 公開したことで集計途中の呼び出しもあり得るため、null でも落ちないようにする
+            // （通常の集計後は従来どおり件数が加算される）。
+            if (TyokiHantei != null && TyokiHantei.tyokiRankList != null)
             {
                 return config.Rank + TyokiHantei.tyokiRankList.Count;
             }

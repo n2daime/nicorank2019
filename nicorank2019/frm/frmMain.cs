@@ -190,10 +190,13 @@ namespace nicorank2019.frm
         {
             try
             {
+                _analyzeRunning = true;
                 execButton.Enabled = false;
                 // 集計実行中は最適化を開始できないようにする（逆方向の同時実行防止。最適化側も集計ボタンを止める）
                 SetVacuumControlsEnabled(false);
                 tabPageOut.Enabled = false;
+                // 集計中は画像DLボタンも無効にする（specs: 集計実行中は無効）。
+                UpdateImageDownloadButtons();
 
                 bool result = await AnalyzeAsync();
                 if (!result)
@@ -215,9 +218,10 @@ namespace nicorank2019.frm
             }
             finally
             {
-                execButton.Enabled = true;
-                SetVacuumControlsEnabled(true);
-                tabPageOut.Enabled = true;
+                _analyzeRunning = false;
+                execButton.Enabled = !_vacuumRunning;
+                SetVacuumControlsEnabled(!_vacuumRunning);
+                tabPageOut.Enabled = !_vacuumRunning;
                 UpdateImageDownloadButtons();
             }
         }
@@ -402,6 +406,8 @@ namespace nicorank2019.frm
             {
                 btnAnalyzeTag.Enabled = !_tagCountOverLimit && !string.IsNullOrWhiteSpace(tbTagCondition.Text);
             }
+            // 最適化・抜けチェック等の開始／終了で画像DLボタンの有効条件も変わる（Issue #56）。
+            UpdateImageDownloadButtons();
         }
 
         /// <summary>

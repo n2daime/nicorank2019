@@ -96,26 +96,35 @@ namespace nicorankLib.Util
         /// <summary>
         /// WebException を今回の区分へ変換する。403/429 は再試行しない方針なので区別して返す。
         /// 応答が取れない（タイムアウト・名前解決失敗など）場合は Failed。
+        ///
+        /// なぜ using で応答を閉じるか: ProtocolError の Response を読まずに捨てると、
+        /// .NET Framework の HttpWebRequest は接続をプールへ返さない。既定の接続上限は
+        /// ホストあたり2本なので、404（フォールバックで頻発する）や429が続くと
+        /// 後続リクエストが空き接続待ちで30秒タイムアウトまで進まなくなる。
+        /// 0.5秒間隔で流す設計を守るため、参照するだけでも確実に閉じる。
         /// </summary>
         private static HttpResult FromWebException(WebException ex)
         {
             if (ex.Status == WebExceptionStatus.ProtocolError && ex.Response is HttpWebResponse response)
             {
-                int statusCode = (int)response.StatusCode;
-                switch (statusCode)
+                using (response)
                 {
-                    case 404:
-                        return HttpResult.FromStatus(HttpDownloadStatus.NotFound, statusCode);
-                    case 403:
-                        return HttpResult.FromStatus(HttpDownloadStatus.Forbidden, statusCode);
-                    case 429:
-                        return HttpResult.FromStatus(HttpDownloadStatus.RateLimited, statusCode);
+                    int statusCode = (int)response.StatusCode;
+                    switch (statusCode)
+                    {
+                        case 404:
+                            return HttpResult.FromStatus(HttpDownloadStatus.NotFound, statusCode);
+                        case 403:
+                            return HttpResult.FromStatus(HttpDownloadStatus.Forbidden, statusCode);
+                        case 429:
+                            return HttpResult.FromStatus(HttpDownloadStatus.RateLimited, statusCode);
+                    }
+                    if (statusCode >= 500)
+                    {
+                        return HttpResult.FromStatus(HttpDownloadStatus.ServerError, statusCode);
+                    }
+                    return HttpResult.FromStatus(HttpDownloadStatus.Failed, statusCode);
                 }
-                if (statusCode >= 500)
-                {
-                    return HttpResult.FromStatus(HttpDownloadStatus.ServerError, statusCode);
-                }
-                return HttpResult.FromStatus(HttpDownloadStatus.Failed, statusCode);
             }
             return HttpResult.FromStatus(HttpDownloadStatus.Failed, 0);
         }

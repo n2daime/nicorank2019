@@ -23,6 +23,9 @@ namespace nicorank2019.frm
         /// <summary>DL実行中か。集計・最適化との二重起動防止に使う。</summary>
         private bool _imageDlRunning = false;
 
+        /// <summary>集計実行中か。集計中にDLボタンが有効に見えないようにする。</summary>
+        private bool _analyzeRunning = false;
+
         /// <summary>直前に選んだ保存先。アプリ起動中だけ覚える（nicorank.xml は変更しない）。</summary>
         private string _lastImageDownloadDir = null;
 
@@ -36,7 +39,11 @@ namespace nicorank2019.frm
             bool hasResult = MainFactory != null
                 && MainFactory.RankingList != null
                 && MainFactory.RankingList.Count > 0;
-            bool enabled = hasResult && !_imageDlRunning && !_vacuumRunning && !rbTyukan.Checked;
+            bool enabled = hasResult
+                && !_imageDlRunning
+                && !_analyzeRunning
+                && !_vacuumRunning
+                && !rbTyukan.Checked;
 
             btnThumbnailDownload.Enabled = enabled;
             btnUserIconDownload.Enabled = enabled;
@@ -64,7 +71,7 @@ namespace nicorank2019.frm
                     && !string.IsNullOrWhiteSpace(tbTagCondition.Text);
             }
 
-            SetVacuumControlsEnabled(!running);
+            SetVacuumControlsEnabled(!running && !_vacuumRunning);
 
             // 実行中はモード切替も止める。DL中に IsSP／IsTagRank が変わると、
             // 表示や以降の集計条件と保存結果が食い違うためである。
@@ -90,6 +97,14 @@ namespace nicorank2019.frm
         {
             if (_imageDlRunning)
             {
+                return;
+            }
+            if (_vacuumRunning)
+            {
+                // ボタンは SetVacuumRunning 側でも無効化するが、状態の取りこぼしに備えて
+                // ハンドラでも確認する。DBを開く最適化等との同時実行はロック競合のもとである。
+                MessageBox.Show("DB最適化などの実行中は画像をダウンロードできません。完了後に実行してください。",
+                    "画像ダウンロード", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
             if (MainFactory == null || MainFactory.RankingList == null)
