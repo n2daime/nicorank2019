@@ -116,12 +116,12 @@ AnalyzeRank():
 
 | クラス | 生成物 |
 |---|---|
-| `NrmOutput` | `rank.txt` / `rankED.txt` / `rank{UserNum}.txt` / `rank1000.txt`（TSV・タグ最大3件。全件はCSV・JSONのみ）。`GetDisplayTags()` でカテゴリ同名除外 |
-| `ResultCsv` | `result(UTF8).csv`（30列・人気のタグは4列目・全件。SJISは生成停止） |
+| `NrmOutput` | `rank.txt` / `rankED.txt` / `rank{UserNum}.txt` / `rank1000.txt`（TSV・タグ最大3件。全件はCSV・JSONのみ）。`GetDisplayTags()` でカテゴリ同名除外。ユーザーアイコン名は `ImageFileNaming` と共通（Issue #56） |
+| `ResultCsv` | `result(UTF8).csv`（30列・人気のタグは4列目・全件。SJISは生成停止）。ユーザーアイコン名は `ImageFileNaming` と共通（Issue #56） |
 | `ResultJsonRankDB` | `result_DB登録用(UTF8).json` |
 | `ResultImagegetBase`（abstract） | 画像 DL キュー出力基底（.irv 形式） |
-| `ResultImagegetMovieIcon` | `queue.irv`（動画サムネイル、ED枠まで） |
-| `ResultImagegetUserIcon` | `queue_UserIcon.irv`（ユーザーアイコン、全件） |
+| `ResultImagegetMovieIcon` | `queue.irv`（動画サムネイル、ED枠まで）。ファイル名は `ImageFileNaming.GetMovieFileName` に委譲（Issue #56） |
+| `ResultImagegetUserIcon` | `queue_UserIcon.irv`（ユーザーアイコン、`UserInfo.Num` の範囲＝上位＋カテゴリ1位。`UserNum=0` なら全件）。ファイル名は `ImageFileNaming.GetUserIconFileName` に委譲（Issue #56） |
 | `ResultHistory` | NicoranHistory.db へ登録（History / LastResult / LastResultInfo）。LastResultのJSON列はVer0移行でDROP済みのためINSERT対象外（Issue #28）。`EnsureMigrated()`（`IDbMigratable`）は集計開始時に旧スキーマ移行＋SP行削除＋JSON列DROP＋VACUUM＋DBVersion確保 |
 
 出力先は `Output/`（`ModeFactoryBase.OUTPUTDIR`、カレントディレクトリ相対・固定）。実行順は `ModeFactoryBase.AnalyzeRank()` 内で生成した各 OutputBase の `Execute()` を順次呼ぶ。
@@ -130,6 +130,7 @@ AnalyzeRank():
 
 - `NicoApi` — getthumbinfo API 取得 + `DB/ApiXML.db`（NicovideoThumb）キャッシュ。`Parallel.ForEach`（`Config.ThreadMax`。設定がなければ既定4）。失敗時は全スレッド一時停止 + 指数バックオフ（pitfalls 参照）。`GetUserInfo/GetMovieInfo` は表示補完のみで除外しない・最新行読み（Issue #40）。`OpenDB(path)` で既定外の場所も開ける（oldlog配布DB作成用）
 - `ApiXmlCacheImporter` — 週刊キャッシュの受け渡し（Issue #40）。`EnsureNicovideoThumbTable`（表確保）・`ImportWeeklyCache`（日付フォルダから取得→取込。失敗時は本地継続）・`MergeCacheFile`（新しい取得日だけ置き換え。5000件バッチ）
+- `ThumbnailUrlResolver` — サムネイルURLの解決（Issue #56）。`NormalizeToBaseUrl`（末尾 `.L`/`.M` とクエリを落として base 化）・`ParseServerResponse`（視聴ページHTMLの `server-response` を `HtmlDecode` → `JObject` で `ogp`/`player`/`short` 取得。無ければ `og:image`）・`BuildCandidateUrls`（既定 `.L`→base、高画質 short→ogp→player→`.L`→base）。ネットワークは使わず単体テスト可能
 - `model/ThumbinfoBase` / `model/VideoResponse` — レスポンスデシリアライズ用 POCO。`GetUserID/GetUserName/GetUserIconUrl` はユーザー動画なら `user_*`、チャンネルなら `ch_*` を返す
 
 ## SnapShot
@@ -166,6 +167,9 @@ AnalyzeRank():
 | `ErrLog` | シングルトン。`nicorankerr.log` に追記（UTF8）。例外の詳細の記録先（Issue #43）。`Close()` で非 SilentMode ならキー入力待ちの表示のみ行う（入力待ち自体はしない） |
 | `DateConvert` | 日付 ↔ 文字列（yyyyMMdd / yyyyMMddHHmmss）変換 |
 | `InternetUtil` | HTTP ダウンロード（UA "WeeklyNicoranProgram"）。最大20回リトライ。403 相当（application/xml の ProtocolError）は即断念。それ以外は指数バックオフ |
+| `IHttpDownloader` / `HttpWebDownloader` | 画像・HTML取得の抽象と実装（Issue #56）。`HttpWebRequest` で 403/429/404/5xx/通信エラーを区別し、タイムアウト30秒。画像DLでは書きかけファイルを削除する。既存 `InternetUtil` はリトライ回数・タイムアウトが今回の仕様に合わないため流用しない |
+| `ImageDownloader` | サムネイル・ユーザーアイコンの直接DL本体（Issue #56）。順次処理・`DownloadIntervalMs`=200ms・`RetryCount`=2・404は次候補・403/429は即見送り・既存スキップ/上書き（`.tmp`→`File.Replace`）・UserID重複排除・`IProgress` 通知。待機処理はテスト用に注入可 |
+| `ImageFileNaming`（static） | 既存 `.irv` と同じファイル名の純粋関数（Issue #56）。動画 `{RankTotal}.jpg`、ユーザー `{UserID}.jpg` / チャンネル `ch{UserID}.jpg` |
 | `RegLib` | 正規表現置換ラッパー |
 | `UIConfig` | シングルトン。SilentMode（既定 true）/ LocalXml。`GetWch` は常時既定値を返し入力待ちしない（Issue #43。どちらも書き換えなしのデッドフラグであり、削除は別タスク） |
 | `Text/CsvUtil` | CSV/TSV 書き込み・読み込み（TextFieldParser） |

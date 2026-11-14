@@ -102,22 +102,10 @@ namespace nicorankLib.output
 
                     rowData.Add(wRank.UserID);
                     rowData.Add(wRank.UserName);
-                    if (string.IsNullOrEmpty( wRank.UserID) || wRank.UserID.Length < 3)
-                    {
-                        rowData.Add("NoImage.jpg");
-                    }
-                    else
-                    {
-                        if (wRank.IsChannel)
-                        {
-                            rowData.Add($"ch{wRank.UserID}.jpg");
-                        }
-                        else
-                        {
-                            rowData.Add($"{wRank.UserID}.jpg");
-                        }
-
-                    }
+                    // ユーザーアイコンのファイル名は、ユーザーアイコン直接DL（Issue #56）と
+                    // 同じ規則を必ず使う。ここだけ別名（旧 NoImage.jpg など）にすると、
+                    // 後工程で画像がリンクされなくなる。
+                    rowData.Add(ImageFileNaming.GetUserIconFileName(wRank));
 
                     if (wRank.CountMyList == 0)
                     {

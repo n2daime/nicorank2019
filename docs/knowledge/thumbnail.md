@@ -7,9 +7,13 @@
 ## 1. 現状の実装
 
 - `nicorankLib/api/NicoApi.cs` が `https://ext.nicovideo.jp/api/getthumbinfo/{動画ID}` を呼び、XML の `<thumbnail_url>` を `Ranking.ThumbnailURL` に保存している。
+- ただし `ThumbnailURL` の中身は取得元によって違う。
+  - 週刊: `JsonReaderBase` が公式JSONの `thumbnail` から `GetBestUrl()`（`largeUrl` → `middleUrl` → `url` の順）を入れる。`largeUrl` は通常 `nicovideo.cdn.nimg.jp/.../{rand}.L` だが、動画によっては `img.cdn.nimg.jp/.../r640x360l?key=...` の**キー付きURL**になる（実測 2026-11-14: 221件中2件）。キー付きURLに `.L` を付けると400、クエリを落とすと取得できない。
+  - SP・タグ: getthumbinfo の `<thumbnail_url>`（base。130x100。`{n}.{rand}` の場合あり）。
+  - 中間: `Dailylog.db` の `イメージパス`。
 - `ResultImagegetMovieIcon` が `queue.irv` に、`ResultImagegetUserIcon` が `queue_UserIcon.irv` にダウンロードキューを書き、Irvine などの外部ツールが画像を取得する。
-- そのため、アプリ内で直接ダウンロードする機能を追加するときは、既存の `ThumbnailURL`（130x100）をそのまま使うのではなく、必要に応じて高解像度URLを解決する必要がある。
-- `ThumbnailURL` は `HiddenMovieDelete` と `RankingHistory` の `/video_deleted` 判定にも使われている。削除判定を壊さないよう、高解像度URLは別フィールドに持つ。
+- そのため、直接ダウンロードするときは `ThumbnailURL` の末尾 `.L` / `.M` を剥がして base に正規化してから `.L` を付ける（`...L.L` を防ぐ）。
+- `ThumbnailURL` は `HiddenMovieDelete` と `RankingHistory` の `/video_deleted` 判定にも使われている。削除判定を壊さないよう、`ThumbnailURL` 自体は変更せず、高画質URLも `Ranking` には保存しない（DL時に都度解決する）。
 
 ## 2. 実測した取得方法と解像度
 
@@ -122,13 +126,16 @@ GET https://www.nicovideo.jp/api/watch/v3_guest/{ID}?_frontendId=6&_frontendVers
 
 ## 7. このアプリでの採用方針（Issue #56）
 
-- **既定（360x270）**: `ThumbnailURL + ".L"`。404なら `ThumbnailURL`（130x100）。
+- **実装**: `nicorankLib/api/ThumbnailUrlResolver.cs`（URL解決・HTML解析）と `nicorankLib/Util/ImageDownloader.cs`（順次DL・間隔・フォールバック）。ファイル名は `nicorankLib/Util/ImageFileNaming.cs`。
+- **既定（360x270）**: `base + ".L"`。404なら `base`（130x100）。`base` は `ThumbnailURL` の末尾 `.L`/`.M` を剥がしたもの。
+- **キー付きURL**: `?key=` 付き、または `img.cdn.nimg.jp` / `goptim` のURLは**そのまま**使う。`.L` を付けると400、クエリを落とすと取得できない。失敗時は動画IDから `nicovideo.cdn.nimg.jp/thumbnails/{n}/{n}.L` → `{n}` を試す。キー付き候補が403/429/5xxでも次の候補へ進み、最終的に通常CDNへフォールバックする。
 - **高画質ON（1280x720）**: 視聴ページHTMLの `thumbnail.ogp` → `thumbnail.player`（960x540）→ `.L` → base。
 - **ショート**: `thumbnail.short`（405x720）→ `ogp` → `player` → `.L` → base。
 - **ユーザーアイコン**: `getthumbinfo` の `GetUserIconUrl()` をそのまま使う。高画質オプションの対象外。
-- **取得間隔**: HTTPリクエスト間に0.5秒（`DownloadIntervalMs = 500`）。並列にしない。ニコ動への負荷を抑えるため。
+- **取得間隔**: HTTPリクエスト間に0.2秒（`DownloadIntervalMs = 200`）。並列にしない。ニコ動への負荷を抑えつつ、数百件を数分で終えるため。
 - **失敗時**: 403/429はその画像をスキップ。404はフォールバック。タイムアウト/5xxは最大2回リトライし、それでも失敗ならスキップして処理を続ける。
-- **削除判定**: `ThumbnailURL` は従来どおりbaseのまま残し、`/video_deleted` 判定を壊さない。
+- **視聴ページ取得の失敗**: 403/429でも `.L` で保存を続ける（高画質だけを諦める）。
+- **削除判定**: `ThumbnailURL` は変更せず、`/video_deleted` 判定を壊さない。高画質URLは `Ranking` に保存しない（`result_DB登録用(UTF8).json` への列追加とキー期限切れを避ける）。
 
 ## 8. 実測例（2026-11-14）
 
@@ -140,8 +147,10 @@ GET https://www.nicovideo.jp/api/watch/v3_guest/{ID}?_frontendId=6&_frontendVers
 | `sm47042567` | 2026 | 200 / 360x270 | 960x540 | 1280x720（goptim） | null |
 | `ss47042739` | 2026 | 200 / 360x270 | 960x540 | 1280x720（goptim） | 405x720 |
 
+- 2026-11-14 の実DLでは、週刊のキー付き `r640x360l?key=...` は 468x360 のJPEGを返した。元動画のアスペクト比により出力サイズは変わるため、サイズを決め打ちせずURLをそのまま使う。
+
 ## 9. 更新ルール
 
 - ニコ動側のURLパターン・解像度・キー仕様が変わったら、このファイルを最初に更新する。
 - 実測日と確認した動画IDを残す。Issue には仕様の長文を貼らず、このファイルへのリンクと今回のスコープだけを書く。
-- `docs/specs.md` にはアプリの振る舞い（ボタン、出力先、ファイル名、フォールバック順）を、`docs/design.md` には設計判断（なぜ `v3_guest` を使わないか、なぜ0.5秒か）を書く。
+- `docs/specs.md` にはアプリの振る舞い（ボタン、出力先、ファイル名、フォールバック順）を、`docs/design.md` には設計判断（なぜ `v3_guest` を使わないか、なぜ0.2秒か）を書く。

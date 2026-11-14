@@ -560,7 +560,18 @@
 
 - **高画質URLの取得は視聴ページHTMLの `server-response` を使い、`v3_guest` は採用しない**：`v3_guest` は `nicosid` Cookie が必要で、Cookieなし＋ランダムな `actionTrackId` だと406になる。Cookie取得と対Bot仕様への依存を増やす割に、ED枠は最大200件程度でHTML取得（約49KB/件）でも十分間に合うため。
 - **既定は `.L` 360x270、高画質オプションON時だけ `ogp` 1280x720 を試す**：通常のED表示には360x270で足り、1280x720は任意機能とする。`ogp` が取れない場合は `player` 960x540 → `.L` → base の順に落とす。
-- **`ThumbnailURL` はbaseのまま残し、高画質URLは別フィールドにする**：`ThumbnailURL` は `/video_deleted` 判定とDB・既存 `.irv` の互換に使われている。表示用の高画質URLを同じフィールドに入れると削除判定が壊れる。
-- **ダウンロードは順次＋0.5秒間隔にする**：ニコ動への負荷を抑えるため。ED枠200件なら約100秒、ユーザーアイコン最大1000件なら約8分。並列化はしない。
+- **`ThumbnailURL` は変更せず、高画質URLも `Ranking` に持たせない（DL時に都度解決する）**：`Ranking` は `ResultJsonRankDB` が全量を `JsonConvert.SerializeObject` しており、`[JsonObject(OptIn)]` ではないため public フィールドを足すと配布物 `result_DB登録用(UTF8).json` に列が増える。さらに `ogp`/`player` の `key` は恒久保証がなく、集計時に保持するとDL時点で期限切れになり得る。`ThumbnailURL` 自体は `/video_deleted` 判定・DB・既存 `.irv` の互換に使われているので一切変更しない。
+- **`.L` を付ける前に base へ正規化する**：`ThumbnailURL` は取得元によって中身が違う。週刊は公式JSONの `largeUrl`（既に `.L`）で、SP・タグは getthumbinfo の base である。無条件に付けると `...L.L` になるため、`.L`/`.M` を剥がしてから候補を組み立てる。
+- **ファイル名は `ImageFileNaming` に純粋関数として切り出し、既存クラスは `return` の委譲だけにする**：名前規則が2箇所に分かれて将来ずれるのを防ぐ。`ResultImagegetBase.Execute` の出力処理には触れない。ただし `queue_UserIcon.irv` は `UserInfo.Num` の範囲（上位＋カテゴリ1位）に絞る。以前は全件出力で、実データでは6,414動画・3,100ユーザーになり、`UserInfo.Num=1000` の設定意図と合わなかった。`queue.irv`（動画側）は変更しない。
+- **保存先ダイアログは `IFileOpenDialog` + `FOS_PICKFOLDERS` を使う**：`FolderBrowserDialog` の古いツリー表示は目的のフォルダまで階層をたどる必要があり使いにくい。`OpenFileDialog` のダミーファイル方式は見た目は新しいが「ファイルを開く」操作をさせるため意味がずれる。Ookii 等の外部パッケージは依存を増やす。Windows 標準の COM ダイアログなら追加依存なしでエクスプローラーと同じ操作感になり、初期フォルダも指定できる。COM 呼び出しに失敗した環境では従来の `FolderBrowserDialog` にフォールバックし、画像DL自体を止めない。
+- **週刊のキー付き `ThumbnailURL` はそのまま使う**：週刊ランキングの `ThumbnailURL` には `img.cdn.nimg.jp/.../r640x360l?key=...` のようなキー付きURLが混ざる（実測: 221件中2件）。キーはパスとサイズに署名されており、`.L` を足すと400、クエリを落とすと取得できない。キー付きURLを最優先でそのまま使い、**403/429/5xxでも**動画IDから通常CDNの `.L`/base を組み立てて1回フォールバックする。あわせて400は「この候補が無効」として次の候補へ進める（404と同じ扱い）。
+- **失敗は件数だけでなく理由と次の行動を出す**：利用者が「何が落ちたか」「再実行すべきか」を判断できないと、同じ設定で闇雲に再実行するしかない。失敗の種類を列挙（404/403/429/5xx/通信/保存）で持ち、ダイアログには失敗ファイル名・理由・対処を、保存先には `download_errors_*.txt` を残す。再実行時は既存スキップで成功済みを再取得しない、という最短手順を明示する。
+- **中断はトークン＋HttpWebRequest.Abort で行う**：順次処理の区切りでトークンを見るだけだと、実行中の通信が最大30秒残る。`CancellationToken` を `IHttpDownloader` まで渡し、`Abort()` で待ち時間を短くする。中断時もそれまでの件数を表示する。
+- **一覧（`NrmOutput`）とCSV（`ResultCsv`）のユーザーアイコン名も同じ `ImageFileNaming` に寄せる**：後工程は一覧・CSVが指すファイル名で画像をリンクするため、直接DLの保存名と1文字でも違うと画像が出ない。旧 `NrmOutput` は UserID が3文字未満だと `NoImage.jpg` を返していたが、同じユーザーでも出力ごとに名前が変わる原因になるため廃止し、`{UserID}.jpg` に統一した。稀な短いIDでは従来と出力が変わるが、リンク一致を優先する。
+- **UserInfo/Icon取得数の変更は直接DLへ即時反映する**：`Config.UserNum` は集計時だけでなく、画像DLの対象件数と直接DLのフィルタにも使う。`tbUserInfoNum` の `TextChanged` で `Config.UserNum` を更新し、予定件数ラベルとDLボタンの状態を再計算する。再集計なしで「1000→500」などの変更を試せる。`queue_UserIcon.irv` は集計時の出力なので、変更後に `.irv` も更新する場合は再集計が必要（直接DLだけが即時反映）。
+- **画像DLのUIは `frmMain.Designer.cs` に置き、`frmMain` を宣言する partial の扱いを1つに正規化する**：ユーザーがレイアウトを Designer で編集できる必要があるため、コントロールは Designer に配置する。`frmMainImageDownload.cs` には `<DependentUpon>frmMain.cs</DependentUpon>` を付け、Visual Studio が保存時に `<SubType>Form</SubType>` を復帰させることは許容する（実測。`frmMainSyukei.cs` も同様）。`DependentUpon` によって `frmMain.cs` の入れ子になり、Designer の入口が `frmMain.cs` であることを優先する。加えて、外部（AI）が Designer ファイルを書き換えたときは VS が自動で読み直さないことがあるため、作業前にデザイナータブを閉じ、実装後にソリューションを開き直す運用を前提にする。
+- **ダウンロードは順次＋0.2秒間隔にする**：ニコ動への負荷を抑えつつ、数百件を数分で終えるため。ED枠200件なら約40秒、ユーザーアイコン最大1000件なら約3分20秒。並列化はしない。
 - **403/429はリトライせずスキップし、404はフォールバックする**：レート制限中に再試行を重ねると悪化するため。404は「そのサイズが無い」だけなので次の候補を試す。
+- **高画質ONで視聴ページ取得が403/429でも `.L` で保存を続ける**：高画質は任意機能であり、レート制限を理由に通常画質の保存まで落とす必要はないため。画像本体が403/429ならその画像は見送る。
+- **中間モードは両ボタンを無効にする**：中間は `UserInfoReader` を通さず `UserImageURL` が空のため、ユーザーアイコンDLは0件になる。押しても意味がないので案内を出す。
 

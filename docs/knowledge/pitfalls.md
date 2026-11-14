@@ -117,8 +117,19 @@
 
 - `player` / `ogp` / `short` の `key` はパスとサイズに署名されている。`a960x540l` を `a1280x720l` に変える、`r405x720l` を `r720x1280l` に変える、といったサイズだけの差し替えは400になる。必要なサイズのURLを視聴ページから取り直すこと。
 - `getthumbinfo` のURLに `.L` を付けると360x270になるが、2015年より前の動画では404になる（2010年の動画で確認）。古い動画は `.L` 失敗時にbase（130x100）へフォールバックする。高画質の `player` / `ogp` は古い動画でも取得できることが多い。
+- **週刊の `ThumbnailURL` 自体がキー付きのことがある**（`img.cdn.nimg.jp/.../r640x360l?key=...`）。このURLに `.L` を付けると400、`key` を落とすと取得できない。キー付きURLはそのまま使い、失敗時だけ動画IDから通常CDNのURLを組み立てる（Issue #56）。
 - 視聴ページHTMLはCookie不要で `server-response` を返す。`v3_guest` は `nicosid` Cookieが無いと406になるため、サムネイル取得の土台にしない。
 - 詳細は `thumbnail.md` を参照。
+
+### 7c. `Ranking` に public メンバーを足すと配布JSONに列が増える（2026-11・Issue #56）
+
+- `ResultJsonRankDB` は `JsonConvert.SerializeObject(rankingList)` で `result_DB登録用(UTF8).json` を全量出力する。`Ranking` は `[JsonObject(MemberSerialization.OptIn)]` ではないため、public フィールド／プロパティを追加すると**そのまま列が増える**。
+- 高画質サムネイルURLのように「表示のためだけに持ちたい値」は `Ranking` に足さず、必要なときにローカルで解決する。今回（Issue #56）はDL時に視聴ページから都度取得する方式にした。
+- `ThumbnailURL` の中身は取得元で違う。週刊は公式JSONの `largeUrl`（既に `.L`）、SP・タグは getthumbinfo の base。`.L` を付ける前に必ず base へ正規化する（`...L.L` 防止）。
+- 同じ理由で `IsShort` のような計算プロパティも安易に足さない。ショート判定は `short` フィールドの有無で足りる（`thumbnail.md` §3.2）。
+- ユーザーアイコンのファイル名は `ImageFileNaming.GetUserIconFileName` に一本化する。`NrmOutput` / `ResultCsv` / 直接DL / `queue_UserIcon.irv` が同じ名前を返さないと、一覧・CSVと実ファイルがリンクしない。`NoImage.jpg` のような出力先ごとの別名を復活させない（Issue #56）。
+- ユーザーアイコンの取得対象は `ImageDownloader.IsUserIconTarget` に集約する（上位 `UserInfo.Num` 位＋カテゴリ1位。0は全件）。`ResultImagegetUserIcon` / 直接DL / UI件数の3箇所で条件を複製しない（Issue #56）。
+- `UserInfo.Num=0` は全件だが、集計時の `UserInfoReader` も全件取得になるため、数千〜数万件のAPIリクエストになる。アイコンだけ全件にしたい意図で0を入れない（Issue #56）。
 
 ---
 
@@ -247,7 +258,16 @@
 - **原因**: `TextUtil` の個別書き込みにはロックがあるが、`ErrLog.Write` 全体にはない。`NicoApi` の並列内 catch など従来からの同根箇所も同じ構造
 - **対策（将来）**: `ErrLog.Write` 全体を `lock` で硬化する。影響範囲が広いため #43 では見送り、別タスクで対応する
 
-### 25. docsの文字コード混在によるarchive.mdの文字化け（2026-10・約1万バイト）
+### 25. WinForms Designer が「基本クラス 'System.…' を読み込めませんでした」になる（Issue #56・2026-11）
+
+- **症状**: `frmMain.cs` をデザイナーで開くと「デザイナーの読み込み前に以下のエラーを解決する必要があります」「基本クラス 'System.…' を読み込めませんでした」となり、デザイン面が表示されない。ビルド自体は成功する。
+- **確認した事実**: ビルド済み `nicorank2019.exe` をリフレクションで読み込み、`nicorank2019.frm.frmMain` の `BaseType` を調べると `System.Windows.Forms.Form` に正しく解決できた。つまり生成物の型階層は壊れていない。`MSBuild.exe`（Visual Studio 同梱）でのソリューションビルドも成功した。
+- **原因の見立て**: コードの型エラーではなく、Visual Studio のデザイン時ビルド／Designer ファイルの解釈側。Designer ファイルへコントロールを追記した直後に再現し、そのファイルを元に戻すと開けるようになった。加えて、外部（AI）が Designer ファイルを書き換えても VS が自動で読み直さないことがあり、開いたままのデザイナーと実ファイルがずれるとこのエラーになり得る。
+- **対策（Issue #56）**: レイアウトを Designer で編集できるよう、コントロールは `frmMain.Designer.cs` に配置する。`frmMainImageDownload.cs` には `<DependentUpon>frmMain.cs</DependentUpon>` を付け、Visual Studio が保存時に `<SubType>Form</SubType>` を復帰させることは許容する（実測。`frmMainSyukei.cs` も同様）。`DependentUpon` で `frmMain.cs` の入れ子になり、Designer の入口が `frmMain.cs` であることを優先する。新規 `.cs` は既存に合わせて **UTF-8 BOM + CRLF** にする。
+- **運用（重要）**: 外部から Designer ファイルや csproj を変更する前に、VS のデザイナータブを閉じる。変更後は、VS が再読み込みを促さなくても**ソリューションを閉じて開き直し、リビルドしてから**デザイナーを開く。これを省くと、ファイルは正しくてもデザイナーだけが壊れたように見える。
+- **切り分け手順（次回）**: ①コマンドラインで `MSBuild.exe` ビルドが通るか ②ビルド済み exe の `BaseType` が `System.Windows.Forms.Form` か ③VS を再起動／プロジェクトを再読み込みしても再現するか ④直前に `frmMain.Designer.cs` を編集していないか。①〜②が正常なら生成物ではなく IDE 側の問題として扱う。それでも再発する場合は、画像DL部分を UserControl に切り出し、`frmMain` の Designer には UserControl を1個置くだけにする案を次善とする。
+
+### 26. docsの文字コード混在によるarchive.mdの文字化け（2026-10・約1万バイト）
 
 - **症状**: `docs/tasks/archive.md` の既存部分に約1万バイトの不正UTF-8が混入し、日本語が `�E` 混じりで読めなくなった。新規追記部（2026-09-26以降の8件）はCP932単独、既存部（2026-09-23以前）はUTF-8とCP932の混合だった
 - **原因**: `16d217c` までは正常なUTF-8だったが、`328a439` の22行追記がCP932で行われ不正が1046バイト発生した。続く `c395e38` でファイルをCP932と誤認して全体をCP932寄りに書き換えたため不正が5104バイトに拡大し、以降の追記で10859バイトまで増加した。背景としてLLMが符号化を混ぜたこと、`.editorconfig` がなく `.gitattributes` に符号化指定がなかったこと、PowerShell既定やエディタ既定でCP932追記が容易だったことがある
@@ -255,7 +275,7 @@
 - **例外（`.ps1` はBOMあり）**: `tools/*.ps1` は `powershell -File`（5.1）で実行するため UTF-8 **BOMあり**で保存する。BOMなしだと5.1がANSIとして読み、日本語コメントの文字化けで構文エラーになる（`tools/make-version.ps1` で実証済み。Issue #47レビューで発覚）。`edit` ツールや `write` ツールはBOMなしで書くため、`.ps1` 新設・更新後は `[System.IO.File]` のバイト操作でBOM（`239,187,191`）を付ける。出力する `version.json`・`baseline.json` 自体はBOMなしのままにする（読む側はどちらでも読めるが差分比較のため）
 - **検証方法**: バイト列でUTF-8として不正なバイト数を数え、0になることを確認する。不正がある場合は `16d217c` を正本として既存部を戻し、新規部はUTF-8厳密→失敗時はCP932で個別に復元する。今回は基準版24部＋新規11部（CP932が8件・UTF-8が3件）の分離復元で不正0・置換文字0・目視正常を確認した
 
-### 26. OneDrive配下＋パス長260超えでbatteries_v2がFileNotFoundになる（2026-10・配置確定）
+### 27. OneDrive配下＋パス長260超えでbatteries_v2がFileNotFoundになる（2026-10・配置確定）
 
 - **症状**: OneDrive上に一式を配置した環境で集計開始時に `'nicorankLib.Util.SQLiteCtrl' のタイプ初期化子が例外をスローしました` が発生。内側は `FileNotFoundException: SQLitePCLRaw.batteries_v2` で、`BaselineDownloader.EnsureCacheFiles()` の `EnsureApiXmlFile()`／`EnsureDailylogFile()` 経由の `new SQLiteCtrl()` で起きる。リリースZIPを新規展開した手元では再現しない
 - **原因（確定）**: 実行パスの全長がWindowsのMAX_PATH（260文字）前後を超え、`lib\SQLitePCLRaw.batteries_v2.dll` が探せなくなっていた。本プログラムの問題ではなくWindows＋.NET Framework 4.8の仕様である。OneDrive配下は `C:\Users\...\OneDrive\...` と基点が長く、日本語の長いフォルダ名が加わると `lib\runtimes\win-x64\native\e_sqlite3.dll` までの requirement で上限を超えやすい。浅い階層（`Documents` 直下の `nicorank` フォルダ）への移動で解消したため確定した
@@ -267,7 +287,7 @@
   ```
 - **切り分けの教訓**: `FileNotFoundException` は欠落、`FileLoadException` はブロック（MOTWの#16）と例外名で切り分ける。MOTW対策の `loadFromRemoteSources` 済みでも本件は起きる。疑ったら浅い階層への移動で試し、`lib` 直下と `lib\runtimes` のファイル一覧と実行パスの全長を確認する
 
-### 27. ニコ動APIの503は「HTTP例外」と「本文 meta.status」の両方で起き、失敗が成功扱いになりやすい（Issue #51・2026-10）
+### 28. ニコ動APIの503は「HTTP例外」と「本文 meta.status」の両方で起き、失敗が成功扱いになりやすい（Issue #51・2026-10）
 
 - **症状**: `nicorank_oldlog` が、ニコ動 API が落ちている間も何も取得できずに「集計終了」＋ exit 0 で終わっていた。NAS は終了コードでメール通知するため欠損に気づけなかった
 - **原因1（経路の断絶）**: `AsyncExecuteAnalyzeRank` の戻り値（term の成否）と `GetGenreInfoList` の戻り値が Program で捨てられており、`SaveOldRankingData` の `false`（データ0件）が最終結果に反映されなかった
@@ -276,7 +296,7 @@
 - **対策**: `RetryPoller`（5分×最大1時間）で term 単位に再試行し、全 term 失敗時のみ exit 2。`meta.status` 非200は5メソッドすべてで false、成功時は即 break、書き込み失敗は false、トレンドタグ失敗は警告。詳細は specs.md「nicorank_oldlog の障害時リトライと終了コード」と design.md
 - **教訓**: 取得系の `bool` を返すメソッドを足すときは「呼び出し元がその bool を見ているか」まで確認する。見ていなければ、失敗は静かに成功へ化ける
 
-### 28. 過去ランキングの「データなし」は404ではなく空JSONで示す（Issue #53・2026-10）
+### 29. 過去ランキングの「データなし」は404ではなく空JSONで示す（Issue #53・2026-10）
 
 - **症状**: oldlog がメンテナンスでデータを作れない日があると、nicorank2019 が存在しない `file_name_list.json` を20回リトライして約12分待ち、確認ダイアログで止まる。日付が登録されないので次回も同じことを繰り返す
 - **原因**: 404 を「未提供」「Webサーバ設定ミス」「削除」と区別できないため、404 から自動でメンテ日を判定すると誤ってデータを永久に欠落させる危険がある。かといって毎回ダイアログを出すとバッチが止まる

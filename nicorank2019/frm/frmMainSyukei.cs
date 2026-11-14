@@ -59,6 +59,9 @@ namespace nicorank2019.frm
 
             SetEnableAnalyzeDay();
 
+            // モード切替で中間になった場合は画像DLを無効化する（Issue #56）。
+            UpdateImageDownloadButtons();
+
         }
 
         /// <summary>
@@ -70,6 +73,8 @@ namespace nicorank2019.frm
             config.IsSP = false;
             config.IsTagRank = true;
             LoadPointCalcPanel();
+            // タグ集計の結果でも画像DLできるため、タブ切替時に状態を反映する（Issue #56）。
+            UpdateImageDownloadButtons();
         }
 
         /// <summary>

@@ -233,12 +233,17 @@
     <Compile Include="frm\frmMainSyukei.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="frm\frmMainImageDownload.cs">
+      <DependentUpon>frmMain.cs</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="frm\frmMesseageDialog.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="frm\frmMesseageDialog.Designer.cs">
       <DependentUpon>frmMesseageDialog.cs</DependentUpon>
     </Compile>
+    <Compile Include="Util\FolderPicker.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="frm\frmMain.resx">
