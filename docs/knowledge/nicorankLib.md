@@ -168,7 +168,7 @@ AnalyzeRank():
 | `DateConvert` | 日付 ↔ 文字列（yyyyMMdd / yyyyMMddHHmmss）変換 |
 | `InternetUtil` | HTTP ダウンロード（UA "WeeklyNicoranProgram"）。最大20回リトライ。403 相当（application/xml の ProtocolError）は即断念。それ以外は指数バックオフ |
 | `IHttpDownloader` / `HttpWebDownloader` | 画像・HTML取得の抽象と実装（Issue #56）。`HttpWebRequest` で 403/429/404/5xx/通信エラーを区別し、タイムアウト30秒。画像DLでは書きかけファイルを削除する。既存 `InternetUtil` はリトライ回数・タイムアウトが今回の仕様に合わないため流用しない |
-| `ImageDownloader` | サムネイル・ユーザーアイコンの直接DL本体（Issue #56）。順次処理・`DownloadIntervalMs`=500ms・`RetryCount`=2・404は次候補・403/429は即見送り・既存スキップ/上書き（`.tmp`→`File.Replace`）・UserID重複排除・`IProgress` 通知。待機処理はテスト用に注入可 |
+| `ImageDownloader` | サムネイル・ユーザーアイコンの直接DL本体（Issue #56）。順次処理・`DownloadIntervalMs`=200ms・`RetryCount`=2・404は次候補・403/429は即見送り・既存スキップ/上書き（`.tmp`→`File.Replace`）・UserID重複排除・`IProgress` 通知。待機処理はテスト用に注入可 |
 | `ImageFileNaming`（static） | 既存 `.irv` と同じファイル名の純粋関数（Issue #56）。動画 `{RankTotal}.jpg`、ユーザー `{UserID}.jpg` / チャンネル `ch{UserID}.jpg` |
 | `RegLib` | 正規表現置換ラッパー |
 | `UIConfig` | シングルトン。SilentMode（既定 true）/ LocalXml。`GetWch` は常時既定値を返し入力待ちしない（Issue #43。どちらも書き換えなしのデッドフラグであり、削除は別タスク） |

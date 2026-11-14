@@ -132,7 +132,7 @@ GET https://www.nicovideo.jp/api/watch/v3_guest/{ID}?_frontendId=6&_frontendVers
 - **高画質ON（1280x720）**: 視聴ページHTMLの `thumbnail.ogp` → `thumbnail.player`（960x540）→ `.L` → base。
 - **ショート**: `thumbnail.short`（405x720）→ `ogp` → `player` → `.L` → base。
 - **ユーザーアイコン**: `getthumbinfo` の `GetUserIconUrl()` をそのまま使う。高画質オプションの対象外。
-- **取得間隔**: HTTPリクエスト間に0.5秒（`DownloadIntervalMs = 500`）。並列にしない。ニコ動への負荷を抑えるため。
+- **取得間隔**: HTTPリクエスト間に0.2秒（`DownloadIntervalMs = 200`）。並列にしない。ニコ動への負荷を抑えつつ、数百件を数分で終えるため。
 - **失敗時**: 403/429はその画像をスキップ。404はフォールバック。タイムアウト/5xxは最大2回リトライし、それでも失敗ならスキップして処理を続ける。
 - **視聴ページ取得の失敗**: 403/429でも `.L` で保存を続ける（高画質だけを諦める）。
 - **削除判定**: `ThumbnailURL` は変更せず、`/video_deleted` 判定を壊さない。高画質URLは `Ranking` に保存しない（`result_DB登録用(UTF8).json` への列追加とキー期限切れを避ける）。
@@ -153,4 +153,4 @@ GET https://www.nicovideo.jp/api/watch/v3_guest/{ID}?_frontendId=6&_frontendVers
 
 - ニコ動側のURLパターン・解像度・キー仕様が変わったら、このファイルを最初に更新する。
 - 実測日と確認した動画IDを残す。Issue には仕様の長文を貼らず、このファイルへのリンクと今回のスコープだけを書く。
-- `docs/specs.md` にはアプリの振る舞い（ボタン、出力先、ファイル名、フォールバック順）を、`docs/design.md` には設計判断（なぜ `v3_guest` を使わないか、なぜ0.5秒か）を書く。
+- `docs/specs.md` にはアプリの振る舞い（ボタン、出力先、ファイル名、フォールバック順）を、`docs/design.md` には設計判断（なぜ `v3_guest` を使わないか、なぜ0.2秒か）を書く。

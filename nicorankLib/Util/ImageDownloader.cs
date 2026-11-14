@@ -83,9 +83,9 @@ namespace nicorankLib.Util
     /// 動画サムネイル・ユーザーアイコンをアプリ内で直接ダウンロードする（Issue #56）。
     ///
     /// 設計上の要点:
-    /// - 順次処理にして HTTP リクエスト間に DownloadIntervalMs（0.5秒）を空ける。並列にすると
-    ///   ニコ動への負荷が読みにくく、403/429 を誘発しやすいため。ED枠200件なら約100秒、
-    ///   ユーザーアイコン最大1000件なら約8分が目安。
+    /// - 順次処理にして HTTP リクエスト間に DownloadIntervalMs（0.2秒）を空ける。並列にすると
+    ///   ニコ動への負荷が読みにくく、403/429 を誘発しやすいため。ED枠200件なら約40秒、
+    ///   ユーザーアイコン最大1000件なら約3分20秒が目安。
     /// - 404 は「そのサイズが無い」だけなので次の候補へ進む。403/429 は再試行せず見送る。
     ///   タイムアウト・5xx は RetryCount 回だけ再試行し、だめなら見送る。1件の失敗で全体は止めない。
     /// - 上書き時は一時ファイルへ保存してから置き換える。途中で失敗しても既存ファイルを壊さないため。
@@ -94,8 +94,8 @@ namespace nicorankLib.Util
     /// </summary>
     public class ImageDownloader
     {
-        /// <summary>HTTPリクエスト間の待機時間。負荷を抑えるための調整値。</summary>
-        public const int DownloadIntervalMs = 500;
+        /// <summary>HTTPリクエスト間の待機時間。負荷を抑えつつ、数百件を数分で終えるための調整値。</summary>
+        public const int DownloadIntervalMs = 200;
 
         /// <summary>タイムアウト・5xx の再試行回数（初回を除く）。</summary>
         public const int RetryCount = 2;
@@ -120,7 +120,7 @@ namespace nicorankLib.Util
 
         /// <summary>
         /// テスト用に待機処理と間隔を差し替えられるコンストラクタ。
-        /// なぜ差し替えるか: 0.5秒×件数の実時間待ちをテストで発生させないため。
+        /// なぜ差し替えるか: 0.2秒×件数の実時間待ちをテストで発生させないため。
         /// </summary>
         public ImageDownloader(IHttpDownloader http, Action<int> wait, int intervalMs)
         {

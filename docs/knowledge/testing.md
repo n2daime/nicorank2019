@@ -84,7 +84,7 @@ UnitTest/
 | `UnitTestRankingHistoryMissingDate` | 5 | 404 の当日以降はスキップ・過去日はダイアログ対象になる日付判定、daily が NoData/NotFound/Failed/0件のときは登録しない判定（Issue #53） |
 | `UnitTestThumbnailUrlResolver` | 20 | server-response の抽出（属性順反転含む）・壊れたJSON・og:imageフォールバック・base正規化（.L/.M/クエリ/rand）・既定と高画質の候補優先順位・short優先・重複排除・ユーザーアイコン・キー付きURLのそのまま使用と通常CDNフォールバック（Issue #56） |
 | `UnitTestImageFileNaming` | 8 | 動画 `{RankTotal}.jpg`・ユーザー `{UserID}.jpg`・チャンネル `ch` 接頭辞・UserID空・null・既存 `ResultImagegetMovieIcon`/`UserIcon` の GetDownLoadName と同値・`queue_UserIcon.irv` の `UserInfo.Num` 範囲フィルタ（上位＋カテゴリ1位）（.irv 回帰。Issue #56） |
-| `UnitTestImageDownloader` | 29 | 404フォールバック・403/429即見送り・5xxの規定回数再試行・全候補404・スキップ/上書き・削除URL/空URL・ED枠クランプ・進捗累計・0.5秒間隔・高画質ogp・視聴ページ403時の`.L`継続・一時ファイル後始末・UserID重複排除・チャンネル別ファイル・中断（開始前/1件後）・失敗種別（403/5xx）・キー付きURLの403/429/5xxからのCDNフォールバック・UserInfo範囲フィルタ（Issue #56） |
+| `UnitTestImageDownloader` | 29 | 404フォールバック・403/429即見送り・5xxの規定回数再試行・全候補404・スキップ/上書き・削除URL/空URL・ED枠クランプ・進捗累計・0.2秒間隔・高画質ogp・視聴ページ403時の`.L`継続・一時ファイル後始末・UserID重複排除・チャンネル別ファイル・中断（開始前/1件後）・失敗種別（403/5xx）・キー付きURLの403/429/5xxからのCDNフォールバック・UserInfo範囲フィルタ（Issue #56） |
 
 ## テストパターン
 

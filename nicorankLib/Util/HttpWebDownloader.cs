@@ -154,7 +154,7 @@ namespace nicorankLib.Util
         /// .NET Framework の HttpWebRequest は接続をプールへ返さない。既定の接続上限は
         /// ホストあたり2本なので、404（フォールバックで頻発する）や429が続くと
         /// 後続リクエストが空き接続待ちで30秒タイムアウトまで進まなくなる。
-        /// 0.5秒間隔で流す設計を守るため、参照するだけでも確実に閉じる。
+        /// 0.2秒間隔で流す設計を守るため、参照するだけでも確実に閉じる。
         /// </summary>
         private static HttpResult FromWebException(WebException ex)
         {
