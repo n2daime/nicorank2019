@@ -120,6 +120,13 @@
 - 視聴ページHTMLはCookie不要で `server-response` を返す。`v3_guest` は `nicosid` Cookieが無いと406になるため、サムネイル取得の土台にしない。
 - 詳細は `thumbnail.md` を参照。
 
+### 7c. `Ranking` に public メンバーを足すと配布JSONに列が増える（2026-11・Issue #56）
+
+- `ResultJsonRankDB` は `JsonConvert.SerializeObject(rankingList)` で `result_DB登録用(UTF8).json` を全量出力する。`Ranking` は `[JsonObject(MemberSerialization.OptIn)]` ではないため、public フィールド／プロパティを追加すると**そのまま列が増える**。
+- 高画質サムネイルURLのように「表示のためだけに持ちたい値」は `Ranking` に足さず、必要なときにローカルで解決する。今回（Issue #56）はDL時に視聴ページから都度取得する方式にした。
+- `ThumbnailURL` の中身は取得元で違う。週刊は公式JSONの `largeUrl`（既に `.L`）、SP・タグは getthumbinfo の base。`.L` を付ける前に必ず base へ正規化する（`...L.L` 防止）。
+- 同じ理由で `IsShort` のような計算プロパティも安易に足さない。ショート判定は `short` フィールドの有無で足りる（`thumbnail.md` §3.2）。
+
 ---
 
 ## テスト関連

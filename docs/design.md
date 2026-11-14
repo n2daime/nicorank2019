@@ -560,7 +560,11 @@
 
 - **高画質URLの取得は視聴ページHTMLの `server-response` を使い、`v3_guest` は採用しない**：`v3_guest` は `nicosid` Cookie が必要で、Cookieなし＋ランダムな `actionTrackId` だと406になる。Cookie取得と対Bot仕様への依存を増やす割に、ED枠は最大200件程度でHTML取得（約49KB/件）でも十分間に合うため。
 - **既定は `.L` 360x270、高画質オプションON時だけ `ogp` 1280x720 を試す**：通常のED表示には360x270で足り、1280x720は任意機能とする。`ogp` が取れない場合は `player` 960x540 → `.L` → base の順に落とす。
-- **`ThumbnailURL` はbaseのまま残し、高画質URLは別フィールドにする**：`ThumbnailURL` は `/video_deleted` 判定とDB・既存 `.irv` の互換に使われている。表示用の高画質URLを同じフィールドに入れると削除判定が壊れる。
+- **`ThumbnailURL` は変更せず、高画質URLも `Ranking` に持たせない（DL時に都度解決する）**：`Ranking` は `ResultJsonRankDB` が全量を `JsonConvert.SerializeObject` しており、`[JsonObject(OptIn)]` ではないため public フィールドを足すと配布物 `result_DB登録用(UTF8).json` に列が増える。さらに `ogp`/`player` の `key` は恒久保証がなく、集計時に保持するとDL時点で期限切れになり得る。`ThumbnailURL` 自体は `/video_deleted` 判定・DB・既存 `.irv` の互換に使われているので一切変更しない。
+- **`.L` を付ける前に base へ正規化する**：`ThumbnailURL` は取得元によって中身が違う。週刊は公式JSONの `largeUrl`（既に `.L`）で、SP・タグは getthumbinfo の base である。無条件に付けると `...L.L` になるため、`.L`/`.M` を剥がしてから候補を組み立てる。
+- **ファイル名は `ImageFileNaming` に純粋関数として切り出し、既存クラスは `return` の委譲だけにする**：名前規則が2箇所に分かれて将来ずれるのを防ぐ。`ResultImagegetBase.Execute` の出力処理には触れないため、`queue.irv` / `queue_UserIcon.irv` の内容は変わらない（テストで既存 override と同値を確認）。
 - **ダウンロードは順次＋0.5秒間隔にする**：ニコ動への負荷を抑えるため。ED枠200件なら約100秒、ユーザーアイコン最大1000件なら約8分。並列化はしない。
 - **403/429はリトライせずスキップし、404はフォールバックする**：レート制限中に再試行を重ねると悪化するため。404は「そのサイズが無い」だけなので次の候補を試す。
+- **高画質ONで視聴ページ取得が403/429でも `.L` で保存を続ける**：高画質は任意機能であり、レート制限を理由に通常画質の保存まで落とす必要はないため。画像本体が403/429ならその画像は見送る。
+- **中間モードは両ボタンを無効にする**：中間は `UserInfoReader` を通さず `UserImageURL` が空のため、ユーザーアイコンDLは0件になる。押しても意味がないので案内を出す。
 
