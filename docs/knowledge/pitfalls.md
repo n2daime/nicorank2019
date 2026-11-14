@@ -263,7 +263,7 @@
 - **症状**: `frmMain.cs` をデザイナーで開くと「デザイナーの読み込み前に以下のエラーを解決する必要があります」「基本クラス 'System.…' を読み込めませんでした」となり、デザイン面が表示されない。ビルド自体は成功する。
 - **確認した事実**: ビルド済み `nicorank2019.exe` をリフレクションで読み込み、`nicorank2019.frm.frmMain` の `BaseType` を調べると `System.Windows.Forms.Form` に正しく解決できた。つまり生成物の型階層は壊れていない。`MSBuild.exe`（Visual Studio 同梱）でのソリューションビルドも成功した。
 - **原因の見立て**: コードの型エラーではなく、Visual Studio のデザイン時ビルド／Designer ファイルの解釈側。Designer ファイルへコントロールを追記した直後に再現し、そのファイルを元に戻すと開けるようになった。加えて、外部（AI）が Designer ファイルを書き換えても VS が自動で読み直さないことがあり、開いたままのデザイナーと実ファイルがずれるとこのエラーになり得る。
-- **対策（Issue #56）**: レイアウトを Designer で編集できるよう、コントロールは `frmMain.Designer.cs` に配置する。`frmMainImageDownload.cs` は `<DependentUpon>frmMain.cs</DependentUpon>` のみにして「同じクラスを宣言する2つ目のフォーム」と誤認させない。`frmMainSyukei.cs` の `SubType Form` は Visual Studio が保存時に復帰させる（実測）ため、無理に消さず、Form 扱いの入口を `frmMain.cs` に保つ。新規 `.cs` は既存に合わせて **UTF-8 BOM + CRLF** にする。
+- **対策（Issue #56）**: レイアウトを Designer で編集できるよう、コントロールは `frmMain.Designer.cs` に配置する。`frmMainImageDownload.cs` には `<DependentUpon>frmMain.cs</DependentUpon>` を付け、Visual Studio が保存時に `<SubType>Form</SubType>` を復帰させることは許容する（実測。`frmMainSyukei.cs` も同様）。`DependentUpon` で `frmMain.cs` の入れ子になり、Designer の入口が `frmMain.cs` であることを優先する。新規 `.cs` は既存に合わせて **UTF-8 BOM + CRLF** にする。
 - **運用（重要）**: 外部から Designer ファイルや csproj を変更する前に、VS のデザイナータブを閉じる。変更後は、VS が再読み込みを促さなくても**ソリューションを閉じて開き直し、リビルドしてから**デザイナーを開く。これを省くと、ファイルは正しくてもデザイナーだけが壊れたように見える。
 - **切り分け手順（次回）**: ①コマンドラインで `MSBuild.exe` ビルドが通るか ②ビルド済み exe の `BaseType` が `System.Windows.Forms.Form` か ③VS を再起動／プロジェクトを再読み込みしても再現するか ④直前に `frmMain.Designer.cs` を編集していないか。①〜②が正常なら生成物ではなく IDE 側の問題として扱う。それでも再発する場合は、画像DL部分を UserControl に切り出し、`frmMain` の Designer には UserControl を1個置くだけにする案を次善とする。
 

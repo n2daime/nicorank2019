@@ -235,6 +235,7 @@
     </Compile>
     <Compile Include="frm\frmMainImageDownload.cs">
       <DependentUpon>frmMain.cs</DependentUpon>
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="frm\frmMesseageDialog.cs">
       <SubType>Form</SubType>
