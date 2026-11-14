@@ -9,7 +9,7 @@ dotnet test UnitTest/UnitTest.csproj
 
 - 環境: **.NET Framework 4.8 ターゲットだが .NET 10 SDK でビルド・実行**（Windows）
 - テストフレームワーク: MSTest 3.5.2 / モック: Moq 4.20.72
-- 全 **432 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件・#39で16件・#44で10件・#43で2件・#36で13件・#45で35件・#47で25件・#51で6件・#53で15件・#55で7件・#56で46件を追加）
+- 全 **434 件**のテストが PASS（内訳はテスト実行で確認する。#31で15件・#38で17件・#40で20件・#39で16件・#44で10件・#43で2件・#36で13件・#45で35件・#47で25件・#51で6件・#53で15件・#55で7件・#56で48件を追加）
 
 ## 構成
 
@@ -26,7 +26,7 @@ UnitTest/
 └── nicorankLib/
     ├── Util/       UnitTestSQLiteCtrl(12) / DbQuery(10) / DbWrite(9) / DbSchema(8) / DbError(4) / DbCommandReuse(6) / StatusLog(3) / TextUtil(6) / ApiUrlBuilder(7) / DbMigrationCoordinator(12) / UnitTestBaselineDownloader(13) / UnitTestWeeklyGapChecker(18) / UnitTestBaselineRestore(17) / UnitTestAppUpdateChecker(25) / UnitTestRetryPoller(6) / UnitTestOldRankingMarker(3) / UnitTestInternetUtilNotFound(2) / UnitTestImageFileNaming(7) / UnitTestImageDownloader(22)
     ├── Common/     UnitTestConfig(8)
-    ├── output/     UnitTestOutput(8)
+    ├── output/     UnitTestOutput(8) / UnitTestUserIconNamingConsistency(2)
     ├── SnapShot/   UnitTestSnapShotRequest(12) / UnitTestTagConditionParser(14) / UnitTestTagSearchRequest(7) / UnitTestSnapShotVersionChecker(12) / UnitTestSnapShotVersionPoller(5)
     ├── Analyze/     UnitTestRankingAnalyze(9) / UnitTestBasicOptionDispose(10)
     ├── Analyze/model/ UnitTestRanking(6) / UnitTestRankingDisplayTags(5) / UnitTestRankingDeletedMarker(2)
@@ -52,6 +52,7 @@ UnitTest/
 | `UnitTestTextUtil` | 6 | TextUtil.ReadCsv（List版/Dictionary版/ファイル不在） |
 | `UnitTestConfig` | 14 | Config シングルトン、デフォルト値、SP モード、XML 文字列出力、TAGRANK節あり・なし・フラグOFF・項目欠落フォールバック（Issue #30）・OFFSET節別化の節あり・なし・部分あり・setter書込先・部分節／節なしsetterの共通不変（Issue #39） |
 | `UnitTestOutput` | 8 | ResultCsv と NrmOutput の一時ディレクトリへの実出力検証（タグ列・上限3・全件・カテゴリ除外。Issue #27） |
+| `UnitTestUserIconNamingConsistency` | 2 | NrmOutput / ResultCsv のユーザーアイコン欄が直接DLと同じ `ImageFileNaming` の名前になること。短いUserID（旧 NoImage.jpg）・チャンネル `ch` 接頭辞・NoImage.jpg が残らないこと（Issue #56） |
 | `UnitTestRankingDisplayTags` | 6 | `GetDisplayTags` のカテゴリ除外・順序・Trim・重複・非破壊・null（Issue #27） |
 | `UnitTestFavoriteTagReader` | 9 | 人気タグ＋ロックタグ全件補完・重複除外・対象外・確保失敗でも中断せず続ける・null行・`isLocalOnly`×2（Issue #27。確保失敗の扱いはIssue #40で変更） |
 | `UnitTestNicoApiLockedTags` | 6 | `GetLockedTags` のlock抽出・行なし・最新取得日・非ok・破損XML（Issue #27） |

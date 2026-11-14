@@ -116,8 +116,8 @@ AnalyzeRank():
 
 | クラス | 生成物 |
 |---|---|
-| `NrmOutput` | `rank.txt` / `rankED.txt` / `rank{UserNum}.txt` / `rank1000.txt`（TSV・タグ最大3件。全件はCSV・JSONのみ）。`GetDisplayTags()` でカテゴリ同名除外 |
-| `ResultCsv` | `result(UTF8).csv`（30列・人気のタグは4列目・全件。SJISは生成停止） |
+| `NrmOutput` | `rank.txt` / `rankED.txt` / `rank{UserNum}.txt` / `rank1000.txt`（TSV・タグ最大3件。全件はCSV・JSONのみ）。`GetDisplayTags()` でカテゴリ同名除外。ユーザーアイコン名は `ImageFileNaming` と共通（Issue #56） |
+| `ResultCsv` | `result(UTF8).csv`（30列・人気のタグは4列目・全件。SJISは生成停止）。ユーザーアイコン名は `ImageFileNaming` と共通（Issue #56） |
 | `ResultJsonRankDB` | `result_DB登録用(UTF8).json` |
 | `ResultImagegetBase`（abstract） | 画像 DL キュー出力基底（.irv 形式） |
 | `ResultImagegetMovieIcon` | `queue.irv`（動画サムネイル、ED枠まで）。ファイル名は `ImageFileNaming.GetMovieFileName` に委譲（Issue #56） |

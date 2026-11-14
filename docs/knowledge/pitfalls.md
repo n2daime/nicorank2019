@@ -126,6 +126,7 @@
 - 高画質サムネイルURLのように「表示のためだけに持ちたい値」は `Ranking` に足さず、必要なときにローカルで解決する。今回（Issue #56）はDL時に視聴ページから都度取得する方式にした。
 - `ThumbnailURL` の中身は取得元で違う。週刊は公式JSONの `largeUrl`（既に `.L`）、SP・タグは getthumbinfo の base。`.L` を付ける前に必ず base へ正規化する（`...L.L` 防止）。
 - 同じ理由で `IsShort` のような計算プロパティも安易に足さない。ショート判定は `short` フィールドの有無で足りる（`thumbnail.md` §3.2）。
+- ユーザーアイコンのファイル名は `ImageFileNaming.GetUserIconFileName` に一本化する。`NrmOutput` / `ResultCsv` / 直接DL / `queue_UserIcon.irv` が同じ名前を返さないと、一覧・CSVと実ファイルがリンクしない。`NoImage.jpg` のような出力先ごとの別名を復活させない（Issue #56）。
 
 ---
 

@@ -135,6 +135,8 @@
 | 動画サムネイル | `{RankTotal}.jpg` |
 | ユーザーアイコン | `{UserID}.jpg` / チャンネル（so）は `ch{UserID}.jpg` |
 
+- `rank.txt` 等（`NrmOutput`）と `result(UTF8).csv`（`ResultCsv`）のユーザーアイコン欄も同じ `ImageFileNaming.GetUserIconFileName` を使う。旧 `NrmOutput` の `NoImage.jpg`（UserID が3文字未満）は廃止し、直接DLと同じ `{UserID}.jpg` に統一した（一覧・CSVと実ファイルのリンク不一致を防ぐため）。
+
 **URL解決**
 
 `base = ThumbnailURL の末尾 .L / .M を剥がしたもの`（週刊の `ThumbnailURL` は既に `.L` のため。付与前に正規化する）
