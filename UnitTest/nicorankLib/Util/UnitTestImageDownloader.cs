@@ -492,6 +492,24 @@ namespace UnitTest.nicorankLib.Util
         }
 
         [TestMethod]
+        public void Movie_KeyedUrl_RateLimited_FallsBackToCdn()
+        {
+            const string keyed = "https://img.cdn.nimg.jp/s/nicovideo/thumbnails/8134546/8134546.original/r640x360l?key=abc";
+            var fake = new FakeHttpDownloader();
+            fake.FileHandler = (url, dest) => url == keyed
+                ? HttpResult.FromStatus(HttpDownloadStatus.RateLimited, 429)
+                : Success();
+            var list = new List<Ranking>() { Movie(1, "sm8134546", keyed) };
+
+            ImageDownloadSummary summary = CreateDownloader(fake)
+                .DownloadMovieThumbnails(list, 200, _dir, new ImageDownloadOptions(), null);
+
+            Assert.AreEqual(1, summary.Success);
+            Assert.AreEqual(2, fake.Requests.Count);
+            Assert.AreEqual("FILE https://nicovideo.cdn.nimg.jp/thumbnails/8134546/8134546.L", fake.Requests[1]);
+        }
+
+        [TestMethod]
         public void Movie_KeyedUrl_ServerError_FallsBackToCdn()
         {
             const string keyed = "https://img.cdn.nimg.jp/s/nicovideo/thumbnails/8134546/8134546.original/r640x360l?key=abc";

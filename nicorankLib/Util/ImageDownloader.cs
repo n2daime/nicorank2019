@@ -423,8 +423,8 @@ namespace nicorankLib.Util
             {
                 string url = candidates[candidateIndex];
                 bool hasNextCandidate = candidateIndex + 1 < candidates.Count;
-                // キー付きURLはキー失効時に403/429/5xxを返すことがある。その場合だけ、
-                // 動画IDから作った通常CDNの候補へ進む（非キーURLの即見送りは維持する）。
+                // キー付き候補はキー失効時に403/429/5xxを返すことがある。その場合だけ次の候補へ進む
+                // （高画質時はサイズ違いのキー付き候補を経て、最終的に通常CDNへ）。非キーURLの即見送りは維持する。
                 bool keyedCandidate = ThumbnailUrlResolver.IsKeyedThumbnailUrl(url);
                 bool nextCandidate = false;
                 for (int attempt = 0; attempt <= RetryCount && !nextCandidate; attempt++)
