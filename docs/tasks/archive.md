@@ -877,3 +877,63 @@
   - いずれも2026-11-03の9,077件サンプルでは0件。実在が判明した場合は別Issueでエスケープ手段を検討する
 - **リリースノート原稿**（リリース時に転記）:
   - タグ検索の条件式を変更しました。ANDは**空白**、ORは `|`、部分一致は語尾の `*` です。`&` はタグの文字として扱うため、`Akira,Jeans&Chinpo` のようなタグ名をそのまま入力できます。従来の `A&B`（AND）は「A&B という1つのタグ」の意味になるため、ANDは `A B` と入力してください
+
+---
+
+## 2026-11-03 リリース v20261103_nicorank
+
+- **タグ**: `v20261103_nicorank`（main HEAD `6ed6a1b` を指す。`git rev-parse "v20261103_nicorank^{commit}"` で確認済み）
+- **GitHub Release**: https://github.com/n2daime/nicorank2019/releases/tag/v20261103_nicorank
+- **含まれる変更**: #54（SP集計の仮集計・動画IDリスト省略）・#55（タグ条件式の空白AND化）
+- **成果物**:
+  - `nicorank2019.zip`（16,060,862 bytes / sha256 `d90a17d1110f5e25942393036d1ace4233c8c4bd21dc5a7ea47b00f4386db05c`）
+  - `nicorank_SnapShot.zip`（16,411,745 bytes / sha256 `448d1abc3213a5ab52b3c53dd2b37008e9f43d3ebe1fb37c3c70b9b99e0fe28c`。今回の変更なしだが配布物統一のため同梱）
+  - `nicorank_oldlog.zip`（6,037,124 bytes / sha256 `05245324226a7db6efa79295532ae9f247e3fc6411b2a5277fe9842a22744ca3`。同上）
+- **版数**: `nicorank2019.exe` = 2026.11.3.0（`version.json` の `2026.11.03` と一致）
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 386件 PASS（EXIT 0）
+  - `dotnet build nicorank2019.sln -c Release` 成功（EXIT 0）
+  - `bin/Release/lib` に4 DLL + win-{x64,x86,arm} の native 3件、`nicorank2019.exe.config` / `nicorank_SnapShot.exe.config` に `loadFromRemoteSources`、`bin/Release/nicorank.xml` と `依存ファイル/nicorank.xml` の SHA256 一致（`14A5D06F95706BCEDEF4CA6E50E9E3FB5EE65C20BF39BC1B92192BCBA57F3E95`）
+  - zip はホワイトリスト方式で作成し、DB・設定本体・pdb・Output等が含まれないことをエントリ一覧で確認
+  - 実機確認: #54 はマージ時にユーザーがSP仮集計ON→IDリスト無効→集計できることを確認済み。#55 はユーザーが `Akira,Jeans&Chinpo`=272件、`DECO*27`=17,256件、ラベル表示を確認済み。今回のリリース差分は版数刻印のみで挙動変更なし
+- **version.json**: `tools/make-version.ps1` で生成（sha256 `d90a17d1110f5e25942393036d1ace4233c8c4bd21dc5a7ea47b00f4386db05c`、size 16,060,862、url は添付asset）。生成物は `%TEMP%\nicorank_version_v20261103\version.json`。NAS の `https://2daime.myds.me/nicorank/update/version.json` への配置は人間が行う（release.md の運用）。配置後に自動更新の通知が有効になる
+- **同期**: `main` → `develop` を `--no-ff` でバックマージして push 済み。バックマージ直後は `git diff main develop --stat` が空。本エントリ追記により develop が1件先行（前回リリースと同様）
+- **残課題**: #55 の既知の制限（`|`を含むタグ・末尾`*`のタグ・全角スペースを含むタグ）。実在が判明したら別Issue
+
+---
+
+## 2026-11-14 EDサムネイル・ユーザーアイコンの直接ダウンロード (#56)
+
+- **Issue**: #56 `EDサムネイル・ユーザーアイコンの直接ダウンロード機能を追加（既存 queue.irv は併用）`
+- **ブランチ**: `feature/t56-thumbnail-direct-download` → `develop`（`2183633` Merge）
+- **背景**: 既存の `queue.irv` / `queue_UserIcon.irv` は Irvine などの外部ツールが後から画像を取得する前提で、利用者は集計後に別途DL操作をする必要があった。アプリ内で完結させたいが、外部ツール運用をすぐには壊せないため、既存 `.irv` を残したまま直接DLを追加した
+- **実施内容**:
+  - `ThumbnailUrlResolver`: 視聴ページHTMLの `server-response` から `ogp`/`player`/`short` を取得。`ThumbnailURL` の `.L`/`.M` を剥がして base 化し、既定は `.L`→base、高画質は `short`→`ogp`→`player`→`.L`→base の順に試す
+  - `ImageDownloader`: 順次DL、`DownloadIntervalMs=200`、404/400/410は次候補、403/429は見送り、5xx/通信エラーは2回再試行、既存スキップ/上書き（`.tmp`→`File.Replace`）、UserID重複排除、`IProgress`、`CancellationToken`、失敗種別（NotFound/Forbidden/RateLimited/ServerError/Network/SaveError）
+  - `HttpWebDownloader` / `IHttpDownloader`: `HttpWebRequest` でステータスを区別。タイムアウト30秒、中断時は `Abort()`。`WebException.Response` は `using` で必ずDispose（既定接続上限2本の詰まり防止）
+  - UI: 集計タブ下部に「画像ダウンロード」GroupBox（EDサムネイルDL／ユーザーアイコンDL／高画質／スキップ・上書き／予定件数／中断）。保存先は `IFileOpenDialog + FOS_PICKFOLDERS`（失敗時は `FolderBrowserDialog`）。失敗時はファイル名・理由・対処をダイアログに出し、`download_errors_*.txt` を保存先へ出力
+  - `ImageFileNaming`: 動画 `{RankTotal}.jpg`、ユーザー `{UserID}.jpg` / `ch{UserID}.jpg` を純粋関数化。`NrmOutput` / `ResultCsv` / `.irv` / 直接DL が同じ規則を参照
+  - UserInfo範囲: `queue_UserIcon.irv` が全件（実データ6,414行/3,100ユーザー）を出していたのを、`UserInfo.Num` の範囲（上位＋カテゴリ1位。実データ1,004行/563ユーザー）に修正。直接DLも同じ範囲に揃え、`ImageDownloader.IsUserIconTarget` に条件を集約した。`tbUserInfoNum` の変更は `TextChanged` で即時反映
+- **ユーザー検証で判明した問題と対応**:
+  - ED 221件中 167.jpg / 195.jpg が失敗。週刊の `ThumbnailURL` が `img.cdn.nimg.jp/.../r640x360l?key=...` のキー付きURLで、`.L` を付けて HTTP 400 になっていた。キー付きURLはそのまま使い、動画IDから通常CDNの `.L`/base をフォールバック。HTTP 400/410 も404と同じ「候補無効」として次へ。実データで 468x360 の取得成功を確認
+  - 「予定件数 3,100件」が `UserInfo.Num=1000` と合わない件は、`queue_UserIcon.irv` が全件出力していた実装ミスと判明。上記の範囲限定に修正
+  - デザイナーで「基本クラスを読み込めませんでした」が再発。ビルド済み exe の `BaseType` は `System.Windows.Forms.Form`、MSBuild も成功しており生成物は正常。Designer ファイルを元に戻すと開けたため、外部編集後の再読み込み不足／partial の Form 誤認が原因と判断。UIは Designer に戻し、`DependentUpon` を付与。VS は保存時に `SubType Form` を復帰させるため、入口が `frmMain.cs` であることを優先する運用にした
+  - 予定件数ラベルが見切れたため、ラベルを短縮し範囲説明を注記へ移動
+- **設計判断（pm相談を含む）**:
+  - `Ranking` に高画質URLフィールドを追加しない。`result_DB登録用(UTF8).json` の全量シリアライズに列が増え、キー付きURLの期限切れも避けたいため、DL時に都度解決する
+  - `ThumbnailURL` は削除判定・DB・`.irv` 互換のため変更しない
+  - 取得間隔は当初0.5秒→ユーザー判断で0.2秒。数百件を数分で終えるため。順次処理は維持
+  - `queue_UserIcon.irv` の範囲限定は、rank.txt / result CSV が全件のアイコン名を出す点と不整合になる。Web側が `result_DB登録用JSON` の URL を使う場合は影響なし。CSVのローカルファイル参照が全件必要な場合は再検討
+  - `UserInfo.Num=0` は全件だが、集計時の `UserInfoReader` も全件取得になるため大量リクエストになる
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` **445件 PASS**（EXIT CODE=0）。キー付きURL、400フォールバック、403/429/5xxのCDNフォールバック、中断、UserInfo範囲、ファイル名の既存 `.irv` 同値を追加
+  - `dotnet build nicorank2019/nicorank2019.csproj` Debug / Release 成功（EXIT CODE=0）
+  - 実データ: 167/195のキー付きURL取得成功（468x360）。UserInfo範囲は1,004動画/563ユーザー。全件は6,414動画/3,100ユーザー
+  - COM `IFileOpenDialog` の SetOptions/SetTitle/SetFolder/GetFolder/GetDisplayName 往復を確認
+  - ユーザー実機確認OK（2026-11-14）。Designer でレイアウト編集可能、予定件数・中断・失敗レポート・フォルダ選択を確認
+  - reviewer 3巡。最終的に高・中指摘なし。低指摘（コメント不一致、文字列定数化、FolderPickerのHRESULT、テストのConfig依存、pitfalls番号重複、csproj記述）を修正
+- **残課題／注意**:
+  - キー付きURLのキー失効時ステータスは未実測（30分以上有効なことは確認）。403/429/5xxで通常CDNへフォールバックする実装で緩和
+  - 範囲外ユーザーのアイコンは `.irv` / 直接DL のどちらでも取得しない。`result(UTF8).csv` の全件アイコン欄との不整合に注意
+  - 未追跡の `nicorank2019.zip` 等は既存物で触れていない。develop への push は未実施
+

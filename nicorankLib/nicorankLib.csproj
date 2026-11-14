@@ -307,6 +307,7 @@
     <Compile Include="api\model\ThumbinfoBase.cs" />
     <Compile Include="api\NicoApi.cs" />
     <Compile Include="api\ApiXmlCacheImporter.cs" />
+    <Compile Include="api\ThumbnailUrlResolver.cs" />
     <Compile Include="Common\Config.cs" />
     <Compile Include="Common\NicoRankXml.cs" />
     <Compile Include="output\OutputBase.cs" />
@@ -317,6 +318,10 @@
     <Compile Include="Util\ApiUrlBuilder.cs" />
     <Compile Include="Util\ErrLog.cs" />
     <Compile Include="Util\InternetUtil.cs" />
+    <Compile Include="Util\IHttpDownloader.cs" />
+    <Compile Include="Util\HttpWebDownloader.cs" />
+    <Compile Include="Util\ImageDownloader.cs" />
+    <Compile Include="Util\ImageFileNaming.cs" />
     <Compile Include="Util\OldRankingMarker.cs" />
     <Compile Include="Util\IStatusLogWriter.cs" />
     <Compile Include="Util\ISQLiteCtrl.cs" />
