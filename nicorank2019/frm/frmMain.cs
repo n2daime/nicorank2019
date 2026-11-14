@@ -65,9 +65,6 @@ namespace nicorank2019.frm
         public frmMain()
         {
             InitializeComponent();
-            // 画像ダウンロードUIは Designer を触らずコード側で生成する（Issue #56。
-            // Designer 追記でデザイナーが読み込めなくなる環境があるため）。
-            InitializeImageDownloadControls();
             // exe と同じアイコンをフォーム左上・タスクバーに表示する (#49)。
             // Designer 再生成の差分 churn を避けるためコード側で設定する。アイコンは起動の必須要素ではないため、読めなくても既定アイコンで起動を続ける。
             try
@@ -104,6 +101,9 @@ namespace nicorank2019.frm
                 // 仮集計チェックの切替配線もコード側で行う（Designerの再生成差分を増やさないため）。初期状態もここで反映する
                 chkSPKariSyukei.CheckedChanged += new EventHandler(this.chkSPKariSyukei_CheckedChanged);
                 UpdateSPKariControls();
+                // UserInfo/Icon取得数の変更を、画像DLの予定件数とDL対象へ即時反映する（Issue #56）。
+                // Designer を触らず、既存のチェックボックス配線と同じくコード側で行う。
+                tbUserInfoNum.TextChanged += new EventHandler(this.UserInfoNum_TextChanged);
                 _tagMockLoaded = true;
                 // 起動直後の更新確認（Issue #47）。UI をブロックしないよう非同期で投げっぱなしにする。
                 // Load 自体は先に返る。確認不能時は黙って旧版のまま動かす。

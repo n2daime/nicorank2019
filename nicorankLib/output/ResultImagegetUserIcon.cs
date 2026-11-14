@@ -27,14 +27,23 @@ namespace nicorankLib.output
         }
 
         /// <summary>
-        /// ダウンロードしたときのファイル名
+        /// ダウンロードしたときのファイル名。
+        /// UserInfo.Num の範囲（総合順位が UserNum 以内、またはカテゴリ1位）だけを対象にする。
+        /// なぜ絞るか: UserInfo.Num は「ユーザー情報を取りに行く動画数」の設定であり、
+        /// 全件をキューに出すと数千件・数十分のDLになって設定の意図と合わない。
+        /// 範囲外は空文字を返し、ResultImagegetBase.Execute 側で行ごとスキップさせる。
         /// </summary>
-        /// <param name="rank"></param>
-        /// <returns></returns>
         protected override string GetDownLoadName(Ranking rank)
         {
-            // 直接ダウンロード（Issue #56）と同じ規則を参照する。名前の生成以外は変えないため、
-            // queue_UserIcon.irv の内容は従来と1バイトも変わらない。
+            int userInfoNum = Config.GetInstance().UserNum;
+            if (userInfoNum > 0
+                && rank.RankTotal > userInfoNum
+                && rank.RankCategory != 1)
+            {
+                return string.Empty;
+            }
+
+            // 直接ダウンロード（Issue #56）と同じ規則を参照する。
             return ImageFileNaming.GetUserIconFileName(rank);
         }
 

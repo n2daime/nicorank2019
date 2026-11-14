@@ -1,6 +1,7 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using nicorankLib.api;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 
 namespace UnitTest.nicorankLib.api
@@ -199,6 +200,41 @@ namespace UnitTest.nicorankLib.api
         public void BuildCandidateUrls_EmptyUrl_ReturnsEmpty()
         {
             Assert.AreEqual(0, ThumbnailUrlResolver.BuildCandidateUrls(null, null, false).Count);
+        }
+
+        [TestMethod]
+        public void BuildCandidateUrls_KeyedUrl_UsedAsIsAndAddsCdnFallback()
+        {
+            // 週刊の ThumbnailURL はキー付きURLになることがある。
+            // クエリを落とすと 400 になるため、そのまま最優先で使う。
+            const string keyed = "https://img.cdn.nimg.jp/s/nicovideo/thumbnails/8134546/8134546.original/r640x360l?key=abc";
+            IReadOnlyList<string> urls = ThumbnailUrlResolver.BuildCandidateUrls(keyed, "sm8134546", null, false);
+
+            Assert.AreEqual(keyed, urls[0]);
+            Assert.IsTrue(urls.Contains("https://nicovideo.cdn.nimg.jp/thumbnails/8134546/8134546.L"));
+            Assert.IsTrue(urls.Contains("https://nicovideo.cdn.nimg.jp/thumbnails/8134546/8134546"));
+        }
+
+        [TestMethod]
+        public void BuildCandidateUrls_KeyedUrl_HighQuality_PageCandidatesFirst()
+        {
+            const string keyed = "https://img.cdn.nimg.jp/s/nicovideo/thumbnails/8134546/8134546.original/r640x360l?key=abc";
+            var page = new ThumbnailPageInfo() { Ogp = "https://example/ogp", Player = "https://example/player" };
+
+            IReadOnlyList<string> urls = ThumbnailUrlResolver.BuildCandidateUrls(keyed, "sm8134546", page, true);
+
+            Assert.AreEqual("https://example/ogp", urls[0]);
+            Assert.AreEqual("https://example/player", urls[1]);
+            Assert.AreEqual(keyed, urls[2]);
+        }
+
+        [TestMethod]
+        public void IsKeyedThumbnailUrl_DetectsQueryKeyAndKeyedHosts()
+        {
+            Assert.IsTrue(ThumbnailUrlResolver.IsKeyedThumbnailUrl("https://example/a.jpg?key=1"));
+            Assert.IsTrue(ThumbnailUrlResolver.IsKeyedThumbnailUrl("https://img.cdn.nimg.jp/s/nicovideo/thumbnails/1/1.original/r640x360l"));
+            Assert.IsTrue(ThumbnailUrlResolver.IsKeyedThumbnailUrl("https://goptim.video.nimg.jp/thumbnail/1280x720?b=p"));
+            Assert.IsFalse(ThumbnailUrlResolver.IsKeyedThumbnailUrl("https://nicovideo.cdn.nimg.jp/thumbnails/1/1.L"));
         }
 
         [TestMethod]

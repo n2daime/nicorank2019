@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using nicorankLib.Analyze.model;
 using nicorankLib.Util;
 using System;
@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Threading;
 
 namespace UnitTest.nicorankLib.Util
 {
@@ -45,13 +46,13 @@ namespace UnitTest.nicorankLib.Util
             public Func<string, HttpResult> TextHandler = _ => HttpResult.FromStatus(HttpDownloadStatus.NotFound, 404);
             public Func<string, string, HttpResult> FileHandler = (_, __) => HttpResult.FromStatus(HttpDownloadStatus.NotFound, 404);
 
-            public HttpResult GetText(string url)
+            public HttpResult GetText(string url, CancellationToken cancellationToken)
             {
                 Requests.Add("TEXT " + url);
                 return TextHandler(url);
             }
 
-            public HttpResult DownloadFile(string url, string destinationPath)
+            public HttpResult DownloadFile(string url, string destinationPath, CancellationToken cancellationToken)
             {
                 Requests.Add("FILE " + url);
                 HttpResult result = FileHandler(url, destinationPath);
@@ -478,6 +479,71 @@ namespace UnitTest.nicorankLib.Util
             Assert.IsFalse(ImageDownloader.IsUsableThumbnailUrl(""));
             Assert.IsFalse(ImageDownloader.IsUsableThumbnailUrl("https://example/video_deleted"));
             Assert.IsTrue(ImageDownloader.IsUsableThumbnailUrl("https://example/thumbnails/1"));
+        }
+
+        [TestMethod]
+        public void Movie_CancelledAfterFirstItem_StopsBeforeNextItem()
+        {
+            var cts = new CancellationTokenSource();
+            var fake = new FakeHttpDownloader();
+            fake.FileHandler = (url, dest) =>
+            {
+                cts.Cancel();
+                return Success();
+            };
+            var list = new List<Ranking>()
+            {
+                Movie(1, "sm1", "https://example/1"),
+                Movie(2, "sm2", "https://example/2"),
+                Movie(3, "sm3", "https://example/3"),
+            };
+
+            ImageDownloadSummary summary = CreateDownloader(fake)
+                .DownloadMovieThumbnails(list, 200, _dir, new ImageDownloadOptions(), null, cts.Token);
+
+            Assert.IsTrue(summary.Cancelled);
+            Assert.AreEqual(1, summary.Success);
+            Assert.AreEqual(1, fake.Requests.Count);
+        }
+
+        [TestMethod]
+        public void Movie_CancelledBeforeStart_DoesNotRequest()
+        {
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+            var fake = new FakeHttpDownloader();
+            var list = new List<Ranking>() { Movie(1, "sm1", "https://example/1") };
+
+            ImageDownloadSummary summary = CreateDownloader(fake)
+                .DownloadMovieThumbnails(list, 200, _dir, new ImageDownloadOptions(), null, cts.Token);
+
+            Assert.IsTrue(summary.Cancelled);
+            Assert.AreEqual(1, summary.Total);
+            Assert.AreEqual(0, fake.Requests.Count);
+        }
+
+        [TestMethod]
+        public void Movie_FailureKind_Reports403AndServerError()
+        {
+            var progress = new CapturingProgress();
+            var list = new List<Ranking>()
+            {
+                Movie(1, "sm1", "https://example/1"),
+                Movie(2, "sm2", "https://example/2"),
+            };
+            var fake = new FakeHttpDownloader();
+            int count = 0;
+            fake.FileHandler = (url, dest) =>
+                ++count == 1
+                    ? HttpResult.FromStatus(HttpDownloadStatus.Forbidden, 403)
+                    : HttpResult.FromStatus(HttpDownloadStatus.ServerError, 500);
+
+            ImageDownloadSummary summary = CreateDownloader(fake)
+                .DownloadMovieThumbnails(list, 200, _dir, new ImageDownloadOptions(), progress);
+
+            Assert.AreEqual(2, summary.Failed);
+            Assert.AreEqual(ImageDownloadFailureKind.Forbidden, progress.Items[0].Kind);
+            Assert.AreEqual(ImageDownloadFailureKind.ServerError, progress.Items[1].Kind);
         }
     }
 }

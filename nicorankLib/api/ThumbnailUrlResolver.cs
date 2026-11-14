@@ -1,4 +1,4 @@
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -135,12 +135,22 @@ namespace nicorankLib.api
         /// </summary>
         public static IReadOnlyList<string> BuildCandidateUrls(string thumbnailUrl, ThumbnailPageInfo page, bool highQuality)
         {
+            return BuildCandidateUrls(thumbnailUrl, null, page, highQuality);
+        }
+
+        /// <summary>
+        /// ダウンロード候補URLを優先順に返す（動画ID付き）。
+        ///
+        /// 週刊ランキングの ThumbnailURL は、動画によって
+        /// `https://img.cdn.nimg.jp/s/nicovideo/thumbnails/{n}/{n}.original/r640x360l?key=...`
+        /// のようなキー付きURLになる。キーはパスとサイズに署名されているため、
+        /// クエリを落としたり `.L` を足したりすると 400 になる。キー付きURLはそのまま最優先で使い、
+        /// 失敗したときだけ動画IDから通常CDNのURLを組み立ててフォールバックする。
+        /// </summary>
+        public static IReadOnlyList<string> BuildCandidateUrls(string thumbnailUrl, string videoId, ThumbnailPageInfo page, bool highQuality)
+        {
             var candidates = new List<string>();
-            string baseUrl = NormalizeToBaseUrl(thumbnailUrl);
-            if (string.IsNullOrWhiteSpace(baseUrl))
-            {
-                return candidates;
-            }
+            string rawUrl = string.IsNullOrWhiteSpace(thumbnailUrl) ? string.Empty : thumbnailUrl.Trim();
 
             if (highQuality && page != null)
             {
@@ -149,10 +159,65 @@ namespace nicorankLib.api
                 AddIfNew(candidates, page.Player);
             }
 
-            AddIfNew(candidates, baseUrl + ".L");
-            AddIfNew(candidates, baseUrl);
+            bool keyed = IsKeyedThumbnailUrl(rawUrl);
+            if (keyed)
+            {
+                // キー付きURLはクエリ込みのまま使う。ここでサイズを変えると 400 になる。
+                AddIfNew(candidates, rawUrl);
+            }
+            else
+            {
+                string baseUrl = NormalizeToBaseUrl(rawUrl);
+                if (!string.IsNullOrWhiteSpace(baseUrl))
+                {
+                    AddIfNew(candidates, baseUrl + ".L");
+                    AddIfNew(candidates, baseUrl);
+                }
+            }
+
+            if (keyed)
+            {
+                // キーが失効していた場合などに備え、動画IDから通常CDNのURLを作る。
+                // 通常CDNはキー不要なので、キー付きURLが使えなくても130x100以上は確保できる。
+                string cdnBaseUrl = BuildCdnBaseUrl(videoId);
+                if (!string.IsNullOrWhiteSpace(cdnBaseUrl))
+                {
+                    AddIfNew(candidates, cdnBaseUrl + ".L");
+                    AddIfNew(candidates, cdnBaseUrl);
+                }
+            }
 
             return candidates;
+        }
+
+        /// <summary>
+        /// キー付きサムネイルURLか。クエリの key か、キー必須のホストで判定する。
+        /// </summary>
+        public static bool IsKeyedThumbnailUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return false;
+            }
+            return url.IndexOf("?key=", StringComparison.OrdinalIgnoreCase) >= 0
+                || url.StartsWith("https://img.cdn.nimg.jp/", StringComparison.OrdinalIgnoreCase)
+                || url.StartsWith("https://goptim.video.nimg.jp/", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>動画ID（sm123 等）から通常CDNのサムネイルbase URLを作る。</summary>
+        private static string BuildCdnBaseUrl(string videoId)
+        {
+            if (string.IsNullOrWhiteSpace(videoId))
+            {
+                return null;
+            }
+            Match match = Regex.Match(videoId, @"(\d+)$");
+            if (!match.Success)
+            {
+                return null;
+            }
+            string number = match.Groups[1].Value;
+            return $"https://nicovideo.cdn.nimg.jp/thumbnails/{number}/{number}";
         }
 
         /// <summary>ユーザーアイコンは getthumbinfo のアイコンURLをそのまま使う（高画質の概念がない）。</summary>

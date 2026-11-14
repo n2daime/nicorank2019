@@ -1,4 +1,4 @@
-using nicorankLib.Analyze.model;
+﻿using nicorankLib.Analyze.model;
 using System;
 
 namespace nicorankLib.Util

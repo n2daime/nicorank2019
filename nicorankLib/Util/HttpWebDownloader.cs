@@ -1,7 +1,8 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Threading;
 
 namespace nicorankLib.Util
 {
@@ -34,51 +35,103 @@ namespace nicorankLib.Util
             _timeoutMs = timeoutMs > 0 ? timeoutMs : DefaultTimeoutMs;
         }
 
-        public HttpResult GetText(string url)
+        public HttpResult GetText(string url, CancellationToken cancellationToken)
         {
-            try
+            if (cancellationToken.IsCancellationRequested)
             {
-                HttpWebRequest request = CreateRequest(url);
-                request.Accept = "text/html,application/xhtml+xml";
-                using (var response = (HttpWebResponse)request.GetResponse())
-                using (var reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
+                return Cancelled();
+            }
+
+            HttpWebRequest request = CreateRequest(url);
+            request.Accept = "text/html,application/xhtml+xml";
+
+            // 中断ボタンが押されたら実行中の通信も Abort する。待たされるのは最大タイムアウト
+            // （30秒）ではなく、Abort が効くまでの短い時間で済む。
+            using (cancellationToken.Register(() => TryAbort(request)))
+            {
+                try
                 {
-                    string text = reader.ReadToEnd();
-                    return HttpResult.FromStatus(HttpDownloadStatus.Success, (int)response.StatusCode, text);
+                    using (var response = (HttpWebResponse)request.GetResponse())
+                    using (var reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
+                    {
+                        string text = reader.ReadToEnd();
+                        return HttpResult.FromStatus(HttpDownloadStatus.Success, (int)response.StatusCode, text);
+                    }
                 }
-            }
-            catch (WebException ex)
-            {
-                return FromWebException(ex);
-            }
-            catch (Exception)
-            {
-                return HttpResult.FromStatus(HttpDownloadStatus.Failed, 0);
+                catch (WebException ex)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return Cancelled();
+                    }
+                    return FromWebException(ex);
+                }
+                catch (Exception)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return Cancelled();
+                    }
+                    return HttpResult.FromStatus(HttpDownloadStatus.Failed, 0);
+                }
             }
         }
 
-        public HttpResult DownloadFile(string url, string destinationPath)
+        public HttpResult DownloadFile(string url, string destinationPath, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Cancelled();
+            }
+
+            HttpWebRequest request = CreateRequest(url);
+            using (cancellationToken.Register(() => TryAbort(request)))
+            {
+                try
+                {
+                    using (var response = (HttpWebResponse)request.GetResponse())
+                    using (var input = response.GetResponseStream())
+                    using (var output = File.Create(destinationPath))
+                    {
+                        input.CopyTo(output);
+                        return HttpResult.FromStatus(HttpDownloadStatus.Success, (int)response.StatusCode);
+                    }
+                }
+                catch (WebException ex)
+                {
+                    TryDelete(destinationPath);
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return Cancelled();
+                    }
+                    return FromWebException(ex);
+                }
+                catch (Exception)
+                {
+                    TryDelete(destinationPath);
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return Cancelled();
+                    }
+                    return HttpResult.FromStatus(HttpDownloadStatus.Failed, 0);
+                }
+            }
+        }
+
+        private static HttpResult Cancelled()
+        {
+            return HttpResult.FromStatus(HttpDownloadStatus.Cancelled, 0);
+        }
+
+        private static void TryAbort(HttpWebRequest request)
         {
             try
             {
-                HttpWebRequest request = CreateRequest(url);
-                using (var response = (HttpWebResponse)request.GetResponse())
-                using (var input = response.GetResponseStream())
-                using (var output = File.Create(destinationPath))
-                {
-                    input.CopyTo(output);
-                    return HttpResult.FromStatus(HttpDownloadStatus.Success, (int)response.StatusCode);
-                }
-            }
-            catch (WebException ex)
-            {
-                TryDelete(destinationPath);
-                return FromWebException(ex);
+                request.Abort();
             }
             catch (Exception)
             {
-                TryDelete(destinationPath);
-                return HttpResult.FromStatus(HttpDownloadStatus.Failed, 0);
+                // Abort 自体の失敗は無視する（すでに完了している場合など）。
             }
         }
 
@@ -112,7 +165,11 @@ namespace nicorankLib.Util
                     int statusCode = (int)response.StatusCode;
                     switch (statusCode)
                     {
+                        case 400:
                         case 404:
+                        case 410:
+                            // 400 はキー付きURLに .L を付けた場合など「この候補の形式が無効」。
+                            // 404/410 と同じく、次の候補（base 等）を試す。
                             return HttpResult.FromStatus(HttpDownloadStatus.NotFound, statusCode);
                         case 403:
                             return HttpResult.FromStatus(HttpDownloadStatus.Forbidden, statusCode);

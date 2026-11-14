@@ -117,6 +117,7 @@
 
 - `player` / `ogp` / `short` の `key` はパスとサイズに署名されている。`a960x540l` を `a1280x720l` に変える、`r405x720l` を `r720x1280l` に変える、といったサイズだけの差し替えは400になる。必要なサイズのURLを視聴ページから取り直すこと。
 - `getthumbinfo` のURLに `.L` を付けると360x270になるが、2015年より前の動画では404になる（2010年の動画で確認）。古い動画は `.L` 失敗時にbase（130x100）へフォールバックする。高画質の `player` / `ogp` は古い動画でも取得できることが多い。
+- **週刊の `ThumbnailURL` 自体がキー付きのことがある**（`img.cdn.nimg.jp/.../r640x360l?key=...`）。このURLに `.L` を付けると400、`key` を落とすと取得できない。キー付きURLはそのまま使い、失敗時だけ動画IDから通常CDNのURLを組み立てる（Issue #56）。
 - 視聴ページHTMLはCookie不要で `server-response` を返す。`v3_guest` は `nicosid` Cookieが無いと406になるため、サムネイル取得の土台にしない。
 - 詳細は `thumbnail.md` を参照。
 
@@ -259,9 +260,10 @@
 
 - **症状**: `frmMain.cs` をデザイナーで開くと「デザイナーの読み込み前に以下のエラーを解決する必要があります」「基本クラス 'System.…' を読み込めませんでした」となり、デザイン面が表示されない。ビルド自体は成功する。
 - **確認した事実**: ビルド済み `nicorank2019.exe` をリフレクションで読み込み、`nicorank2019.frm.frmMain` の `BaseType` を調べると `System.Windows.Forms.Form` に正しく解決できた。つまり生成物の型階層は壊れていない。`MSBuild.exe`（Visual Studio 同梱）でのソリューションビルドも成功した。
-- **原因の見立て**: コードの型エラーではなく、Visual Studio のデザイン時ビルド／Designer ファイルの解釈側。Designer ファイルへコントロールを追記した直後に再現し、環境差で起きる。過去にも Designer 全体が再生成される事象があり（archive の #30 付近）、このリポジトリでは **Designer を編集せずコード側で UI を生成する**前例がある（#35・#49・#54）。
-- **対策（実装済み・Issue #56）**: 画像DLの UI は `frmMainImageDownload.InitializeImageDownloadControls()` でコンストラクタから生成し、`frmMain.Designer.cs` は変更しない。新規 partial は csproj で `<DependentUpon>frmMain.cs</DependentUpon>` を付け、独立したフォームとして扱わせない。
-- **切り分け手順（次回）**: ①コマンドラインで `MSBuild.exe` ビルドが通るか ②ビルド済み exe の `BaseType` が `System.Windows.Forms.Form` か ③Visual Studio を再起動／プロジェクトを再読み込みしても再現するか ④直前に `frmMain.Designer.cs` を編集していないか。①〜②が正常なら生成物ではなく IDE 側の問題として扱い、Designer 編集を避ける。
+- **原因の見立て**: コードの型エラーではなく、Visual Studio のデザイン時ビルド／Designer ファイルの解釈側。Designer ファイルへコントロールを追記した直後に再現し、そのファイルを元に戻すと開けるようになった。加えて、外部（AI）が Designer ファイルを書き換えても VS が自動で読み直さないことがあり、開いたままのデザイナーと実ファイルがずれるとこのエラーになり得る。
+- **対策（Issue #56）**: レイアウトを Designer で編集できるよう、コントロールは `frmMain.Designer.cs` に配置する。`frmMain` を Form として宣言するのは `frmMain.cs` だけにし、`frmMainSyukei.cs` は通常の `<Compile>`、`frmMainImageDownload.cs` は `<DependentUpon>frmMain.cs</DependentUpon>` にして「同じクラスを宣言する2つ目のフォーム」と誤認させない。新規 `.cs` は既存に合わせて **UTF-8 BOM + CRLF** にする。
+- **運用（重要）**: 外部から Designer ファイルや csproj を変更する前に、VS のデザイナータブを閉じる。変更後は、VS が再読み込みを促さなくても**ソリューションを閉じて開き直し、リビルドしてから**デザイナーを開く。これを省くと、ファイルは正しくてもデザイナーだけが壊れたように見える。
+- **切り分け手順（次回）**: ①コマンドラインで `MSBuild.exe` ビルドが通るか ②ビルド済み exe の `BaseType` が `System.Windows.Forms.Form` か ③VS を再起動／プロジェクトを再読み込みしても再現するか ④直前に `frmMain.Designer.cs` を編集していないか。①〜②が正常なら生成物ではなく IDE 側の問題として扱う。それでも再発する場合は、画像DL部分を UserControl に切り出し、`frmMain` の Designer には UserControl を1個置くだけにする案を次善とする。
 
 ### 25. docsの文字コード混在によるarchive.mdの文字化け（2026-10・約1万バイト）
 

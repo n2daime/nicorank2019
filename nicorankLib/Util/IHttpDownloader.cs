@@ -1,9 +1,12 @@
+﻿using System.Threading;
+
 namespace nicorankLib.Util
 {
     /// <summary>
     /// HTTP取得の結果区分（Issue #56）。
     /// なぜ 404 と 403/429 を分けるか: 404 は「そのサイズの画像が無い」だけなので次の候補を試せるが、
     /// 403/429 はレート制限・アクセス拒否であり、リトライを重ねると状況を悪化させるため即座に諦める。
+    /// Cancelled はユーザーの中断要求（Issue #56）。失敗件数には数えず、処理を打ち切る合図に使う。
     /// </summary>
     public enum HttpDownloadStatus
     {
@@ -13,6 +16,7 @@ namespace nicorankLib.Util
         RateLimited,
         ServerError,
         Failed,
+        Cancelled,
     }
 
     /// <summary>
@@ -44,14 +48,14 @@ namespace nicorankLib.Util
     /// </summary>
     public interface IHttpDownloader
     {
-        /// <summary>テキストを取得する（視聴ページHTML用）。</summary>
-        HttpResult GetText(string url);
+        /// <summary>テキストを取得する（視聴ページHTML用）。中断時は Cancelled を返す。</summary>
+        HttpResult GetText(string url, CancellationToken cancellationToken);
 
         /// <summary>
         /// ファイルを取得して destinationPath に保存する。
         /// 成功時のみファイルを残す。失敗時は呼び出し側が一時ファイルを後始末できるよう、
-        /// 実装側でも書きかけファイルを削除する。
+        /// 実装側でも書きかけファイルを削除する。中断時は Cancelled を返す。
         /// </summary>
-        HttpResult DownloadFile(string url, string destinationPath);
+        HttpResult DownloadFile(string url, string destinationPath, CancellationToken cancellationToken);
     }
 }

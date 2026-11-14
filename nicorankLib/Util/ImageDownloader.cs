@@ -1,4 +1,4 @@
-using nicorankLib.Analyze.model;
+﻿using nicorankLib.Analyze.model;
 using nicorankLib.api;
 using System;
 using System.Collections.Generic;
@@ -17,12 +17,35 @@ namespace nicorankLib.Util
         public bool OverwriteExisting { get; set; }
     }
 
-    /// <summary>1件ごとの結果区分。</summary>
+    /// <summary>1件ごとの結果区分。Cancelled は中断要求で打ち切ったことを表す。</summary>
     public enum ImageDownloadOutcome
     {
         Success,
         Skipped,
         Failed,
+        Cancelled,
+    }
+
+    /// <summary>
+    /// 失敗の種類。UIが「再実行で直る可能性があるか」を案内するために使う。
+    /// 文字列メッセージを解析すると表記変更で壊れるため、列挙で持つ。
+    /// </summary>
+    public enum ImageDownloadFailureKind
+    {
+        None,
+        /// <summary>画像が存在しない（404/410/400、候補なし）。再実行しても改善しない可能性が高い。</summary>
+        NotFound,
+        /// <summary>403。アクセス拒否。時間を置けば改善する可能性がある。</summary>
+        Forbidden,
+        /// <summary>429。レート制限。時間を置いて再実行する。</summary>
+        RateLimited,
+        /// <summary>5xx。一時的なサーバー障害の可能性。再実行で改善し得る。</summary>
+        ServerError,
+        /// <summary>タイムアウト・接続断など。一時的な可能性。再実行で改善し得る。</summary>
+        Network,
+        /// <summary>保存先への書き込み失敗。権限・空き容量・ファイル使用中を確認する。</summary>
+        SaveError,
+        Unknown,
     }
 
     /// <summary>
@@ -36,6 +59,9 @@ namespace nicorankLib.Util
         public string FileName { get; set; }
         public ImageDownloadOutcome Outcome { get; set; }
         public string Message { get; set; }
+        public ImageDownloadFailureKind Kind { get; set; }
+        /// <summary>最後に試したURL。失敗理由の調査用（ログに残す）。</summary>
+        public string Url { get; set; }
         public int SuccessCount { get; set; }
         public int SkippedCount { get; set; }
         public int FailedCount { get; set; }
@@ -48,6 +74,9 @@ namespace nicorankLib.Util
         public int Success { get; set; }
         public int Skipped { get; set; }
         public int Failed { get; set; }
+
+        /// <summary>中断要求で途中終了したか。件数はその時点までの累計。</summary>
+        public bool Cancelled { get; set; }
     }
 
     /// <summary>
@@ -105,7 +134,8 @@ namespace nicorankLib.Util
             int endRank,
             string outputDir,
             ImageDownloadOptions options,
-            IProgress<ImageDownloadProgress> progress)
+            IProgress<ImageDownloadProgress> progress,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             var summary = new ImageDownloadSummary();
             if (rankings == null || rankings.Count == 0 || string.IsNullOrWhiteSpace(outputDir))
@@ -121,10 +151,19 @@ namespace nicorankLib.Util
 
             for (int i = 0; i < total; i++)
             {
+                // 中断は件の区切りで見る。実行中の通信は IHttpDownloader 側が Abort する。
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    summary.Cancelled = true;
+                    break;
+                }
+
                 Ranking rank = rankings[i];
                 string fileName = ImageFileNaming.GetMovieFileName(rank);
                 ImageDownloadOutcome outcome;
                 string message;
+                ImageDownloadFailureKind kind = ImageDownloadFailureKind.None;
+                string failedUrl = null;
 
                 if (string.IsNullOrWhiteSpace(fileName))
                 {
@@ -139,24 +178,53 @@ namespace nicorankLib.Util
                 }
                 else
                 {
-                    outcome = DownloadMovieItem(rank, Path.Combine(outputDir, fileName), options, out message);
+                    outcome = DownloadMovieItem(
+                        rank, Path.Combine(outputDir, fileName), options, cancellationToken,
+                        out message, out kind, out failedUrl);
                 }
 
-                ApplyResult(summary, i, fileName, outcome, message, progress);
+                ApplyResult(summary, i, fileName, outcome, message, kind, failedUrl, progress);
+
+                if (outcome == ImageDownloadOutcome.Cancelled)
+                {
+                    summary.Cancelled = true;
+                    break;
+                }
             }
 
             return summary;
         }
 
         /// <summary>
-        /// ユーザーアイコンを全件ダウンロードする。UserID（チャンネルは ch 付き）で重複を除く。
+        /// ユーザーアイコンをダウンロードする（全件）。
         /// 既存 queue_UserIcon.irv と同じく、UserID が空の動画は対象外。
         /// </summary>
         public ImageDownloadSummary DownloadUserIcons(
             IReadOnlyList<Ranking> rankings,
             string outputDir,
             ImageDownloadOptions options,
-            IProgress<ImageDownloadProgress> progress)
+            IProgress<ImageDownloadProgress> progress,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return DownloadUserIcons(rankings, outputDir, options, progress, 0, cancellationToken);
+        }
+
+        /// <summary>
+        /// ユーザーアイコンをダウンロードする。userInfoNum &gt; 0 のときは
+        /// `UserInfo.Num` の範囲（総合順位が userInfoNum 以内、またはカテゴリ1位）の動画に
+        /// 登場するユーザーだけを対象にする。0 なら全件。
+        ///
+        /// なぜ絞るか: UserInfo.Num は「ユーザー情報を取りに行く動画数」の設定であり、
+        /// 利用者はこの範囲のアイコンだけを求めていることがある。全件だと数千件・数十分かかる。
+        /// なお既存 queue_UserIcon.irv は全件出力のまま残す（直接DLだけが設定に従う）。
+        /// </summary>
+        public ImageDownloadSummary DownloadUserIcons(
+            IReadOnlyList<Ranking> rankings,
+            string outputDir,
+            ImageDownloadOptions options,
+            IProgress<ImageDownloadProgress> progress,
+            int userInfoNum,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             var summary = new ImageDownloadSummary();
             if (rankings == null || rankings.Count == 0 || string.IsNullOrWhiteSpace(outputDir))
@@ -172,6 +240,14 @@ namespace nicorankLib.Util
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (Ranking rank in rankings)
             {
+                if (userInfoNum > 0
+                    && rank.RankTotal > userInfoNum
+                    && rank.RankCategory != 1)
+                {
+                    // UserInfoReader と同じ範囲（上位 userInfoNum 位＋カテゴリ1位）だけを対象にする。
+                    continue;
+                }
+
                 string fileName = ImageFileNaming.GetUserIconFileName(rank);
                 if (string.IsNullOrWhiteSpace(fileName) || !seen.Add(fileName))
                 {
@@ -183,11 +259,19 @@ namespace nicorankLib.Util
             summary.Total = items.Count;
             for (int i = 0; i < items.Count; i++)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    summary.Cancelled = true;
+                    break;
+                }
+
                 string fileName = items[i].Key;
                 string url = items[i].Value;
                 string destinationPath = Path.Combine(outputDir, fileName);
                 ImageDownloadOutcome outcome;
                 string message;
+                ImageDownloadFailureKind kind = ImageDownloadFailureKind.None;
+                string failedUrl = null;
 
                 if (!options.OverwriteExisting && File.Exists(destinationPath))
                 {
@@ -204,10 +288,19 @@ namespace nicorankLib.Util
                     outcome = DownloadOne(
                         ThumbnailUrlResolver.BuildUserIconCandidateUrls(url),
                         destinationPath,
-                        out message);
+                        cancellationToken,
+                        out message,
+                        out kind,
+                        out failedUrl);
                 }
 
-                ApplyResult(summary, i, fileName, outcome, message, progress);
+                ApplyResult(summary, i, fileName, outcome, message, kind, failedUrl, progress);
+
+                if (outcome == ImageDownloadOutcome.Cancelled)
+                {
+                    summary.Cancelled = true;
+                    break;
+                }
             }
 
             return summary;
@@ -230,8 +323,14 @@ namespace nicorankLib.Util
             Ranking rank,
             string destinationPath,
             ImageDownloadOptions options,
-            out string message)
+            CancellationToken cancellationToken,
+            out string message,
+            out ImageDownloadFailureKind kind,
+            out string failedUrl)
         {
+            kind = ImageDownloadFailureKind.None;
+            failedUrl = null;
+
             if (!options.OverwriteExisting && File.Exists(destinationPath))
             {
                 message = "既存ファイルのためスキップ";
@@ -243,13 +342,19 @@ namespace nicorankLib.Util
             ThumbnailPageInfo page = null;
             if (options.HighQuality)
             {
-                page = FetchPageInfo(rank.ID);
+                page = FetchPageInfo(rank.ID, cancellationToken);
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    // 高画質URLの取得で中断された場合、通常画質に落として続行してはいけない。
+                    message = "中断";
+                    return ImageDownloadOutcome.Cancelled;
+                }
             }
 
             IReadOnlyList<string> candidates = ThumbnailUrlResolver.BuildCandidateUrls(
-                rank.ThumbnailURL, page, options.HighQuality);
+                rank.ThumbnailURL, rank.ID, page, options.HighQuality);
 
-            return DownloadOne(candidates, destinationPath, out message);
+            return DownloadOne(candidates, destinationPath, cancellationToken, out message, out kind, out failedUrl);
         }
 
         /// <summary>
@@ -258,15 +363,15 @@ namespace nicorankLib.Util
         /// 403/429 でも .L での保存は続ける（高画質だけを諦める）方針。
         /// HTML取得は1回だけ試し、再試行はしない。再試行するとレート制限時に負荷を重ねるため。
         /// </summary>
-        private ThumbnailPageInfo FetchPageInfo(string videoId)
+        private ThumbnailPageInfo FetchPageInfo(string videoId, CancellationToken cancellationToken)
         {
-            if (string.IsNullOrWhiteSpace(videoId))
+            if (string.IsNullOrWhiteSpace(videoId) || cancellationToken.IsCancellationRequested)
             {
                 return null;
             }
 
             WaitBeforeRequest();
-            HttpResult result = _http.GetText(ThumbnailUrlResolver.GetWatchPageUrl(videoId));
+            HttpResult result = _http.GetText(ThumbnailUrlResolver.GetWatchPageUrl(videoId), cancellationToken);
             if (!result.IsSuccess)
             {
                 return null;
@@ -277,24 +382,42 @@ namespace nicorankLib.Util
         private ImageDownloadOutcome DownloadOne(
             IReadOnlyList<string> candidates,
             string destinationPath,
-            out string message)
+            CancellationToken cancellationToken,
+            out string message,
+            out ImageDownloadFailureKind kind,
+            out string failedUrl)
         {
+            kind = ImageDownloadFailureKind.Unknown;
+            failedUrl = null;
+
             if (candidates == null || candidates.Count == 0)
             {
                 message = "候補URLがありません";
+                kind = ImageDownloadFailureKind.NotFound;
                 return ImageDownloadOutcome.Failed;
             }
 
             string tempPath = destinationPath + TempFileExtension;
             string lastMessage = null;
+            ImageDownloadFailureKind lastKind = ImageDownloadFailureKind.NotFound;
+            string lastUrl = null;
 
             foreach (string url in candidates)
             {
                 bool nextCandidate = false;
                 for (int attempt = 0; attempt <= RetryCount && !nextCandidate; attempt++)
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        TryDelete(tempPath);
+                        message = "中断";
+                        kind = ImageDownloadFailureKind.None;
+                        return ImageDownloadOutcome.Cancelled;
+                    }
+
                     WaitBeforeRequest();
-                    HttpResult result = _http.DownloadFile(url, tempPath);
+                    lastUrl = url;
+                    HttpResult result = _http.DownloadFile(url, tempPath, cancellationToken);
 
                     if (result.IsSuccess)
                     {
@@ -302,37 +425,61 @@ namespace nicorankLib.Util
                         {
                             ReplaceTempFile(tempPath, destinationPath);
                             message = null;
+                            kind = ImageDownloadFailureKind.None;
+                            failedUrl = null;
                             return ImageDownloadOutcome.Success;
                         }
                         catch (Exception ex)
                         {
                             TryDelete(tempPath);
                             message = "保存に失敗: " + ex.Message;
+                            kind = ImageDownloadFailureKind.SaveError;
+                            failedUrl = url;
                             return ImageDownloadOutcome.Failed;
                         }
                     }
 
                     TryDelete(tempPath);
 
+                    if (result.Status == HttpDownloadStatus.Cancelled)
+                    {
+                        message = "中断";
+                        kind = ImageDownloadFailureKind.None;
+                        failedUrl = url;
+                        return ImageDownloadOutcome.Cancelled;
+                    }
+
                     if (result.Status == HttpDownloadStatus.NotFound)
                     {
-                        // このサイズは存在しない。次の候補（base など）を試す。
+                        // このサイズは存在しない（400/404/410）。次の候補（base など）を試す。
                         nextCandidate = true;
-                        lastMessage = "404";
+                        lastMessage = result.StatusCode > 0 ? $"HTTP {result.StatusCode}" : "404";
+                        lastKind = ImageDownloadFailureKind.NotFound;
                         continue;
                     }
 
-                    if (result.Status == HttpDownloadStatus.Forbidden
-                        || result.Status == HttpDownloadStatus.RateLimited)
+                    if (result.Status == HttpDownloadStatus.Forbidden)
                     {
-                        // レート制限・アクセス拒否は再試行すると悪化するため、その画像だけ見送る。
-                        message = $"HTTP {result.StatusCode} のため見送り";
+                        message = $"HTTP {result.StatusCode}（アクセス拒否）のため見送り";
+                        kind = ImageDownloadFailureKind.Forbidden;
+                        failedUrl = url;
+                        return ImageDownloadOutcome.Failed;
+                    }
+
+                    if (result.Status == HttpDownloadStatus.RateLimited)
+                    {
+                        message = $"HTTP {result.StatusCode}（レート制限）のため見送り";
+                        kind = ImageDownloadFailureKind.RateLimited;
+                        failedUrl = url;
                         return ImageDownloadOutcome.Failed;
                     }
 
                     lastMessage = result.StatusCode > 0
                         ? $"HTTP {result.StatusCode}"
                         : "通信エラー";
+                    lastKind = result.Status == HttpDownloadStatus.ServerError
+                        ? ImageDownloadFailureKind.ServerError
+                        : ImageDownloadFailureKind.Network;
 
                     if (attempt < RetryCount)
                     {
@@ -343,11 +490,15 @@ namespace nicorankLib.Util
                     // 5xx・通信エラーはサイズ違いの別候補でも直る可能性が低く、
                     // 追加リクエストは負荷になるだけなので、その画像はここで諦める。
                     message = lastMessage;
+                    kind = lastKind;
+                    failedUrl = lastUrl;
                     return ImageDownloadOutcome.Failed;
                 }
             }
 
             message = string.IsNullOrEmpty(lastMessage) ? "取得できませんでした" : lastMessage;
+            kind = lastKind;
+            failedUrl = lastUrl;
             return ImageDownloadOutcome.Failed;
         }
 
@@ -401,6 +552,8 @@ namespace nicorankLib.Util
             string fileName,
             ImageDownloadOutcome outcome,
             string message,
+            ImageDownloadFailureKind kind,
+            string failedUrl,
             IProgress<ImageDownloadProgress> progress)
         {
             switch (outcome)
@@ -410,6 +563,9 @@ namespace nicorankLib.Util
                     break;
                 case ImageDownloadOutcome.Skipped:
                     summary.Skipped++;
+                    break;
+                case ImageDownloadOutcome.Cancelled:
+                    // 中断で打ち切った件は成功にも失敗にも数えない。
                     break;
                 default:
                     summary.Failed++;
@@ -428,6 +584,8 @@ namespace nicorankLib.Util
                 FileName = fileName,
                 Outcome = outcome,
                 Message = message,
+                Kind = kind,
+                Url = failedUrl,
                 SuccessCount = summary.Success,
                 SkippedCount = summary.Skipped,
                 FailedCount = summary.Failed,

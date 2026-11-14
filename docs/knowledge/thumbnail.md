@@ -8,7 +8,7 @@
 
 - `nicorankLib/api/NicoApi.cs` が `https://ext.nicovideo.jp/api/getthumbinfo/{動画ID}` を呼び、XML の `<thumbnail_url>` を `Ranking.ThumbnailURL` に保存している。
 - ただし `ThumbnailURL` の中身は取得元によって違う。
-  - 週刊: `JsonReaderBase` が公式JSONの `thumbnail` から `GetBestUrl()`（`largeUrl` → `middleUrl` → `url` の順）を入れるため、**既に `.L`（360x270）のことが多い**。
+  - 週刊: `JsonReaderBase` が公式JSONの `thumbnail` から `GetBestUrl()`（`largeUrl` → `middleUrl` → `url` の順）を入れる。`largeUrl` は通常 `nicovideo.cdn.nimg.jp/.../{rand}.L` だが、動画によっては `img.cdn.nimg.jp/.../r640x360l?key=...` の**キー付きURL**になる（実測 2026-11-14: 221件中2件）。キー付きURLに `.L` を付けると400、クエリを落とすと取得できない。
   - SP・タグ: getthumbinfo の `<thumbnail_url>`（base。130x100。`{n}.{rand}` の場合あり）。
   - 中間: `Dailylog.db` の `イメージパス`。
 - `ResultImagegetMovieIcon` が `queue.irv` に、`ResultImagegetUserIcon` が `queue_UserIcon.irv` にダウンロードキューを書き、Irvine などの外部ツールが画像を取得する。
@@ -128,6 +128,7 @@ GET https://www.nicovideo.jp/api/watch/v3_guest/{ID}?_frontendId=6&_frontendVers
 
 - **実装**: `nicorankLib/api/ThumbnailUrlResolver.cs`（URL解決・HTML解析）と `nicorankLib/Util/ImageDownloader.cs`（順次DL・間隔・フォールバック）。ファイル名は `nicorankLib/Util/ImageFileNaming.cs`。
 - **既定（360x270）**: `base + ".L"`。404なら `base`（130x100）。`base` は `ThumbnailURL` の末尾 `.L`/`.M` を剥がしたもの。
+- **キー付きURL**: `?key=` 付き、または `img.cdn.nimg.jp` / `goptim` のURLは**そのまま**使う。`.L` を付けると400、クエリを落とすと取得できない。失敗時は動画IDから `nicovideo.cdn.nimg.jp/thumbnails/{n}/{n}.L` → `{n}` を試す。
 - **高画質ON（1280x720）**: 視聴ページHTMLの `thumbnail.ogp` → `thumbnail.player`（960x540）→ `.L` → base。
 - **ショート**: `thumbnail.short`（405x720）→ `ogp` → `player` → `.L` → base。
 - **ユーザーアイコン**: `getthumbinfo` の `GetUserIconUrl()` をそのまま使う。高画質オプションの対象外。
@@ -145,6 +146,8 @@ GET https://www.nicovideo.jp/api/watch/v3_guest/{ID}?_frontendId=6&_frontendVers
 | `sm26335920` | 2015 | 200 / 360x270 | 960x540 | 960x720（r1280x720l） | null |
 | `sm47042567` | 2026 | 200 / 360x270 | 960x540 | 1280x720（goptim） | null |
 | `ss47042739` | 2026 | 200 / 360x270 | 960x540 | 1280x720（goptim） | 405x720 |
+
+- 2026-11-14 の実DLでは、週刊のキー付き `r640x360l?key=...` は 468x360 のJPEGを返した。元動画のアスペクト比により出力サイズは変わるため、サイズを決め打ちせずURLをそのまま使う。
 
 ## 9. 更新ルール
 

@@ -121,7 +121,7 @@ AnalyzeRank():
 | `ResultJsonRankDB` | `result_DB登録用(UTF8).json` |
 | `ResultImagegetBase`（abstract） | 画像 DL キュー出力基底（.irv 形式） |
 | `ResultImagegetMovieIcon` | `queue.irv`（動画サムネイル、ED枠まで）。ファイル名は `ImageFileNaming.GetMovieFileName` に委譲（Issue #56） |
-| `ResultImagegetUserIcon` | `queue_UserIcon.irv`（ユーザーアイコン、全件）。ファイル名は `ImageFileNaming.GetUserIconFileName` に委譲（Issue #56） |
+| `ResultImagegetUserIcon` | `queue_UserIcon.irv`（ユーザーアイコン、`UserInfo.Num` の範囲＝上位＋カテゴリ1位。`UserNum=0` なら全件）。ファイル名は `ImageFileNaming.GetUserIconFileName` に委譲（Issue #56） |
 | `ResultHistory` | NicoranHistory.db へ登録（History / LastResult / LastResultInfo）。LastResultのJSON列はVer0移行でDROP済みのためINSERT対象外（Issue #28）。`EnsureMigrated()`（`IDbMigratable`）は集計開始時に旧スキーマ移行＋SP行削除＋JSON列DROP＋VACUUM＋DBVersion確保 |
 
 出力先は `Output/`（`ModeFactoryBase.OUTPUTDIR`、カレントディレクトリ相対・固定）。実行順は `ModeFactoryBase.AnalyzeRank()` 内で生成した各 OutputBase の `Execute()` を順次呼ぶ。
