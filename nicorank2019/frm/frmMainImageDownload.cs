@@ -26,6 +26,120 @@ namespace nicorank2019.frm
         /// <summary>集計実行中か。集計中にDLボタンが有効に見えないようにする。</summary>
         private bool _analyzeRunning = false;
 
+        // 画像ダウンロードUI。Designer を編集すると環境によってデザイナーが読み込めなくなる事象が
+        // 繰り返されたため、既存のアイコン設定やチェックボックス配線（#35・#54 の前例）と同じく
+        // コード側で生成する。frmMain のコンストラクタから InitializeImageDownloadControls() を呼ぶ。
+        private GroupBox grpImageDownload;
+        private Label lblImageDownloadDesc;
+        private Button btnThumbnailDownload;
+        private Button btnUserIconDownload;
+        private CheckBox chkHighQuality;
+        private RadioButton rbSkipExisting;
+        private RadioButton rbOverwrite;
+        private Label lblImageDownloadNote;
+
+        /// <summary>
+        /// 集計タブ下部の画像ダウンロードUIを生成する。
+        /// なぜ Designer ではなくコードか: Designer ファイルへの追記が、この環境では
+        /// 「基本クラスを読み込めませんでした」でデザイナーを開けなくすることがあったため。
+        /// 座標・サイズ・タブ順は当初 Designer に置いていた値と同じにしてある。
+        /// </summary>
+        private void InitializeImageDownloadControls()
+        {
+            grpImageDownload = new GroupBox();
+            lblImageDownloadDesc = new Label();
+            btnThumbnailDownload = new Button();
+            btnUserIconDownload = new Button();
+            chkHighQuality = new CheckBox();
+            rbSkipExisting = new RadioButton();
+            rbOverwrite = new RadioButton();
+            lblImageDownloadNote = new Label();
+
+            grpImageDownload.SuspendLayout();
+
+            grpImageDownload.Controls.Add(lblImageDownloadDesc);
+            grpImageDownload.Controls.Add(btnThumbnailDownload);
+            grpImageDownload.Controls.Add(btnUserIconDownload);
+            grpImageDownload.Controls.Add(chkHighQuality);
+            grpImageDownload.Controls.Add(rbSkipExisting);
+            grpImageDownload.Controls.Add(rbOverwrite);
+            grpImageDownload.Controls.Add(lblImageDownloadNote);
+            grpImageDownload.Location = new System.Drawing.Point(6, 570);
+            grpImageDownload.Name = "grpImageDownload";
+            grpImageDownload.Size = new System.Drawing.Size(806, 130);
+            grpImageDownload.TabIndex = 5;
+            grpImageDownload.TabStop = false;
+            grpImageDownload.Text = "画像ダウンロード（既存の queue.irv とは別に保存します）";
+
+            lblImageDownloadDesc.AutoSize = true;
+            lblImageDownloadDesc.Location = new System.Drawing.Point(12, 20);
+            lblImageDownloadDesc.Name = "lblImageDownloadDesc";
+            lblImageDownloadDesc.Size = new System.Drawing.Size(461, 12);
+            lblImageDownloadDesc.TabIndex = 0;
+            lblImageDownloadDesc.Text = "集計後に、サムネイルとユーザーアイコンを選択したフォルダへ直接保存します。";
+
+            btnThumbnailDownload.Enabled = false;
+            btnThumbnailDownload.Location = new System.Drawing.Point(12, 40);
+            btnThumbnailDownload.Name = "btnThumbnailDownload";
+            btnThumbnailDownload.Size = new System.Drawing.Size(150, 30);
+            btnThumbnailDownload.TabIndex = 1;
+            btnThumbnailDownload.Text = "EDサムネイルDL";
+            btnThumbnailDownload.UseVisualStyleBackColor = true;
+            btnThumbnailDownload.Click += btnThumbnailDownload_Click;
+
+            btnUserIconDownload.Enabled = false;
+            btnUserIconDownload.Location = new System.Drawing.Point(168, 40);
+            btnUserIconDownload.Name = "btnUserIconDownload";
+            btnUserIconDownload.Size = new System.Drawing.Size(150, 30);
+            btnUserIconDownload.TabIndex = 2;
+            btnUserIconDownload.Text = "ユーザーアイコンDL";
+            btnUserIconDownload.UseVisualStyleBackColor = true;
+            btnUserIconDownload.Click += btnUserIconDownload_Click;
+
+            chkHighQuality.AutoSize = true;
+            chkHighQuality.Enabled = false;
+            chkHighQuality.Location = new System.Drawing.Point(12, 78);
+            chkHighQuality.Name = "chkHighQuality";
+            chkHighQuality.Size = new System.Drawing.Size(210, 16);
+            chkHighQuality.TabIndex = 3;
+            chkHighQuality.Text = "可能であれば高画質(1280x720)";
+            chkHighQuality.UseVisualStyleBackColor = true;
+
+            rbSkipExisting.AutoSize = true;
+            rbSkipExisting.Checked = true;
+            rbSkipExisting.Enabled = false;
+            rbSkipExisting.Location = new System.Drawing.Point(300, 78);
+            rbSkipExisting.Name = "rbSkipExisting";
+            rbSkipExisting.Size = new System.Drawing.Size(140, 16);
+            rbSkipExisting.TabIndex = 4;
+            rbSkipExisting.TabStop = true;
+            rbSkipExisting.Text = "既存ファイルはスキップ";
+            rbSkipExisting.UseVisualStyleBackColor = true;
+
+            rbOverwrite.AutoSize = true;
+            rbOverwrite.Enabled = false;
+            rbOverwrite.Location = new System.Drawing.Point(460, 78);
+            rbOverwrite.Name = "rbOverwrite";
+            rbOverwrite.Size = new System.Drawing.Size(55, 16);
+            rbOverwrite.TabIndex = 5;
+            rbOverwrite.Text = "上書き";
+            rbOverwrite.UseVisualStyleBackColor = true;
+
+            lblImageDownloadNote.AutoSize = true;
+            lblImageDownloadNote.ForeColor = System.Drawing.SystemColors.GrayText;
+            lblImageDownloadNote.Location = new System.Drawing.Point(12, 104);
+            lblImageDownloadNote.Name = "lblImageDownloadNote";
+            lblImageDownloadNote.Size = new System.Drawing.Size(332, 12);
+            lblImageDownloadNote.TabIndex = 6;
+            lblImageDownloadNote.Text = "保存先は実行時に選択します。中間モードは対象外です。";
+
+            // 集計タブの既存コントロールと重ならない位置（btnAnalyze の下）に追加する。
+            tabPageSyukei.Controls.Add(grpImageDownload);
+
+            grpImageDownload.ResumeLayout(false);
+            grpImageDownload.PerformLayout();
+        }
+
         /// <summary>直前に選んだ保存先。アプリ起動中だけ覚える（nicorank.xml は変更しない）。</summary>
         private string _lastImageDownloadDir = null;
 

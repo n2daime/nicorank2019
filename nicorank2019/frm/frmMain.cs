@@ -65,6 +65,9 @@ namespace nicorank2019.frm
         public frmMain()
         {
             InitializeComponent();
+            // 画像ダウンロードUIは Designer を触らずコード側で生成する（Issue #56。
+            // Designer 追記でデザイナーが読み込めなくなる環境があるため）。
+            InitializeImageDownloadControls();
             // exe と同じアイコンをフォーム左上・タスクバーに表示する (#49)。
             // Designer 再生成の差分 churn を避けるためコード側で設定する。アイコンは起動の必須要素ではないため、読めなくても既定アイコンで起動を続ける。
             try

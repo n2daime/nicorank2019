@@ -255,6 +255,14 @@
 - **原因**: `TextUtil` の個別書き込みにはロックがあるが、`ErrLog.Write` 全体にはない。`NicoApi` の並列内 catch など従来からの同根箇所も同じ構造
 - **対策（将来）**: `ErrLog.Write` 全体を `lock` で硬化する。影響範囲が広いため #43 では見送り、別タスクで対応する
 
+### 25. WinForms Designer が「基本クラス 'System.…' を読み込めませんでした」になる（Issue #56・2026-11）
+
+- **症状**: `frmMain.cs` をデザイナーで開くと「デザイナーの読み込み前に以下のエラーを解決する必要があります」「基本クラス 'System.…' を読み込めませんでした」となり、デザイン面が表示されない。ビルド自体は成功する。
+- **確認した事実**: ビルド済み `nicorank2019.exe` をリフレクションで読み込み、`nicorank2019.frm.frmMain` の `BaseType` を調べると `System.Windows.Forms.Form` に正しく解決できた。つまり生成物の型階層は壊れていない。`MSBuild.exe`（Visual Studio 同梱）でのソリューションビルドも成功した。
+- **原因の見立て**: コードの型エラーではなく、Visual Studio のデザイン時ビルド／Designer ファイルの解釈側。Designer ファイルへコントロールを追記した直後に再現し、環境差で起きる。過去にも Designer 全体が再生成される事象があり（archive の #30 付近）、このリポジトリでは **Designer を編集せずコード側で UI を生成する**前例がある（#35・#49・#54）。
+- **対策（実装済み・Issue #56）**: 画像DLの UI は `frmMainImageDownload.InitializeImageDownloadControls()` でコンストラクタから生成し、`frmMain.Designer.cs` は変更しない。新規 partial は csproj で `<DependentUpon>frmMain.cs</DependentUpon>` を付け、独立したフォームとして扱わせない。
+- **切り分け手順（次回）**: ①コマンドラインで `MSBuild.exe` ビルドが通るか ②ビルド済み exe の `BaseType` が `System.Windows.Forms.Form` か ③Visual Studio を再起動／プロジェクトを再読み込みしても再現するか ④直前に `frmMain.Designer.cs` を編集していないか。①〜②が正常なら生成物ではなく IDE 側の問題として扱い、Designer 編集を避ける。
+
 ### 25. docsの文字コード混在によるarchive.mdの文字化け（2026-10・約1万バイト）
 
 - **症状**: `docs/tasks/archive.md` の既存部分に約1万バイトの不正UTF-8が混入し、日本語が `�E` 混じりで読めなくなった。新規追記部（2026-09-26以降の8件）はCP932単独、既存部（2026-09-23以前）はUTF-8とCP932の混合だった

@@ -65,14 +65,6 @@
             this.tbTagCondition = new System.Windows.Forms.TextBox();
             this.tabPageSyukei = new System.Windows.Forms.TabPage();
             this.btnAnalyze = new System.Windows.Forms.Button();
-            this.grpImageDownload = new System.Windows.Forms.GroupBox();
-            this.lblImageDownloadDesc = new System.Windows.Forms.Label();
-            this.btnThumbnailDownload = new System.Windows.Forms.Button();
-            this.btnUserIconDownload = new System.Windows.Forms.Button();
-            this.chkHighQuality = new System.Windows.Forms.CheckBox();
-            this.rbSkipExisting = new System.Windows.Forms.RadioButton();
-            this.rbOverwrite = new System.Windows.Forms.RadioButton();
-            this.lblImageDownloadNote = new System.Windows.Forms.Label();
             this.panel3 = new System.Windows.Forms.Panel();
             this.label18 = new System.Windows.Forms.Label();
             this.tbUserInfoNum = new System.Windows.Forms.TextBox();
@@ -164,7 +156,6 @@
             this.grpFilter.SuspendLayout();
             this.grpTag.SuspendLayout();
             this.tabPageSyukei.SuspendLayout();
-            this.grpImageDownload.SuspendLayout();
             this.panel3.SuspendLayout();
             this.panelSP.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -548,7 +539,6 @@
             // 
             this.tabPageSyukei.BackColor = System.Drawing.SystemColors.Control;
             this.tabPageSyukei.Controls.Add(this.btnAnalyze);
-            this.tabPageSyukei.Controls.Add(this.grpImageDownload);
             this.tabPageSyukei.Controls.Add(this.panel3);
             this.tabPageSyukei.Controls.Add(this.panelSP);
             this.tabPageSyukei.Controls.Add(this.groupBox1);
@@ -568,98 +558,6 @@
             this.btnAnalyze.Text = "ランキング計算";
             this.btnAnalyze.UseVisualStyleBackColor = true;
             this.btnAnalyze.Click += new System.EventHandler(this.btnAnalyze_Click);
-            // 
-            // grpImageDownload
-            // 
-            this.grpImageDownload.Controls.Add(this.lblImageDownloadDesc);
-            this.grpImageDownload.Controls.Add(this.btnThumbnailDownload);
-            this.grpImageDownload.Controls.Add(this.btnUserIconDownload);
-            this.grpImageDownload.Controls.Add(this.chkHighQuality);
-            this.grpImageDownload.Controls.Add(this.rbSkipExisting);
-            this.grpImageDownload.Controls.Add(this.rbOverwrite);
-            this.grpImageDownload.Controls.Add(this.lblImageDownloadNote);
-            this.grpImageDownload.Location = new System.Drawing.Point(6, 570);
-            this.grpImageDownload.Name = "grpImageDownload";
-            this.grpImageDownload.Size = new System.Drawing.Size(806, 130);
-            this.grpImageDownload.TabIndex = 5;
-            this.grpImageDownload.TabStop = false;
-            this.grpImageDownload.Text = "画像ダウンロード（既存の queue.irv とは別に保存します）";
-            // 
-            // lblImageDownloadDesc
-            // 
-            this.lblImageDownloadDesc.AutoSize = true;
-            this.lblImageDownloadDesc.Location = new System.Drawing.Point(12, 20);
-            this.lblImageDownloadDesc.Name = "lblImageDownloadDesc";
-            this.lblImageDownloadDesc.Size = new System.Drawing.Size(461, 12);
-            this.lblImageDownloadDesc.TabIndex = 0;
-            this.lblImageDownloadDesc.Text = "集計後に、サムネイルとユーザーアイコンを選択したフォルダへ直接保存します。";
-            // 
-            // btnThumbnailDownload
-            // 
-            this.btnThumbnailDownload.Enabled = false;
-            this.btnThumbnailDownload.Location = new System.Drawing.Point(12, 40);
-            this.btnThumbnailDownload.Name = "btnThumbnailDownload";
-            this.btnThumbnailDownload.Size = new System.Drawing.Size(150, 30);
-            this.btnThumbnailDownload.TabIndex = 1;
-            this.btnThumbnailDownload.Text = "EDサムネイルDL";
-            this.btnThumbnailDownload.UseVisualStyleBackColor = true;
-            this.btnThumbnailDownload.Click += new System.EventHandler(this.btnThumbnailDownload_Click);
-            // 
-            // btnUserIconDownload
-            // 
-            this.btnUserIconDownload.Enabled = false;
-            this.btnUserIconDownload.Location = new System.Drawing.Point(168, 40);
-            this.btnUserIconDownload.Name = "btnUserIconDownload";
-            this.btnUserIconDownload.Size = new System.Drawing.Size(150, 30);
-            this.btnUserIconDownload.TabIndex = 2;
-            this.btnUserIconDownload.Text = "ユーザーアイコンDL";
-            this.btnUserIconDownload.UseVisualStyleBackColor = true;
-            this.btnUserIconDownload.Click += new System.EventHandler(this.btnUserIconDownload_Click);
-            // 
-            // chkHighQuality
-            // 
-            this.chkHighQuality.AutoSize = true;
-            this.chkHighQuality.Enabled = false;
-            this.chkHighQuality.Location = new System.Drawing.Point(12, 78);
-            this.chkHighQuality.Name = "chkHighQuality";
-            this.chkHighQuality.Size = new System.Drawing.Size(210, 16);
-            this.chkHighQuality.TabIndex = 3;
-            this.chkHighQuality.Text = "可能であれば高画質(1280x720)";
-            this.chkHighQuality.UseVisualStyleBackColor = true;
-            // 
-            // rbSkipExisting
-            // 
-            this.rbSkipExisting.AutoSize = true;
-            this.rbSkipExisting.Checked = true;
-            this.rbSkipExisting.Enabled = false;
-            this.rbSkipExisting.Location = new System.Drawing.Point(300, 78);
-            this.rbSkipExisting.Name = "rbSkipExisting";
-            this.rbSkipExisting.Size = new System.Drawing.Size(140, 16);
-            this.rbSkipExisting.TabIndex = 4;
-            this.rbSkipExisting.TabStop = true;
-            this.rbSkipExisting.Text = "既存ファイルはスキップ";
-            this.rbSkipExisting.UseVisualStyleBackColor = true;
-            // 
-            // rbOverwrite
-            // 
-            this.rbOverwrite.AutoSize = true;
-            this.rbOverwrite.Enabled = false;
-            this.rbOverwrite.Location = new System.Drawing.Point(460, 78);
-            this.rbOverwrite.Name = "rbOverwrite";
-            this.rbOverwrite.Size = new System.Drawing.Size(55, 16);
-            this.rbOverwrite.TabIndex = 5;
-            this.rbOverwrite.Text = "上書き";
-            this.rbOverwrite.UseVisualStyleBackColor = true;
-            // 
-            // lblImageDownloadNote
-            // 
-            this.lblImageDownloadNote.AutoSize = true;
-            this.lblImageDownloadNote.ForeColor = System.Drawing.SystemColors.GrayText;
-            this.lblImageDownloadNote.Location = new System.Drawing.Point(12, 104);
-            this.lblImageDownloadNote.Name = "lblImageDownloadNote";
-            this.lblImageDownloadNote.Size = new System.Drawing.Size(332, 12);
-            this.lblImageDownloadNote.TabIndex = 6;
-            this.lblImageDownloadNote.Text = "保存先は実行時に選択します。中間モードは対象外です。";
             // 
             // panel3
             // 
@@ -1566,8 +1464,6 @@
             this.grpTag.ResumeLayout(false);
             this.grpTag.PerformLayout();
             this.tabPageSyukei.ResumeLayout(false);
-            this.grpImageDownload.ResumeLayout(false);
-            this.grpImageDownload.PerformLayout();
             this.panel3.ResumeLayout(false);
             this.panel3.PerformLayout();
             this.panelSP.ResumeLayout(false);
@@ -1627,14 +1523,6 @@
         private System.Windows.Forms.TextBox tbTagCondition;
         private System.Windows.Forms.TabPage tabPageSyukei;
         private System.Windows.Forms.Button btnAnalyze;
-        private System.Windows.Forms.GroupBox grpImageDownload;
-        private System.Windows.Forms.Label lblImageDownloadDesc;
-        private System.Windows.Forms.Button btnThumbnailDownload;
-        private System.Windows.Forms.Button btnUserIconDownload;
-        private System.Windows.Forms.CheckBox chkHighQuality;
-        private System.Windows.Forms.RadioButton rbSkipExisting;
-        private System.Windows.Forms.RadioButton rbOverwrite;
-        private System.Windows.Forms.Label lblImageDownloadNote;
         private System.Windows.Forms.Panel panel3;
         private System.Windows.Forms.Label label18;
         private System.Windows.Forms.TextBox tbUserInfoNum;
