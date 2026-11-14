@@ -935,5 +935,29 @@
 - **残課題／注意**:
   - キー付きURLのキー失効時ステータスは未実測（30分以上有効なことは確認）。403/429/5xxで通常CDNへフォールバックする実装で緩和
   - 範囲外ユーザーのアイコンは `.irv` / 直接DL のどちらでも取得しない。`result(UTF8).csv` の全件アイコン欄との不整合に注意
-  - 未追跡の `nicorank2019.zip` 等は既存物で触れていない。develop への push は未実施
+  - 未追跡だったリリース用 zip は今回の成果物として新規作成し、GitHub Release に添付した（旧ファイルは上書き）。develop への push はリリース手順で実施済み
+
+---
+
+## 2026-11-14 リリース v20261114_nicorank
+
+- **タグ**: `v20261114_nicorank`（main HEAD `f135018` を指す。`git rev-parse "v20261114_nicorank^{commit}"` で確認）
+- **GitHub Release**: https://github.com/n2daime/nicorank2019/releases/tag/v20261114_nicorank
+- **含まれる変更**: #56（EDサムネイル・ユーザーアイコンの直接ダウンロード）
+- **成果物**:
+  - `nicorank2019.zip`（16,083,050 bytes / sha256 `DB1FC63A2E7041184D724302869C068064D89D9603C6884D4436A43B6DDA0D3C`）
+  - `nicorank_SnapShot.zip`（16,426,330 bytes / sha256 `7F8A0778F540DD99783BCFB10A52D4E4BEFD0DC53953B3294131EE8CEA6E95F2`。今回の変更なしだが配布物統一のため同梱）
+  - `nicorank_oldlog.zip`（6,043,541 bytes / sha256 `A1523E1939CA654985A131684DE2BE4A835B8CCABB50AA3E2F2D77D5244C8A27`。同上）
+- **版数**: `nicorank2019.exe` = 2026.11.14.0（`version.json` の `2026.11.14` と一致）
+- **検証**:
+  - `dotnet test UnitTest/UnitTest.csproj` 445件 PASS（EXIT 0）
+  - `dotnet build nicorank2019.sln -c Release` 成功（EXIT 0）
+  - `bin/Release/lib` に4 DLL + `lib/runtimes/win-{x64,x86,arm}/native/e_sqlite3.dll` の3件、`nicorank2019.exe.config` / `nicorank_SnapShot.exe.config` / `nicorankUpdater.exe.config` に `loadFromRemoteSources`、`bin/Release/nicorank.xml` と `依存ファイル/nicorank.xml` の SHA256 一致（`14A5D06F95706BCEDEF4CA6E50E9E3FB5EE65C20BF39BC1B92192BCBA57F3E95`）
+  - zip はホワイトリスト方式で作成し、DB・設定本体・pdb・Output等が含まれないことをエントリ一覧で確認
+  - ユーザー実機確認OK（#56 の予定件数・動的変更・中断・保存先・失敗レポート・キー付きURL・UserInfo範囲）
+- **version.json**: `tools/make-version.ps1` で生成（sha256 `db1fc63a2e7041184d724302869c068064d89d9603c6884d4436a43b6dda0d3c`、size 16,083,050、url は添付asset）。生成物は `%TEMP%\nicorank_version_v20261114\version.json`。NAS の `https://2daime.myds.me/nicorank/update/version.json` への配置は人間が行う（release.md の運用）。配置後に自動更新の通知が有効になる
+- **同期**: `main` → `develop` を `--no-ff` でバックマージして push 済み。バックマージ直後は `git diff main develop --stat` が空。本エントリ追記により develop が1件先行（前回リリースと同様）
+- **注意**: `queue_UserIcon.irv` が `UserInfo.Num` 範囲に変更された。`result(UTF8).csv` の範囲外ユーザーアイコンはローカルに存在しない。`UserNum=0` は全件取得になり大量リクエストになる
+- **残課題**: キー付きURLのキー失効時ステータスは未実測（403/429/5xxのCDNフォールバックで緩和）
+
 
