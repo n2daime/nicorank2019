@@ -218,6 +218,7 @@ namespace nicorank2019.frm
                 execButton.Enabled = true;
                 SetVacuumControlsEnabled(true);
                 tabPageOut.Enabled = true;
+                UpdateImageDownloadButtons();
             }
         }
 

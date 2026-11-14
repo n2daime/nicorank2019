@@ -233,6 +233,9 @@
     <Compile Include="frm\frmMainSyukei.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="frm\frmMainImageDownload.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="frm\frmMesseageDialog.cs">
       <SubType>Form</SubType>
     </Compile>
