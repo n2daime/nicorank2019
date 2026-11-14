@@ -105,6 +105,9 @@ namespace nicorankLib.Util
 
         private const string TempFileExtension = ".tmp";
 
+        /// <summary>既存ファイルをスキップしたときのメッセージ。UIのログ分類でも同じ定数を使う。</summary>
+        public const string SkipExistingMessage = "既存ファイルのためスキップ";
+
         private readonly IHttpDownloader _http;
         private readonly Action<int> _wait;
         private readonly int _intervalMs;
@@ -216,7 +219,7 @@ namespace nicorankLib.Util
         ///
         /// なぜ絞るか: UserInfo.Num は「ユーザー情報を取りに行く動画数」の設定であり、
         /// 利用者はこの範囲のアイコンだけを求めていることがある。全件だと数千件・数十分かかる。
-        /// なお既存 queue_UserIcon.irv は全件出力のまま残す（直接DLだけが設定に従う）。
+        /// 既存 queue_UserIcon.irv も同じ範囲に絞っている（0なら全件）。
         /// </summary>
         public ImageDownloadSummary DownloadUserIcons(
             IReadOnlyList<Ranking> rankings,
@@ -240,9 +243,7 @@ namespace nicorankLib.Util
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (Ranking rank in rankings)
             {
-                if (userInfoNum > 0
-                    && rank.RankTotal > userInfoNum
-                    && rank.RankCategory != 1)
+                if (!IsUserIconTarget(rank, userInfoNum))
                 {
                     // UserInfoReader と同じ範囲（上位 userInfoNum 位＋カテゴリ1位）だけを対象にする。
                     continue;
@@ -276,7 +277,7 @@ namespace nicorankLib.Util
                 if (!options.OverwriteExisting && File.Exists(destinationPath))
                 {
                     outcome = ImageDownloadOutcome.Skipped;
-                    message = "既存ファイルのためスキップ";
+                    message = SkipExistingMessage;
                 }
                 else if (string.IsNullOrWhiteSpace(url))
                 {
@@ -317,6 +318,22 @@ namespace nicorankLib.Util
                 return false;
             }
             return url.IndexOf("/video_deleted", StringComparison.OrdinalIgnoreCase) < 0;
+        }
+
+        /// <summary>
+        /// ユーザーアイコンの取得対象か。UserInfoReader と同じ条件
+        /// （総合順位が userInfoNum 以内、またはカテゴリ1位。userInfoNum=0 なら全件）。
+        /// .irv / 直接DL / UIの予定件数で条件がずれないよう、ここに集約する。
+        /// </summary>
+        public static bool IsUserIconTarget(Ranking rank, int userInfoNum)
+        {
+            if (rank == null)
+            {
+                return false;
+            }
+            return userInfoNum <= 0
+                || rank.RankTotal <= userInfoNum
+                || rank.RankCategory == 1;
         }
 
         private ImageDownloadOutcome DownloadMovieItem(
@@ -402,8 +419,13 @@ namespace nicorankLib.Util
             ImageDownloadFailureKind lastKind = ImageDownloadFailureKind.NotFound;
             string lastUrl = null;
 
-            foreach (string url in candidates)
+            for (int candidateIndex = 0; candidateIndex < candidates.Count; candidateIndex++)
             {
+                string url = candidates[candidateIndex];
+                bool hasNextCandidate = candidateIndex + 1 < candidates.Count;
+                // キー付きURLはキー失効時に403/429/5xxを返すことがある。その場合だけ、
+                // 動画IDから作った通常CDNの候補へ進む（非キーURLの即見送りは維持する）。
+                bool keyedCandidate = ThumbnailUrlResolver.IsKeyedThumbnailUrl(url);
                 bool nextCandidate = false;
                 for (int attempt = 0; attempt <= RetryCount && !nextCandidate; attempt++)
                 {
@@ -460,6 +482,13 @@ namespace nicorankLib.Util
 
                     if (result.Status == HttpDownloadStatus.Forbidden)
                     {
+                        if (keyedCandidate && hasNextCandidate)
+                        {
+                            nextCandidate = true;
+                            lastMessage = $"HTTP {result.StatusCode}";
+                            lastKind = ImageDownloadFailureKind.Forbidden;
+                            continue;
+                        }
                         message = $"HTTP {result.StatusCode}（アクセス拒否）のため見送り";
                         kind = ImageDownloadFailureKind.Forbidden;
                         failedUrl = url;
@@ -468,6 +497,13 @@ namespace nicorankLib.Util
 
                     if (result.Status == HttpDownloadStatus.RateLimited)
                     {
+                        if (keyedCandidate && hasNextCandidate)
+                        {
+                            nextCandidate = true;
+                            lastMessage = $"HTTP {result.StatusCode}";
+                            lastKind = ImageDownloadFailureKind.RateLimited;
+                            continue;
+                        }
                         message = $"HTTP {result.StatusCode}（レート制限）のため見送り";
                         kind = ImageDownloadFailureKind.RateLimited;
                         failedUrl = url;
@@ -484,6 +520,13 @@ namespace nicorankLib.Util
                     if (attempt < RetryCount)
                     {
                         _wait(RetryDelayMs);
+                        continue;
+                    }
+
+                    if (keyedCandidate && hasNextCandidate)
+                    {
+                        // キー付きURLの失効・一時障害。通常CDNの候補を1回試す。
+                        nextCandidate = true;
                         continue;
                     }
 

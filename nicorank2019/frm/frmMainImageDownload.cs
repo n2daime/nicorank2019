@@ -15,12 +15,14 @@ namespace nicorank2019.frm
     /// 集計タブの「EDサムネイルDL」「ユーザーアイコンDL」（Issue #56）。
     ///
     /// 既存の queue.irv / queue_UserIcon.irv は Irvine などの外部ツールが後から画像を取得する前提で、
-    /// 利用者は集計後に別途DL操作をする必要がある。ここでは同じファイル名・同じ対象件数のまま、
-    /// アプリ内で直接保存できるようにする（既存の .irv 出力は残す）。
+    /// 利用者は集計後に別途DL操作をする必要がある。ここでは同じファイル名・同じ対象範囲のまま、
+    /// アプリ内で直接保存できるようにする（.irv の出力自体は残す。ユーザーアイコンは .irv も
+    /// UserInfo.Num の範囲に揃えた）。
     ///
     /// 注意している点:
     /// - コントロールの値は必ずUIスレッドで読み、Task.Run には値だけを渡す（pitfalls 項目19）。
-    /// - 実行中はタブごと無効化し、集計・最適化との同時実行を防ぐ。
+    /// - 実行中は他タブ・実行系ボタン・モード選択を止める。中断ボタンを押せるよう、
+    ///   集計タブ全体は無効化しない。
     /// - 保存先は毎回ユーザーに選ばせ、直前に選んだフォルダを初期値にする（設定ファイルには保存しない）。
     /// </summary>
     public partial class frmMain
@@ -129,9 +131,7 @@ namespace nicorank2019.frm
             int userInfoNum = Config.GetInstance().UserNum;
             foreach (var rank in MainFactory.RankingList)
             {
-                if (userInfoNum > 0
-                    && rank.RankTotal > userInfoNum
-                    && rank.RankCategory != 1)
+                if (!ImageDownloader.IsUserIconTarget(rank, userInfoNum))
                 {
                     // 直接DLは UserInfo.Num の範囲（上位＋カテゴリ1位）だけを対象にする。
                     continue;
@@ -497,7 +497,7 @@ namespace nicorank2019.frm
                 sb.AppendLine("[スキップ（既存以外）]");
                 foreach (ImageDownloadProgress skip in _imageDownloadSkips)
                 {
-                    if (skip.Message == "既存ファイルのためスキップ")
+                    if (skip.Message == ImageDownloader.SkipExistingMessage)
                     {
                         continue;
                     }

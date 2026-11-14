@@ -36,9 +36,7 @@ namespace nicorankLib.output
         protected override string GetDownLoadName(Ranking rank)
         {
             int userInfoNum = Config.GetInstance().UserNum;
-            if (userInfoNum > 0
-                && rank.RankTotal > userInfoNum
-                && rank.RankCategory != 1)
+            if (!ImageDownloader.IsUserIconTarget(rank, userInfoNum))
             {
                 return string.Empty;
             }

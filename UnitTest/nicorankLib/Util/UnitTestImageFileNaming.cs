@@ -1,7 +1,9 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using nicorankLib.Analyze.model;
+using nicorankLib.Common;
 using nicorankLib.output;
 using nicorankLib.Util;
+using UnitTest.Helpers;
 
 namespace UnitTest.nicorankLib.Util
 {
@@ -105,15 +107,29 @@ namespace UnitTest.nicorankLib.Util
         [TestMethod]
         public void LegacyUserIcon_UserInfoRangeOnly()
         {
-            // queue_UserIcon.irv は UserInfo.Num（既定1000）の範囲＋カテゴリ1位だけを出す。
-            var helper = new TestUserIcon();
-            var inRange = new Ranking() { ID = "sm1", UserID = "u1", RankTotal = 1000 };
-            var categoryFirst = new Ranking() { ID = "sm2", UserID = "u2", RankTotal = 2000, RankCategory = 1 };
-            var outOfRange = new Ranking() { ID = "sm3", UserID = "u3", RankTotal = 2000, RankCategory = 2 };
+            // 共有シングルトンの Config に依存しないよう、フィクスチャから初期化して明示的に設定する。
+            TestConfigBuilder.ResetInstance();
+            try
+            {
+                Config config = Config.GetInstance();
+                config.IsSP = false;
+                config.IsTagRank = false;
+                config.UserNum = 1000;
 
-            Assert.AreEqual("u1.jpg", helper.Name(inRange));
-            Assert.AreEqual("u2.jpg", helper.Name(categoryFirst));
-            Assert.AreEqual(string.Empty, helper.Name(outOfRange));
+                // queue_UserIcon.irv は UserInfo.Num（既定1000）の範囲＋カテゴリ1位だけを出す。
+                var helper = new TestUserIcon();
+                var inRange = new Ranking() { ID = "sm1", UserID = "u1", RankTotal = 1000 };
+                var categoryFirst = new Ranking() { ID = "sm2", UserID = "u2", RankTotal = 2000, RankCategory = 1 };
+                var outOfRange = new Ranking() { ID = "sm3", UserID = "u3", RankTotal = 2000, RankCategory = 2 };
+
+                Assert.AreEqual("u1.jpg", helper.Name(inRange));
+                Assert.AreEqual("u2.jpg", helper.Name(categoryFirst));
+                Assert.AreEqual(string.Empty, helper.Name(outOfRange));
+            }
+            finally
+            {
+                TestConfigBuilder.ResetInstance();
+            }
         }
     }
 }

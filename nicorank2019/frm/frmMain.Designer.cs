@@ -710,14 +710,14 @@
             this.lblImageDownloadNote.Location = new System.Drawing.Point(16, 130);
             this.lblImageDownloadNote.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblImageDownloadNote.Name = "lblImageDownloadNote";
-            this.lblImageDownloadNote.Size = new System.Drawing.Size(354, 15);
+            this.lblImageDownloadNote.Size = new System.Drawing.Size(722, 15);
             this.lblImageDownloadNote.TabIndex = 6;
             this.lblImageDownloadNote.Text = "保存先は実行時に選択します。中間モードは対象外。ユーザーアイコンはUserInfo設定の範囲（上位＋カテゴリ1位）です。";
             // 
             // lblImageDownloadCount
             // 
             this.lblImageDownloadCount.AutoSize = true;
-            this.lblImageDownloadCount.Location = new System.Drawing.Point(500, 25);
+            this.lblImageDownloadCount.Location = new System.Drawing.Point(535, 25);
             this.lblImageDownloadCount.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblImageDownloadCount.Name = "lblImageDownloadCount";
             this.lblImageDownloadCount.Size = new System.Drawing.Size(179, 15);

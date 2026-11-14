@@ -128,7 +128,7 @@ GET https://www.nicovideo.jp/api/watch/v3_guest/{ID}?_frontendId=6&_frontendVers
 
 - **実装**: `nicorankLib/api/ThumbnailUrlResolver.cs`（URL解決・HTML解析）と `nicorankLib/Util/ImageDownloader.cs`（順次DL・間隔・フォールバック）。ファイル名は `nicorankLib/Util/ImageFileNaming.cs`。
 - **既定（360x270）**: `base + ".L"`。404なら `base`（130x100）。`base` は `ThumbnailURL` の末尾 `.L`/`.M` を剥がしたもの。
-- **キー付きURL**: `?key=` 付き、または `img.cdn.nimg.jp` / `goptim` のURLは**そのまま**使う。`.L` を付けると400、クエリを落とすと取得できない。失敗時は動画IDから `nicovideo.cdn.nimg.jp/thumbnails/{n}/{n}.L` → `{n}` を試す。
+- **キー付きURL**: `?key=` 付き、または `img.cdn.nimg.jp` / `goptim` のURLは**そのまま**使う。`.L` を付けると400、クエリを落とすと取得できない。失敗時は動画IDから `nicovideo.cdn.nimg.jp/thumbnails/{n}/{n}.L` → `{n}` を試す。キー付きURLが403/429/5xxでも通常CDNへ1回フォールバックする（キー失効・一時障害の保険）。
 - **高画質ON（1280x720）**: 視聴ページHTMLの `thumbnail.ogp` → `thumbnail.player`（960x540）→ `.L` → base。
 - **ショート**: `thumbnail.short`（405x720）→ `ogp` → `player` → `.L` → base。
 - **ユーザーアイコン**: `getthumbinfo` の `GetUserIconUrl()` をそのまま使う。高画質オプションの対象外。

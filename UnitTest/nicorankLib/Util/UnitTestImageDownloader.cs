@@ -473,6 +473,67 @@ namespace UnitTest.nicorankLib.Util
         }
 
         [TestMethod]
+        public void Movie_KeyedUrl_Forbidden_FallsBackToCdn()
+        {
+            // 週刊のキー付きURLが403（キー失効・制限）でも、動画IDから作る通常CDNを試す。
+            const string keyed = "https://img.cdn.nimg.jp/s/nicovideo/thumbnails/8134546/8134546.original/r640x360l?key=abc";
+            var fake = new FakeHttpDownloader();
+            fake.FileHandler = (url, dest) => url == keyed
+                ? HttpResult.FromStatus(HttpDownloadStatus.Forbidden, 403)
+                : Success();
+            var list = new List<Ranking>() { Movie(1, "sm8134546", keyed) };
+
+            ImageDownloadSummary summary = CreateDownloader(fake)
+                .DownloadMovieThumbnails(list, 200, _dir, new ImageDownloadOptions(), null);
+
+            Assert.AreEqual(1, summary.Success);
+            Assert.AreEqual(2, fake.Requests.Count);
+            Assert.AreEqual("FILE https://nicovideo.cdn.nimg.jp/thumbnails/8134546/8134546.L", fake.Requests[1]);
+        }
+
+        [TestMethod]
+        public void Movie_KeyedUrl_ServerError_FallsBackToCdn()
+        {
+            const string keyed = "https://img.cdn.nimg.jp/s/nicovideo/thumbnails/8134546/8134546.original/r640x360l?key=abc";
+            var fake = new FakeHttpDownloader();
+            fake.FileHandler = (url, dest) => url == keyed
+                ? HttpResult.FromStatus(HttpDownloadStatus.ServerError, 500)
+                : Success();
+            var list = new List<Ranking>() { Movie(1, "sm8134546", keyed) };
+
+            ImageDownloadSummary summary = CreateDownloader(fake)
+                .DownloadMovieThumbnails(list, 200, _dir, new ImageDownloadOptions(), null);
+
+            Assert.AreEqual(1, summary.Success);
+            // キー付きURLは初回+2回リトライ、その後CDNへ1回。
+            Assert.AreEqual(4, fake.Requests.Count);
+        }
+
+        [TestMethod]
+        public void UserIcons_UserInfoRange_FiltersByRankAndCategory()
+        {
+            var fake = new FakeHttpDownloader();
+            fake.FileHandler = (url, dest) => Success();
+            var list = new List<Ranking>()
+            {
+                new Ranking() { ID = "sm1", RankTotal = 1, RankCategory = 2, UserID = "u1", UserImageURL = "https://example/i1" },
+                new Ranking() { ID = "sm2", RankTotal = 2000, RankCategory = 2, UserID = "u2", UserImageURL = "https://example/i2" },
+                new Ranking() { ID = "sm3", RankTotal = 2000, RankCategory = 1, UserID = "u3", UserImageURL = "https://example/i3" },
+                new Ranking() { ID = "sm4", RankTotal = 5000, RankCategory = 0, UserID = "u4", UserImageURL = "https://example/i4" },
+            };
+
+            ImageDownloadSummary summary = CreateDownloader(fake)
+                .DownloadUserIcons(list, _dir, new ImageDownloadOptions(), null, 1000);
+
+            Assert.AreEqual(2, summary.Total);
+            Assert.AreEqual(2, summary.Success);
+            Assert.IsTrue(File.Exists(Path.Combine(_dir, "u1.jpg")));
+            Assert.IsTrue(File.Exists(Path.Combine(_dir, "u3.jpg")));
+            Assert.IsFalse(File.Exists(Path.Combine(_dir, "u2.jpg")));
+            Assert.IsFalse(File.Exists(Path.Combine(_dir, "u4.jpg")));
+        }
+
+        [TestMethod]
         public void IsUsableThumbnailUrl_RejectsEmptyAndDeleted()
         {
             Assert.IsFalse(ImageDownloader.IsUsableThumbnailUrl(null));

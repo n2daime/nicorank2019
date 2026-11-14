@@ -71,10 +71,17 @@ namespace nicorank2019.Util
                 }
 
                 int hr = dialog.Show(owner == null ? IntPtr.Zero : owner.Handle);
+                const int ErrorCancelled = unchecked((int)0x800704C7);
+                if (hr == ErrorCancelled)
+                {
+                    // キャンセル。
+                    return null;
+                }
                 if (hr != 0)
                 {
-                    // キャンセル（HRESULT_FROM_WIN32(ERROR_CANCELLED)）やエラー。
-                    return null;
+                    // キャンセル以外の失敗は握りつぶさず、呼び出し側の Show で
+                    // FolderBrowserDialog へフォールバックさせる。
+                    Marshal.ThrowExceptionForHR(hr);
                 }
 
                 IShellItem result;
