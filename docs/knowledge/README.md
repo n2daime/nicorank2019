@@ -6,6 +6,7 @@
 - `nicorankLib.md` — コアライブラリの構造（Factory / Analyze / Input / Option / model / output / api / SnapShot / Util / Common）
 - `apps.md` — 各アプリの詳細（nicorank2019 / nicorank_SnapShot / nicorank_oldlog）
 - `db.md` — SQLite DB 構成・接続設計・SnapShotDB の大量登録設計
+- `thumbnail.md` — ニコニコ動画のサムネイルURL取得方法・解像度・高画質URL・注意点
 - `testing.md` — テスト構成・実行方法・既知の制約
 - `pitfalls.md` — 実装ノウハウ・再発防止（過去の失敗と対策）
 - `release.md` — リリース手順・ブランチ運用
