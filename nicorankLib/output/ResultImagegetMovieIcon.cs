@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using nicorankLib.Analyze.model;
 using nicorankLib.Common;
+using nicorankLib.Util;
 
 namespace nicorankLib.output
 {
@@ -32,7 +33,9 @@ namespace nicorankLib.output
         /// <returns></returns>
         protected override string GetDownLoadName(Ranking rank)
         {
-            return $"{rank.RankTotal}.jpg";
+            // 直接ダウンロード（Issue #56）と同じ規則を参照する。名前の生成以外は変えないため、
+            // queue.irv の内容は従来と1バイトも変わらない。
+            return ImageFileNaming.GetMovieFileName(rank);
         }
 
         /// <summary>

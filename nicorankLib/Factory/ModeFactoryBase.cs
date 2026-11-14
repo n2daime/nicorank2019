@@ -83,6 +83,17 @@ namespace nicorankLib.Factory
             }
         }
 
+        /// <summary>
+        /// EDサムネイル直接ダウンロード（Issue #56）の対象末尾順位。
+        /// queue.irv と同じ「紹介枠（長期動画を含む）＋ED枠」を返す。
+        /// なぜ Factory に置くか: GetRank が protected で UI から呼べず、
+        /// UI 側で同じ計算を書くと長期動画の加算を忘れて queue.irv と件数がずれるため。
+        /// </summary>
+        public int GetMovieThumbnailEndRank()
+        {
+            return GetRank() + Config.GetInstance().RankED;
+        }
+
         private bool _disposed = false;
 
         /// <summary>

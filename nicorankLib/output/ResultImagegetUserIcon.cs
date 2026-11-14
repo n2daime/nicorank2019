@@ -1,5 +1,6 @@
 ﻿using nicorankLib.Analyze.model;
 using nicorankLib.Common;
+using nicorankLib.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -32,22 +33,9 @@ namespace nicorankLib.output
         /// <returns></returns>
         protected override string GetDownLoadName(Ranking rank)
         {
-            if (string.IsNullOrWhiteSpace(rank.UserID))
-            {
-                return "";
-            }
-            else
-            {
-                if(rank.IsChannel)
-                {
-                    return $"ch{rank.UserID}.jpg";
-                }
-                else
-                {
-                    return $"{rank.UserID}.jpg";
-                }
-                
-            }
+            // 直接ダウンロード（Issue #56）と同じ規則を参照する。名前の生成以外は変えないため、
+            // queue_UserIcon.irv の内容は従来と1バイトも変わらない。
+            return ImageFileNaming.GetUserIconFileName(rank);
         }
 
         /// <summary>
