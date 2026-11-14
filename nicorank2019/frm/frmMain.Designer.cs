@@ -187,9 +187,9 @@
             this.tabPageTag.Controls.Add(this.grpFilter);
             this.tabPageTag.Controls.Add(this.grpTag);
             this.tabPageTag.Location = new System.Drawing.Point(4, 25);
-            this.tabPageTag.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tabPageTag.Margin = new System.Windows.Forms.Padding(4);
             this.tabPageTag.Name = "tabPageTag";
-            this.tabPageTag.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tabPageTag.Padding = new System.Windows.Forms.Padding(4);
             this.tabPageTag.Size = new System.Drawing.Size(1107, 946);
             this.tabPageTag.TabIndex = 3;
             this.tabPageTag.Text = "タグ検索集計";
@@ -199,7 +199,7 @@
             // 
             this.btnAnalyzeTag.Enabled = false;
             this.btnAnalyzeTag.Location = new System.Drawing.Point(425, 800);
-            this.btnAnalyzeTag.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnAnalyzeTag.Margin = new System.Windows.Forms.Padding(4);
             this.btnAnalyzeTag.Name = "btnAnalyzeTag";
             this.btnAnalyzeTag.Size = new System.Drawing.Size(185, 49);
             this.btnAnalyzeTag.TabIndex = 3;
@@ -220,9 +220,9 @@
             this.grpDb.Controls.Add(this.btnBaseDB_Tag);
             this.grpDb.Controls.Add(this.tbBaseDB_Tag);
             this.grpDb.Location = new System.Drawing.Point(11, 292);
-            this.grpDb.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpDb.Margin = new System.Windows.Forms.Padding(4);
             this.grpDb.Name = "grpDb";
-            this.grpDb.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpDb.Padding = new System.Windows.Forms.Padding(4);
             this.grpDb.Size = new System.Drawing.Size(1075, 160);
             this.grpDb.TabIndex = 2;
             this.grpDb.TabStop = false;
@@ -234,7 +234,7 @@
             this.chkUseLiveCounter.Checked = true;
             this.chkUseLiveCounter.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkUseLiveCounter.Location = new System.Drawing.Point(93, 59);
-            this.chkUseLiveCounter.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.chkUseLiveCounter.Margin = new System.Windows.Forms.Padding(4);
             this.chkUseLiveCounter.Name = "chkUseLiveCounter";
             this.chkUseLiveCounter.Size = new System.Drawing.Size(327, 19);
             this.chkUseLiveCounter.TabIndex = 2;
@@ -255,7 +255,7 @@
             // btnLastResult_Tag
             // 
             this.btnLastResult_Tag.Location = new System.Drawing.Point(899, 120);
-            this.btnLastResult_Tag.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnLastResult_Tag.Margin = new System.Windows.Forms.Padding(4);
             this.btnLastResult_Tag.Name = "btnLastResult_Tag";
             this.btnLastResult_Tag.Size = new System.Drawing.Size(100, 29);
             this.btnLastResult_Tag.TabIndex = 6;
@@ -276,7 +276,7 @@
             // tbLastResult_Tag
             // 
             this.tbLastResult_Tag.Location = new System.Drawing.Point(92, 122);
-            this.tbLastResult_Tag.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbLastResult_Tag.Margin = new System.Windows.Forms.Padding(4);
             this.tbLastResult_Tag.Name = "tbLastResult_Tag";
             this.tbLastResult_Tag.Size = new System.Drawing.Size(799, 22);
             this.tbLastResult_Tag.TabIndex = 5;
@@ -294,7 +294,7 @@
             // btnAnalyzeDB_Tag
             // 
             this.btnAnalyzeDB_Tag.Location = new System.Drawing.Point(899, 84);
-            this.btnAnalyzeDB_Tag.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnAnalyzeDB_Tag.Margin = new System.Windows.Forms.Padding(4);
             this.btnAnalyzeDB_Tag.Name = "btnAnalyzeDB_Tag";
             this.btnAnalyzeDB_Tag.Size = new System.Drawing.Size(100, 29);
             this.btnAnalyzeDB_Tag.TabIndex = 4;
@@ -305,7 +305,7 @@
             // tbAnalyzeDB_Tag
             // 
             this.tbAnalyzeDB_Tag.Location = new System.Drawing.Point(92, 86);
-            this.tbAnalyzeDB_Tag.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbAnalyzeDB_Tag.Margin = new System.Windows.Forms.Padding(4);
             this.tbAnalyzeDB_Tag.Name = "tbAnalyzeDB_Tag";
             this.tbAnalyzeDB_Tag.Size = new System.Drawing.Size(799, 22);
             this.tbAnalyzeDB_Tag.TabIndex = 3;
@@ -313,7 +313,7 @@
             // btnBaseDB_Tag
             // 
             this.btnBaseDB_Tag.Location = new System.Drawing.Point(899, 18);
-            this.btnBaseDB_Tag.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnBaseDB_Tag.Margin = new System.Windows.Forms.Padding(4);
             this.btnBaseDB_Tag.Name = "btnBaseDB_Tag";
             this.btnBaseDB_Tag.Size = new System.Drawing.Size(100, 29);
             this.btnBaseDB_Tag.TabIndex = 1;
@@ -324,7 +324,7 @@
             // tbBaseDB_Tag
             // 
             this.tbBaseDB_Tag.Location = new System.Drawing.Point(92, 20);
-            this.tbBaseDB_Tag.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbBaseDB_Tag.Margin = new System.Windows.Forms.Padding(4);
             this.tbBaseDB_Tag.Name = "tbBaseDB_Tag";
             this.tbBaseDB_Tag.Size = new System.Drawing.Size(799, 22);
             this.tbBaseDB_Tag.TabIndex = 0;
@@ -346,9 +346,9 @@
             this.grpFilter.Controls.Add(this.tbViewMin);
             this.grpFilter.Controls.Add(this.lblViewMin);
             this.grpFilter.Location = new System.Drawing.Point(11, 168);
-            this.grpFilter.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpFilter.Margin = new System.Windows.Forms.Padding(4);
             this.grpFilter.Name = "grpFilter";
-            this.grpFilter.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpFilter.Padding = new System.Windows.Forms.Padding(4);
             this.grpFilter.Size = new System.Drawing.Size(1075, 116);
             this.grpFilter.TabIndex = 1;
             this.grpFilter.TabStop = false;
@@ -363,7 +363,7 @@
             "long",
             "short"});
             this.cmbContentType.Location = new System.Drawing.Point(660, 70);
-            this.cmbContentType.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.cmbContentType.Margin = new System.Windows.Forms.Padding(4);
             this.cmbContentType.Name = "cmbContentType";
             this.cmbContentType.Size = new System.Drawing.Size(159, 23);
             this.cmbContentType.TabIndex = 13;
@@ -383,7 +383,7 @@
             // 
             this.dtEnd.Enabled = false;
             this.dtEnd.Location = new System.Drawing.Point(400, 70);
-            this.dtEnd.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.dtEnd.Margin = new System.Windows.Forms.Padding(4);
             this.dtEnd.Name = "dtEnd";
             this.dtEnd.Size = new System.Drawing.Size(199, 22);
             this.dtEnd.TabIndex = 11;
@@ -393,7 +393,7 @@
             // 
             this.dtStart.Enabled = false;
             this.dtStart.Location = new System.Drawing.Point(187, 70);
-            this.dtStart.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.dtStart.Margin = new System.Windows.Forms.Padding(4);
             this.dtStart.Name = "dtStart";
             this.dtStart.Size = new System.Drawing.Size(199, 22);
             this.dtStart.TabIndex = 10;
@@ -403,7 +403,7 @@
             // 
             this.chkDateFilter.AutoSize = true;
             this.chkDateFilter.Location = new System.Drawing.Point(80, 74);
-            this.chkDateFilter.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.chkDateFilter.Margin = new System.Windows.Forms.Padding(4);
             this.chkDateFilter.Name = "chkDateFilter";
             this.chkDateFilter.Size = new System.Drawing.Size(77, 19);
             this.chkDateFilter.TabIndex = 9;
@@ -424,7 +424,7 @@
             // tbCommentMin
             // 
             this.tbCommentMin.Location = new System.Drawing.Point(867, 29);
-            this.tbCommentMin.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbCommentMin.Margin = new System.Windows.Forms.Padding(4);
             this.tbCommentMin.Name = "tbCommentMin";
             this.tbCommentMin.Size = new System.Drawing.Size(132, 22);
             this.tbCommentMin.TabIndex = 7;
@@ -445,7 +445,7 @@
             // tbLikeMin
             // 
             this.tbLikeMin.Location = new System.Drawing.Point(613, 29);
-            this.tbLikeMin.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbLikeMin.Margin = new System.Windows.Forms.Padding(4);
             this.tbLikeMin.Name = "tbLikeMin";
             this.tbLikeMin.Size = new System.Drawing.Size(132, 22);
             this.tbLikeMin.TabIndex = 5;
@@ -466,7 +466,7 @@
             // tbMylistMin
             // 
             this.tbMylistMin.Location = new System.Drawing.Point(360, 29);
-            this.tbMylistMin.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbMylistMin.Margin = new System.Windows.Forms.Padding(4);
             this.tbMylistMin.Name = "tbMylistMin";
             this.tbMylistMin.Size = new System.Drawing.Size(132, 22);
             this.tbMylistMin.TabIndex = 3;
@@ -487,7 +487,7 @@
             // tbViewMin
             // 
             this.tbViewMin.Location = new System.Drawing.Point(107, 29);
-            this.tbViewMin.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbViewMin.Margin = new System.Windows.Forms.Padding(4);
             this.tbViewMin.Name = "tbViewMin";
             this.tbViewMin.Size = new System.Drawing.Size(132, 22);
             this.tbViewMin.TabIndex = 1;
@@ -514,9 +514,9 @@
             this.grpTag.Controls.Add(this.lblTagExample);
             this.grpTag.Controls.Add(this.tbTagCondition);
             this.grpTag.Location = new System.Drawing.Point(11, 10);
-            this.grpTag.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpTag.Margin = new System.Windows.Forms.Padding(4);
             this.grpTag.Name = "grpTag";
-            this.grpTag.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpTag.Padding = new System.Windows.Forms.Padding(4);
             this.grpTag.Size = new System.Drawing.Size(1075, 150);
             this.grpTag.TabIndex = 0;
             this.grpTag.TabStop = false;
@@ -556,7 +556,7 @@
             // btnTagSearch
             // 
             this.btnTagSearch.Location = new System.Drawing.Point(821, 22);
-            this.btnTagSearch.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnTagSearch.Margin = new System.Windows.Forms.Padding(4);
             this.btnTagSearch.Name = "btnTagSearch";
             this.btnTagSearch.Size = new System.Drawing.Size(100, 29);
             this.btnTagSearch.TabIndex = 2;
@@ -577,7 +577,7 @@
             // tbTagCondition
             // 
             this.tbTagCondition.Location = new System.Drawing.Point(13, 25);
-            this.tbTagCondition.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbTagCondition.Margin = new System.Windows.Forms.Padding(4);
             this.tbTagCondition.Name = "tbTagCondition";
             this.tbTagCondition.Size = new System.Drawing.Size(799, 22);
             this.tbTagCondition.TabIndex = 0;
@@ -593,9 +593,9 @@
             this.tabPageSyukei.Controls.Add(this.panelSP);
             this.tabPageSyukei.Controls.Add(this.groupBox1);
             this.tabPageSyukei.Location = new System.Drawing.Point(4, 25);
-            this.tabPageSyukei.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tabPageSyukei.Margin = new System.Windows.Forms.Padding(4);
             this.tabPageSyukei.Name = "tabPageSyukei";
-            this.tabPageSyukei.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tabPageSyukei.Padding = new System.Windows.Forms.Padding(4);
             this.tabPageSyukei.Size = new System.Drawing.Size(1107, 946);
             this.tabPageSyukei.TabIndex = 0;
             this.tabPageSyukei.Text = "集計";
@@ -603,7 +603,7 @@
             // btnAnalyze
             // 
             this.btnAnalyze.Location = new System.Drawing.Point(441, 652);
-            this.btnAnalyze.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnAnalyze.Margin = new System.Windows.Forms.Padding(4);
             this.btnAnalyze.Name = "btnAnalyze";
             this.btnAnalyze.Size = new System.Drawing.Size(185, 49);
             this.btnAnalyze.TabIndex = 4;
@@ -623,9 +623,9 @@
             this.grpImageDownload.Controls.Add(this.lblImageDownloadCount);
             this.grpImageDownload.Controls.Add(this.btnImageDownloadCancel);
             this.grpImageDownload.Location = new System.Drawing.Point(8, 712);
-            this.grpImageDownload.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpImageDownload.Margin = new System.Windows.Forms.Padding(4);
             this.grpImageDownload.Name = "grpImageDownload";
-            this.grpImageDownload.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpImageDownload.Padding = new System.Windows.Forms.Padding(4);
             this.grpImageDownload.Size = new System.Drawing.Size(1075, 162);
             this.grpImageDownload.TabIndex = 5;
             this.grpImageDownload.TabStop = false;
@@ -645,7 +645,7 @@
             // 
             this.btnThumbnailDownload.Enabled = false;
             this.btnThumbnailDownload.Location = new System.Drawing.Point(16, 50);
-            this.btnThumbnailDownload.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnThumbnailDownload.Margin = new System.Windows.Forms.Padding(4);
             this.btnThumbnailDownload.Name = "btnThumbnailDownload";
             this.btnThumbnailDownload.Size = new System.Drawing.Size(200, 38);
             this.btnThumbnailDownload.TabIndex = 1;
@@ -657,7 +657,7 @@
             // 
             this.btnUserIconDownload.Enabled = false;
             this.btnUserIconDownload.Location = new System.Drawing.Point(224, 50);
-            this.btnUserIconDownload.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnUserIconDownload.Margin = new System.Windows.Forms.Padding(4);
             this.btnUserIconDownload.Name = "btnUserIconDownload";
             this.btnUserIconDownload.Size = new System.Drawing.Size(200, 38);
             this.btnUserIconDownload.TabIndex = 2;
@@ -670,7 +670,7 @@
             this.chkHighQuality.AutoSize = true;
             this.chkHighQuality.Enabled = false;
             this.chkHighQuality.Location = new System.Drawing.Point(16, 98);
-            this.chkHighQuality.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.chkHighQuality.Margin = new System.Windows.Forms.Padding(4);
             this.chkHighQuality.Name = "chkHighQuality";
             this.chkHighQuality.Size = new System.Drawing.Size(224, 19);
             this.chkHighQuality.TabIndex = 3;
@@ -683,7 +683,7 @@
             this.rbSkipExisting.Checked = true;
             this.rbSkipExisting.Enabled = false;
             this.rbSkipExisting.Location = new System.Drawing.Point(400, 98);
-            this.rbSkipExisting.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.rbSkipExisting.Margin = new System.Windows.Forms.Padding(4);
             this.rbSkipExisting.Name = "rbSkipExisting";
             this.rbSkipExisting.Size = new System.Drawing.Size(153, 19);
             this.rbSkipExisting.TabIndex = 4;
@@ -696,7 +696,7 @@
             this.rbOverwrite.AutoSize = true;
             this.rbOverwrite.Enabled = false;
             this.rbOverwrite.Location = new System.Drawing.Point(613, 98);
-            this.rbOverwrite.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.rbOverwrite.Margin = new System.Windows.Forms.Padding(4);
             this.rbOverwrite.Name = "rbOverwrite";
             this.rbOverwrite.Size = new System.Drawing.Size(66, 19);
             this.rbOverwrite.TabIndex = 5;
@@ -712,15 +712,15 @@
             this.lblImageDownloadNote.Name = "lblImageDownloadNote";
             this.lblImageDownloadNote.Size = new System.Drawing.Size(354, 15);
             this.lblImageDownloadNote.TabIndex = 6;
-            this.lblImageDownloadNote.Text = "保存先は実行時に選択します。中間モードは対象外です。";
+            this.lblImageDownloadNote.Text = "保存先は実行時に選択します。中間モードは対象外。ユーザーアイコンはUserInfo設定の範囲（上位＋カテゴリ1位）です。";
             // 
             // lblImageDownloadCount
             // 
             this.lblImageDownloadCount.AutoSize = true;
-            this.lblImageDownloadCount.Location = new System.Drawing.Point(596, 25);
+            this.lblImageDownloadCount.Location = new System.Drawing.Point(500, 25);
             this.lblImageDownloadCount.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblImageDownloadCount.Name = "lblImageDownloadCount";
-            this.lblImageDownloadCount.Size = new System.Drawing.Size(200, 15);
+            this.lblImageDownloadCount.Size = new System.Drawing.Size(179, 15);
             this.lblImageDownloadCount.TabIndex = 8;
             this.lblImageDownloadCount.Text = "予定: 集計後に表示されます";
             // 
@@ -728,7 +728,7 @@
             // 
             this.btnImageDownloadCancel.Enabled = false;
             this.btnImageDownloadCancel.Location = new System.Drawing.Point(432, 50);
-            this.btnImageDownloadCancel.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnImageDownloadCancel.Margin = new System.Windows.Forms.Padding(4);
             this.btnImageDownloadCancel.Name = "btnImageDownloadCancel";
             this.btnImageDownloadCancel.Size = new System.Drawing.Size(160, 38);
             this.btnImageDownloadCancel.TabIndex = 7;
@@ -761,7 +761,7 @@
             this.panel3.Controls.Add(this.label13);
             this.panel3.Controls.Add(this.label14);
             this.panel3.Location = new System.Drawing.Point(15, 341);
-            this.panel3.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.panel3.Margin = new System.Windows.Forms.Padding(4);
             this.panel3.Name = "panel3";
             this.panel3.Size = new System.Drawing.Size(1058, 284);
             this.panel3.TabIndex = 3;
@@ -779,7 +779,7 @@
             // tbUserInfoNum
             // 
             this.tbUserInfoNum.Location = new System.Drawing.Point(519, 239);
-            this.tbUserInfoNum.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbUserInfoNum.Margin = new System.Windows.Forms.Padding(4);
             this.tbUserInfoNum.Name = "tbUserInfoNum";
             this.tbUserInfoNum.Size = new System.Drawing.Size(121, 22);
             this.tbUserInfoNum.TabIndex = 16;
@@ -803,7 +803,7 @@
             "0: しない",
             "1: 補正値D = 2.5 * コメント数 ÷ 再生数 * 100 (米率0.4％未満に補正)"});
             this.cmbHoseiPointAll.Location = new System.Drawing.Point(335, 155);
-            this.cmbHoseiPointAll.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.cmbHoseiPointAll.Margin = new System.Windows.Forms.Padding(4);
             this.cmbHoseiPointAll.Name = "cmbHoseiPointAll";
             this.cmbHoseiPointAll.Size = new System.Drawing.Size(599, 23);
             this.cmbHoseiPointAll.TabIndex = 14;
@@ -817,7 +817,7 @@
             "1: 補正 (再生＋マイリスト＋コメント＊N）／（再生＋マイリスト＋コメント",
             "2: 補正 (再生＋マイリスト＋コメント）／（再生＋マイリスト＋コメント"});
             this.cmbHoseiComment.Location = new System.Drawing.Point(335, 91);
-            this.cmbHoseiComment.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.cmbHoseiComment.Margin = new System.Windows.Forms.Padding(4);
             this.cmbHoseiComment.Name = "cmbHoseiComment";
             this.cmbHoseiComment.Size = new System.Drawing.Size(599, 23);
             this.cmbHoseiComment.TabIndex = 14;
@@ -831,7 +831,7 @@
             "1: 補正値＝マイリスト率が1%未満の作品に適用する",
             "2: 補正値＝(コメント数＋マイリスト数＋いいね数）/ 再生数 ×1000"});
             this.cmbHoseiPlay.Location = new System.Drawing.Point(335, 61);
-            this.cmbHoseiPlay.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.cmbHoseiPlay.Margin = new System.Windows.Forms.Padding(4);
             this.cmbHoseiPlay.Name = "cmbHoseiPlay";
             this.cmbHoseiPlay.Size = new System.Drawing.Size(599, 23);
             this.cmbHoseiPlay.TabIndex = 13;
@@ -845,7 +845,7 @@
             "1: 弱い方",
             "2: 強い方 "});
             this.cmbHoseiMylist.Location = new System.Drawing.Point(335, 29);
-            this.cmbHoseiMylist.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.cmbHoseiMylist.Margin = new System.Windows.Forms.Padding(4);
             this.cmbHoseiMylist.Name = "cmbHoseiMylist";
             this.cmbHoseiMylist.Size = new System.Drawing.Size(599, 23);
             this.cmbHoseiMylist.TabIndex = 12;
@@ -883,7 +883,7 @@
             // tbCalcMylist
             // 
             this.tbCalcMylist.Location = new System.Drawing.Point(119, 34);
-            this.tbCalcMylist.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbCalcMylist.Margin = new System.Windows.Forms.Padding(4);
             this.tbCalcMylist.Name = "tbCalcMylist";
             this.tbCalcMylist.Size = new System.Drawing.Size(64, 22);
             this.tbCalcMylist.TabIndex = 8;
@@ -892,7 +892,7 @@
             // tbHoseiCommentUnderLimit
             // 
             this.tbHoseiCommentUnderLimit.Location = new System.Drawing.Point(335, 124);
-            this.tbHoseiCommentUnderLimit.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbHoseiCommentUnderLimit.Margin = new System.Windows.Forms.Padding(4);
             this.tbHoseiCommentUnderLimit.Name = "tbHoseiCommentUnderLimit";
             this.tbHoseiCommentUnderLimit.Size = new System.Drawing.Size(64, 22);
             this.tbHoseiCommentUnderLimit.TabIndex = 6;
@@ -901,7 +901,7 @@
             // tbCalcLike
             // 
             this.tbCalcLike.Location = new System.Drawing.Point(119, 124);
-            this.tbCalcLike.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbCalcLike.Margin = new System.Windows.Forms.Padding(4);
             this.tbCalcLike.Name = "tbCalcLike";
             this.tbCalcLike.Size = new System.Drawing.Size(64, 22);
             this.tbCalcLike.TabIndex = 6;
@@ -910,7 +910,7 @@
             // tbCalcPlay
             // 
             this.tbCalcPlay.Location = new System.Drawing.Point(119, 62);
-            this.tbCalcPlay.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbCalcPlay.Margin = new System.Windows.Forms.Padding(4);
             this.tbCalcPlay.Name = "tbCalcPlay";
             this.tbCalcPlay.Size = new System.Drawing.Size(64, 22);
             this.tbCalcPlay.TabIndex = 7;
@@ -939,7 +939,7 @@
             // tbCalcComment
             // 
             this.tbCalcComment.Location = new System.Drawing.Point(119, 91);
-            this.tbCalcComment.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbCalcComment.Margin = new System.Windows.Forms.Padding(4);
             this.tbCalcComment.Name = "tbCalcComment";
             this.tbCalcComment.Size = new System.Drawing.Size(64, 22);
             this.tbCalcComment.TabIndex = 6;
@@ -1005,7 +1005,7 @@
             this.panelSP.Controls.Add(this.tbBaseDB);
             this.panelSP.Controls.Add(this.label1);
             this.panelSP.Location = new System.Drawing.Point(11, 99);
-            this.panelSP.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.panelSP.Margin = new System.Windows.Forms.Padding(4);
             this.panelSP.Name = "panelSP";
             this.panelSP.Size = new System.Drawing.Size(1065, 208);
             this.panelSP.TabIndex = 1;
@@ -1024,7 +1024,7 @@
             // 
             this.chkSPKariSyukei.AutoSize = true;
             this.chkSPKariSyukei.Location = new System.Drawing.Point(96, 106);
-            this.chkSPKariSyukei.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.chkSPKariSyukei.Margin = new System.Windows.Forms.Padding(4);
             this.chkSPKariSyukei.Name = "chkSPKariSyukei";
             this.chkSPKariSyukei.Size = new System.Drawing.Size(137, 19);
             this.chkSPKariSyukei.TabIndex = 4;
@@ -1034,7 +1034,7 @@
             // btnLastResult
             // 
             this.btnLastResult.Location = new System.Drawing.Point(925, 160);
-            this.btnLastResult.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnLastResult.Margin = new System.Windows.Forms.Padding(4);
             this.btnLastResult.Name = "btnLastResult";
             this.btnLastResult.Size = new System.Drawing.Size(100, 29);
             this.btnLastResult.TabIndex = 8;
@@ -1045,7 +1045,7 @@
             // btnMovieSPList
             // 
             this.btnMovieSPList.Location = new System.Drawing.Point(925, 126);
-            this.btnMovieSPList.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnMovieSPList.Margin = new System.Windows.Forms.Padding(4);
             this.btnMovieSPList.Name = "btnMovieSPList";
             this.btnMovieSPList.Size = new System.Drawing.Size(100, 29);
             this.btnMovieSPList.TabIndex = 6;
@@ -1056,7 +1056,7 @@
             // tbLastResult
             // 
             this.tbLastResult.Location = new System.Drawing.Point(96, 161);
-            this.tbLastResult.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbLastResult.Margin = new System.Windows.Forms.Padding(4);
             this.tbLastResult.Name = "tbLastResult";
             this.tbLastResult.Size = new System.Drawing.Size(820, 22);
             this.tbLastResult.TabIndex = 7;
@@ -1064,7 +1064,7 @@
             // tbMovieSPList
             // 
             this.tbMovieSPList.Location = new System.Drawing.Point(96, 130);
-            this.tbMovieSPList.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbMovieSPList.Margin = new System.Windows.Forms.Padding(4);
             this.tbMovieSPList.Name = "tbMovieSPList";
             this.tbMovieSPList.Size = new System.Drawing.Size(820, 22);
             this.tbMovieSPList.TabIndex = 5;
@@ -1092,7 +1092,7 @@
             // btnAnalyzeDB
             // 
             this.btnAnalyzeDB.Location = new System.Drawing.Point(925, 59);
-            this.btnAnalyzeDB.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnAnalyzeDB.Margin = new System.Windows.Forms.Padding(4);
             this.btnAnalyzeDB.Name = "btnAnalyzeDB";
             this.btnAnalyzeDB.Size = new System.Drawing.Size(100, 29);
             this.btnAnalyzeDB.TabIndex = 3;
@@ -1103,7 +1103,7 @@
             // btnBaseDB
             // 
             this.btnBaseDB.Location = new System.Drawing.Point(925, 30);
-            this.btnBaseDB.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnBaseDB.Margin = new System.Windows.Forms.Padding(4);
             this.btnBaseDB.Name = "btnBaseDB";
             this.btnBaseDB.Size = new System.Drawing.Size(100, 29);
             this.btnBaseDB.TabIndex = 1;
@@ -1124,7 +1124,7 @@
             // tbAnalyzeDB
             // 
             this.tbAnalyzeDB.Location = new System.Drawing.Point(96, 61);
-            this.tbAnalyzeDB.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbAnalyzeDB.Margin = new System.Windows.Forms.Padding(4);
             this.tbAnalyzeDB.Name = "tbAnalyzeDB";
             this.tbAnalyzeDB.Size = new System.Drawing.Size(820, 22);
             this.tbAnalyzeDB.TabIndex = 2;
@@ -1152,7 +1152,7 @@
             // tbBaseDB
             // 
             this.tbBaseDB.Location = new System.Drawing.Point(96, 30);
-            this.tbBaseDB.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbBaseDB.Margin = new System.Windows.Forms.Padding(4);
             this.tbBaseDB.Name = "tbBaseDB";
             this.tbBaseDB.Size = new System.Drawing.Size(820, 22);
             this.tbBaseDB.TabIndex = 0;
@@ -1177,9 +1177,9 @@
             this.groupBox1.Controls.Add(this.rbTyukan);
             this.groupBox1.Controls.Add(this.rbWeekly);
             this.groupBox1.Location = new System.Drawing.Point(8, 25);
-            this.groupBox1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.groupBox1.Margin = new System.Windows.Forms.Padding(4);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.groupBox1.Padding = new System.Windows.Forms.Padding(4);
             this.groupBox1.Size = new System.Drawing.Size(1075, 66);
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
@@ -1198,7 +1198,7 @@
             // dtPLastweekDay
             // 
             this.dtPLastweekDay.Location = new System.Drawing.Point(813, 42);
-            this.dtPLastweekDay.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.dtPLastweekDay.Margin = new System.Windows.Forms.Padding(4);
             this.dtPLastweekDay.Name = "dtPLastweekDay";
             this.dtPLastweekDay.Size = new System.Drawing.Size(251, 22);
             this.dtPLastweekDay.TabIndex = 8;
@@ -1218,7 +1218,7 @@
             // 
             this.rbSP.AutoSize = true;
             this.rbSP.Location = new System.Drawing.Point(237, 34);
-            this.rbSP.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.rbSP.Margin = new System.Windows.Forms.Padding(4);
             this.rbSP.Name = "rbSP";
             this.rbSP.Size = new System.Drawing.Size(43, 19);
             this.rbSP.TabIndex = 2;
@@ -1229,7 +1229,7 @@
             // dtPAnalyzeDay
             // 
             this.dtPAnalyzeDay.Location = new System.Drawing.Point(813, 15);
-            this.dtPAnalyzeDay.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.dtPAnalyzeDay.Margin = new System.Windows.Forms.Padding(4);
             this.dtPAnalyzeDay.Name = "dtPAnalyzeDay";
             this.dtPAnalyzeDay.Size = new System.Drawing.Size(251, 22);
             this.dtPAnalyzeDay.TabIndex = 6;
@@ -1239,7 +1239,7 @@
             // 
             this.rbTyukan.AutoSize = true;
             this.rbTyukan.Location = new System.Drawing.Point(139, 34);
-            this.rbTyukan.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.rbTyukan.Margin = new System.Windows.Forms.Padding(4);
             this.rbTyukan.Name = "rbTyukan";
             this.rbTyukan.Size = new System.Drawing.Size(55, 19);
             this.rbTyukan.TabIndex = 1;
@@ -1252,7 +1252,7 @@
             this.rbWeekly.AutoSize = true;
             this.rbWeekly.Checked = true;
             this.rbWeekly.Location = new System.Drawing.Point(44, 34);
-            this.rbWeekly.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.rbWeekly.Margin = new System.Windows.Forms.Padding(4);
             this.rbWeekly.Name = "rbWeekly";
             this.rbWeekly.Size = new System.Drawing.Size(55, 19);
             this.rbWeekly.TabIndex = 0;
@@ -1267,7 +1267,7 @@
             this.tabPageOut.Controls.Add(this.tabPageMaint);
             this.tabPageOut.Controls.Add(this.tabPageSystem);
             this.tabPageOut.Location = new System.Drawing.Point(-4, 5);
-            this.tabPageOut.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tabPageOut.Margin = new System.Windows.Forms.Padding(4);
             this.tabPageOut.Name = "tabPageOut";
             this.tabPageOut.SelectedIndex = 0;
             this.tabPageOut.Size = new System.Drawing.Size(1115, 975);
@@ -1281,9 +1281,9 @@
             this.tabPageMaint.Controls.Add(this.grpFutureApiXml);
             this.tabPageMaint.Controls.Add(this.grpGapCheck);
             this.tabPageMaint.Location = new System.Drawing.Point(4, 25);
-            this.tabPageMaint.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tabPageMaint.Margin = new System.Windows.Forms.Padding(4);
             this.tabPageMaint.Name = "tabPageMaint";
-            this.tabPageMaint.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tabPageMaint.Padding = new System.Windows.Forms.Padding(4);
             this.tabPageMaint.Size = new System.Drawing.Size(1107, 946);
             this.tabPageMaint.TabIndex = 4;
             this.tabPageMaint.Text = "メンテナンス";
@@ -1311,9 +1311,9 @@
             this.grpVacuum.Controls.Add(this.progressVacuum);
             this.grpVacuum.Controls.Add(this.lblVacuumNote);
             this.grpVacuum.Location = new System.Drawing.Point(8, 8);
-            this.grpVacuum.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpVacuum.Margin = new System.Windows.Forms.Padding(4);
             this.grpVacuum.Name = "grpVacuum";
-            this.grpVacuum.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpVacuum.Padding = new System.Windows.Forms.Padding(4);
             this.grpVacuum.Size = new System.Drawing.Size(1075, 316);
             this.grpVacuum.TabIndex = 0;
             this.grpVacuum.TabStop = false;
@@ -1355,7 +1355,7 @@
             this.chkVacuumLogOfficial.Checked = true;
             this.chkVacuumLogOfficial.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkVacuumLogOfficial.Location = new System.Drawing.Point(16, 88);
-            this.chkVacuumLogOfficial.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.chkVacuumLogOfficial.Margin = new System.Windows.Forms.Padding(4);
             this.chkVacuumLogOfficial.Name = "chkVacuumLogOfficial";
             this.chkVacuumLogOfficial.Size = new System.Drawing.Size(240, 19);
             this.chkVacuumLogOfficial.TabIndex = 0;
@@ -1388,7 +1388,7 @@
             this.chkVacuumNicoranHistory.Checked = true;
             this.chkVacuumNicoranHistory.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkVacuumNicoranHistory.Location = new System.Drawing.Point(16, 119);
-            this.chkVacuumNicoranHistory.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.chkVacuumNicoranHistory.Margin = new System.Windows.Forms.Padding(4);
             this.chkVacuumNicoranHistory.Name = "chkVacuumNicoranHistory";
             this.chkVacuumNicoranHistory.Size = new System.Drawing.Size(292, 19);
             this.chkVacuumNicoranHistory.TabIndex = 1;
@@ -1421,7 +1421,7 @@
             this.chkVacuumApiXml.Checked = true;
             this.chkVacuumApiXml.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkVacuumApiXml.Location = new System.Drawing.Point(16, 150);
-            this.chkVacuumApiXml.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.chkVacuumApiXml.Margin = new System.Windows.Forms.Padding(4);
             this.chkVacuumApiXml.Name = "chkVacuumApiXml";
             this.chkVacuumApiXml.Size = new System.Drawing.Size(198, 19);
             this.chkVacuumApiXml.TabIndex = 2;
@@ -1454,7 +1454,7 @@
             this.chkVacuumDailylog.Checked = true;
             this.chkVacuumDailylog.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkVacuumDailylog.Location = new System.Drawing.Point(16, 181);
-            this.chkVacuumDailylog.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.chkVacuumDailylog.Margin = new System.Windows.Forms.Padding(4);
             this.chkVacuumDailylog.Name = "chkVacuumDailylog";
             this.chkVacuumDailylog.Size = new System.Drawing.Size(200, 19);
             this.chkVacuumDailylog.TabIndex = 3;
@@ -1484,7 +1484,7 @@
             // btnVacuumExec
             // 
             this.btnVacuumExec.Location = new System.Drawing.Point(16, 236);
-            this.btnVacuumExec.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnVacuumExec.Margin = new System.Windows.Forms.Padding(4);
             this.btnVacuumExec.Name = "btnVacuumExec";
             this.btnVacuumExec.Size = new System.Drawing.Size(240, 45);
             this.btnVacuumExec.TabIndex = 4;
@@ -1505,7 +1505,7 @@
             // progressVacuum
             // 
             this.progressVacuum.Location = new System.Drawing.Point(276, 251);
-            this.progressVacuum.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.progressVacuum.Margin = new System.Windows.Forms.Padding(4);
             this.progressVacuum.Name = "progressVacuum";
             this.progressVacuum.Size = new System.Drawing.Size(773, 25);
             this.progressVacuum.TabIndex = 3;
@@ -1527,9 +1527,9 @@
             this.grpFutureApiXml.Controls.Add(this.btnFutureApiXmlFolder);
             this.grpFutureApiXml.Controls.Add(this.btnFutureApiXmlExec);
             this.grpFutureApiXml.Location = new System.Drawing.Point(4, 598);
-            this.grpFutureApiXml.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpFutureApiXml.Margin = new System.Windows.Forms.Padding(4);
             this.grpFutureApiXml.Name = "grpFutureApiXml";
-            this.grpFutureApiXml.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpFutureApiXml.Padding = new System.Windows.Forms.Padding(4);
             this.grpFutureApiXml.Size = new System.Drawing.Size(1075, 150);
             this.grpFutureApiXml.TabIndex = 1;
             this.grpFutureApiXml.TabStop = false;
@@ -1550,7 +1550,7 @@
             // 
             this.tbFutureApiXmlFolder.Enabled = false;
             this.tbFutureApiXmlFolder.Location = new System.Drawing.Point(16, 78);
-            this.tbFutureApiXmlFolder.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tbFutureApiXmlFolder.Margin = new System.Windows.Forms.Padding(4);
             this.tbFutureApiXmlFolder.Name = "tbFutureApiXmlFolder";
             this.tbFutureApiXmlFolder.Size = new System.Drawing.Size(785, 22);
             this.tbFutureApiXmlFolder.TabIndex = 0;
@@ -1559,7 +1559,7 @@
             // 
             this.btnFutureApiXmlFolder.Enabled = false;
             this.btnFutureApiXmlFolder.Location = new System.Drawing.Point(811, 75);
-            this.btnFutureApiXmlFolder.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnFutureApiXmlFolder.Margin = new System.Windows.Forms.Padding(4);
             this.btnFutureApiXmlFolder.Name = "btnFutureApiXmlFolder";
             this.btnFutureApiXmlFolder.Size = new System.Drawing.Size(100, 29);
             this.btnFutureApiXmlFolder.TabIndex = 1;
@@ -1570,7 +1570,7 @@
             // 
             this.btnFutureApiXmlExec.Enabled = false;
             this.btnFutureApiXmlExec.Location = new System.Drawing.Point(919, 75);
-            this.btnFutureApiXmlExec.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnFutureApiXmlExec.Margin = new System.Windows.Forms.Padding(4);
             this.btnFutureApiXmlExec.Name = "btnFutureApiXmlExec";
             this.btnFutureApiXmlExec.Size = new System.Drawing.Size(100, 29);
             this.btnFutureApiXmlExec.TabIndex = 2;
@@ -1587,9 +1587,9 @@
             this.grpGapCheck.Controls.Add(this.btnBaselineRestore);
             this.grpGapCheck.Controls.Add(this.lblGapCheckNote);
             this.grpGapCheck.Location = new System.Drawing.Point(8, 331);
-            this.grpGapCheck.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpGapCheck.Margin = new System.Windows.Forms.Padding(4);
             this.grpGapCheck.Name = "grpGapCheck";
-            this.grpGapCheck.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpGapCheck.Padding = new System.Windows.Forms.Padding(4);
             this.grpGapCheck.Size = new System.Drawing.Size(1075, 259);
             this.grpGapCheck.TabIndex = 2;
             this.grpGapCheck.TabStop = false;
@@ -1609,7 +1609,7 @@
             // 
             this.chkGapCheckOneYear.AutoSize = true;
             this.chkGapCheckOneYear.Location = new System.Drawing.Point(16, 60);
-            this.chkGapCheckOneYear.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.chkGapCheckOneYear.Margin = new System.Windows.Forms.Padding(4);
             this.chkGapCheckOneYear.Name = "chkGapCheckOneYear";
             this.chkGapCheckOneYear.Size = new System.Drawing.Size(269, 19);
             this.chkGapCheckOneYear.TabIndex = 0;
@@ -1619,7 +1619,7 @@
             // btnGapCheckExec
             // 
             this.btnGapCheckExec.Location = new System.Drawing.Point(16, 92);
-            this.btnGapCheckExec.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnGapCheckExec.Margin = new System.Windows.Forms.Padding(4);
             this.btnGapCheckExec.Name = "btnGapCheckExec";
             this.btnGapCheckExec.Size = new System.Drawing.Size(240, 45);
             this.btnGapCheckExec.TabIndex = 1;
@@ -1650,7 +1650,7 @@
             // btnBaselineRestore
             // 
             this.btnBaselineRestore.Location = new System.Drawing.Point(16, 182);
-            this.btnBaselineRestore.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnBaselineRestore.Margin = new System.Windows.Forms.Padding(4);
             this.btnBaselineRestore.Name = "btnBaselineRestore";
             this.btnBaselineRestore.Size = new System.Drawing.Size(293, 45);
             this.btnBaselineRestore.TabIndex = 3;
@@ -1673,9 +1673,9 @@
             // 
             this.tabPageSystem.Controls.Add(this.grpAppUpdate);
             this.tabPageSystem.Location = new System.Drawing.Point(4, 25);
-            this.tabPageSystem.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tabPageSystem.Margin = new System.Windows.Forms.Padding(4);
             this.tabPageSystem.Name = "tabPageSystem";
-            this.tabPageSystem.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.tabPageSystem.Padding = new System.Windows.Forms.Padding(4);
             this.tabPageSystem.Size = new System.Drawing.Size(1107, 946);
             this.tabPageSystem.TabIndex = 5;
             this.tabPageSystem.Text = "システム設定";
@@ -1686,9 +1686,9 @@
             this.grpAppUpdate.Controls.Add(this.btnUpdateCheck);
             this.grpAppUpdate.Controls.Add(this.lblUpdateCheckStatus);
             this.grpAppUpdate.Location = new System.Drawing.Point(15, 8);
-            this.grpAppUpdate.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpAppUpdate.Margin = new System.Windows.Forms.Padding(4);
             this.grpAppUpdate.Name = "grpAppUpdate";
-            this.grpAppUpdate.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grpAppUpdate.Padding = new System.Windows.Forms.Padding(4);
             this.grpAppUpdate.Size = new System.Drawing.Size(1079, 92);
             this.grpAppUpdate.TabIndex = 4;
             this.grpAppUpdate.TabStop = false;
@@ -1697,7 +1697,7 @@
             // btnUpdateCheck
             // 
             this.btnUpdateCheck.Location = new System.Drawing.Point(23, 26);
-            this.btnUpdateCheck.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.btnUpdateCheck.Margin = new System.Windows.Forms.Padding(4);
             this.btnUpdateCheck.Name = "btnUpdateCheck";
             this.btnUpdateCheck.Size = new System.Drawing.Size(293, 45);
             this.btnUpdateCheck.TabIndex = 7;
@@ -1721,7 +1721,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1097, 916);
             this.Controls.Add(this.tabPageOut);
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "frmMain";
             this.Text = "ニコラン2019 集計プログラム";
             this.Load += new System.EventHandler(this.frmMain_Load);

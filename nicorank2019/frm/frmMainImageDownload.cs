@@ -102,10 +102,7 @@ namespace nicorank2019.frm
             }
 
             lblImageDownloadCount.Text =
-                $"予定: EDサムネイル {CountMovieTargets()}件 / ユーザーアイコン {CountUserIconTargets()}件"
-                + (Config.GetInstance().UserNum > 0
-                    ? $"（上位{Config.GetInstance().UserNum}位＋カテゴリ1位）"
-                    : "（全件）");
+                $"予定: EDサムネイル {CountMovieTargets()}件 / ユーザーアイコン {CountUserIconTargets()}件";
         }
 
         /// <summary>EDサムネイルの対象件数（queue.irv と同じ「紹介枠＋ED枠」）。</summary>
